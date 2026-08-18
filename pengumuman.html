@@ -3,14 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Pengumuman — APP SMASRA</title>
+<title>Pengumuman — SM Arab (Jaim) Al-Asyraf</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0a1330">
+<meta name="theme-color" content="#04110d">
 <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <div class="bg-fx"></div>
@@ -19,9 +20,11 @@
 
   <div id="login-screen" class="hidden">
     <div class="logo-holo"><img class="school-logo-img" alt="Logo Sekolah"></div>
-    <div class="brand-title">APP SMASRA</div>
+    <div class="brand-title">SM ARAB (JAIM) AL-ASYRAF</div>
     <div class="brand-sub">Sistem Pengurusan Sekolah</div>
     <div class="glass">
+      <div class="gsi-wrap" id="google-btn-container"></div>
+      <div class="divider">Atau</div>
       <form id="login-form">
         <label class="field-label" for="login-email">Emel Rasmi</label>
         <input class="field-input" type="email" id="login-email" placeholder="nama@moe-dl.edu.my" autocomplete="email" required>
@@ -32,34 +35,72 @@
   </div>
 
   <div id="app-content" class="hidden">
-    <div class="top-bar">
-      <a class="back-link" href="index.html">&#8592; Menu Utama</a>
-      <a href="#" class="logout-link" onclick="logout();return false;">Log keluar</a>
-    </div>
+
+    <header class="app-header hud-frame">
+      <span class="hud-corner tl"></span><span class="hud-corner tr"></span>
+      <div class="header-row1">
+        <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu">&#9776;</button>
+        <img class="header-logo school-logo-img" alt="Logo Sekolah">
+        <div class="header-titles">
+          <div class="header-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
+          <div class="header-school-sub">Sistem Pengurusan Sekolah</div>
+        </div>
+        <button class="header-avatar-btn" onclick="location.href='profile.html'" aria-label="Profil">
+          <img class="greet-avatar-sm" id="header-avatar" alt="">
+        </button>
+      </div>
+      <div class="header-row2">
+        <span class="header-greet" id="header-greet">Hai, -</span>
+        <div class="header-status-time">
+          <span class="status-chip"><span class="status-dot"></span>AKTIF</span>
+          <span class="clock" id="live-clock">--:--:-- --</span>
+        </div>
+      </div>
+    </header>
 
     <div class="section-label">Pengumuman</div>
-
     <div id="pengumuman-list">
       <div class="empty-state">Memuatkan pengumuman...</div>
     </div>
+
   </div>
 
-  <button class="fab hidden" id="fab-add" onclick="openModal()">+</button>
+  <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+  <nav class="drawer" id="drawer">
+    <div class="drawer-logo"><img class="school-logo-img" alt=""></div>
+    <a class="drawer-item" href="index.html" title="Laman Utama"><span aria-hidden="true">&#127968;</span><span class="sr-only">Laman Utama</span></a>
+    <a class="drawer-item active" href="pengumuman.html" title="Pengumuman"><span aria-hidden="true">&#128227;</span><span class="sr-only">Pengumuman</span></a>
+    <div class="drawer-item soon" title="Kehadiran Staf (akan datang)"><span aria-hidden="true">&#128197;</span><span class="sr-only">Kehadiran Staf</span></div>
+    <div class="drawer-item soon" title="Kehadiran Murid (akan datang)"><span aria-hidden="true">&#127891;</span><span class="sr-only">Kehadiran Murid</span></div>
+    <div class="drawer-item soon" title="Laporan Pentadbir Bertugas (akan datang)"><span aria-hidden="true">&#128203;</span><span class="sr-only">Laporan Pentadbir Bertugas</span></div>
+    <div class="drawer-item soon" title="Laporan Guru Bertugas (akan datang)"><span aria-hidden="true">&#128221;</span><span class="sr-only">Laporan Guru Bertugas</span></div>
+    <div class="drawer-item soon" title="Prestasi Kerja (akan datang)"><span aria-hidden="true">&#128202;</span><span class="sr-only">Prestasi Kerja</span></div>
+    <div class="drawer-spacer"></div>
+    <a class="drawer-item drawer-logout" href="#" onclick="logout();return false;" title="Log Keluar"><span aria-hidden="true">&#9211;</span><span class="sr-only">Log Keluar</span></a>
+  </nav>
+
+  <div class="bottom-nav-wrap">
+    <nav class="bottom-nav">
+      <a class="bn-item" href="index.html" aria-label="Home"><span aria-hidden="true">&#127968;</span></a>
+      <a class="bn-item" href="profile.html" aria-label="Profil"><span aria-hidden="true">&#128100;</span></a>
+      <span class="bn-item bn-placeholder" aria-hidden="true"></span>
+      <span class="bn-item bn-placeholder" aria-hidden="true"></span>
+      <span class="bn-item bn-placeholder" aria-hidden="true"></span>
+    </nav>
+  </div>
+
+  <button class="fab hidden" id="fab-add" onclick="openModal()" aria-label="Tambah pengumuman">+</button>
 </div>
 
-<!-- ============ MODAL TAMBAH PENGUMUMAN (Admin sahaja) ============ -->
 <div class="modal-overlay hidden" id="modal-overlay">
   <div class="glass modal-sheet">
     <div class="modal-title">TAMBAH PENGUMUMAN</div>
     <form id="pengumuman-form">
       <label class="field-label" for="pengumuman-gambar">Link Gambar (pilihan)</label>
       <input class="field-input" type="url" id="pengumuman-gambar" placeholder="https://lh3.googleusercontent.com/d/...">
-
       <label class="field-label" for="pengumuman-teks" style="margin-top:14px">Teks Pengumuman</label>
       <textarea class="field-input" id="pengumuman-teks" placeholder="Tulis pengumuman di sini..." required></textarea>
-
       <div class="error-text hidden" id="pengumuman-error"></div>
-
       <div class="modal-actions">
         <button type="button" class="btn-ghost" onclick="closeModal()">Batal</button>
         <button type="submit" class="btn-primary" id="submit-pengumuman-btn" style="margin-top:0">Hantar</button>
@@ -103,27 +144,17 @@
     const img = item.gambar
       ? `<img class="announce-img" src="${escapeAttr(item.gambar)}" alt="Gambar pengumuman" loading="lazy">`
       : "";
-    return `<div class="glass announce-card">
-      ${img}
-      <div class="announce-body">
-        <div class="announce-text">${escapeHtml(item.teks || "")}</div>
-      </div>
-    </div>`;
+    return `<div class="glass announce-card">${img}<div class="announce-body"><div class="announce-text">${escapeHtml(item.teks || "")}</div></div></div>`;
   }
 
   function escapeHtml(str) {
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
   function escapeAttr(str) {
     return String(str).replace(/"/g, "&quot;");
   }
 
-  function openModal() {
-    document.getElementById("modal-overlay").classList.remove("hidden");
-  }
+  function openModal() { document.getElementById("modal-overlay").classList.remove("hidden"); }
   function closeModal() {
     document.getElementById("modal-overlay").classList.add("hidden");
     document.getElementById("pengumuman-form").reset();
@@ -136,7 +167,6 @@
     const gambar = document.getElementById("pengumuman-gambar").value.trim();
     const errEl = document.getElementById("pengumuman-error");
     errEl.classList.add("hidden");
-
     if (!teks) {
       errEl.textContent = "Sila isi teks pengumuman.";
       errEl.classList.remove("hidden");
@@ -148,12 +178,7 @@
     try {
       const res = await fetch(API_URL, {
         method: "POST",
-        body: JSON.stringify({
-          action: "addPengumuman",
-          email: currentUser.email,
-          teks: teks,
-          gambar: gambar,
-        }),
+        body: JSON.stringify({ action: "addPengumuman", email: currentUser.email, teks: teks, gambar: gambar }),
       });
       const data = await res.json();
       if (data.success) {

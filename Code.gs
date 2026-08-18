@@ -26,6 +26,7 @@ function doGet(e) {
   var action = e.parameter.action;
   if (action === "getUser") return getUser(e.parameter.email);
   if (action === "getPengumuman") return getPengumuman();
+  if (action === "getBanner") return getBanner();
   return jsonResponse({ error: "Unknown action: " + action });
 }
 
@@ -102,6 +103,25 @@ function getPengumuman() {
   }
   list.reverse(); // pengumuman terbaru dahulu
   return jsonResponse(list);
+}
+
+/* ---------------- BANNER (slaid muka depan) ---------------- */
+
+function getBanner() {
+  try {
+    var sheet = getSheet("Banner");
+    if (!sheet) return jsonResponse([]);
+    var data = sheet.getDataRange().getValues();
+    var list = [];
+    // Lajur A = link gambar (saiz disyorkan 1500w x 500h)
+    for (var i = 1; i < data.length; i++) {
+      var link = data[i][0];
+      if (link) list.push(String(link).trim());
+    }
+    return jsonResponse(list);
+  } catch (err) {
+    return jsonResponse([]);
+  }
 }
 
 function addPengumuman(body) {

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SM Arab (Jaim) Al-Asyraf</title>
+<title>Profil — SM Arab (Jaim) Al-Asyraf</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#04110d">
 <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN">
@@ -18,12 +18,10 @@
 
 <div class="wrap">
 
-  <!-- ============ SKRIN LOG MASUK ============ -->
   <div id="login-screen" class="hidden">
     <div class="logo-holo"><img class="school-logo-img" alt="Logo Sekolah"></div>
     <div class="brand-title">SM ARAB (JAIM) AL-ASYRAF</div>
     <div class="brand-sub">Sistem Pengurusan Sekolah</div>
-
     <div class="glass">
       <div class="gsi-wrap" id="google-btn-container"></div>
       <div class="divider">Atau</div>
@@ -36,7 +34,6 @@
     </div>
   </div>
 
-  <!-- ============ KANDUNGAN APP (selepas login) ============ -->
   <div id="app-content" class="hidden">
 
     <header class="app-header hud-frame">
@@ -61,23 +58,28 @@
       </div>
     </header>
 
-    <div class="banner-carousel hud-frame" id="banner-carousel">
-      <span class="hud-corner tl"></span><span class="hud-corner tr"></span>
-      <div class="banner-track" id="banner-track">
-        <div class="banner-empty">Memuatkan banner...</div>
-      </div>
-      <button class="banner-expand" id="banner-expand-btn" onclick="expandBanner()" aria-label="Perbesar" title="Perbesar">&#9974;</button>
-      <button class="banner-edit hidden soon" id="banner-edit-btn" aria-label="Urus banner" title="Urus banner (akan datang)">&#9998;</button>
-      <div class="banner-dots" id="banner-dots"></div>
+    <div class="section-label">Profil Saya</div>
+
+    <div class="glass profile-card">
+      <img class="profile-avatar" id="profile-avatar" alt="">
+      <div class="profile-name" id="profile-nama">-</div>
+      <div class="profile-role" id="profile-jawatan">-</div>
+      <span class="role-badge" id="profile-role-badge">Staf</span>
     </div>
+
+    <div class="glass" style="padding:4px 0;margin-bottom:16px">
+      <div class="profile-detail"><span class="profile-detail-label">Emel</span><span id="profile-emel">-</span></div>
+      <div class="profile-detail"><span class="profile-detail-label">Jawatan</span><span id="profile-jawatan2">-</span></div>
+    </div>
+
+    <button class="btn-danger" onclick="logout()">Log Keluar</button>
 
   </div>
 
-  <!-- ============ DRAWER (menu utama, ikon sahaja) ============ -->
   <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
   <nav class="drawer" id="drawer">
     <div class="drawer-logo"><img class="school-logo-img" alt=""></div>
-    <a class="drawer-item active" href="index.html" title="Laman Utama"><span aria-hidden="true">&#127968;</span><span class="sr-only">Laman Utama</span></a>
+    <a class="drawer-item" href="index.html" title="Laman Utama"><span aria-hidden="true">&#127968;</span><span class="sr-only">Laman Utama</span></a>
     <a class="drawer-item" href="pengumuman.html" title="Pengumuman"><span aria-hidden="true">&#128227;</span><span class="sr-only">Pengumuman</span></a>
     <div class="drawer-item soon" title="Kehadiran Staf (akan datang)"><span aria-hidden="true">&#128197;</span><span class="sr-only">Kehadiran Staf</span></div>
     <div class="drawer-item soon" title="Kehadiran Murid (akan datang)"><span aria-hidden="true">&#127891;</span><span class="sr-only">Kehadiran Murid</span></div>
@@ -88,86 +90,29 @@
     <a class="drawer-item drawer-logout" href="#" onclick="logout();return false;" title="Log Keluar"><span aria-hidden="true">&#9211;</span><span class="sr-only">Log Keluar</span></a>
   </nav>
 
-  <!-- ============ BOTTOM NAV (5 slot, 2 aktif buat masa ini) ============ -->
-  <div class="bottom-nav-wrap" id="bottom-nav-wrap">
+  <div class="bottom-nav-wrap">
     <nav class="bottom-nav">
-      <a class="bn-item active" href="index.html" aria-label="Home"><span aria-hidden="true">&#127968;</span></a>
-      <a class="bn-item" href="profile.html" aria-label="Profil"><span aria-hidden="true">&#128100;</span></a>
+      <a class="bn-item" href="index.html" aria-label="Home"><span aria-hidden="true">&#127968;</span></a>
+      <a class="bn-item active" href="profile.html" aria-label="Profil"><span aria-hidden="true">&#128100;</span></a>
       <span class="bn-item bn-placeholder" aria-hidden="true"></span>
       <span class="bn-item bn-placeholder" aria-hidden="true"></span>
       <span class="bn-item bn-placeholder" aria-hidden="true"></span>
     </nav>
   </div>
 
-  <!-- ============ LIGHTBOX (perbesar banner) ============ -->
-  <div class="lightbox-overlay hidden" id="lightbox-overlay" onclick="closeLightbox()">
-    <img id="lightbox-img" src="" alt="Banner diperbesar">
-  </div>
-
 </div>
 
 <script src="app.js"></script>
 <script>
-  let bannerImages = [];
-  let bannerIndex = 0;
-  let bannerTimer = null;
-
-  function renderHome(user) {
-    if (user.role === "Admin") {
-      document.getElementById("banner-edit-btn").classList.remove("hidden");
-    }
-    loadBanner();
+  function renderProfile(user) {
+    document.getElementById("profile-avatar").src = user.gambar || SCHOOL_LOGO_URL;
+    document.getElementById("profile-nama").textContent = user.nama || user.email;
+    document.getElementById("profile-jawatan").textContent = user.jawatan || "";
+    document.getElementById("profile-jawatan2").textContent = user.jawatan || "-";
+    document.getElementById("profile-emel").textContent = user.email;
+    document.getElementById("profile-role-badge").textContent = user.role === "Admin" ? "Admin" : "Staf";
   }
-
-  async function loadBanner() {
-    const track = document.getElementById("banner-track");
-    const dots = document.getElementById("banner-dots");
-    if (!apiConfigured()) {
-      track.innerHTML = '<div class="banner-empty">API belum disambungkan (API_URL belum diisi).</div>';
-      return;
-    }
-    try {
-      const res = await fetch(`${API_URL}?action=getBanner`);
-      bannerImages = await res.json();
-      if (!bannerImages || bannerImages.length === 0) {
-        track.innerHTML = '<div class="banner-empty">Belum ada banner. Tambah link gambar di tab "Banner".</div>';
-        return;
-      }
-      track.innerHTML = bannerImages
-        .map((url) => `<div class="banner-slide"><img src="${escapeAttr(url)}" alt="Banner sekolah" loading="lazy"></div>`)
-        .join("");
-      dots.innerHTML = bannerImages
-        .map((_, i) => `<button class="banner-dot${i === 0 ? " active" : ""}" onclick="goToBanner(${i})" aria-label="Slaid ${i + 1}"></button>`)
-        .join("");
-      bannerIndex = 0;
-      if (bannerImages.length > 1) {
-        bannerTimer = setInterval(() => goToBanner((bannerIndex + 1) % bannerImages.length), 5000);
-      }
-    } catch (err) {
-      track.innerHTML = '<div class="banner-empty">Gagal muatkan banner.</div>';
-    }
-  }
-
-  function goToBanner(i) {
-    bannerIndex = i;
-    document.getElementById("banner-track").style.transform = `translateX(-${i * 100}%)`;
-    document.querySelectorAll(".banner-dot").forEach((d, idx) => d.classList.toggle("active", idx === i));
-  }
-
-  function expandBanner() {
-    if (!bannerImages.length) return;
-    document.getElementById("lightbox-img").src = bannerImages[bannerIndex];
-    document.getElementById("lightbox-overlay").classList.remove("hidden");
-  }
-  function closeLightbox() {
-    document.getElementById("lightbox-overlay").classList.add("hidden");
-  }
-
-  function escapeAttr(str) {
-    return String(str).replace(/"/g, "&quot;");
-  }
-
-  initApp(renderHome);
+  initApp(renderProfile);
 </script>
 </body>
 </html>
