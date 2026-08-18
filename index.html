@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>APP SMASRA</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a1330">
+<link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="bg-fx"></div>
+
+<div class="wrap">
+
+  <!-- ============ SKRIN LOG MASUK ============ -->
+  <div id="login-screen" class="hidden">
+    <div class="logo-holo"><img class="school-logo-img" alt="Logo Sekolah"></div>
+    <div class="brand-title">APP SMASRA</div>
+    <div class="brand-sub">Sistem Pengurusan Sekolah</div>
+
+    <div class="glass">
+      <form id="login-form">
+        <label class="field-label" for="login-email">Emel Rasmi</label>
+        <input class="field-input" type="email" id="login-email" placeholder="nama@moe-dl.edu.my" autocomplete="email" required>
+        <button class="btn-primary" type="submit" id="login-btn">Log Masuk</button>
+        <div class="error-text hidden" id="login-error"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ KANDUNGAN APP (selepas login) ============ -->
+  <div id="app-content" class="hidden">
+    <div class="logo-holo"><img class="school-logo-img" alt="Logo Sekolah"></div>
+    <div class="brand-title">APP SMASRA</div>
+    <div class="brand-sub">Sistem Pengurusan Sekolah</div>
+
+    <div class="glass greet-card">
+      <img class="greet-avatar" id="greet-avatar" alt="">
+      <div>
+        <div class="greet-name" id="greet-name">-</div>
+        <div class="greet-role" id="greet-role">-</div>
+      </div>
+    </div>
+
+    <div class="section-label">Menu Utama</div>
+    <div class="menu-grid">
+      <a class="glass menu-btn active-mod" href="pengumuman.html">
+        <div class="menu-icon">📣</div>
+        <div class="menu-label">Pengumuman</div>
+      </a>
+      <div class="glass menu-btn soon">
+        <span class="soon-badge">Akan datang</span>
+        <div class="menu-icon">🗓️</div>
+        <div class="menu-label">Kehadiran Staf</div>
+      </div>
+      <div class="glass menu-btn soon">
+        <span class="soon-badge">Akan datang</span>
+        <div class="menu-icon">🎓</div>
+        <div class="menu-label">Kehadiran Murid</div>
+      </div>
+      <div class="glass menu-btn soon">
+        <span class="soon-badge">Akan datang</span>
+        <div class="menu-icon">📋</div>
+        <div class="menu-label">Laporan Pentadbir Bertugas</div>
+      </div>
+      <div class="glass menu-btn soon">
+        <span class="soon-badge">Akan datang</span>
+        <div class="menu-icon">📝</div>
+        <div class="menu-label">Laporan Guru Bertugas</div>
+      </div>
+      <div class="glass menu-btn soon">
+        <span class="soon-badge">Akan datang</span>
+        <div class="menu-icon">📊</div>
+        <div class="menu-label">Prestasi Kerja</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:26px">
+      <a href="#" class="logout-link" onclick="logout();return false;">Log keluar</a>
+    </div>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+<script>
+  function renderHome(user) {
+    document.getElementById("greet-name").textContent = user.nama || user.email;
+    document.getElementById("greet-role").textContent = user.jawatan || "";
+    const avatar = document.getElementById("greet-avatar");
+    avatar.src = user.gambar || SCHOOL_LOGO_URL;
+  }
+  initApp(renderHome);
+</script>
+</body>
+</html>

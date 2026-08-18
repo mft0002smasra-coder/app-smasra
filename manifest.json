@@ -1,0 +1,25 @@
+{
+  "name": "APP SMASRA",
+  "short_name": "SMASRA",
+  "description": "Aplikasi pengurusan sekolah SMASRA - pengumuman, kehadiran, laporan dan prestasi.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#050916",
+  "theme_color": "#0a1330",
+  "icons": [
+    {
+      "src": "https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

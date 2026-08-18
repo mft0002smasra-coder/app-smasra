@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pengumuman — APP SMASRA</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a1330">
+<link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="bg-fx"></div>
+
+<div class="wrap">
+
+  <div id="login-screen" class="hidden">
+    <div class="logo-holo"><img class="school-logo-img" alt="Logo Sekolah"></div>
+    <div class="brand-title">APP SMASRA</div>
+    <div class="brand-sub">Sistem Pengurusan Sekolah</div>
+    <div class="glass">
+      <form id="login-form">
+        <label class="field-label" for="login-email">Emel Rasmi</label>
+        <input class="field-input" type="email" id="login-email" placeholder="nama@moe-dl.edu.my" autocomplete="email" required>
+        <button class="btn-primary" type="submit" id="login-btn">Log Masuk</button>
+        <div class="error-text hidden" id="login-error"></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="app-content" class="hidden">
+    <div class="top-bar">
+      <a class="back-link" href="index.html">&#8592; Menu Utama</a>
+      <a href="#" class="logout-link" onclick="logout();return false;">Log keluar</a>
+    </div>
+
+    <div class="section-label">Pengumuman</div>
+
+    <div id="pengumuman-list">
+      <div class="empty-state">Memuatkan pengumuman...</div>
+    </div>
+  </div>
+
+  <button class="fab hidden" id="fab-add" onclick="openModal()">+</button>
+</div>
+
+<!-- ============ MODAL TAMBAH PENGUMUMAN (Admin sahaja) ============ -->
+<div class="modal-overlay hidden" id="modal-overlay">
+  <div class="glass modal-sheet">
+    <div class="modal-title">TAMBAH PENGUMUMAN</div>
+    <form id="pengumuman-form">
+      <label class="field-label" for="pengumuman-gambar">Link Gambar (pilihan)</label>
+      <input class="field-input" type="url" id="pengumuman-gambar" placeholder="https://lh3.googleusercontent.com/d/...">
+
+      <label class="field-label" for="pengumuman-teks" style="margin-top:14px">Teks Pengumuman</label>
+      <textarea class="field-input" id="pengumuman-teks" placeholder="Tulis pengumuman di sini..." required></textarea>
+
+      <div class="error-text hidden" id="pengumuman-error"></div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" onclick="closeModal()">Batal</button>
+        <button type="submit" class="btn-primary" id="submit-pengumuman-btn" style="margin-top:0">Hantar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  let currentUser = null;
+
+  function renderPengumuman(user) {
+    currentUser = user;
+    if (user.role === "Admin") {
+      document.getElementById("fab-add").classList.remove("hidden");
+    }
+    loadPengumuman();
+  }
+
+  async function loadPengumuman() {
+    const listEl = document.getElementById("pengumuman-list");
+    if (!apiConfigured()) {
+      listEl.innerHTML = '<div class="empty-state">API belum disambungkan (API_URL belum diisi dalam app.js).</div>';
+      return;
+    }
+    try {
+      const res = await fetch(`${API_URL}?action=getPengumuman`);
+      const items = await res.json();
+      if (!items || items.length === 0) {
+        listEl.innerHTML = '<div class="empty-state">Belum ada pengumuman lagi.</div>';
+        return;
+      }
+      listEl.innerHTML = items.map(renderCard).join("");
+    } catch (err) {
+      listEl.innerHTML = '<div class="empty-state">Gagal muatkan pengumuman. Cuba lagi.</div>';
+    }
+  }
+
+  function renderCard(item) {
+    const img = item.gambar
+      ? `<img class="announce-img" src="${escapeAttr(item.gambar)}" alt="Gambar pengumuman" loading="lazy">`
+      : "";
+    return `<div class="glass announce-card">
+      ${img}
+      <div class="announce-body">
+        <div class="announce-text">${escapeHtml(item.teks || "")}</div>
+      </div>
+    </div>`;
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+  function escapeAttr(str) {
+    return String(str).replace(/"/g, "&quot;");
+  }
+
+  function openModal() {
+    document.getElementById("modal-overlay").classList.remove("hidden");
+  }
+  function closeModal() {
+    document.getElementById("modal-overlay").classList.add("hidden");
+    document.getElementById("pengumuman-form").reset();
+    document.getElementById("pengumuman-error").classList.add("hidden");
+  }
+
+  document.getElementById("pengumuman-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const teks = document.getElementById("pengumuman-teks").value.trim();
+    const gambar = document.getElementById("pengumuman-gambar").value.trim();
+    const errEl = document.getElementById("pengumuman-error");
+    errEl.classList.add("hidden");
+
+    if (!teks) {
+      errEl.textContent = "Sila isi teks pengumuman.";
+      errEl.classList.remove("hidden");
+      return;
+    }
+    const btn = document.getElementById("submit-pengumuman-btn");
+    btn.disabled = true;
+    btn.textContent = "Menghantar...";
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "addPengumuman",
+          email: currentUser.email,
+          teks: teks,
+          gambar: gambar,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        closeModal();
+        loadPengumuman();
+      } else {
+        errEl.textContent = data.message || "Gagal tambah pengumuman.";
+        errEl.classList.remove("hidden");
+      }
+    } catch (err) {
+      errEl.textContent = "Ralat sambungan ke server.";
+      errEl.classList.remove("hidden");
+    }
+    btn.disabled = false;
+    btn.textContent = "Hantar";
+  });
+
+  initApp(renderPengumuman);
+</script>
+</body>
+</html>
