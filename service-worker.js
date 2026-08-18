@@ -1,7 +1,8 @@
-const CACHE_NAME = "smasra-cache-v1";
+const CACHE_NAME = "smasra-cache-v2";
 const CORE_ASSETS = [
   "index.html",
   "pengumuman.html",
+  "profile.html",
   "style.css",
   "app.js",
   "manifest.json",
@@ -23,20 +24,17 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// Network-first: sentiasa cuba ambil versi TERBARU dari server dahulu.
+// Cache cuma dipakai bila tiada internet (fallback), bukan sumber utama.
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return (
-        cached ||
-        fetch(event.request)
-          .then((res) => {
-            const copy = res.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-            return res;
-          })
-          .catch(() => cached)
-      );
-    })
+    fetch(event.request)
+      .then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        return res;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
