@@ -7,7 +7,7 @@ const SCHOOL_LOGO_URL = "https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRi
 
 // GANTI dengan URL Web App selepas awak deploy Code.gs (Deploy > New deployment > Web app)
 // Contoh: "https://script.google.com/macros/s/AKfycb.../exec"
-const API_URL = "PASTE_URL_APPS_SCRIPT_ANDA_DI_SINI";
+const API_URL = "https://script.google.com/macros/s/AKfycbxNMX-PHWy4t8PdQhj-jekw9T8V7b1lN2M8sQ9d8jybfeSLvKS9jB8XuKbjjYRwshcz/exec";
 
 const USER_KEY = "smasra_user";
 
