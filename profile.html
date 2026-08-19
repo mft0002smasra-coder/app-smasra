@@ -37,14 +37,25 @@
   <div id="app-content" class="hidden">
 
     <header class="site-header">
-      <div class="site-header-row1">
-        <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu"><span data-icon="menu"></span></button>
-        <img class="header-logo school-logo-img" alt="Logo Sekolah">
-        <div class="header-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
+      <div class="site-header-top">
+        <div class="site-header-left">
+          <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu"><span data-icon="menu"></span></button>
+          <img class="header-logo school-logo-img" alt="Logo Sekolah">
+          <div class="header-title-block">
+            <div class="header-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
+            <div class="header-school-sub">Aplikasi Pengurusan Sekolah</div>
+          </div>
+        </div>
+        <div class="site-header-right">
+          <div class="header-greet-block">
+            <div class="header-greet-label">Selamat Datang,</div>
+            <div class="header-greet-name" id="header-greet-name">-</div>
+          </div>
+          <img class="header-avatar user-avatar-img" alt="">
+        </div>
       </div>
-      <div class="site-header-row2">
-        <span class="header-greet" id="header-greet">Hai, -</span>
-        <img class="header-avatar user-avatar-img" alt="">
+      <div class="header-status-row">
+        <span class="status-dot"></span><span>SISTEM AKTIF</span><span id="live-clock">--:--:-- --</span>
       </div>
     </header>
 
@@ -54,14 +65,16 @@
     <div class="id-card">
       <div class="id-card-top">
         <img class="school-logo-img" alt="">
-        <div class="id-card-top-text">SM ARAB (JAIM) AL-ASYRAF<br>KAD PENGENALAN STAF</div>
+        <div class="id-card-top-text">SM ARAB (JAIM) AL-ASYRAF<br>KAD ID STAF</div>
       </div>
       <div class="id-card-body">
         <img class="id-photo user-avatar-img" alt="">
         <div class="id-fields">
           <div class="id-name" id="profile-nama">-</div>
           <div class="id-jawatan" id="profile-jawatan">-</div>
-          <div class="id-emel" id="profile-emel">-</div>
+          <div class="id-detail-row"><span class="id-detail-label">Tel</span><span class="id-detail-value" id="profile-telefon">-</span></div>
+          <div class="id-detail-row"><span class="id-detail-label">Emel</span><span class="id-detail-value" id="profile-emel1">-</span></div>
+          <div class="id-detail-row hidden" id="profile-emel2-row"><span class="id-detail-label">Emel 2</span><span class="id-detail-value" id="profile-emel2">-</span></div>
           <span class="id-role-chip" id="profile-role-badge">Staf</span>
         </div>
       </div>
@@ -103,7 +116,12 @@
   function renderProfile(user) {
     document.getElementById("profile-nama").textContent = user.nama || user.email;
     document.getElementById("profile-jawatan").textContent = user.jawatan || "";
-    document.getElementById("profile-emel").textContent = user.email;
+    document.getElementById("profile-telefon").textContent = user.telefon || "-";
+    document.getElementById("profile-emel1").textContent = user.emel1 || user.email;
+    if (user.emel2) {
+      document.getElementById("profile-emel2").textContent = user.emel2;
+      document.getElementById("profile-emel2-row").classList.remove("hidden");
+    }
     const badge = document.getElementById("profile-role-badge");
     badge.textContent = user.role === "Admin" ? "Admin" : "Staf";
     badge.classList.toggle("role-admin", user.role === "Admin");

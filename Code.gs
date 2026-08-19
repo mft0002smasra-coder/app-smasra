@@ -69,6 +69,8 @@ function findUserByEmail(email) {
         telefon: row[COL_TELEFON],
         gambar: row[COL_GAMBAR],
         role: row[COL_ROLE] || "",
+        emel1: row[COL_EMEL1],
+        emel2: row[COL_EMEL2],
       };
     }
   }
@@ -84,6 +86,9 @@ function getUser(email) {
     jawatan: user.jawatan,
     gambar: user.gambar,
     role: user.role,
+    telefon: user.telefon,
+    emel1: user.emel1,
+    emel2: user.emel2,
   });
 }
 
