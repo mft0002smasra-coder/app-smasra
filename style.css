@@ -14,10 +14,19 @@
   --danger:#f87171;
   --radius:16px;
   --app-max:480px;
+  --elastic: cubic-bezier(.34,1.56,.64,1);
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
+
+/* Transisi elastik bila navigasi antara halaman (progressive enhancement,
+   diabaikan oleh browser yang belum sokong — tiada kesan buruk) */
+@view-transition{ navigation: auto; }
+::view-transition-old(root){ animation: vt-out .2s ease both; }
+::view-transition-new(root){ animation: vt-in .5s var(--elastic) both; }
+@keyframes vt-out{ to{ opacity:0; transform:scale(.98); } }
+@keyframes vt-in{ from{ opacity:0; transform:scale(.93); } to{ opacity:1; transform:scale(1); } }
 
 body{
   font-family:'Rajdhani',sans-serif;
@@ -54,9 +63,9 @@ body{
   flex-direction:column;
 }
 .hidden{display:none !important}
-.icon{ width:20px;height:20px;display:block; }
+.icon{ width:20px;height:20px;display:block;flex-shrink:0; }
 
-/* ---------- Plain logo / avatar (tiada shape khas) ---------- */
+/* ---------- Plain logo / gambar (tiada shape khas) ---------- */
 .logo-plain{ height:64px;width:auto;max-width:100%;object-fit:contain;display:block;margin:0 auto; }
 .brand-title{
   font-family:'Orbitron',sans-serif;
@@ -107,8 +116,25 @@ body{
 .btn-primary:disabled{ opacity:.6; cursor:default; transform:none; }
 .error-text{ color:var(--danger); font-size:13px; margin-top:10px; }
 
-/* ---------- Hero banner (banner = header, tiada kotak berasingan) ---------- */
-.hero-banner{
+/* ---------- Site header (2 baris, TIADA kotak/garis, ada di setiap muka) ---------- */
+.site-header{ padding:2px 2px 0; margin-bottom:var(--gap); }
+.site-header-row1{ display:flex; align-items:center; gap:10px; }
+.hamburger-btn{
+  width:32px;height:32px;border-radius:8px;border:1px solid var(--line);
+  background:rgba(8,42,56,0.35);color:var(--text);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;
+}
+.header-logo{ height:30px;width:auto;object-fit:contain;flex-shrink:0;view-transition-name:header-logo; }
+.header-school-name{
+  font-family:'Orbitron',sans-serif;font-size:clamp(12px,3.2vw,14.5px);font-weight:700;letter-spacing:.8px;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.site-header-row2{ display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:10px; }
+.header-greet{ font-size:14.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.header-avatar{ height:34px;width:34px;object-fit:cover;border-radius:6px;flex-shrink:0;cursor:pointer;view-transition-name:header-avatar; }
+
+/* ---------- Banner carousel (kandungan biasa, bukan overlay) ---------- */
+.banner-carousel{
   position:relative;border-radius:16px;overflow:hidden;aspect-ratio:3/1;
   margin-bottom:var(--gap);background:#04140f;
 }
@@ -116,49 +142,7 @@ body{
 .banner-slide{ flex:0 0 100%;height:100%; }
 .banner-slide img{ width:100%;height:100%;object-fit:cover;display:block; }
 .banner-empty{ display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:13px;padding:0 40px;text-align:center; }
-
-.hero-scrim{
-  position:absolute;inset:0;pointer-events:none;z-index:1;
-  background:linear-gradient(180deg, rgba(3,11,18,.82) 0%, rgba(3,11,18,.4) 48%, transparent 78%);
-}
-
-.hero-top{
-  position:absolute;top:0;left:0;right:0;z-index:2;
-  padding:12px 14px 0;
-  display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
-}
-.hero-brand{ display:flex;align-items:center;gap:8px;min-width:0; }
-.hamburger-btn{
-  width:30px;height:30px;border-radius:8px;border:1px solid var(--line);
-  background:rgba(3,11,18,0.45);color:var(--text);
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;
-}
-.hamburger-btn .icon{ width:17px;height:17px; }
-.hero-logo{ height:26px;width:auto;object-fit:contain;flex-shrink:0; }
-.hero-brand-text{ min-width:0; }
-.hero-school-name{
-  font-family:'Orbitron',sans-serif;font-size:clamp(10.5px,3vw,12.5px);font-weight:700;letter-spacing:.6px;color:var(--text);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 6px rgba(0,0,0,.6);
-}
-.hero-school-sub{
-  font-size:8px;letter-spacing:1.2px;color:var(--text-dim);text-transform:uppercase;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;text-shadow:0 1px 6px rgba(0,0,0,.6);
-}
-.hero-user{ display:flex;align-items:center;gap:8px;flex-shrink:0;cursor:pointer; }
-.hero-user-text{ text-align:right; }
-.hero-greet{
-  font-size:clamp(10px,2.6vw,12px);font-weight:700;color:var(--text);white-space:nowrap;
-  max-width:32vw;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 6px rgba(0,0,0,.6);
-}
-.hero-status-time{
-  display:flex;align-items:center;justify-content:flex-end;gap:5px;margin-top:2px;
-  font-family:'Orbitron',sans-serif;font-size:8.5px;letter-spacing:.5px;color:var(--mint);text-shadow:0 1px 6px rgba(0,0,0,.6);
-}
-.status-dot{ width:6px;height:6px;border-radius:50%;background:var(--mint);box-shadow:0 0 8px var(--mint);animation:pulse-dot 1.6s ease-in-out infinite; }
-@keyframes pulse-dot{ 0%,100%{opacity:1} 50%{opacity:.35} }
-.hero-avatar{ height:36px;width:36px;object-fit:cover;border-radius:6px;flex-shrink:0; }
-
-.banner-dots{ position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:6px;z-index:2; }
+.banner-dots{ position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:6px; }
 .banner-dot{ width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.35);cursor:pointer;border:none; }
 .banner-dot.active{ background:var(--cyan);box-shadow:0 0 6px var(--cyan); }
 
@@ -168,35 +152,34 @@ body{
 }
 .lightbox-overlay img{ max-width:100%;max-height:100%;border-radius:8px; }
 
-/* ---------- Slim topbar (subpages tanpa banner) ---------- */
-.page-topbar{ display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:var(--gap); }
-.page-topbar-left{ display:flex;align-items:center;gap:10px;min-width:0; }
-.page-title{ font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:1.5px;color:var(--text);text-transform:uppercase; }
-.page-avatar{ height:34px;width:34px;object-fit:cover;border-radius:6px;cursor:pointer; }
-
-/* ---------- Drawer ---------- */
+/* ---------- Drawer / sidebar responsif dengan teks + transisi elastik ---------- */
 .drawer-overlay{
   position:fixed;inset:0;background:rgba(2,8,12,0.6);backdrop-filter:blur(2px);
-  z-index:40;opacity:0;pointer-events:none;transition:opacity .25s;
+  z-index:40;opacity:0;pointer-events:none;transition:opacity .3s;
 }
 .drawer-overlay.open{ opacity:1;pointer-events:auto; }
 .drawer{
-  position:fixed;top:0;left:0;bottom:0;width:72px;background:var(--panel-b);
+  position:fixed;top:0;left:0;bottom:0;width:min(78vw,250px);background:var(--panel-b);
   border-right:1px solid var(--line);z-index:41;display:flex;flex-direction:column;
-  align-items:center;padding:18px 0;gap:6px;transform:translateX(-100%);transition:transform .25s ease;
+  padding:20px 12px;gap:4px;transform:translateX(-100%);
+  transition:transform .5s var(--elastic);
 }
 .drawer.open{ transform:translateX(0); }
-.drawer-logo{ height:30px;margin-bottom:14px; }
-.drawer-logo img{ height:100%;width:auto;object-fit:contain; }
+.drawer-logo-row{ display:flex;align-items:center;gap:10px;padding:0 8px;margin-bottom:18px; }
+.drawer-logo-row img{ height:28px;width:auto;object-fit:contain; }
+.drawer-logo-row span{ font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:.8px;color:var(--text-dim); }
 .drawer-item{
-  width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  width:100%;height:44px;padding:0 12px;border-radius:10px;display:flex;align-items:center;gap:12px;
   color:var(--text-dim);text-decoration:none;border:1px solid transparent;cursor:pointer;
+  transition:background .15s, color .15s;
 }
+.drawer-item .icon{ width:19px;height:19px; }
+.drawer-label{ font-size:14px;font-weight:600;letter-spacing:.2px; }
 .drawer-item.active{ color:var(--cyan);background:rgba(43,232,208,0.12);border-color:var(--line); }
+.drawer-item:not(.soon):hover{ background:rgba(43,232,208,0.07); }
 .drawer-item.soon{ opacity:.35;cursor:default; }
 .drawer-spacer{ flex:1; }
 .drawer-logout{ color:var(--danger); }
-.sr-only{ position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap; }
 
 /* ---------- Bottom nav (Home di tengah) ---------- */
 .bottom-nav-wrap{ position:fixed;left:0;right:0;bottom:0;z-index:15;display:flex;justify-content:center; }
@@ -215,21 +198,26 @@ body{
   text-transform:uppercase;margin:4px 0 12px 2px;
 }
 
-/* ---------- Profile page ---------- */
-.profile-card{ padding:26px 20px;text-align:center;margin-bottom:var(--gap); }
-.profile-avatar{ height:84px;width:84px;object-fit:cover;border-radius:10px;margin:0 auto 14px; }
-.profile-name{ font-weight:700;font-size:18px; }
-.profile-role{ font-size:13px;color:var(--text-dim);margin-top:2px; }
-.role-badge{
-  display:inline-block;margin-top:10px;padding:4px 12px;border-radius:20px;font-size:11px;letter-spacing:1px;
-  background:rgba(43,232,208,0.12);border:1px solid var(--line);color:var(--cyan);text-transform:uppercase;
+/* ---------- Kad ID Profil ---------- */
+.id-card{ border-radius:16px;overflow:hidden;background:var(--panel-a);border:1px solid var(--line);margin-bottom:var(--gap); }
+.id-card-top{ background:linear-gradient(90deg,var(--cyan),var(--blue));padding:10px 14px;display:flex;align-items:center;gap:8px; }
+.id-card-top img{ height:18px;width:auto;object-fit:contain; }
+.id-card-top-text{ font-family:'Orbitron',sans-serif;font-size:9.5px;letter-spacing:1px;color:#03130d;font-weight:700;line-height:1.35; }
+.id-card-body{ display:flex;gap:14px;padding:18px;align-items:center; }
+.id-photo{ width:80px;height:100px;object-fit:cover;border-radius:8px;flex-shrink:0;background:#08211c; }
+.id-fields{ flex:1;min-width:0; }
+.id-name{ font-weight:700;font-size:16.5px;color:var(--text);line-height:1.25; }
+.id-jawatan{ font-size:12.5px;color:var(--text-dim);margin-top:2px; }
+.id-emel{ font-size:11px;color:var(--text-dim);margin-top:6px;word-break:break-all; }
+.id-role-chip{
+  display:inline-block;margin-top:8px;padding:3px 10px;border-radius:20px;font-size:10px;letter-spacing:1px;
+  background:rgba(43,232,208,.14);border:1px solid var(--line);color:var(--cyan);text-transform:uppercase;
 }
-.role-badge.role-admin{ background:rgba(255,180,84,0.14);border-color:rgba(255,180,84,.4);color:var(--amber); }
-.profile-detail{ display:flex;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--line); font-size:14px; }
-.profile-detail:last-child{ border-bottom:none; }
-.profile-detail-label{ color:var(--text-dim); }
+.id-role-chip.role-admin{ background:rgba(255,180,84,.16);border-color:rgba(255,180,84,.45);color:var(--amber); }
+.id-card-strip{ height:8px;background:repeating-linear-gradient(90deg, var(--cyan) 0 10px, transparent 10px 20px);opacity:.4; }
+
 .btn-danger{
-  width:100%;margin-top:16px;padding:13px 14px;border-radius:10px;border:1px solid rgba(248,113,113,0.4);
+  width:100%;margin-top:2px;padding:13px 14px;border-radius:10px;border:1px solid rgba(248,113,113,0.4);
   background:rgba(248,113,113,0.08);color:var(--danger);font-family:'Rajdhani',sans-serif;font-weight:700;
   font-size:15px;cursor:pointer;
 }

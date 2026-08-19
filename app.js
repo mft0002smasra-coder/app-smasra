@@ -5,10 +5,10 @@
 const SCHOOL_LOGO_URL = "https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN";
 
 // GANTI dengan URL Web App selepas awak deploy Code.gs (Deploy > New deployment > Web app)
-const API_URL = "https://script.google.com/macros/s/AKfycbxNMX-PHWy4t8PdQhj-jekw9T8V7b1lN2M8sQ9d8jybfeSLvKS9jB8XuKbjjYRwshcz/exec";
+const API_URL = "PASTE_URL_APPS_SCRIPT_ANDA_DI_SINI";
 
 // GANTI dengan OAuth Client ID dari Google Cloud Console untuk aktifkan "Sign in with Google"
-const GOOGLE_CLIENT_ID = "702368440468-u7uoc6396frmum2j0mllbc3llqi4tgbn.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "PASTE_GOOGLE_CLIENT_ID_ANDA_DI_SINI.apps.googleusercontent.com";
 
 const USER_KEY = "smasra_user";
 
@@ -126,25 +126,11 @@ function closeDrawer() {
   document.getElementById("drawer-overlay").classList.remove("open");
 }
 
-function updateClock() {
-  const el = document.getElementById("live-clock");
-  if (!el) return;
-  const now = new Date();
-  let h = now.getHours();
-  const m = String(now.getMinutes()).padStart(2, "0");
-  const s = String(now.getSeconds()).padStart(2, "0");
-  const suffix = h < 12 ? "PG" : "PTG";
-  h = h % 12; if (h === 0) h = 12;
-  el.textContent = `${String(h).padStart(2, "0")}:${m}:${s} ${suffix}`;
-}
-
 function renderHeader(user) {
   document.querySelectorAll(".school-logo-img").forEach((img) => { img.src = SCHOOL_LOGO_URL; });
   document.querySelectorAll(".user-avatar-img").forEach((img) => { img.src = user.gambar || SCHOOL_LOGO_URL; });
   const greet = document.getElementById("header-greet");
   if (greet) greet.textContent = "Hai, " + (user.nama || user.email);
-  updateClock();
-  setInterval(updateClock, 1000);
 }
 
 /**

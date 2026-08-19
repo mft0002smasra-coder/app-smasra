@@ -39,28 +39,22 @@
   <!-- ============ KANDUNGAN APP (selepas login) ============ -->
   <div id="app-content" class="hidden">
 
-    <!-- Banner = header. Logo+nama sekolah & greeting user dilapis atas banner -->
-    <div class="hero-banner" id="banner-carousel">
+    <!-- Header sentiasa ada, tiada kotak/garis -->
+    <header class="site-header">
+      <div class="site-header-row1">
+        <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu"><span data-icon="menu"></span></button>
+        <img class="header-logo school-logo-img" alt="Logo Sekolah">
+        <div class="header-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
+      </div>
+      <div class="site-header-row2">
+        <span class="header-greet" id="header-greet">Hai, -</span>
+        <img class="header-avatar user-avatar-img" alt="" onclick="location.href='profile.html'">
+      </div>
+    </header>
+
+    <div class="banner-carousel" id="banner-carousel">
       <div class="banner-track" id="banner-track" onclick="expandBanner()">
         <div class="banner-empty">Memuatkan banner...</div>
-      </div>
-      <div class="hero-scrim"></div>
-      <div class="hero-top">
-        <div class="hero-brand">
-          <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu"><span data-icon="menu"></span></button>
-          <img class="hero-logo school-logo-img" alt="Logo Sekolah">
-          <div class="hero-brand-text">
-            <div class="hero-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
-            <div class="hero-school-sub">Sistem Pengurusan Sekolah</div>
-          </div>
-        </div>
-        <div class="hero-user" onclick="location.href='profile.html'">
-          <div class="hero-user-text">
-            <div class="hero-greet" id="header-greet">Hai, -</div>
-            <div class="hero-status-time"><span class="status-dot"></span><span id="live-clock">--:--:-- --</span></div>
-          </div>
-          <img class="hero-avatar user-avatar-img" alt="">
-        </div>
       </div>
       <div class="banner-dots" id="banner-dots"></div>
     </div>
@@ -72,19 +66,19 @@
 
   </div>
 
-  <!-- ============ DRAWER (menu utama, ikon sahaja) ============ -->
+  <!-- ============ DRAWER / SIDEBAR (ikon + teks) ============ -->
   <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
   <nav class="drawer" id="drawer">
-    <div class="drawer-logo"><img class="school-logo-img" alt=""></div>
-    <a class="drawer-item active" href="index.html" title="Laman Utama"><span data-icon="home"></span><span class="sr-only">Laman Utama</span></a>
-    <a class="drawer-item" href="pengumuman.html" title="Pengumuman"><span data-icon="announce"></span><span class="sr-only">Pengumuman</span></a>
-    <div class="drawer-item soon" title="Kehadiran Staf (akan datang)"><span data-icon="calendar"></span><span class="sr-only">Kehadiran Staf</span></div>
-    <div class="drawer-item soon" title="Kehadiran Murid (akan datang)"><span data-icon="calendar"></span><span class="sr-only">Kehadiran Murid</span></div>
-    <div class="drawer-item soon" title="Laporan Pentadbir Bertugas (akan datang)"><span data-icon="folder"></span><span class="sr-only">Laporan Pentadbir Bertugas</span></div>
-    <div class="drawer-item soon" title="Laporan Guru Bertugas (akan datang)"><span data-icon="folder"></span><span class="sr-only">Laporan Guru Bertugas</span></div>
-    <div class="drawer-item soon" title="Prestasi Kerja (akan datang)"><span data-icon="chart"></span><span class="sr-only">Prestasi Kerja</span></div>
+    <div class="drawer-logo-row"><img class="school-logo-img" alt=""><span>SMASRA</span></div>
+    <a class="drawer-item active" href="index.html"><span data-icon="home"></span><span class="drawer-label">Laman Utama</span></a>
+    <a class="drawer-item" href="pengumuman.html"><span data-icon="announce"></span><span class="drawer-label">Pengumuman</span></a>
+    <div class="drawer-item soon"><span data-icon="calendar"></span><span class="drawer-label">Kehadiran Staf</span></div>
+    <div class="drawer-item soon"><span data-icon="calendar"></span><span class="drawer-label">Kehadiran Murid</span></div>
+    <div class="drawer-item soon"><span data-icon="folder"></span><span class="drawer-label">Laporan Pentadbir</span></div>
+    <div class="drawer-item soon"><span data-icon="folder"></span><span class="drawer-label">Laporan Guru</span></div>
+    <div class="drawer-item soon"><span data-icon="chart"></span><span class="drawer-label">Prestasi Kerja</span></div>
     <div class="drawer-spacer"></div>
-    <a class="drawer-item drawer-logout" href="#" onclick="logout();return false;" title="Log Keluar"><span data-icon="power"></span><span class="sr-only">Log Keluar</span></a>
+    <a class="drawer-item drawer-logout" href="#" onclick="logout();return false;"><span data-icon="power"></span><span class="drawer-label">Log Keluar</span></a>
   </nav>
 
   <!-- ============ BOTTOM NAV — Home di tengah, Profil hujung ============ -->
