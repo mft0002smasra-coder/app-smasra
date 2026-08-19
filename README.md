@@ -52,6 +52,14 @@ Kalau langkah ni dilangkau, butang Google tak akan muncul — pengguna tetap bol
 2. Kalau role = Admin, butang "+" akan muncul di muka Pengumuman
 3. Add to Home Screen untuk pasang sebagai app
 
+## ⚠️ PENTING — bila kod Code.gs berubah
+Google Apps Script **tak auto-update** URL Web App yang sedia ada bila awak edit/simpan kod baru. Kena buat "New version" setiap kali:
+1. Buka Apps Script > Deploy > **Manage deployments**
+2. Klik ikon pensel (edit) pada deployment sedia ada
+3. Version: pilih **New version** > Deploy
+
+Kalau tak buat step ni, URL `.../exec` awak akan terus guna kod LAMA walaupun fail Code.gs dah ditukar — ini punca biasa "fungsi baru tak jalan" atau "banner tak keluar macam patut".
+
 ## Nota
 - Drawer menu (kiri) dan bottom nav (bawah) guna ikon sahaja tanpa label teks, ikut permintaan reka bentuk
 - Bottom nav ada 5 slot — 2 aktif buat masa ini (Home, Profil), 3 lagi placeholder untuk modul akan datang

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SM Arab (Jaim) Al-Asyraf</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#04110d">
+<meta name="theme-color" content="#030b12">
 <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,7 +20,7 @@
 
   <!-- ============ SKRIN LOG MASUK ============ -->
   <div id="login-screen" class="hidden">
-    <div class="logo-holo"><img class="school-logo-img" alt="Logo Sekolah"></div>
+    <img class="logo-plain school-logo-img" alt="Logo Sekolah">
     <div class="brand-title">SM ARAB (JAIM) AL-ASYRAF</div>
     <div class="brand-sub">Sistem Pengurusan Sekolah</div>
 
@@ -39,36 +39,35 @@
   <!-- ============ KANDUNGAN APP (selepas login) ============ -->
   <div id="app-content" class="hidden">
 
-    <header class="app-header hud-frame">
-      <span class="hud-corner tl"></span><span class="hud-corner tr"></span>
-      <div class="header-row1">
-        <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu">&#9776;</button>
-        <img class="header-logo school-logo-img" alt="Logo Sekolah">
-        <div class="header-titles">
-          <div class="header-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
-          <div class="header-school-sub">Sistem Pengurusan Sekolah</div>
-        </div>
-        <button class="header-avatar-btn" onclick="location.href='profile.html'" aria-label="Profil">
-          <img class="greet-avatar-sm" id="header-avatar" alt="">
-        </button>
-      </div>
-      <div class="header-row2">
-        <span class="header-greet" id="header-greet">Hai, -</span>
-        <div class="header-status-time">
-          <span class="status-chip"><span class="status-dot"></span>AKTIF</span>
-          <span class="clock" id="live-clock">--:--:-- --</span>
-        </div>
-      </div>
-    </header>
-
-    <div class="banner-carousel hud-frame" id="banner-carousel">
-      <span class="hud-corner tl"></span><span class="hud-corner tr"></span>
-      <div class="banner-track" id="banner-track">
+    <!-- Banner = header. Logo+nama sekolah & greeting user dilapis atas banner -->
+    <div class="hero-banner" id="banner-carousel">
+      <div class="banner-track" id="banner-track" onclick="expandBanner()">
         <div class="banner-empty">Memuatkan banner...</div>
       </div>
-      <button class="banner-expand" id="banner-expand-btn" onclick="expandBanner()" aria-label="Perbesar" title="Perbesar">&#9974;</button>
-      <button class="banner-edit hidden soon" id="banner-edit-btn" aria-label="Urus banner" title="Urus banner (akan datang)">&#9998;</button>
+      <div class="hero-scrim"></div>
+      <div class="hero-top">
+        <div class="hero-brand">
+          <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu"><span data-icon="menu"></span></button>
+          <img class="hero-logo school-logo-img" alt="Logo Sekolah">
+          <div class="hero-brand-text">
+            <div class="hero-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
+            <div class="hero-school-sub">Sistem Pengurusan Sekolah</div>
+          </div>
+        </div>
+        <div class="hero-user" onclick="location.href='profile.html'">
+          <div class="hero-user-text">
+            <div class="hero-greet" id="header-greet">Hai, -</div>
+            <div class="hero-status-time"><span class="status-dot"></span><span id="live-clock">--:--:-- --</span></div>
+          </div>
+          <img class="hero-avatar user-avatar-img" alt="">
+        </div>
+      </div>
       <div class="banner-dots" id="banner-dots"></div>
+    </div>
+
+    <div class="section-label">Pengumuman</div>
+    <div id="home-pengumuman-list">
+      <div class="empty-state">Memuatkan pengumuman...</div>
     </div>
 
   </div>
@@ -77,29 +76,29 @@
   <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
   <nav class="drawer" id="drawer">
     <div class="drawer-logo"><img class="school-logo-img" alt=""></div>
-    <a class="drawer-item active" href="index.html" title="Laman Utama"><span aria-hidden="true">&#127968;</span><span class="sr-only">Laman Utama</span></a>
-    <a class="drawer-item" href="pengumuman.html" title="Pengumuman"><span aria-hidden="true">&#128227;</span><span class="sr-only">Pengumuman</span></a>
-    <div class="drawer-item soon" title="Kehadiran Staf (akan datang)"><span aria-hidden="true">&#128197;</span><span class="sr-only">Kehadiran Staf</span></div>
-    <div class="drawer-item soon" title="Kehadiran Murid (akan datang)"><span aria-hidden="true">&#127891;</span><span class="sr-only">Kehadiran Murid</span></div>
-    <div class="drawer-item soon" title="Laporan Pentadbir Bertugas (akan datang)"><span aria-hidden="true">&#128203;</span><span class="sr-only">Laporan Pentadbir Bertugas</span></div>
-    <div class="drawer-item soon" title="Laporan Guru Bertugas (akan datang)"><span aria-hidden="true">&#128221;</span><span class="sr-only">Laporan Guru Bertugas</span></div>
-    <div class="drawer-item soon" title="Prestasi Kerja (akan datang)"><span aria-hidden="true">&#128202;</span><span class="sr-only">Prestasi Kerja</span></div>
+    <a class="drawer-item active" href="index.html" title="Laman Utama"><span data-icon="home"></span><span class="sr-only">Laman Utama</span></a>
+    <a class="drawer-item" href="pengumuman.html" title="Pengumuman"><span data-icon="announce"></span><span class="sr-only">Pengumuman</span></a>
+    <div class="drawer-item soon" title="Kehadiran Staf (akan datang)"><span data-icon="calendar"></span><span class="sr-only">Kehadiran Staf</span></div>
+    <div class="drawer-item soon" title="Kehadiran Murid (akan datang)"><span data-icon="calendar"></span><span class="sr-only">Kehadiran Murid</span></div>
+    <div class="drawer-item soon" title="Laporan Pentadbir Bertugas (akan datang)"><span data-icon="folder"></span><span class="sr-only">Laporan Pentadbir Bertugas</span></div>
+    <div class="drawer-item soon" title="Laporan Guru Bertugas (akan datang)"><span data-icon="folder"></span><span class="sr-only">Laporan Guru Bertugas</span></div>
+    <div class="drawer-item soon" title="Prestasi Kerja (akan datang)"><span data-icon="chart"></span><span class="sr-only">Prestasi Kerja</span></div>
     <div class="drawer-spacer"></div>
-    <a class="drawer-item drawer-logout" href="#" onclick="logout();return false;" title="Log Keluar"><span aria-hidden="true">&#9211;</span><span class="sr-only">Log Keluar</span></a>
+    <a class="drawer-item drawer-logout" href="#" onclick="logout();return false;" title="Log Keluar"><span data-icon="power"></span><span class="sr-only">Log Keluar</span></a>
   </nav>
 
-  <!-- ============ BOTTOM NAV (5 slot, 2 aktif buat masa ini) ============ -->
-  <div class="bottom-nav-wrap" id="bottom-nav-wrap">
+  <!-- ============ BOTTOM NAV — Home di tengah, Profil hujung ============ -->
+  <div class="bottom-nav-wrap">
     <nav class="bottom-nav">
-      <a class="bn-item active" href="index.html" aria-label="Home"><span aria-hidden="true">&#127968;</span></a>
-      <a class="bn-item" href="profile.html" aria-label="Profil"><span aria-hidden="true">&#128100;</span></a>
       <span class="bn-item bn-placeholder" aria-hidden="true"></span>
       <span class="bn-item bn-placeholder" aria-hidden="true"></span>
+      <a class="bn-item active" href="index.html" aria-label="Home"><span data-icon="home"></span></a>
       <span class="bn-item bn-placeholder" aria-hidden="true"></span>
+      <a class="bn-item" href="profile.html" aria-label="Profil"><span data-icon="profile"></span></a>
     </nav>
   </div>
 
-  <!-- ============ LIGHTBOX (perbesar banner) ============ -->
+  <!-- ============ LIGHTBOX (klik banner untuk besarkan) ============ -->
   <div class="lightbox-overlay hidden" id="lightbox-overlay" onclick="closeLightbox()">
     <img id="lightbox-img" src="" alt="Banner diperbesar">
   </div>
@@ -108,65 +107,10 @@
 
 <script src="app.js"></script>
 <script>
-  let bannerImages = [];
-  let bannerIndex = 0;
-  let bannerTimer = null;
-
   function renderHome(user) {
-    if (user.role === "Admin") {
-      document.getElementById("banner-edit-btn").classList.remove("hidden");
-    }
     loadBanner();
+    loadPengumumanList("home-pengumuman-list");
   }
-
-  async function loadBanner() {
-    const track = document.getElementById("banner-track");
-    const dots = document.getElementById("banner-dots");
-    if (!apiConfigured()) {
-      track.innerHTML = '<div class="banner-empty">API belum disambungkan (API_URL belum diisi).</div>';
-      return;
-    }
-    try {
-      const res = await fetch(`${API_URL}?action=getBanner`);
-      bannerImages = await res.json();
-      if (!bannerImages || bannerImages.length === 0) {
-        track.innerHTML = '<div class="banner-empty">Belum ada banner. Tambah link gambar di tab "Banner".</div>';
-        return;
-      }
-      track.innerHTML = bannerImages
-        .map((url) => `<div class="banner-slide"><img src="${escapeAttr(url)}" alt="Banner sekolah" loading="lazy"></div>`)
-        .join("");
-      dots.innerHTML = bannerImages
-        .map((_, i) => `<button class="banner-dot${i === 0 ? " active" : ""}" onclick="goToBanner(${i})" aria-label="Slaid ${i + 1}"></button>`)
-        .join("");
-      bannerIndex = 0;
-      if (bannerImages.length > 1) {
-        bannerTimer = setInterval(() => goToBanner((bannerIndex + 1) % bannerImages.length), 5000);
-      }
-    } catch (err) {
-      track.innerHTML = '<div class="banner-empty">Gagal muatkan banner.</div>';
-    }
-  }
-
-  function goToBanner(i) {
-    bannerIndex = i;
-    document.getElementById("banner-track").style.transform = `translateX(-${i * 100}%)`;
-    document.querySelectorAll(".banner-dot").forEach((d, idx) => d.classList.toggle("active", idx === i));
-  }
-
-  function expandBanner() {
-    if (!bannerImages.length) return;
-    document.getElementById("lightbox-img").src = bannerImages[bannerIndex];
-    document.getElementById("lightbox-overlay").classList.remove("hidden");
-  }
-  function closeLightbox() {
-    document.getElementById("lightbox-overlay").classList.add("hidden");
-  }
-
-  function escapeAttr(str) {
-    return String(str).replace(/"/g, "&quot;");
-  }
-
   initApp(renderHome);
 </script>
 </body>

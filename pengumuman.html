@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pengumuman — SM Arab (Jaim) Al-Asyraf</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#04110d">
+<meta name="theme-color" content="#030b12">
 <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,7 +19,7 @@
 <div class="wrap">
 
   <div id="login-screen" class="hidden">
-    <div class="logo-holo"><img class="school-logo-img" alt="Logo Sekolah"></div>
+    <img class="logo-plain school-logo-img" alt="Logo Sekolah">
     <div class="brand-title">SM ARAB (JAIM) AL-ASYRAF</div>
     <div class="brand-sub">Sistem Pengurusan Sekolah</div>
     <div class="glass">
@@ -36,29 +36,14 @@
 
   <div id="app-content" class="hidden">
 
-    <header class="app-header hud-frame">
-      <span class="hud-corner tl"></span><span class="hud-corner tr"></span>
-      <div class="header-row1">
-        <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu">&#9776;</button>
-        <img class="header-logo school-logo-img" alt="Logo Sekolah">
-        <div class="header-titles">
-          <div class="header-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
-          <div class="header-school-sub">Sistem Pengurusan Sekolah</div>
-        </div>
-        <button class="header-avatar-btn" onclick="location.href='profile.html'" aria-label="Profil">
-          <img class="greet-avatar-sm" id="header-avatar" alt="">
-        </button>
+    <div class="page-topbar">
+      <div class="page-topbar-left">
+        <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu"><span data-icon="menu"></span></button>
+        <span class="page-title">Pengumuman</span>
       </div>
-      <div class="header-row2">
-        <span class="header-greet" id="header-greet">Hai, -</span>
-        <div class="header-status-time">
-          <span class="status-chip"><span class="status-dot"></span>AKTIF</span>
-          <span class="clock" id="live-clock">--:--:-- --</span>
-        </div>
-      </div>
-    </header>
+      <img class="page-avatar user-avatar-img" alt="" onclick="location.href='profile.html'">
+    </div>
 
-    <div class="section-label">Pengumuman</div>
     <div id="pengumuman-list">
       <div class="empty-state">Memuatkan pengumuman...</div>
     </div>
@@ -68,24 +53,24 @@
   <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
   <nav class="drawer" id="drawer">
     <div class="drawer-logo"><img class="school-logo-img" alt=""></div>
-    <a class="drawer-item" href="index.html" title="Laman Utama"><span aria-hidden="true">&#127968;</span><span class="sr-only">Laman Utama</span></a>
-    <a class="drawer-item active" href="pengumuman.html" title="Pengumuman"><span aria-hidden="true">&#128227;</span><span class="sr-only">Pengumuman</span></a>
-    <div class="drawer-item soon" title="Kehadiran Staf (akan datang)"><span aria-hidden="true">&#128197;</span><span class="sr-only">Kehadiran Staf</span></div>
-    <div class="drawer-item soon" title="Kehadiran Murid (akan datang)"><span aria-hidden="true">&#127891;</span><span class="sr-only">Kehadiran Murid</span></div>
-    <div class="drawer-item soon" title="Laporan Pentadbir Bertugas (akan datang)"><span aria-hidden="true">&#128203;</span><span class="sr-only">Laporan Pentadbir Bertugas</span></div>
-    <div class="drawer-item soon" title="Laporan Guru Bertugas (akan datang)"><span aria-hidden="true">&#128221;</span><span class="sr-only">Laporan Guru Bertugas</span></div>
-    <div class="drawer-item soon" title="Prestasi Kerja (akan datang)"><span aria-hidden="true">&#128202;</span><span class="sr-only">Prestasi Kerja</span></div>
+    <a class="drawer-item" href="index.html" title="Laman Utama"><span data-icon="home"></span><span class="sr-only">Laman Utama</span></a>
+    <a class="drawer-item active" href="pengumuman.html" title="Pengumuman"><span data-icon="announce"></span><span class="sr-only">Pengumuman</span></a>
+    <div class="drawer-item soon" title="Kehadiran Staf (akan datang)"><span data-icon="calendar"></span><span class="sr-only">Kehadiran Staf</span></div>
+    <div class="drawer-item soon" title="Kehadiran Murid (akan datang)"><span data-icon="calendar"></span><span class="sr-only">Kehadiran Murid</span></div>
+    <div class="drawer-item soon" title="Laporan Pentadbir Bertugas (akan datang)"><span data-icon="folder"></span><span class="sr-only">Laporan Pentadbir Bertugas</span></div>
+    <div class="drawer-item soon" title="Laporan Guru Bertugas (akan datang)"><span data-icon="folder"></span><span class="sr-only">Laporan Guru Bertugas</span></div>
+    <div class="drawer-item soon" title="Prestasi Kerja (akan datang)"><span data-icon="chart"></span><span class="sr-only">Prestasi Kerja</span></div>
     <div class="drawer-spacer"></div>
-    <a class="drawer-item drawer-logout" href="#" onclick="logout();return false;" title="Log Keluar"><span aria-hidden="true">&#9211;</span><span class="sr-only">Log Keluar</span></a>
+    <a class="drawer-item drawer-logout" href="#" onclick="logout();return false;" title="Log Keluar"><span data-icon="power"></span><span class="sr-only">Log Keluar</span></a>
   </nav>
 
   <div class="bottom-nav-wrap">
     <nav class="bottom-nav">
-      <a class="bn-item" href="index.html" aria-label="Home"><span aria-hidden="true">&#127968;</span></a>
-      <a class="bn-item" href="profile.html" aria-label="Profil"><span aria-hidden="true">&#128100;</span></a>
       <span class="bn-item bn-placeholder" aria-hidden="true"></span>
       <span class="bn-item bn-placeholder" aria-hidden="true"></span>
+      <a class="bn-item" href="index.html" aria-label="Home"><span data-icon="home"></span></a>
       <span class="bn-item bn-placeholder" aria-hidden="true"></span>
+      <a class="bn-item" href="profile.html" aria-label="Profil"><span data-icon="profile"></span></a>
     </nav>
   </div>
 
@@ -118,40 +103,7 @@
     if (user.role === "Admin") {
       document.getElementById("fab-add").classList.remove("hidden");
     }
-    loadPengumuman();
-  }
-
-  async function loadPengumuman() {
-    const listEl = document.getElementById("pengumuman-list");
-    if (!apiConfigured()) {
-      listEl.innerHTML = '<div class="empty-state">API belum disambungkan (API_URL belum diisi dalam app.js).</div>';
-      return;
-    }
-    try {
-      const res = await fetch(`${API_URL}?action=getPengumuman`);
-      const items = await res.json();
-      if (!items || items.length === 0) {
-        listEl.innerHTML = '<div class="empty-state">Belum ada pengumuman lagi.</div>';
-        return;
-      }
-      listEl.innerHTML = items.map(renderCard).join("");
-    } catch (err) {
-      listEl.innerHTML = '<div class="empty-state">Gagal muatkan pengumuman. Cuba lagi.</div>';
-    }
-  }
-
-  function renderCard(item) {
-    const img = item.gambar
-      ? `<img class="announce-img" src="${escapeAttr(item.gambar)}" alt="Gambar pengumuman" loading="lazy">`
-      : "";
-    return `<div class="glass announce-card">${img}<div class="announce-body"><div class="announce-text">${escapeHtml(item.teks || "")}</div></div></div>`;
-  }
-
-  function escapeHtml(str) {
-    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
-  function escapeAttr(str) {
-    return String(str).replace(/"/g, "&quot;");
+    loadPengumumanList("pengumuman-list");
   }
 
   function openModal() { document.getElementById("modal-overlay").classList.remove("hidden"); }
@@ -183,7 +135,7 @@
       const data = await res.json();
       if (data.success) {
         closeModal();
-        loadPengumuman();
+        loadPengumumanList("pengumuman-list");
       } else {
         errEl.textContent = data.message || "Gagal tambah pengumuman.";
         errEl.classList.remove("hidden");
