@@ -66,19 +66,120 @@
         <span data-icon="external"></span>
         <h3>SISTEM eRKS</h3>
         <p>Rekod kehadiran staf diuruskan melalui app AppSheet berasingan. Tap butang di bawah untuk buka eRKS dalam tab baru — awak akan diminta log masuk dengan akaun Google sekolah awak.</p>
-        <button class="btn-primary" onclick="window.open(APPSHEET_ERKS_URL, '_blank')">Buka eRKS</button>
+        <a class="btn-primary" style="text-decoration:none;display:inline-block" href="" id="erks-link-btn" target="_blank" rel="noopener">Buka eRKS</a>
       </div>
     </div>
 
-    <!-- Tab: Analisis eRKS (dalam pembinaan — perlukan maklumat sumber data) -->
+    <!-- Tab: Analisis eRKS -->
     <div class="tab-panel hidden" id="tab-panel-analisis">
-      <div class="glass external-card">
-        <span data-icon="chart"></span>
-        <h3>ANALISIS eRKS</h3>
-        <p>Paparan analisis kehadiran sedang dibina. Laman rujukan asal berkunci log masuk sekolah jadi saya tak dapat lihat formatnya — hantar screenshot atau maklumat sumber data (Sheet/tab mana) untuk saya bina paparan carta sebenar di sini.</p>
+
+      <div class="rks-datebar">
+        <span class="icon" data-icon="calendar"></span>
+        <label for="rks-filter-date">Tarikh Analisis:</label>
+        <input type="date" id="rks-filter-date" onchange="rksProcessData()">
+      </div>
+
+      <div id="rks-loading" class="rks-loading">
+        <div class="rks-spinner"></div>
+        <div id="rks-loading-text">Menyegerak data real-time...</div>
+      </div>
+
+      <div id="rks-error" class="empty-state hidden"></div>
+
+      <div id="rks-dashboard" class="hidden">
+        <div class="rks-summary">
+          <div class="rks-card gold">
+            <div class="rks-card-title">Kombinasi Kehadiran</div>
+            <div class="rks-card-value gold"><span id="rks-total-hadir">0</span><span style="font-size:12px;color:var(--text-dim)">/ <span id="rks-total-staf">0</span></span></div>
+            <div class="rks-card-sub">Jumlah Hadir (Guru + AKP)</div>
+          </div>
+          <div class="rks-card">
+            <div class="rks-card-title">Isi Keberadaan</div>
+            <div class="rks-card-value"><span id="rks-total-keberadaan">0</span></div>
+            <div class="rks-card-sub">Staf aktif dalam rekod hari ini</div>
+          </div>
+        </div>
+
+        <div class="rks-main-grid">
+          <div class="rks-section">
+            <div class="rks-section-title">Kategori: Guru</div>
+            <div class="rks-sub-grid">
+              <div class="rks-card green">
+                <div class="rks-card-title">Hadir</div>
+                <div class="rks-card-value green" id="rks-guru-hadir">0</div>
+                <div class="rks-card-sub">/ <span id="rks-guru-total">0</span></div>
+              </div>
+              <div class="rks-card red clickable" onclick="rksOpenModal('rks-modal-guru-cuti')">
+                <div class="rks-card-title">Tak Hadir</div>
+                <div class="rks-card-value red" id="rks-guru-cuti">0</div>
+                <div class="rks-card-sub">Klik lihat</div>
+              </div>
+              <div class="rks-card blue clickable" onclick="rksOpenModal('rks-modal-guru-keberadaan')">
+                <div class="rks-card-title">Luar</div>
+                <div class="rks-card-value blue" id="rks-guru-keberadaan-count">0</div>
+                <div class="rks-card-sub">Klik lihat</div>
+              </div>
+            </div>
+            <div class="rks-card">
+              <div class="rks-card-title">Belum Isi eRKS (<span id="rks-guru-belum-count">0</span>)</div>
+              <div class="rks-list-box" id="rks-guru-belum-list"></div>
+            </div>
+          </div>
+
+          <div class="rks-section">
+            <div class="rks-section-title">Kategori: AKP</div>
+            <div class="rks-sub-grid">
+              <div class="rks-card green">
+                <div class="rks-card-title">Hadir</div>
+                <div class="rks-card-value green" id="rks-akp-hadir">0</div>
+                <div class="rks-card-sub">/ <span id="rks-akp-total">0</span></div>
+              </div>
+              <div class="rks-card red clickable" onclick="rksOpenModal('rks-modal-akp-cuti')">
+                <div class="rks-card-title">Tak Hadir</div>
+                <div class="rks-card-value red" id="rks-akp-cuti">0</div>
+                <div class="rks-card-sub">Klik lihat</div>
+              </div>
+              <div class="rks-card blue clickable" onclick="rksOpenModal('rks-modal-akp-keberadaan')">
+                <div class="rks-card-title">Luar</div>
+                <div class="rks-card-value blue" id="rks-akp-keberadaan-count">0</div>
+                <div class="rks-card-sub">Klik lihat</div>
+              </div>
+            </div>
+            <div class="rks-card">
+              <div class="rks-card-title">Belum Isi eRKS (<span id="rks-akp-belum-count">0</span>)</div>
+              <div class="rks-list-box" id="rks-akp-belum-list"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
+  </div>
+
+  <!-- Modal Analisis eRKS -->
+  <div id="rks-modal-guru-cuti" class="rks-modal-overlay" onclick="rksCloseModalOutside(event,'rks-modal-guru-cuti')">
+    <div class="rks-modal-sheet">
+      <div class="rks-modal-header"><span class="rks-modal-title">GURU TIDAK HADIR (CUTI)</span><button class="rks-modal-close" onclick="rksCloseModal('rks-modal-guru-cuti')">&times;</button></div>
+      <div class="rks-modal-body" id="rks-body-guru-cuti"></div>
+    </div>
+  </div>
+  <div id="rks-modal-guru-keberadaan" class="rks-modal-overlay" onclick="rksCloseModalOutside(event,'rks-modal-guru-keberadaan')">
+    <div class="rks-modal-sheet">
+      <div class="rks-modal-header"><span class="rks-modal-title">GURU BERADA DI LUAR</span><button class="rks-modal-close" onclick="rksCloseModal('rks-modal-guru-keberadaan')">&times;</button></div>
+      <div class="rks-modal-body" id="rks-body-guru-keberadaan"></div>
+    </div>
+  </div>
+  <div id="rks-modal-akp-cuti" class="rks-modal-overlay" onclick="rksCloseModalOutside(event,'rks-modal-akp-cuti')">
+    <div class="rks-modal-sheet">
+      <div class="rks-modal-header"><span class="rks-modal-title">AKP TIDAK HADIR (CUTI)</span><button class="rks-modal-close" onclick="rksCloseModal('rks-modal-akp-cuti')">&times;</button></div>
+      <div class="rks-modal-body" id="rks-body-akp-cuti"></div>
+    </div>
+  </div>
+  <div id="rks-modal-akp-keberadaan" class="rks-modal-overlay" onclick="rksCloseModalOutside(event,'rks-modal-akp-keberadaan')">
+    <div class="rks-modal-sheet">
+      <div class="rks-modal-header"><span class="rks-modal-title">AKP BERADA DI LUAR</span><button class="rks-modal-close" onclick="rksCloseModal('rks-modal-akp-keberadaan')">&times;</button></div>
+      <div class="rks-modal-body" id="rks-body-akp-keberadaan"></div>
+    </div>
   </div>
 
   <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
@@ -109,12 +210,208 @@
 
 <script src="app.js"></script>
 <script>
+  /* ---------------- eRKS link + tab switching ---------------- */
+  document.getElementById("erks-link-btn").href = APPSHEET_ERKS_URL;
+
   function switchTab(name) {
     document.getElementById("tab-panel-erks").classList.toggle("hidden", name !== "erks");
     document.getElementById("tab-panel-analisis").classList.toggle("hidden", name !== "analisis");
     document.getElementById("tab-btn-erks").classList.toggle("active", name === "erks");
     document.getElementById("tab-btn-analisis").classList.toggle("active", name === "analisis");
+    if (name === "analisis") rksInit();
   }
+
+  /* ---------------- Dashboard Analisis eRKS ---------------- */
+  const RKS_SHEET_ID = "1gCC26pdp5dqMwEYg6gzuGaiXhq6iA1M3gruLkkIzO5s";
+  let rksLoaded = false;
+  let rksData = { database: [], kehadiran: [], rekod: [] };
+
+  async function rksFetchSheet(sheetName) {
+    const url = `https://docs.google.com/spreadsheets/d/${RKS_SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(sheetName)}`;
+    const res = await fetch(url);
+    const text = await res.text();
+    const jsonString = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
+    return JSON.parse(jsonString).table.rows;
+  }
+
+  async function rksInit() {
+    if (rksLoaded) return;
+    rksLoaded = true;
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    document.getElementById("rks-filter-date").value = `${yyyy}-${mm}-${dd}`;
+    try {
+      const [db, hadir, rekod] = await Promise.all([
+        rksFetchSheet("Database"), rksFetchSheet("Kehadiran"), rksFetchSheet("Rekod"),
+      ]);
+      rksData.database = db; rksData.kehadiran = hadir; rksData.rekod = rekod;
+      document.getElementById("rks-loading").classList.add("hidden");
+      document.getElementById("rks-dashboard").classList.remove("hidden");
+      rksProcessData();
+    } catch (err) {
+      document.getElementById("rks-loading").classList.add("hidden");
+      const errEl = document.getElementById("rks-error");
+      errEl.textContent = 'Ralat memuatkan data. Pastikan Sheet eRKS dikongsi sebagai "Anyone with the link" (Viewer).';
+      errEl.classList.remove("hidden");
+    }
+  }
+
+  function rksParseDate(cellValue) {
+    if (!cellValue) return null;
+    if (typeof cellValue === "string" && cellValue.includes("Date")) {
+      const parts = cellValue.match(/Date\((\d+),(\d+),(\d+)/);
+      if (parts) {
+        const y = parts[1];
+        const m = String(parseInt(parts[2]) + 1).padStart(2, "0");
+        const d = String(parts[3]).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      }
+    }
+    if (typeof cellValue === "string") {
+      const str = cellValue.split(" ")[0];
+      const parts = str.includes("/") ? str.split("/") : str.split("-");
+      if (parts.length === 3) {
+        if (parts[0].length <= 2) {
+          return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+        }
+        return `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`;
+      }
+    }
+    return null;
+  }
+
+  function rksOpenModal(id) { document.getElementById(id).classList.add("active"); }
+  function rksCloseModal(id) { document.getElementById(id).classList.remove("active"); }
+  function rksCloseModalOutside(event, id) {
+    if (event.target === document.getElementById(id)) rksCloseModal(id);
+  }
+  function rksEscapeHtml(str) {
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function rksProcessData() {
+    const selectedDate = document.getElementById("rks-filter-date").value;
+    const dateObj = new Date(selectedDate);
+    dateObj.setHours(0, 0, 0, 0);
+
+    const isGuru = (jawatan) => {
+      if (!jawatan) return false;
+      const j = jawatan.toUpperCase();
+      return j.includes("PENGETUA") || j.includes("PK") || j.includes("GKMP") || j.includes("PPP");
+    };
+    const isAKP = (jawatan) => !!jawatan && jawatan.toUpperCase().includes("PEMBANTU");
+
+    let guruList = [], akpList = [];
+    rksData.database.forEach((row) => {
+      const kp = row.c[1]?.v ? row.c[1].v.toString().trim() : "";
+      const nama = row.c[2]?.v || "";
+      const jawatan = row.c[3]?.v || "";
+      const staf = { kp, nama, jawatan };
+      if (isGuru(jawatan)) guruList.push(staf);
+      if (isAKP(jawatan)) akpList.push(staf);
+    });
+
+    let kpKehadiranSet = new Set();
+    rksData.kehadiran.forEach((row) => {
+      const tsCell = row.c[1]?.v || row.c[1]?.f || row.c[0]?.v || row.c[0]?.f;
+      const dateStr = rksParseDate(tsCell);
+      if (dateStr === selectedDate) {
+        const kp = row.c[2]?.v || row.c[1]?.v;
+        if (kp) kpKehadiranSet.add(kp.toString().trim());
+      }
+    });
+
+    let keberadaanMap = new Map();
+    const cutiKeywords = ["CUTI SAKIT", "CUTI REHAT", "CUTI BERSALIN", "CUTI TANPA REKOD"];
+    rksData.rekod.forEach((row) => {
+      const kp = row.c[3]?.v ? row.c[3].v.toString().trim() : "";
+      const nama = row.c[4]?.v || "";
+      const tujuan = row.c[6]?.v || "";
+      const perkara = row.c[7]?.v || "";
+      const tempat = row.c[8]?.v || "";
+      const mulaStr = rksParseDate(row.c[10]?.v || row.c[10]?.f);
+      const tamatStr = rksParseDate(row.c[11]?.v || row.c[11]?.f);
+      if (kp && mulaStr && tamatStr) {
+        const mula = new Date(mulaStr); mula.setHours(0, 0, 0, 0);
+        const tamat = new Date(tamatStr); tamat.setHours(23, 59, 59, 999);
+        if (dateObj >= mula && dateObj <= tamat) {
+          const isCuti = cutiKeywords.some((kw) => tujuan.toUpperCase().includes(kw));
+          keberadaanMap.set(kp, {
+            nama, tujuan, perkara, tempat,
+            mula: row.c[10]?.f || mulaStr, tamat: row.c[11]?.f || tamatStr, isCuti,
+          });
+        }
+      }
+    });
+
+    let guruHadirCount = 0, akpHadirCount = 0, guruCutiCount = 0, akpCutiCount = 0;
+    let guruKeberadaanCount = 0, akpKeberadaanCount = 0, guruBelum = [], akpBelum = [];
+    let htmlGuruCuti = "", htmlGuruKeberadaan = "", htmlAkpCuti = "", htmlAkpKeberadaan = "";
+
+    function block(log) {
+      return `<div class="rks-staf-block">
+        <div class="rks-staf-name">${rksEscapeHtml(log.nama)}</div>
+        <div class="rks-staf-meta"><b>Tujuan:</b> ${rksEscapeHtml(log.tujuan)}</div>
+        <div class="rks-staf-meta"><b>Perkara:</b> ${rksEscapeHtml(log.perkara)}</div>
+        <div class="rks-staf-meta"><b>Tempat:</b> ${rksEscapeHtml(log.tempat || "-")}</div>
+        <div class="rks-staf-meta"><b>Tempoh:</b> ${rksEscapeHtml(log.mula)} hingga ${rksEscapeHtml(log.tamat)}</div>
+      </div>`;
+    }
+
+    guruList.forEach((g) => {
+      const hasHadir = kpKehadiranSet.has(g.kp);
+      const log = keberadaanMap.get(g.kp);
+      if (hasHadir) guruHadirCount++;
+      if (log) {
+        if (log.isCuti) { guruCutiCount++; htmlGuruCuti += block(log); }
+        else { guruKeberadaanCount++; htmlGuruKeberadaan += block(log); }
+      }
+      if (!hasHadir && !log) guruBelum.push(g.nama);
+    });
+
+    akpList.forEach((a) => {
+      const hasHadir = kpKehadiranSet.has(a.kp);
+      const log = keberadaanMap.get(a.kp);
+      if (hasHadir) akpHadirCount++;
+      if (log) {
+        if (log.isCuti) { akpCutiCount++; htmlAkpCuti += block(log); }
+        else { akpKeberadaanCount++; htmlAkpKeberadaan += block(log); }
+      }
+      if (!hasHadir && !log) akpBelum.push(a.nama);
+    });
+
+    const emptyMsg = '<div class="rks-empty-msg">Tiada staf dalam kategori ini hari ini.</div>';
+    document.getElementById("rks-body-guru-cuti").innerHTML = htmlGuruCuti || emptyMsg;
+    document.getElementById("rks-body-guru-keberadaan").innerHTML = htmlGuruKeberadaan || emptyMsg;
+    document.getElementById("rks-body-akp-cuti").innerHTML = htmlAkpCuti || emptyMsg;
+    document.getElementById("rks-body-akp-keberadaan").innerHTML = htmlAkpKeberadaan || emptyMsg;
+
+    document.getElementById("rks-total-staf").textContent = guruList.length + akpList.length;
+    document.getElementById("rks-total-hadir").textContent = guruHadirCount + akpHadirCount;
+    document.getElementById("rks-total-keberadaan").textContent = keberadaanMap.size;
+
+    document.getElementById("rks-guru-total").textContent = guruList.length;
+    document.getElementById("rks-guru-hadir").textContent = guruHadirCount;
+    document.getElementById("rks-guru-cuti").textContent = guruCutiCount;
+    document.getElementById("rks-guru-keberadaan-count").textContent = guruKeberadaanCount;
+    document.getElementById("rks-guru-belum-count").textContent = guruBelum.length;
+
+    document.getElementById("rks-akp-total").textContent = akpList.length;
+    document.getElementById("rks-akp-hadir").textContent = akpHadirCount;
+    document.getElementById("rks-akp-cuti").textContent = akpCutiCount;
+    document.getElementById("rks-akp-keberadaan-count").textContent = akpKeberadaanCount;
+    document.getElementById("rks-akp-belum-count").textContent = akpBelum.length;
+
+    document.getElementById("rks-guru-belum-list").innerHTML = guruBelum.length
+      ? guruBelum.map((n) => `<div class="rks-list-item">• ${rksEscapeHtml(n)}</div>`).join("")
+      : '<div class="rks-list-item" style="color:var(--mint)">Hebat! Semua guru dah lengkapkan eRKS.</div>';
+    document.getElementById("rks-akp-belum-list").innerHTML = akpBelum.length
+      ? akpBelum.map((n) => `<div class="rks-list-item">• ${rksEscapeHtml(n)}</div>`).join("")
+      : '<div class="rks-list-item" style="color:var(--mint)">Hebat! Semua AKP dah lengkapkan eRKS.</div>';
+  }
+
   function renderKehadiranStaf(user) {}
   initApp(renderKehadiranStaf);
 </script>
