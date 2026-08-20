@@ -40,9 +40,9 @@
   <div id="app-content" class="hidden">
 
     <!-- Header sentiasa ada, tiada kotak/garis -->
-    <header class="site-header">
-      <div class="site-header-top">
-        <div class="site-header-left">
+    <div class="site-header-wrap">
+      <header class="site-header">
+        <div class="site-header-row1">
           <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu"><span data-icon="menu"></span></button>
           <img class="header-logo school-logo-img" alt="Logo Sekolah">
           <div class="header-title-block">
@@ -50,18 +50,12 @@
             <div class="header-school-sub">Aplikasi Pengurusan Sekolah</div>
           </div>
         </div>
-        <div class="site-header-right">
-          <div class="header-greet-block">
-            <div class="header-greet-label">Selamat Datang,</div>
-            <div class="header-greet-name" id="header-greet-name">-</div>
-          </div>
-          <img class="header-avatar user-avatar-img" alt="" onclick="location.href='profile.html'">
+        <div class="site-header-row2">
+          <span class="header-greet">Selamat Datang, <span id="header-greet-name">-</span></span>
+          <span class="header-status"><span class="status-dot"></span>Sistem Aktif <span id="live-clock">--:--:-- --</span></span>
         </div>
-      </div>
-      <div class="header-status-row">
-        <span class="status-dot"></span><span>SISTEM AKTIF</span><span id="live-clock">--:--:-- --</span>
-      </div>
-    </header>
+      </header>
+    </div>
 
     <div class="banner-carousel" id="banner-carousel">
       <div class="banner-track" id="banner-track" onclick="expandBanner()">
@@ -70,9 +64,13 @@
       <div class="banner-dots" id="banner-dots"></div>
     </div>
 
-    <div class="section-label">Pengumuman</div>
-    <div id="home-pengumuman-list">
-      <div class="empty-state">Memuatkan pengumuman...</div>
+    <div class="section-label">Menu Utama</div>
+    <div class="module-grid">
+      <a class="module-tile" href="pengumuman.html"><span data-icon="announce"></span><span class="module-tile-label">Pengumuman</span></a>
+      <div class="module-tile soon"><span data-icon="calendar"></span><span class="module-tile-label">Kehadiran Staf</span></div>
+      <div class="module-tile soon"><span data-icon="graduate"></span><span class="module-tile-label">Kehadiran Murid</span></div>
+      <div class="module-tile soon"><span data-icon="folder"></span><span class="module-tile-label">Laporan Pentadbir</span></div>
+      <div class="module-tile soon"><span data-icon="folder"></span><span class="module-tile-label">Laporan Guru</span></div>
     </div>
 
   </div>
@@ -114,7 +112,6 @@
 <script>
   function renderHome(user) {
     loadBanner();
-    loadPengumumanList("home-pengumuman-list");
   }
   initApp(renderHome);
 </script>

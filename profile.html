@@ -36,9 +36,9 @@
 
   <div id="app-content" class="hidden">
 
-    <header class="site-header">
-      <div class="site-header-top">
-        <div class="site-header-left">
+    <div class="site-header-wrap">
+      <header class="site-header">
+        <div class="site-header-row1">
           <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu"><span data-icon="menu"></span></button>
           <img class="header-logo school-logo-img" alt="Logo Sekolah">
           <div class="header-title-block">
@@ -46,18 +46,12 @@
             <div class="header-school-sub">Aplikasi Pengurusan Sekolah</div>
           </div>
         </div>
-        <div class="site-header-right">
-          <div class="header-greet-block">
-            <div class="header-greet-label">Selamat Datang,</div>
-            <div class="header-greet-name" id="header-greet-name">-</div>
-          </div>
-          <img class="header-avatar user-avatar-img" alt="">
+        <div class="site-header-row2">
+          <span class="header-greet">Selamat Datang, <span id="header-greet-name">-</span></span>
+          <span class="header-status"><span class="status-dot"></span>Sistem Aktif <span id="live-clock">--:--:-- --</span></span>
         </div>
-      </div>
-      <div class="header-status-row">
-        <span class="status-dot"></span><span>SISTEM AKTIF</span><span id="live-clock">--:--:-- --</span>
-      </div>
-    </header>
+      </header>
+    </div>
 
     <div class="section-label">Profil Saya</div>
 
