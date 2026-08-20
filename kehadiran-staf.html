@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SM Arab (Jaim) Al-Asyraf</title>
+<title>Kehadiran Staf — SM Arab (Jaim) Al-Asyraf</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#030b12">
 <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN">
@@ -18,12 +18,10 @@
 
 <div class="wrap">
 
-  <!-- ============ SKRIN LOG MASUK ============ -->
   <div id="login-screen" class="hidden">
     <img class="logo-plain school-logo-img" alt="Logo Sekolah">
     <div class="brand-title">SM ARAB (JAIM) AL-ASYRAF</div>
     <div class="brand-sub">Sistem Pengurusan Sekolah</div>
-
     <div class="glass">
       <div class="gsi-wrap" id="google-btn-container"></div>
       <div class="divider">Atau</div>
@@ -36,10 +34,8 @@
     </div>
   </div>
 
-  <!-- ============ KANDUNGAN APP (selepas login) ============ -->
   <div id="app-content" class="hidden">
 
-    <!-- Header sentiasa ada, tiada kotak/garis -->
     <div class="site-header-wrap">
       <header class="site-header">
         <div class="site-header-row1">
@@ -57,32 +53,41 @@
       </header>
     </div>
 
-    <div class="banner-carousel" id="banner-carousel">
-      <div class="banner-track" id="banner-track" onclick="expandBanner()">
-        <div class="banner-empty">Memuatkan banner...</div>
-      </div>
-      <div class="banner-dots" id="banner-dots"></div>
+    <div class="section-label">Kehadiran Staf</div>
+
+    <div class="tab-switch">
+      <button class="tab-btn active" id="tab-btn-erks" onclick="switchTab('erks')">eRKS</button>
+      <button class="tab-btn" id="tab-btn-analisis" onclick="switchTab('analisis')">Analisis eRKS</button>
     </div>
 
-    <div class="section-label">Menu Utama</div>
-    <div class="module-grid">
-      <a class="module-tile" href="pengumuman.html"><span data-icon="announce"></span><span class="module-tile-label">Pengumuman</span></a>
-      <a class="module-tile" href="kehadiran-staf.html"><span data-icon="calendar"></span><span class="module-tile-label">Kehadiran Staf</span></a>
-      <div class="module-tile soon"><span data-icon="graduate"></span><span class="module-tile-label">Kehadiran Murid</span></div>
-      <div class="module-tile soon"><span data-icon="folder"></span><span class="module-tile-label">Laporan Pentadbir</span></div>
-      <div class="module-tile soon"><span data-icon="folder"></span><span class="module-tile-label">Laporan Guru</span></div>
+    <!-- Tab: eRKS (buka app AppSheet, perlu sign-in sendiri) -->
+    <div class="tab-panel" id="tab-panel-erks">
+      <div class="glass external-card">
+        <span data-icon="external"></span>
+        <h3>SISTEM eRKS</h3>
+        <p>Rekod kehadiran staf diuruskan melalui app AppSheet berasingan. Tap butang di bawah untuk buka eRKS dalam tab baru — awak akan diminta log masuk dengan akaun Google sekolah awak.</p>
+        <button class="btn-primary" onclick="window.open(APPSHEET_ERKS_URL, '_blank')">Buka eRKS</button>
+      </div>
+    </div>
+
+    <!-- Tab: Analisis eRKS (dalam pembinaan — perlukan maklumat sumber data) -->
+    <div class="tab-panel hidden" id="tab-panel-analisis">
+      <div class="glass external-card">
+        <span data-icon="chart"></span>
+        <h3>ANALISIS eRKS</h3>
+        <p>Paparan analisis kehadiran sedang dibina. Laman rujukan asal berkunci log masuk sekolah jadi saya tak dapat lihat formatnya — hantar screenshot atau maklumat sumber data (Sheet/tab mana) untuk saya bina paparan carta sebenar di sini.</p>
+      </div>
     </div>
 
   </div>
 
-  <!-- ============ DRAWER / SIDEBAR (ikon + teks) ============ -->
   <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
   <nav class="drawer" id="drawer">
     <div class="drawer-logo-row"><img class="school-logo-img" alt=""><span>SMASRA</span></div>
-    <a class="drawer-item active" href="index.html"><span data-icon="home"></span><span class="drawer-label">Laman Utama</span></a>
+    <a class="drawer-item" href="index.html"><span data-icon="home"></span><span class="drawer-label">Laman Utama</span></a>
     <a class="drawer-item" href="pengumuman.html"><span data-icon="announce"></span><span class="drawer-label">Pengumuman</span></a>
-    <a class="drawer-item" href="kehadiran-staf.html"><span data-icon="calendar"></span><span class="drawer-label">Kehadiran Staf</span></a>
-    <div class="drawer-item soon"><span data-icon="calendar"></span><span class="drawer-label">Kehadiran Murid</span></div>
+    <a class="drawer-item active" href="kehadiran-staf.html"><span data-icon="calendar"></span><span class="drawer-label">Kehadiran Staf</span></a>
+    <div class="drawer-item soon"><span data-icon="graduate"></span><span class="drawer-label">Kehadiran Murid</span></div>
     <div class="drawer-item soon"><span data-icon="folder"></span><span class="drawer-label">Laporan Pentadbir</span></div>
     <div class="drawer-item soon"><span data-icon="folder"></span><span class="drawer-label">Laporan Guru</span></div>
     <div class="drawer-item soon"><span data-icon="chart"></span><span class="drawer-label">Prestasi Kerja</span></div>
@@ -90,30 +95,28 @@
     <a class="drawer-item drawer-logout" href="#" onclick="logout();return false;"><span data-icon="power"></span><span class="drawer-label">Log Keluar</span></a>
   </nav>
 
-  <!-- ============ BOTTOM NAV — Home di tengah, Profil hujung ============ -->
   <div class="bottom-nav-wrap">
     <nav class="bottom-nav">
       <span class="bn-item bn-placeholder" aria-hidden="true"></span>
       <span class="bn-item bn-placeholder" aria-hidden="true"></span>
-      <a class="bn-item active" href="index.html" aria-label="Home"><span data-icon="home"></span></a>
+      <a class="bn-item" href="index.html" aria-label="Home"><span data-icon="home"></span></a>
       <span class="bn-item bn-placeholder" aria-hidden="true"></span>
       <a class="bn-item" href="profile.html" aria-label="Profil"><span data-icon="profile"></span></a>
     </nav>
-  </div>
-
-  <!-- ============ LIGHTBOX (klik banner untuk besarkan) ============ -->
-  <div class="lightbox-overlay hidden" id="lightbox-overlay" onclick="closeLightbox()">
-    <img id="lightbox-img" src="" alt="Banner diperbesar">
   </div>
 
 </div>
 
 <script src="app.js"></script>
 <script>
-  function renderHome(user) {
-    loadBanner();
+  function switchTab(name) {
+    document.getElementById("tab-panel-erks").classList.toggle("hidden", name !== "erks");
+    document.getElementById("tab-panel-analisis").classList.toggle("hidden", name !== "analisis");
+    document.getElementById("tab-btn-erks").classList.toggle("active", name === "erks");
+    document.getElementById("tab-btn-analisis").classList.toggle("active", name === "analisis");
   }
-  initApp(renderHome);
+  function renderKehadiranStaf(user) {}
+  initApp(renderKehadiranStaf);
 </script>
 </body>
 </html>

@@ -215,6 +215,24 @@ body{
 .bn-item .icon{ width:27px;height:27px; }
 .bn-placeholder{ visibility:hidden; }
 
+/* ---------- Tab switcher (contoh: eRKS / Analisis eRKS) ---------- */
+.tab-switch{
+  display:flex;background:var(--panel-a);border:1px solid var(--line);border-radius:12px;
+  padding:4px;gap:4px;margin-bottom:var(--gap);
+}
+.tab-btn{
+  flex:1;padding:10px;text-align:center;border-radius:9px;border:none;background:transparent;
+  color:var(--text-dim);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;cursor:pointer;
+}
+.tab-btn.active{ background:rgba(43,232,208,.14);color:var(--cyan); }
+.tab-panel.hidden{ display:none; }
+
+.external-card{ padding:30px 22px;text-align:center; }
+.external-card .icon{ width:44px;height:44px;color:var(--cyan);margin:0 auto 14px; }
+.external-card h3{ font-family:'Orbitron',sans-serif;font-size:14.5px;letter-spacing:.5px;margin-bottom:10px;color:var(--text); }
+.external-card p{ font-size:13.5px;color:var(--text-dim);line-height:1.55;margin-bottom:20px; }
+.external-card .btn-primary{ margin-top:0; }
+
 /* ---------- Grid ikon modul (muka depan) ---------- */
 .module-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:var(--gap); }
 .module-tile{

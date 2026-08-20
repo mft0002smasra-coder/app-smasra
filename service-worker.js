@@ -3,6 +3,7 @@ const CORE_ASSETS = [
   "index.html",
   "pengumuman.html",
   "profile.html",
+  "kehadiran-staf.html",
   "style.css",
   "app.js",
   "manifest.json",
