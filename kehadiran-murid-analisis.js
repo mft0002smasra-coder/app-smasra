@@ -17,6 +17,8 @@ let MA_ALL_CLASSES = [];
 let maCharts = {};
 let maLastDayRecords = [];
 let maLastDayLabel = "";
+let maLastPeriodAgg = {};
+let maLastPeriodLabel = "";
 let maChartLibReady = false;
 let maChartLibFailed = false;
 let maFiltersInitialised = false;
@@ -284,32 +286,16 @@ function maRenderUtama() {
     const rec = dayRecords.find((r) => r.kelas === kName);
     if (!rec) {
       return `<div class="ma-class-card ma-empty" data-kelas="${kName}">
-        <div class="ma-class-top"><span class="ma-class-name">${kName}</span><span class="ma-class-ting">Ting. ${maTingkatanOf(kName)}</span></div>
-        <div class="ma-empty-state">🌙 Tiada rekod bagi tarikh ini</div>
+        <div class="ma-class-top"><span class="ma-class-name">${kName}</span><span class="ma-class-ting">T${maTingkatanOf(kName)}</span></div>
+        <div class="ma-empty-mini">Tiada rekod</div>
       </div>`;
     }
     const p = rec.peratus;
-    const circumference = 2 * Math.PI * 26;
-    const dash = (p / 100) * circumference;
     const col = maRingColor(p);
-    const namaHTML = rec.namaList.length ? rec.namaList.map((n) => `<b>•</b> ${n}`).join("<br>") : "Tiada";
     return `<div class="ma-class-card" data-kelas="${kName}">
-      <div class="ma-class-top"><span class="ma-class-name">${rec.kelas}</span><span class="ma-class-ting">Ting. ${rec.tingkatan}</span></div>
-      <div class="ma-ring-row">
-        <div class="ma-ring"><svg viewBox="0 0 64 64">
-          <circle class="ma-ring-bg" cx="32" cy="32" r="26"></circle>
-          <circle class="ma-ring-fg" cx="32" cy="32" r="26" stroke="${col}" stroke-dasharray="${dash} ${circumference}"></circle>
-        </svg><div class="ma-ring-label">${p}%</div></div>
-        <div class="ma-class-stats">
-          <div class="ma-stat-line"><span class="lbl">Hadir</span><span class="val ma-val-green">${rec.hadir}/${rec.jumlahMurid}</span></div>
-          <div class="ma-stat-line"><span class="lbl">Tidak Hadir</span><span class="val ma-val-red">${rec.tidakHadir}/${rec.jumlahMurid}</span></div>
-        </div>
-      </div>
-      <div class="ma-absent-box">
-        <div class="ma-absent-toggle" onclick="maToggleAbsentList(event, this)"><b>Nama tidak hadir (${rec.namaList.length})</b><span class="ma-chev">▾</span></div>
-        <div class="ma-absent-body">${namaHTML}</div>
-      </div>
-      <div class="ma-recorder">◈ Direkodkan oleh: ${rec.catatOleh ? "@" + rec.catatOleh.replace(/^@/, "") : "-"}</div>
+      <div class="ma-class-top"><span class="ma-class-name">${rec.kelas}</span><span class="ma-class-ting">T${rec.tingkatan}</span></div>
+      <div class="ma-mini-pct" style="color:${col}">${p}%</div>
+      <div class="ma-mini-stats"><b>${rec.hadir}</b> hadir · <b>${rec.tidakHadir}</b> t.hadir</div>
     </div>`;
   }
 
@@ -464,43 +450,31 @@ function maRenderTahunan() {
   const kelasIsiUnik = new Set(periodRecords.map((r) => r.kelas)).size;
   document.getElementById("ma-t-classcount").textContent = `${kelasIsiUnik} / ${MA_TOTAL_KELAS_TETAP} kelas ada rekod`;
 
+  const periodAgg = {};
+
   function buildClassCardT(kName) {
     const recs = periodRecords.filter((r) => r.kelas === kName).sort((a, b) => a.tarikh - b.tarikh);
     if (!recs.length) {
       return `<div class="ma-class-card ma-empty" data-kelas="${kName}">
-        <div class="ma-class-top"><span class="ma-class-name">${kName}</span><span class="ma-class-ting">Ting. ${maTingkatanOf(kName)}</span></div>
-        <div class="ma-empty-state">🌙 Tiada rekod bagi tempoh ini</div></div>`;
+        <div class="ma-class-top"><span class="ma-class-name">${kName}</span><span class="ma-class-ting">T${maTingkatanOf(kName)}</span></div>
+        <div class="ma-empty-mini">Tiada rekod</div></div>`;
     }
     const jumlahMuridTerkini = recs[recs.length - 1].jumlahMurid;
     const avgHadir = Math.round(recs.reduce((s, r) => s + r.hadir, 0) / recs.length);
     const avgTidakHadir = Math.round(recs.reduce((s, r) => s + r.tidakHadir, 0) / recs.length);
     const avgPeratus = Math.round((recs.reduce((s, r) => s + r.peratus, 0) / recs.length) * 10) / 10;
     const col = maRingColor(avgPeratus);
-    const circumference = 2 * Math.PI * 26;
-    const dash = (avgPeratus / 100) * circumference;
 
     const countMap = new Map();
     recs.forEach((r) => r.namaList.forEach((n) => { countMap.set(n, (countMap.get(n) || 0) + 1); }));
     const namaEntries = Array.from(countMap.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-    const namaHTML = namaEntries.length ? namaEntries.map(([n, c]) => `<b>•</b> ${n} (${c})`).join("<br>") : "Tiada";
+
+    periodAgg[kName] = { kelas: kName, tingkatan: maTingkatanOf(kName), jumlahMuridTerkini, avgHadir, avgTidakHadir, avgPeratus, namaEntries, hariDirekod: recs.length };
 
     return `<div class="ma-class-card" data-kelas="${kName}">
-      <div class="ma-class-top"><span class="ma-class-name">${kName}</span><span class="ma-class-ting">Ting. ${maTingkatanOf(kName)}</span></div>
-      <div class="ma-ring-row">
-        <div class="ma-ring"><svg viewBox="0 0 64 64">
-          <circle class="ma-ring-bg" cx="32" cy="32" r="26"></circle>
-          <circle class="ma-ring-fg" cx="32" cy="32" r="26" stroke="${col}" stroke-dasharray="${dash} ${circumference}"></circle>
-        </svg><div class="ma-ring-label">${avgPeratus}%</div></div>
-        <div class="ma-class-stats">
-          <div class="ma-stat-line"><span class="lbl">Purata Hadir</span><span class="val ma-val-green">${avgHadir} / ${jumlahMuridTerkini}</span></div>
-          <div class="ma-stat-line"><span class="lbl">Purata Tidak Hadir</span><span class="val ma-val-red">${avgTidakHadir} / ${jumlahMuridTerkini}</span></div>
-        </div>
-      </div>
-      <div class="ma-absent-box">
-        <div class="ma-absent-toggle" onclick="maToggleAbsentList(event, this)"><b>Nama tidak hadir, kekerapan (${namaEntries.length})</b><span class="ma-chev">▾</span></div>
-        <div class="ma-absent-body">${namaHTML}</div>
-      </div>
-      <div class="ma-recorder">◈ Hari direkodkan: ${recs.length}</div>
+      <div class="ma-class-top"><span class="ma-class-name">${kName}</span><span class="ma-class-ting">T${maTingkatanOf(kName)}</span></div>
+      <div class="ma-mini-pct" style="color:${col}">${avgPeratus}%</div>
+      <div class="ma-mini-stats"><b>${avgHadir}</b> hadir · <b>${avgTidakHadir}</b> t.hadir (purata)</div>
     </div>`;
   }
 
@@ -511,6 +485,9 @@ function maRenderTahunan() {
     const cards = groups[t].map(buildClassCardT).join("");
     return `<div class="ma-ting-group"><div class="ma-ting-heading">Tingkatan ${t}</div><div class="ma-class-grid">${cards}</div></div>`;
   }).join("");
+
+  maLastPeriodAgg = periodAgg;
+  maLastPeriodLabel = periodLabel;
 }
 
 /* ---------------- Modal kad kelas (Page Utama) ---------------- */
@@ -550,6 +527,41 @@ function maOpenClassModal(kName) {
 }
 function maCloseClassModal() { document.getElementById("ma-modal-overlay").classList.remove("show"); }
 
+function maOpenClassModalPeriod(kName) {
+  const agg = maLastPeriodAgg[kName];
+  const box = document.getElementById("ma-modal-content");
+  if (!agg) {
+    box.innerHTML = `<div class="ma-modal-date">${maLastPeriodLabel}</div><div class="ma-modal-classname">${kName}</div>
+      <div class="ma-empty-state" style="padding:34px 0;">🌙 Tiada rekod bagi kelas ini pada tempoh yang dipilih.</div>`;
+  } else {
+    const p = agg.avgPeratus;
+    const circumference = 2 * Math.PI * 40;
+    const dash = (p / 100) * circumference;
+    const col = maRingColor(p);
+    const namaHTML = agg.namaEntries.length
+      ? `<div class="ma-modal-absent-list">${agg.namaEntries.map(([n, c]) => `<span class="ma-chip">${n} (${c})</span>`).join("")}</div>`
+      : `<div style="color:var(--text-dim);">Tiada murid tidak hadir sepanjang tempoh ini 🎉</div>`;
+    box.innerHTML = `
+      <div class="ma-modal-date">${maLastPeriodLabel}</div>
+      <div class="ma-modal-classname">${agg.kelas} <span class="ma-class-ting">Ting. ${agg.tingkatan}</span></div>
+      <div class="ma-modal-ring-row">
+        <div class="ma-modal-ring"><svg viewBox="0 0 96 96">
+          <circle class="ma-ring-bg" cx="48" cy="48" r="40"></circle>
+          <circle class="ma-ring-fg" cx="48" cy="48" r="40" stroke="${col}" stroke-dasharray="${dash} ${circumference}"></circle>
+        </svg><div class="ma-modal-ring-label">${p}<small>PURATA %</small></div></div>
+        <div class="ma-modal-stats">
+          <div class="ma-modal-stat-line"><span class="lbl">Jumlah Murid</span><span class="val">${agg.jumlahMuridTerkini}</span></div>
+          <div class="ma-modal-stat-line"><span class="lbl">Purata Hadir</span><span class="val ma-val-green">${agg.avgHadir}</span></div>
+          <div class="ma-modal-stat-line"><span class="lbl">Purata Tidak Hadir</span><span class="val ma-val-red">${agg.avgTidakHadir}</span></div>
+          <div class="ma-modal-stat-line"><span class="lbl">Hari Direkodkan</span><span class="val">${agg.hariDirekod}</span></div>
+        </div>
+      </div>
+      <div class="ma-modal-absent-title">Nama Tidak Hadir (kekerapan)</div>
+      ${namaHTML}`;
+  }
+  document.getElementById("ma-modal-overlay").classList.add("show");
+}
+
 /* ---------------- Init (dipanggil dari halaman induk bila tab Analisis dibuka) ---------------- */
 let maBooted = false;
 function maBoot() {
@@ -569,6 +581,10 @@ function maBoot() {
   document.getElementById("ma-u-classgrid").addEventListener("click", (e) => {
     const card = e.target.closest(".ma-class-card");
     if (card && card.dataset.kelas) maOpenClassModal(card.dataset.kelas);
+  });
+  document.getElementById("ma-t-classgrid").addEventListener("click", (e) => {
+    const card = e.target.closest(".ma-class-card");
+    if (card && card.dataset.kelas) maOpenClassModalPeriod(card.dataset.kelas);
   });
   document.getElementById("ma-modal-close").addEventListener("click", maCloseClassModal);
   document.getElementById("ma-modal-overlay").addEventListener("click", (e) => {
