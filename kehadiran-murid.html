@@ -36,17 +36,22 @@
 
   <div id="app-content" class="hidden">
 
-    <header class="site-header">
-      <div class="site-header-row1">
-        <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu"><span data-icon="menu"></span></button>
-        <img class="header-logo school-logo-img" alt="Logo Sekolah">
-        <div class="header-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
-      </div>
-      <div class="site-header-row2">
-        <span class="header-greet">Selamat Datang, <span id="header-greet-name">-</span></span>
-        <span class="header-status"><span class="status-dot"></span>Sistem Aktif <span id="live-clock">--:--:-- --</span></span>
-      </div>
-    </header>
+    <div class="site-header-wrap">
+      <header class="site-header">
+        <div class="site-header-row1">
+          <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu"><span data-icon="menu"></span></button>
+          <img class="header-logo school-logo-img" alt="Logo Sekolah">
+          <div class="header-title-block">
+            <div class="header-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
+            <div class="header-school-sub">Aplikasi Pengurusan Sekolah</div>
+          </div>
+        </div>
+        <div class="site-header-row2">
+          <span class="header-greet">Selamat Datang, <span id="header-greet-name">-</span></span>
+          <span class="header-status"><span class="status-dot"></span>Sistem Aktif <span id="live-clock">--:--:-- --</span></span>
+        </div>
+      </header>
+    </div>
 
     <div class="section-label">Kehadiran Murid</div>
 

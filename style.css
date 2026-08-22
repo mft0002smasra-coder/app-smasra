@@ -304,6 +304,13 @@ body{
 .external-card p{ font-size:13.5px;color:var(--text-dim);line-height:1.55;margin-bottom:20px; }
 .external-card .btn-primary{ margin-top:0; }
 
+.btn-stack{ display:flex;flex-direction:column;gap:10px;margin-top:var(--gap); }
+.btn-stack .btn-primary, .btn-stack .btn-ghost, .btn-stack .btn-danger{
+  width:100%;margin:0;flex:none;
+}
+.btn-row{ display:flex;gap:10px;margin-top:var(--gap); }
+.btn-row .btn-primary, .btn-row .btn-ghost, .btn-row .btn-danger{ flex:1;margin:0; }
+
 /* ---------- Grid ikon modul (muka depan) ---------- */
 .module-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:var(--gap); }
 .module-tile{

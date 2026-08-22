@@ -325,16 +325,44 @@ function maDrawBarChart(data, ids) {
       scales: { y: { min: 0, max: 100, grid: { color: "rgba(255,255,255,0.06)" }, ticks: { color: maGetCss("--text-dim"), callback: (v) => v + "%" } }, x: { grid: { display: false }, ticks: { color: maGetCss("--text"), font: { family: "Rajdhani", size: 10.5 } } } } },
   });
 }
+function maCenterTextPlugin(getLabel) {
+  return {
+    id: "maCenterText_" + Math.random().toString(36).slice(2),
+    afterDraw(chart) {
+      const { ctx, chartArea } = chart;
+      if (!chartArea) return;
+      const cx = (chartArea.left + chartArea.right) / 2;
+      const cy = (chartArea.top + chartArea.bottom) / 2;
+      const { value, sub } = getLabel();
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = maGetCss("--text");
+      ctx.font = "800 22px Orbitron, sans-serif";
+      ctx.fillText(value, cx, cy - (sub ? 9 : 0));
+      if (sub) {
+        ctx.fillStyle = maGetCss("--text-dim");
+        ctx.font = "600 10px Rajdhani, sans-serif";
+        ctx.fillText(sub, cx, cy + 13);
+      }
+      ctx.restore();
+    },
+  };
+}
+
 function maDrawDonutChart(hadir, tidakHadir, ids) {
   ids = ids || { canvas: "ma-chartDonut", key: "donut" };
   if (maChartLibFailed) { maChartFallbackMsg(ids.canvas, ".ma-chart-wrap"); return; }
   if (typeof Chart === "undefined") return;
   const ctx = document.getElementById(ids.canvas);
   if (maCharts[ids.key]) maCharts[ids.key].destroy();
+  const totalMurid = hadir + tidakHadir;
+  const pctLabel = totalMurid ? Math.round((hadir / totalMurid) * 1000) / 10 : 0;
   maCharts[ids.key] = new Chart(ctx, {
     type: "doughnut",
     data: { labels: ["Hadir", "Tidak Hadir"], datasets: [{ data: [hadir, tidakHadir], backgroundColor: [maGetCss("--mint"), maGetCss("--danger")], borderColor: maGetCss("--panel-b") || "#08211c", borderWidth: 3 }] },
     options: { responsive: true, maintainAspectRatio: false, cutout: "68%", plugins: { legend: { position: "bottom", labels: { color: maGetCss("--text"), font: { family: "Rajdhani", size: 12 }, usePointStyle: true, pointStyle: "circle" } } } },
+    plugins: [maCenterTextPlugin(() => ({ value: pctLabel + "%", sub: "HADIR" }))],
   });
 }
 

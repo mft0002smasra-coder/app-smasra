@@ -166,14 +166,17 @@ function renderMenu(c) {
   const hari = today.toLocaleDateString("ms-MY", { weekday: "long" });
   const tarikhFmt = today.toLocaleDateString("ms-MY", { day: "numeric", month: "short", year: "numeric" });
   c.innerHTML = `
-    <div class="glass card-pad" style="margin-bottom:18px">
+    <div class="glass card-pad" style="margin-bottom:var(--gap)">
       <div class="title-lg">🏫 Sistem Kehadiran Murid</div>
-      <div class="sub-dim">Hari: <b style="color:var(--text)">${hari}</b><br>Tarikh: <b style="color:var(--text)">${tarikhFmt}</b></div>
+      <div class="sub-dim" style="margin-bottom:0">Hari: <b style="color:var(--text)">${hari}</b><br>Tarikh: <b style="color:var(--text)">${tarikhFmt}</b></div>
     </div>
-    <button class="btn btn-primary" onclick="startIsiBorang()">📝 Isi Borang Kehadiran</button>
-    <button class="btn btn-ghost" onclick="kmGoto('editPilihTarikh')">✏️ Edit Kehadiran</button>
-    <button class="btn btn-ghost" onclick="kmGoto('analisisPilihTarikh')">📊 Analisis Kehadiran</button>
+    <div class="module-grid">
+      <div class="module-tile" onclick="startIsiBorang()" style="grid-column:1 / -1"><span data-icon="announce"></span><span class="module-tile-label">Isi Borang Kehadiran</span></div>
+      <div class="module-tile" onclick="kmGoto('editPilihTarikh')"><span data-icon="calendar"></span><span class="module-tile-label">Edit Kehadiran</span></div>
+      <div class="module-tile" onclick="kmGoto('analisisPilihTarikh')"><span data-icon="chart"></span><span class="module-tile-label">Analisis Kehadiran</span></div>
+    </div>
   `;
+  renderIcons();
 }
 
 /* ================= Flow: Isi Borang ================= */
@@ -201,8 +204,10 @@ function renderAskHadir(c) {
     <div class="glass card-pad">
       <div class="sub-dim" style="margin-bottom:14px">Masukkan bilangan <b style="color:var(--text)">hadir</b> hari ini. Nombor sahaja (bukan pecahan cth 29/30).</div>
       <input class="field-input" type="number" min="0" id="input-hadir" placeholder="Contoh: 28" value="${KM_S.hadir ?? ''}">
-      <button class="btn btn-primary" onclick="submitHadir()">Seterusnya</button>
-      <button class="btn btn-danger" onclick="kmResetToMenu()">Batal</button>
+    </div>
+    <div class="btn-stack">
+      <button class="btn-primary" onclick="submitHadir()">Seterusnya</button>
+      <button class="btn-danger" onclick="kmResetToMenu()">Batal</button>
     </div>`;
 }
 function submitHadir() {
@@ -218,8 +223,10 @@ function renderAskTidak(c) {
     <div class="glass card-pad">
       <div class="sub-dim" style="margin-bottom:14px">Masukkan bilangan <b style="color:var(--text)">tidak hadir</b> hari ini.</div>
       <input class="field-input" type="number" min="0" id="input-tidak" placeholder="Contoh: 2" value="${KM_S.tidak ?? ''}">
-      <button class="btn btn-primary" onclick="submitTidak()">Seterusnya</button>
-      <button class="btn btn-danger" onclick="kmResetToMenu()">Batal</button>
+    </div>
+    <div class="btn-stack">
+      <button class="btn-primary" onclick="submitTidak()">Seterusnya</button>
+      <button class="btn-danger" onclick="kmResetToMenu()">Batal</button>
     </div>`;
 }
 function submitTidak() {
@@ -235,8 +242,10 @@ function renderAskNama(c) {
     <div class="glass card-pad">
       <div class="sub-dim" style="margin-bottom:14px">Nama murid tidak hadir (pisah guna koma). Tulis <b style="color:var(--text)">Tiada</b> jika semua hadir.</div>
       <textarea class="field-input" id="input-nama" placeholder="Contoh: Ali, Ahmad, Siti">${kmEscape(KM_S.nama || '')}</textarea>
-      <button class="btn btn-primary" onclick="submitNama()">${KM_S.mode === 'edit' ? 'Kemaskini' : 'Hantar'}</button>
-      <button class="btn btn-danger" onclick="kmResetToMenu()">Batal</button>
+    </div>
+    <div class="btn-stack">
+      <button class="btn-primary" onclick="submitNama()">${KM_S.mode === 'edit' ? 'Kemaskini' : 'Hantar'}</button>
+      <button class="btn-danger" onclick="kmResetToMenu()">Batal</button>
     </div>`;
 }
 function submitNama() {
@@ -260,9 +269,11 @@ function renderRingkasan(c) {
         <div class="summary-row"><span class="lbl">Direkod oleh</span><span>Awak (staf log masuk)</span></div>
       </div>
     </div>
-    <button class="btn btn-primary" style="margin-top:14px" onclick="editRingkasan()">✏️ Edit</button>
-    <button class="btn btn-ghost" onclick="startIsiBorang()">🔙 Kembali Pilih Kelas</button>
-    <button class="btn btn-ghost" onclick="kmResetToMenu()">🏠 Menu Utama</button>
+    <div class="btn-stack">
+      <button class="btn-primary" onclick="editRingkasan()">✏️ Edit</button>
+      <button class="btn-ghost" onclick="startIsiBorang()">🔙 Kembali Pilih Kelas</button>
+      <button class="btn-ghost" onclick="kmResetToMenu()">🏠 Menu Utama</button>
+    </div>
   `;
 }
 function editRingkasan() {
@@ -284,9 +295,9 @@ function renderTarikhPager(c, nextScreen) {
   const items = pageDates.map(d =>
     `<div class="date-list-item" onclick="pilihTarikhUntuk('${nextScreen}', '${d}')"><span>${d}</span><span class="hari">${kmHari(d)}</span></div>`
   ).join("");
-  const nav = `<div class="pagination-row">
-    ${KM_S.tarikhPage > 0 ? `<button class="btn btn-ghost" onclick="KM_S.tarikhPage--; kmRender()">⬅️ Sebelum</button>` : ""}
-    ${KM_S.tarikhPage < totalPages - 1 ? `<button class="btn btn-ghost" onclick="KM_S.tarikhPage++; kmRender()">➡️ Lagi</button>` : ""}
+  const nav = `<div class="btn-row">
+    ${KM_S.tarikhPage > 0 ? `<button class="btn-ghost" onclick="KM_S.tarikhPage--; kmRender()">⬅️ Sebelum</button>` : ""}
+    ${KM_S.tarikhPage < totalPages - 1 ? `<button class="btn-ghost" onclick="KM_S.tarikhPage++; kmRender()">➡️ Lagi</button>` : ""}
   </div>`;
   c.innerHTML = `<div style="margin-bottom:10px" class="sub-dim">Muka ${KM_S.tarikhPage + 1}/${totalPages}</div>${items}${nav}`;
 }
@@ -317,9 +328,11 @@ function renderAnalisisPilihTarikh(c) { renderTarikhPager(c, "analisisJenis"); }
 function renderAnalisisJenis(c) {
   c.innerHTML = `
     <div class="sub-dim" style="margin-bottom:14px">Tarikh dipilih: <b style="color:var(--text)">${KM_S.analisisTarikh}</b></div>
-    <button class="btn btn-primary" onclick="KM_S.analisisJenis='kelas'; kmGoto('analisisPilihKelas')">📚 Analisis Kelas</button>
-    <button class="btn btn-primary" onclick="KM_S.analisisJenis='semua'; KM_S.analisisSemuaPage=0; kmGoto('analisisSemua')">📊 Analisis Keseluruhan</button>
-    <button class="btn btn-ghost" onclick="kmGoto('analisisPilihTarikh')">📅 Pilih Tarikh Lain</button>
+    <div class="btn-stack">
+      <button class="btn-primary" onclick="KM_S.analisisJenis='kelas'; kmGoto('analisisPilihKelas')">📚 Analisis Kelas</button>
+      <button class="btn-primary" onclick="KM_S.analisisJenis='semua'; KM_S.analisisSemuaPage=0; kmGoto('analisisSemua')">📊 Analisis Keseluruhan</button>
+      <button class="btn-ghost" onclick="kmGoto('analisisPilihTarikh')">📅 Pilih Tarikh Lain</button>
+    </div>
   `;
 }
 
@@ -379,9 +392,9 @@ function renderAnalisisSemua(c) {
     </div>`;
   }).join("");
 
-  const nav = `<div class="pagination-row" style="margin-top:14px">
-    ${KM_S.analisisSemuaPage > 0 ? `<button class="btn btn-ghost" onclick="KM_S.analisisSemuaPage--; kmRender()">⬅️ Sebelum</button>` : ""}
-    ${KM_S.analisisSemuaPage < totalPages - 1 ? `<button class="btn btn-ghost" onclick="KM_S.analisisSemuaPage++; kmRender()">➡️ Lagi</button>` : ""}
+  const nav = `<div class="btn-row" style="margin-top:var(--gap)">
+    ${KM_S.analisisSemuaPage > 0 ? `<button class="btn-ghost" onclick="KM_S.analisisSemuaPage--; kmRender()">⬅️ Sebelum</button>` : ""}
+    ${KM_S.analisisSemuaPage < totalPages - 1 ? `<button class="btn-ghost" onclick="KM_S.analisisSemuaPage++; kmRender()">➡️ Lagi</button>` : ""}
   </div>`;
 
   c.innerHTML = `
