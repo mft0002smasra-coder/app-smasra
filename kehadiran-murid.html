@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kehadiran Murid — SM Arab (Jaim) Al-Asyraf</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#030b12">
+<link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+<div class="bg-fx"></div>
+
+<div class="wrap">
+
+  <div id="login-screen" class="hidden">
+    <img class="logo-plain school-logo-img" alt="Logo Sekolah">
+    <div class="brand-title">SM ARAB (JAIM) AL-ASYRAF</div>
+    <div class="brand-sub">Sistem Pengurusan Sekolah</div>
+    <div class="glass">
+      <div class="gsi-wrap" id="google-btn-container"></div>
+      <div class="divider">Atau</div>
+      <form id="login-form">
+        <label class="field-label" for="login-email">Emel Rasmi</label>
+        <input class="field-input" type="email" id="login-email" placeholder="nama@moe-dl.edu.my" autocomplete="email" required>
+        <button class="btn-primary" type="submit" id="login-btn">Log Masuk</button>
+        <div class="error-text hidden" id="login-error"></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="app-content" class="hidden">
+
+    <header class="site-header">
+      <div class="site-header-row1">
+        <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu"><span data-icon="menu"></span></button>
+        <img class="header-logo school-logo-img" alt="Logo Sekolah">
+        <div class="header-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
+      </div>
+      <div class="site-header-row2">
+        <span class="header-greet">Selamat Datang, <span id="header-greet-name">-</span></span>
+        <span class="header-status"><span class="status-dot"></span>Sistem Aktif <span id="live-clock">--:--:-- --</span></span>
+      </div>
+    </header>
+
+    <div class="section-label">Kehadiran Murid</div>
+
+    <div class="tab-switch">
+      <button class="tab-btn active" id="tab-btn-borang" onclick="switchTab('borang')">Kehadiran Murid</button>
+      <button class="tab-btn" id="tab-btn-analisis" onclick="switchTab('analisis')">Analisis Kehadiran</button>
+    </div>
+
+    <!-- Tab 1: Borang (Isi / Edit / Analisis asas) -->
+    <div class="tab-panel" id="tab-panel-borang">
+      <div class="topbar">
+        <button class="icon-btn hidden" id="km-btn-back" onclick="kmGoBack()">←</button>
+        <div class="topbar-title" id="km-topbar-title">Menu Utama</div>
+        <button class="icon-btn" onclick="kmResetToMenu()">⌂</button>
+      </div>
+      <div id="km-content"></div>
+
+      <!-- Lightbox untuk klik gambar (tiada dalam alur ini, disediakan untuk konsistenan) -->
+      <div class="lightbox-overlay hidden" id="km-lightbox-overlay" onclick="document.getElementById('km-lightbox-overlay').classList.add('hidden')">
+        <img id="km-lightbox-img" src="" alt="">
+      </div>
+    </div>
+
+    <!-- Tab 2: Analisis Kehadiran (dashboard Chart.js) -->
+    <div class="tab-panel hidden" id="tab-panel-analisis">
+      <div class="ma-toolbar">
+        <span class="ma-status-pill"><span class="status-dot"></span><span id="ma-statusText">MENYAMBUNG</span></span>
+        <button class="ma-refresh-btn" id="ma-refreshBtn" title="Muat semula data">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+          Segar
+        </button>
+      </div>
+
+      <div class="ma-tabs">
+        <button class="ma-tab-btn active" data-matab="utama">Utama</button>
+        <button class="ma-tab-btn" data-matab="kelas">Analisis Kelas</button>
+        <button class="ma-tab-btn" data-matab="tahunan">Tahunan/Bulanan</button>
+      </div>
+
+      <div id="ma-banner-error" class="ma-banner ma-banner-error"></div>
+      <div id="ma-banner-loading" class="ma-banner ma-banner-loading show">⏳ Memuatkan data langsung</div>
+
+      <!-- ============ Sub-page: Utama ============ -->
+      <div class="ma-page active" id="ma-page-utama">
+        <div class="ma-filterbar">
+          <div class="ma-field"><label>Tahun</label><select id="ma-u-year"></select></div>
+          <div class="ma-field"><label>Tarikh</label><input type="date" id="ma-u-date"></div>
+          <div class="ma-updated-note" id="ma-u-lastupdate"></div>
+        </div>
+
+        <div class="ma-sec-title"><div class="bar"></div><h2>Analisa Keseluruhan</h2><span class="count" id="ma-u-datelabel"></span></div>
+        <div class="ma-kpi-grid" id="ma-u-kpis"></div>
+
+        <div class="ma-sec-title"><div class="bar"></div><h2>Graf Kehadiran</h2></div>
+        <div class="ma-chart-grid">
+          <div class="ma-chart-card">
+            <h3>Peratus Kehadiran Mengikut Kelas</h3>
+            <div class="ma-chart-wrap" id="ma-chartByClassWrap"><div class="ma-chart-inner" id="ma-chartByClassInner"><canvas id="ma-chartByClass"></canvas></div></div>
+          </div>
+          <div class="ma-chart-card">
+            <h3>Nisbah Hadir / Tidak Hadir</h3>
+            <div class="ma-chart-wrap"><canvas id="ma-chartDonut"></canvas></div>
+          </div>
+        </div>
+
+        <div class="ma-sec-title"><div class="bar"></div><h2>Analisa Setiap Kelas</h2><span class="count" id="ma-u-classcount"></span></div>
+        <div id="ma-u-classgrid"></div>
+      </div>
+
+      <!-- ============ Sub-page: Analisis Kelas ============ -->
+      <div class="ma-page" id="ma-page-kelas">
+        <div class="ma-filterbar">
+          <div class="ma-field"><label>Tahun</label><select id="ma-k-year"></select></div>
+          <div class="ma-field"><label>Bulan</label><select id="ma-k-month"></select></div>
+          <div class="ma-field ma-field-fill"><label>Kelas</label><select id="ma-k-kelas"></select></div>
+        </div>
+
+        <div class="ma-sec-title"><div class="bar"></div><h2>Analisa Kelas Bulanan</h2><span class="count" id="ma-k-label"></span></div>
+        <div class="ma-month-summary" id="ma-k-kpis"></div>
+
+        <div class="ma-chart-grid" style="grid-template-columns:1fr;">
+          <div class="ma-chart-card">
+            <h3>Trend Peratus Kehadiran Sepanjang Bulan</h3>
+            <div class="ma-chart-wrap"><canvas id="ma-chartTrend"></canvas></div>
+          </div>
+        </div>
+
+        <div class="ma-sec-title"><div class="bar"></div><h2>Senarai Murid Tidak Hadir</h2><span class="count" id="ma-k-absentcount"></span></div>
+        <div class="ma-absent-table-wrap">
+          <table class="ma-absent-table" id="ma-k-absent-table">
+            <thead><tr><th>Tarikh</th><th>Hari</th><th>Nama</th><th>Direkodkan Oleh</th></tr></thead>
+            <tbody id="ma-k-absent-body"></tbody>
+          </table>
+          <div class="ma-empty-state" id="ma-k-empty" style="display:none;padding:26px 16px;">🎉 Tiada rekod ketidakhadiran bagi kelas &amp; bulan ini.</div>
+        </div>
+      </div>
+
+      <!-- ============ Sub-page: Tahunan/Bulanan ============ -->
+      <div class="ma-page" id="ma-page-tahunan">
+        <div class="ma-filterbar">
+          <div class="ma-field"><label>Tahun</label><select id="ma-t-year"></select></div>
+          <div class="ma-field"><label>Bulan</label><select id="ma-t-month"></select></div>
+          <div class="ma-updated-note" id="ma-t-lastupdate">Kosongkan bulan untuk analisa tahunan penuh</div>
+        </div>
+
+        <div class="ma-sec-title"><div class="bar"></div><h2>Analisa Keseluruhan</h2><span class="count" id="ma-t-periodlabel"></span></div>
+        <div class="ma-kpi-grid" id="ma-t-kpis"></div>
+
+        <div class="ma-sec-title"><div class="bar"></div><h2>Graf Kehadiran</h2></div>
+        <div class="ma-chart-grid">
+          <div class="ma-chart-card">
+            <h3>Purata Peratus Kehadiran Mengikut Kelas</h3>
+            <div class="ma-chart-wrap" id="ma-chartByClassWrapT"><div class="ma-chart-inner" id="ma-chartByClassInnerT"><canvas id="ma-chartByClassT"></canvas></div></div>
+          </div>
+          <div class="ma-chart-card">
+            <h3>Nisbah Hadir / Tidak Hadir</h3>
+            <div class="ma-chart-wrap"><canvas id="ma-chartDonutT"></canvas></div>
+          </div>
+        </div>
+
+        <div class="ma-sec-title"><div class="bar"></div><h2>Analisa Setiap Kelas</h2><span class="count" id="ma-t-classcount"></span></div>
+        <div id="ma-t-classgrid"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+  <nav class="drawer" id="drawer">
+    <div class="drawer-logo-row"><img class="school-logo-img" alt=""><span>SMASRA</span></div>
+    <a class="drawer-item" href="index.html"><span data-icon="home"></span><span class="drawer-label">Laman Utama</span></a>
+    <a class="drawer-item" href="pengumuman.html"><span data-icon="announce"></span><span class="drawer-label">Pengumuman</span></a>
+    <a class="drawer-item" href="kehadiran-staf.html"><span data-icon="calendar"></span><span class="drawer-label">Kehadiran Staf</span></a>
+    <a class="drawer-item active" href="kehadiran-murid.html"><span data-icon="graduate"></span><span class="drawer-label">Kehadiran Murid</span></a>
+    <div class="drawer-item soon"><span data-icon="folder"></span><span class="drawer-label">Laporan Pentadbir</span></div>
+    <div class="drawer-item soon"><span data-icon="folder"></span><span class="drawer-label">Laporan Guru</span></div>
+    <div class="drawer-item soon"><span data-icon="chart"></span><span class="drawer-label">Prestasi Kerja</span></div>
+    <div class="drawer-spacer"></div>
+    <a class="drawer-item drawer-logout" href="#" onclick="logout();return false;"><span data-icon="power"></span><span class="drawer-label">Log Keluar</span></a>
+  </nav>
+
+  <div class="bottom-nav-wrap">
+    <nav class="bottom-nav">
+      <span class="bn-item bn-placeholder" aria-hidden="true"></span>
+      <span class="bn-item bn-placeholder" aria-hidden="true"></span>
+      <a class="bn-item" href="index.html" aria-label="Home"><span data-icon="home"></span></a>
+      <span class="bn-item bn-placeholder" aria-hidden="true"></span>
+      <a class="bn-item" href="profile.html" aria-label="Profil"><span data-icon="profile"></span></a>
+    </nav>
+  </div>
+
+  <div class="ma-modal-overlay" id="ma-modal-overlay">
+    <div class="ma-modal-box">
+      <button class="ma-modal-close" id="ma-modal-close" aria-label="Tutup">✕</button>
+      <div id="ma-modal-content"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+<script src="kehadiran-murid-borang.js"></script>
+<script src="kehadiran-murid-analisis.js"></script>
+<script>
+  let analisisBooted = false;
+
+  function switchTab(name) {
+    document.getElementById("tab-panel-borang").classList.toggle("hidden", name !== "borang");
+    document.getElementById("tab-panel-analisis").classList.toggle("hidden", name !== "analisis");
+    document.getElementById("tab-btn-borang").classList.toggle("active", name === "borang");
+    document.getElementById("tab-btn-analisis").classList.toggle("active", name === "analisis");
+    if (name === "analisis" && !analisisBooted) {
+      analisisBooted = true;
+      maBoot();
+    }
+  }
+
+  function renderKehadiranMurid(user) {
+    kmRender();
+    kmLoadAll().then(kmRender);
+  }
+  initApp(renderKehadiranMurid);
+</script>
+</body>
+</html>

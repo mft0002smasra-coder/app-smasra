@@ -4,8 +4,11 @@ const CORE_ASSETS = [
   "pengumuman.html",
   "profile.html",
   "kehadiran-staf.html",
+  "kehadiran-murid.html",
   "style.css",
   "app.js",
+  "kehadiran-murid-borang.js",
+  "kehadiran-murid-analisis.js",
   "manifest.json",
 ];
 
