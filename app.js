@@ -11,7 +11,7 @@ const APPSHEET_ERKS_URL = "https://www.appsheet.com/start/210829a8-31c7-4ade-ba5
 const API_URL = "https://script.google.com/macros/s/AKfycbxNMX-PHWy4t8PdQhj-jekw9T8V7b1lN2M8sQ9d8jybfeSLvKS9jB8XuKbjjYRwshcz/exec";
 
 // GANTI dengan OAuth Client ID dari Google Cloud Console untuk aktifkan "Sign in with Google"
-const GOOGLE_CLIENT_ID = "https://702368440468-u7uoc6396frmum2j0mllbc3llqi4tgbn.apps.googleusercontent.com/";
+const GOOGLE_CLIENT_ID = "https://702368440468-u7uoc6396frmum2j0mllbc3llqi4tgbn.apps.googleusercontent.com";
 
 const USER_KEY = "smasra_user";
 
