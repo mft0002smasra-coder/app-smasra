@@ -265,19 +265,19 @@ function maRenderUtama() {
     { icon: "👥", label: "Jumlah Murid", value: `${jumlahMurid}<small> orang</small>`, sub: "Jumlah keseluruhan direkodkan", accent: "--amber" },
     { icon: "📊", label: "Peratus Kehadiran", value: `${peratusKeseluruhan}<small>%</small>`, sub: "Kehadiran keseluruhan", accent: "--blue" },
   ];
+  const donutCardHtml = `
+    <div class="ma-kpi-card ma-kpi-donut-card">
+      <div class="ma-kpi-label">Nisbah Hadir</div>
+      <div class="ma-donut-mini-wrap"><canvas id="ma-chartDonut"></canvas></div>
+    </div>`;
   document.getElementById("ma-u-kpis").innerHTML = kpis.map((k) => `
     <div class="ma-kpi-card" style="--ma-accent:var(${k.accent})">
       <span class="ma-kpi-icon">${k.icon}</span>
       <div class="ma-kpi-label">${k.label}</div>
       <div class="ma-kpi-value">${k.value}</div>
       <div class="ma-kpi-sub">${k.sub}</div>
-    </div>`).join("");
+    </div>`).join("") + donutCardHtml;
 
-  const sortedForChart = MA_ALL_CLASSES.map((kName) => {
-    const rec = dayRecords.find((r) => r.kelas === kName);
-    return { kelas: kName, peratus: rec ? rec.peratus : null };
-  });
-  maDrawBarChart(sortedForChart);
   maDrawDonutChart(jumlahHadir, jumlahTidakHadir);
 
   document.getElementById("ma-u-classcount").textContent = `${jumlahKelasIsi} / ${MA_ALL_CLASSES.length} kelas ada rekod`;
@@ -338,12 +338,12 @@ function maCenterTextPlugin(getLabel) {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = maGetCss("--text");
-      ctx.font = "800 22px Orbitron, sans-serif";
-      ctx.fillText(value, cx, cy - (sub ? 9 : 0));
+      ctx.font = "800 13px Orbitron, sans-serif";
+      ctx.fillText(value, cx, cy - (sub ? 6 : 0));
       if (sub) {
         ctx.fillStyle = maGetCss("--text-dim");
-        ctx.font = "600 10px Rajdhani, sans-serif";
-        ctx.fillText(sub, cx, cy + 13);
+        ctx.font = "600 7px Rajdhani, sans-serif";
+        ctx.fillText(sub, cx, cy + 8);
       }
       ctx.restore();
     },
@@ -361,7 +361,7 @@ function maDrawDonutChart(hadir, tidakHadir, ids) {
   maCharts[ids.key] = new Chart(ctx, {
     type: "doughnut",
     data: { labels: ["Hadir", "Tidak Hadir"], datasets: [{ data: [hadir, tidakHadir], backgroundColor: [maGetCss("--mint"), maGetCss("--danger")], borderColor: maGetCss("--panel-b") || "#08211c", borderWidth: 3 }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: "68%", plugins: { legend: { position: "bottom", labels: { color: maGetCss("--text"), font: { family: "Rajdhani", size: 12 }, usePointStyle: true, pointStyle: "circle" } } } },
+    options: { responsive: true, maintainAspectRatio: false, cutout: "72%", plugins: { legend: { display: false }, tooltip: { enabled: true } } },
     plugins: [maCenterTextPlugin(() => ({ value: pctLabel + "%", sub: "HADIR" }))],
   });
 }
@@ -460,19 +460,17 @@ function maRenderTahunan() {
     { icon: "👥", label: "Purata Jumlah Murid", value: `${purataMurid}<small> orang</small>`, sub: "Purata direkodkan sehari", accent: "--amber" },
     { icon: "📊", label: "Peratus Kehadiran", value: `${peratusKeseluruhan}<small>%</small>`, sub: `Kehadiran ${monthSelected ? "bulan" : "tahun"} ini`, accent: "--blue" },
   ];
+  const donutCardHtmlT = `
+    <div class="ma-kpi-card ma-kpi-donut-card">
+      <div class="ma-kpi-label">Nisbah Hadir</div>
+      <div class="ma-donut-mini-wrap"><canvas id="ma-chartDonutT"></canvas></div>
+    </div>`;
   document.getElementById("ma-t-kpis").innerHTML = kpis.map((k) => `
     <div class="ma-kpi-card" style="--ma-accent:var(${k.accent})">
       <span class="ma-kpi-icon">${k.icon}</span><div class="ma-kpi-label">${k.label}</div>
       <div class="ma-kpi-value">${k.value}</div><div class="ma-kpi-sub">${k.sub}</div>
-    </div>`).join("");
+    </div>`).join("") + donutCardHtmlT;
 
-  const sortedForChart = MA_ALL_CLASSES.map((kName) => {
-    const recs = periodRecords.filter((r) => r.kelas === kName);
-    if (!recs.length) return { kelas: kName, peratus: null };
-    const avgP = Math.round((recs.reduce((s, r) => s + r.peratus, 0) / recs.length) * 10) / 10;
-    return { kelas: kName, peratus: avgP };
-  });
-  maDrawBarChart(sortedForChart, { wrap: "ma-chartByClassWrapT", inner: "ma-chartByClassInnerT", canvas: "ma-chartByClassT", key: "barT" });
   maDrawDonutChart(jumlahHadirTotal, jumlahTidakHadirTotal, { canvas: "ma-chartDonutT", key: "donutT" });
 
   const kelasIsiUnik = new Set(periodRecords.map((r) => r.kelas)).size;

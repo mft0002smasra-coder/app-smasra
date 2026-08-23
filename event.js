@@ -37,6 +37,41 @@ async function evLoadEvents() {
   }
 }
 
+/* ---------------- Ticker 7 hari akan datang (muka depan) ---------------- */
+async function evRenderHomeTicker() {
+  const wrap = document.getElementById("event-ticker-wrap");
+  const content = document.getElementById("event-ticker-content");
+  if (!wrap || !content) return;
+
+  if (!evEvents.length) await evLoadEvents();
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const in7 = new Date(today);
+  in7.setDate(in7.getDate() + 6);
+  const todayStr = evYmd(today.getFullYear(), today.getMonth(), today.getDate());
+  const in7Str = evYmd(in7.getFullYear(), in7.getMonth(), in7.getDate());
+
+  const upcoming = evEvents
+    .filter((ev) => ev.tarikhHingga >= todayStr && ev.tarikhDari <= in7Str)
+    .sort((a, b) => a.tarikhDari.localeCompare(b.tarikhDari));
+
+  if (!upcoming.length) {
+    wrap.classList.add("hidden");
+    return;
+  }
+
+  content.innerHTML = upcoming
+    .map((ev) => {
+      const [y, m, d] = ev.tarikhDari.split("-").map(Number);
+      const dLabel = new Date(y, m - 1, d).toLocaleDateString("ms-MY", { day: "numeric", month: "short" });
+      return `<span><b>${dLabel}</b> — ${evEscape(ev.tajuk)} (${evEscape(ev.unit)})</span>`;
+    })
+    .join('<span class="sep">•</span>');
+
+  wrap.classList.remove("hidden");
+}
+
 function evEventsOnDate(ymd) {
   return evEvents.filter((ev) => ymd >= ev.tarikhDari && ymd <= ev.tarikhHingga);
 }
@@ -166,10 +201,7 @@ function evInit(user) {
   const legend = document.getElementById("event-legend");
   legend.innerHTML = EV_UNITS.map((u) => `<span class="event-legend-item"><span class="event-legend-dot" style="background:${evUnitColor(u)}"></span>${u}</span>`).join("");
 
-  const role2Norm = String(user.role2 || "").trim().toLowerCase();
-  if (role2Norm === "pentadbir") {
-    document.getElementById("event-fab").classList.remove("hidden");
-  }
+  document.getElementById("event-fab").classList.remove("hidden");
 
   document.getElementById("event-calendar-grid").addEventListener("click", (e) => {
     const cell = e.target.closest(".event-cell");

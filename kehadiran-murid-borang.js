@@ -104,19 +104,13 @@ let KM_S = {
   tidak: null,
   nama: "",
   editingRow: null,
-  tarikhPage: 0,      // untuk pilih tarikh (edit / analisis), 5/muka
-  analisisTarikh: null,
-  analisisJenis: null,
-  analisisSemuaPage: 0, // 9/muka
+  tarikhPage: 0,      // untuk pilih tarikh (edit), 5/muka
 };
 
 const KM_TITLES = {
   menu: "Menu Utama", pilihKelasBaru: "Pilih Kelas", askHadir: "Isi Kehadiran",
   askTidak: "Isi Kehadiran", askNama: "Isi Kehadiran", ringkasan: "Ringkasan",
   editPilihTarikh: "Edit — Pilih Tarikh", editPilihKelas: "Edit — Pilih Kelas",
-  analisisPilihTarikh: "Analisis — Pilih Tarikh", analisisJenis: "Analisis Kehadiran",
-  analisisPilihKelas: "Analisis Kelas", analisisSatuKelas: "Analisis Kelas",
-  analisisSemua: "Analisis Keseluruhan",
 };
 
 function kmGoto(screen, pushHistory = true) {
@@ -153,9 +147,6 @@ function kmRender() {
     askHadir: renderAskHadir, askTidak: renderAskTidak, askNama: renderAskNama,
     ringkasan: renderRingkasan,
     editPilihTarikh: renderEditPilihTarikh, editPilihKelas: renderEditPilihKelas,
-    analisisPilihTarikh: renderAnalisisPilihTarikh, analisisJenis: renderAnalisisJenis,
-    analisisPilihKelas: renderAnalisisPilihKelas, analisisSatuKelas: renderAnalisisSatuKelas,
-    analisisSemua: renderAnalisisSemua,
   };
   (renderers[KM_S.screen] || renderMenu)(c);
 }
@@ -172,8 +163,7 @@ function renderMenu(c) {
     </div>
     <div class="module-grid">
       <div class="module-tile" onclick="startIsiBorang()" style="grid-column:1 / -1"><span data-icon="announce"></span><span class="module-tile-label">Isi Borang Kehadiran</span></div>
-      <div class="module-tile" onclick="kmGoto('editPilihTarikh')"><span data-icon="calendar"></span><span class="module-tile-label">Edit Kehadiran</span></div>
-      <div class="module-tile" onclick="kmGoto('analisisPilihTarikh')"><span data-icon="chart"></span><span class="module-tile-label">Analisis Kehadiran</span></div>
+      <div class="module-tile" onclick="kmGoto('editPilihTarikh')" style="grid-column:1 / -1"><span data-icon="calendar"></span><span class="module-tile-label">Edit Kehadiran</span></div>
     </div>
   `;
   renderIcons();
@@ -302,8 +292,8 @@ function renderTarikhPager(c, nextScreen) {
   c.innerHTML = `<div style="margin-bottom:10px" class="sub-dim">Muka ${KM_S.tarikhPage + 1}/${totalPages}</div>${items}${nav}`;
 }
 function pilihTarikhUntuk(nextScreen, tarikh) {
-  if (nextScreen === "editPilihKelas") { KM_S.tarikh = tarikh; kmGoto("editPilihKelas"); }
-  else { KM_S.analisisTarikh = tarikh; kmGoto("analisisJenis"); }
+  KM_S.tarikh = tarikh;
+  kmGoto(nextScreen);
 }
 
 function renderEditPilihKelas(c) {
@@ -322,92 +312,6 @@ function pilihKelasEdit(kelas, bilangan) {
   kmGoto("askHadir");
 }
 
-/* ================= Flow: Analisis Kehadiran ================= */
-function renderAnalisisPilihTarikh(c) { renderTarikhPager(c, "analisisJenis"); }
-
-function renderAnalisisJenis(c) {
-  c.innerHTML = `
-    <div class="sub-dim" style="margin-bottom:14px">Tarikh dipilih: <b style="color:var(--text)">${KM_S.analisisTarikh}</b></div>
-    <div class="btn-stack">
-      <button class="btn-primary" onclick="KM_S.analisisJenis='kelas'; kmGoto('analisisPilihKelas')">📚 Analisis Kelas</button>
-      <button class="btn-primary" onclick="KM_S.analisisJenis='semua'; KM_S.analisisSemuaPage=0; kmGoto('analisisSemua')">📊 Analisis Keseluruhan</button>
-      <button class="btn-ghost" onclick="kmGoto('analisisPilihTarikh')">📅 Pilih Tarikh Lain</button>
-    </div>
-  `;
-}
-
-function renderAnalisisPilihKelas(c) {
-  const kelasDenganData = new Set(kmData.kehadiran.filter(r => r.tarikh === KM_S.analisisTarikh).map(r => r.kelas));
-  const list = kmData.kelas.filter(k => kelasDenganData.has(k.nama));
-  if (!list.length) { c.innerHTML = `<div class="empty-state">Tiada data kelas untuk ${KM_S.analisisTarikh}.</div>`; return; }
-  const tiles = list.map(k => `<div class="tile" onclick="KM_S.kelas='${kmEscape(k.nama)}'; kmGoto('analisisSatuKelas')">${kmEscape(k.nama)}</div>`).join("");
-  c.innerHTML = `<div class="grid2">${tiles}</div>`;
-}
-
-function renderAnalisisSatuKelas(c) {
-  const rec = kmData.kehadiran.find(r => r.tarikh === KM_S.analisisTarikh && r.kelas === KM_S.kelas);
-  const kelasInfo = kmData.kelas.find(k => k.nama === KM_S.kelas);
-  const bilMurid = kelasInfo ? kelasInfo.bilangan : 0;
-  if (!rec) { c.innerHTML = `<div class="empty-state">Tiada data untuk ${KM_S.kelas} (${KM_S.analisisTarikh}).</div>`; return; }
-  const pct = kmCalcPercent(rec.hadir, rec.tidak);
-  c.innerHTML = `
-    <div class="glass card-pad">
-      <div class="title-lg">📚 ${kmEscape(KM_S.kelas)}</div>
-      <div class="sub-dim">${KM_S.analisisTarikh}</div>
-      <div style="margin-top:14px">
-        <div class="summary-row"><span class="lbl">Hadir</span><span>${rec.hadir}/${bilMurid}</span></div>
-        <div class="summary-row"><span class="lbl">Tidak Hadir</span><span>${rec.tidak}/${bilMurid}</span></div>
-        <div class="summary-row"><span class="lbl">% Kehadiran</span><span class="pct-badge ${kmPctClass(pct)}">${pct}</span></div>
-        <div class="summary-row"><span class="lbl">Direkod oleh</span><span>${kmEscape(rec.direkodOleh)}</span></div>
-      </div>
-      ${rec.nama ? `<div class="names-missing">Tidak hadir: ${kmEscape(rec.nama)}</div>` : ""}
-    </div>`;
-}
-
-function renderAnalisisSemua(c) {
-  const rows = kmData.kehadiran.filter(r => r.tarikh === KM_S.analisisTarikh);
-  const kelasList = kmData.kelas;
-  const totalHadir = rows.reduce((s, r) => s + r.hadir, 0);
-  const totalTidak = rows.reduce((s, r) => s + r.tidak, 0);
-  const totalMurid = totalHadir + totalTidak;
-  const pctKeseluruhan = kmCalcPercent(totalHadir, totalTidak);
-  const kelasDiIsi = kelasList.filter(k => rows.some(r => r.kelas === k.nama)).length;
-
-  const PAGE = 9;
-  const totalPages = Math.ceil(kelasList.length / PAGE) || 1;
-  if (KM_S.analisisSemuaPage >= totalPages) KM_S.analisisSemuaPage = totalPages - 1;
-  if (KM_S.analisisSemuaPage < 0) KM_S.analisisSemuaPage = 0;
-  const pageKelas = kelasList.slice(KM_S.analisisSemuaPage * PAGE, KM_S.analisisSemuaPage * PAGE + PAGE);
-
-  const blocks = pageKelas.map(k => {
-    const r = rows.find(r => r.kelas === k.nama);
-    if (!r) return `<div class="class-report"><div class="class-report-title">${kmEscape(k.nama)} (${k.bilangan} orang)</div><div class="sub-dim" style="font-size:12px">Data belum diisi.</div></div>`;
-    const pct = kmCalcPercent(r.hadir, r.tidak);
-    return `<div class="class-report">
-      <div class="class-report-title">${kmEscape(k.nama)} (${k.bilangan} orang)</div>
-      <div class="summary-row"><span class="lbl">Hadir</span><span>${r.hadir}/${k.bilangan}</span></div>
-      <div class="summary-row"><span class="lbl">Tidak Hadir</span><span>${r.tidak}/${k.bilangan}</span></div>
-      <div class="summary-row"><span class="lbl">% Kehadiran</span><span class="pct-badge ${kmPctClass(pct)}">${pct}</span></div>
-      ${r.nama ? `<div class="names-missing">Tidak hadir: ${kmEscape(r.nama)}</div>` : ""}
-    </div>`;
-  }).join("");
-
-  const nav = `<div class="btn-row" style="margin-top:var(--gap)">
-    ${KM_S.analisisSemuaPage > 0 ? `<button class="btn-ghost" onclick="KM_S.analisisSemuaPage--; kmRender()">⬅️ Sebelum</button>` : ""}
-    ${KM_S.analisisSemuaPage < totalPages - 1 ? `<button class="btn-ghost" onclick="KM_S.analisisSemuaPage++; kmRender()">➡️ Lagi</button>` : ""}
-  </div>`;
-
-  c.innerHTML = `
-    <div class="top-overview">
-      <div class="ov-card"><div class="ov-val">${kelasDiIsi}/${kelasList.length}</div><div class="ov-lbl">Kelas Diisi</div></div>
-      <div class="ov-card"><div class="ov-val">${totalMurid}</div><div class="ov-lbl">Jumlah Murid</div></div>
-      <div class="ov-card"><div class="ov-val" style="color:var(--mint)">${pctKeseluruhan}</div><div class="ov-lbl">% Kehadiran</div></div>
-    </div>
-    <div class="sub-dim" style="margin-bottom:10px">${KM_S.analisisTarikh} · Muka ${KM_S.analisisSemuaPage + 1}/${totalPages}</div>
-    <div class="glass card-pad">${blocks}</div>
-    ${nav}
-  `;
-}
 
 /* ================= Mula ================= */
 (async function boot() {

@@ -212,9 +212,10 @@ body{
   width:100%;max-width:var(--app-max);height:60px;background:var(--panel-b);
   border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);
 }
-.bn-item{ display:flex;align-items:center;justify-content:center;color:var(--text-dim);text-decoration:none; }
+.bn-item{ display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--text-dim);text-decoration:none; }
 .bn-item.active{ color:var(--cyan); }
-.bn-item .icon{ width:27px;height:27px; }
+.bn-item .icon{ width:23px;height:23px; }
+.bn-label{ font-size:9px;font-weight:600;letter-spacing:.2px; }
 .bn-placeholder{ visibility:hidden; }
 
 /* ---------- Dashboard Analisis eRKS (rks- = scoped, elak konflik kelas lain) ---------- */
@@ -326,6 +327,26 @@ body{
 .module-tile:active{ transform:scale(.96); }
 .module-tile.soon{ opacity:.4; }
 .module-tile.soon .icon{ color:var(--text-dim); }
+
+.event-ticker-wrap{
+  display:flex;align-items:center;gap:0;background:var(--panel-a);border:1px solid var(--line);
+  border-radius:12px;overflow:hidden;margin-bottom:var(--gap);height:36px;
+}
+.event-ticker-tag{
+  flex-shrink:0;font-family:'Orbitron',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:.6px;
+  color:#03130d;background:linear-gradient(90deg,var(--cyan),var(--blue));padding:0 12px;height:100%;
+  display:flex;align-items:center;
+}
+.event-ticker-track{ flex:1;overflow:hidden;position:relative;height:100%;min-width:0; }
+.event-ticker-content{
+  position:absolute;white-space:nowrap;height:100%;display:flex;align-items:center;
+  padding-left:100%;animation:event-ticker-scroll 24s linear infinite;
+  font-size:12.5px;color:var(--text);
+}
+.event-ticker-content b{ color:var(--cyan);font-weight:700; }
+.event-ticker-content .sep{ color:var(--text-dim);margin:0 16px; }
+@keyframes event-ticker-scroll{ from{ transform:translateX(0); } to{ transform:translateX(-100%); } }
+@media (prefers-reduced-motion: reduce){ .event-ticker-content{ animation:none; } }
 
 /* ---------- Section label ---------- */
 .section-label{
@@ -498,6 +519,9 @@ textarea.field-input{ resize:vertical;min-height:100px;font-size:15px; }
 .ma-kpi-value{ font-family:'Orbitron',sans-serif;font-weight:800;font-size:16.5px;color:var(--ma-accent,var(--cyan)); }
 .ma-kpi-value small{ font-family:'Rajdhani',sans-serif;font-size:10px;color:var(--text-dim);font-weight:600; }
 .ma-kpi-sub{ font-size:9px;color:var(--text-dim);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+
+.ma-kpi-donut-card{ display:flex;flex-direction:column;align-items:center;justify-content:center; }
+.ma-donut-mini-wrap{ position:relative;width:100%;height:64px;margin-top:2px; }
 
 .ma-chart-grid{ display:grid;grid-template-columns:1fr;gap:10px;min-width:0; }
 .ma-chart-card{ background:var(--panel-a);border:1px solid var(--line);border-radius:12px;padding:12px 12px 6px;min-width:0; }
