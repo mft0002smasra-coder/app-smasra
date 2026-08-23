@@ -583,6 +583,14 @@ table.ma-absent-table tbody tr:last-child td{ border-bottom:none; }
   .ma-class-grid{ grid-template-columns:repeat(4,1fr); }
 }
 
+.modal-overlay-center{
+  position:fixed;inset:0;background:rgba(2,8,12,.72);backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;padding:20px;z-index:45;
+}
+.modal-overlay-center .modal-sheet{
+  border-radius:18px;max-width:420px;max-height:82vh;
+}
+
 /* ============================================================
    EVENT — kalendar
    ============================================================ */

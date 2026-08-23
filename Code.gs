@@ -182,7 +182,8 @@ function getEvents() {
 
 function addEvent(body) {
   var user = findUserByEmail(body.email);
-  if (!user || user.role2 !== "Pentadbir") {
+  var role2Norm = user ? String(user.role2 || "").trim().toLowerCase() : "";
+  if (!user || role2Norm !== "pentadbir") {
     return jsonResponse({ success: false, message: "Hanya Pentadbir boleh tambah event." });
   }
   if (!body.unit || !body.tarikhDari || !body.tajuk) {

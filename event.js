@@ -166,7 +166,8 @@ function evInit(user) {
   const legend = document.getElementById("event-legend");
   legend.innerHTML = EV_UNITS.map((u) => `<span class="event-legend-item"><span class="event-legend-dot" style="background:${evUnitColor(u)}"></span>${u}</span>`).join("");
 
-  if (user.role2 === "Pentadbir") {
+  const role2Norm = String(user.role2 || "").trim().toLowerCase();
+  if (role2Norm === "pentadbir") {
     document.getElementById("event-fab").classList.remove("hidden");
   }
 
