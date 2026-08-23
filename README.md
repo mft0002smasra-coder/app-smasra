@@ -60,8 +60,21 @@ Google Apps Script **tak auto-update** URL Web App yang sedia ada bila awak edit
 
 Kalau tak buat step ni, URL `.../exec` awak akan terus guna kod LAMA walaupun fail Code.gs dah ditukar — ini punca biasa "fungsi baru tak jalan" atau "banner tak keluar macam patut".
 
+## Menyediakan modul Event
+
+**1. Tambah lajur "Role2" di DatabaseSTAFF**
+Kolum H (selepas Role) — isi **"Pentadbir"** untuk staf yang dibenarkan tambah event. Kosongkan untuk staf lain.
+
+**2. Buat tab baru "Event" di Google Sheet**
+Lajur (baris 1 = header, data bermula baris 2):
+`A: Unit | B: TarikhDari | C: TarikhHingga | D: Masa | E: Tajuk | F: Tempat | G: DicatatOleh`
+
+Lajur G (DicatatOleh) diisi automatik oleh sistem — tak perlu isi manual.
+
+Selepas tambah lajur/tab baru ni, **redeploy Apps Script** (Manage deployments > pensil > New version) supaya perubahan Code.gs berkuat kuasa.
+
 ## Nota
 - Drawer menu (kiri) dan bottom nav (bawah) guna ikon sahaja tanpa label teks, ikut permintaan reka bentuk
-- Bottom nav ada 5 slot — 2 aktif buat masa ini (Home, Profil), 3 lagi placeholder untuk modul akan datang
+- Bottom nav ada 5 slot — Home, Event, Profil aktif; 2 lagi placeholder untuk modul akan datang
 - Ikon "urus banner" (pensel) pada carousel kelihatan untuk Admin sahaja — belum berfungsi (akan datang)
-- Push Notification (FCM) dan modul lain (Kehadiran, Laporan, Prestasi) akan dibina pada fasa seterusnya
+- Push Notification (FCM) dan modul Laporan/Prestasi akan dibina pada fasa seterusnya

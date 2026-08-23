@@ -5,10 +5,12 @@ const CORE_ASSETS = [
   "profile.html",
   "kehadiran-staf.html",
   "kehadiran-murid.html",
+  "event.html",
   "style.css",
   "app.js",
   "kehadiran-murid-borang.js",
   "kehadiran-murid-analisis.js",
+  "event.js",
   "manifest.json",
 ];
 

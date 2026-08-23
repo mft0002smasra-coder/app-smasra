@@ -21,12 +21,14 @@ var COL_TELEFON = 3;
 var COL_EMEL1 = 4;
 var COL_EMEL2 = 5;
 var COL_ROLE = 6;
+var COL_ROLE2 = 7;
 
 function doGet(e) {
   var action = e.parameter.action;
   if (action === "getUser") return getUser(e.parameter.email);
   if (action === "getPengumuman") return getPengumuman();
   if (action === "getBanner") return getBanner();
+  if (action === "getEvents") return getEvents();
   return jsonResponse({ error: "Unknown action: " + action });
 }
 
@@ -38,6 +40,7 @@ function doPost(e) {
     return jsonResponse({ success: false, message: "Data tidak sah." });
   }
   if (body.action === "addPengumuman") return addPengumuman(body);
+  if (body.action === "addEvent") return addEvent(body);
   return jsonResponse({ success: false, message: "Unknown action: " + body.action });
 }
 
@@ -69,6 +72,7 @@ function findUserByEmail(email) {
         telefon: row[COL_TELEFON],
         gambar: row[COL_GAMBAR],
         role: row[COL_ROLE] || "",
+        role2: row[COL_ROLE2] || "",
         emel1: row[COL_EMEL1],
         emel2: row[COL_EMEL2],
       };
@@ -86,6 +90,7 @@ function getUser(email) {
     jawatan: user.jawatan,
     gambar: user.gambar,
     role: user.role,
+    role2: user.role2,
     telefon: user.telefon,
     emel1: user.emel1,
     emel2: user.emel2,
@@ -139,5 +144,59 @@ function addPengumuman(body) {
   }
   var sheet = getSheet("Pengumuman");
   sheet.appendRow([body.gambar || "", body.teks]);
+  return jsonResponse({ success: true });
+}
+
+/* ---------------- EVENT (kalendar) ---------------- */
+// Lajur tab "Event" (baris 1 = header, data bermula baris 2):
+// A=Unit, B=TarikhDari, C=TarikhHingga, D=Masa, E=Tajuk, F=Tempat, G=DicatatOleh
+
+function fmtDateISO(d) {
+  return Utilities.formatDate(new Date(d), Session.getScriptTimeZone() || "GMT+8", "yyyy-MM-dd");
+}
+
+function getEvents() {
+  try {
+    var sheet = getSheet("Event");
+    if (!sheet) return jsonResponse([]);
+    var data = sheet.getDataRange().getValues();
+    var list = [];
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      if (!row[1] || !row[4]) continue; // perlu sekurang-kurangnya tarikh dari + tajuk
+      list.push({
+        unit: row[0] || "",
+        tarikhDari: fmtDateISO(row[1]),
+        tarikhHingga: row[2] ? fmtDateISO(row[2]) : fmtDateISO(row[1]),
+        masa: row[3] || "",
+        tajuk: row[4] || "",
+        tempat: row[5] || "",
+        dicatatOleh: row[6] || "",
+      });
+    }
+    return jsonResponse(list);
+  } catch (err) {
+    return jsonResponse([]);
+  }
+}
+
+function addEvent(body) {
+  var user = findUserByEmail(body.email);
+  if (!user || user.role2 !== "Pentadbir") {
+    return jsonResponse({ success: false, message: "Hanya Pentadbir boleh tambah event." });
+  }
+  if (!body.unit || !body.tarikhDari || !body.tajuk) {
+    return jsonResponse({ success: false, message: "Sila lengkapkan unit, tarikh dan tajuk." });
+  }
+  var sheet = getSheet("Event");
+  sheet.appendRow([
+    body.unit,
+    new Date(body.tarikhDari),
+    body.tarikhHingga ? new Date(body.tarikhHingga) : new Date(body.tarikhDari),
+    body.masa || "",
+    body.tajuk,
+    body.tempat || "",
+    user.nama || body.email,
+  ]);
   return jsonResponse({ success: true });
 }

@@ -8,10 +8,10 @@ const SCHOOL_LOGO_URL = "https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRi
 const APPSHEET_ERKS_URL = "https://www.appsheet.com/start/210829a8-31c7-4ade-ba58-fcd8cf73c305";
 
 // GANTI dengan URL Web App selepas awak deploy Code.gs (Deploy > New deployment > Web app)
-const API_URL = "https://script.google.com/macros/s/AKfycbxNMX-PHWy4t8PdQhj-jekw9T8V7b1lN2M8sQ9d8jybfeSLvKS9jB8XuKbjjYRwshcz/exec";
+const API_URL = "PASTE_URL_APPS_SCRIPT_ANDA_DI_SINI";
 
 // GANTI dengan OAuth Client ID dari Google Cloud Console untuk aktifkan "Sign in with Google"
-const GOOGLE_CLIENT_ID = "https://702368440468-u7uoc6396frmum2j0mllbc3llqi4tgbn.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "PASTE_GOOGLE_CLIENT_ID_ANDA_DI_SINI.apps.googleusercontent.com";
 
 const USER_KEY = "smasra_user";
 
@@ -26,6 +26,7 @@ const ICONS = {
   chart: '<path d="M4.5 20V10.5"/><path d="M10 20V4"/><path d="M15.5 20v-7"/><path d="M21 20H3"/>',
   graduate: '<path d="M12 4l9 4.5-9 4.5-9-4.5z"/><path d="M6.5 11v4.2c0 1 2.4 2.3 5.5 2.3s5.5-1.3 5.5-2.3V11"/><path d="M21 8.5v5"/>',
   external: '<path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"/>',
+  event: '<rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M3.5 9.5h17"/><path d="M8 3v4M16 3v4"/><circle cx="12" cy="14.5" r="2.2" fill="currentColor" stroke="none"/>',
   power: '<path d="M12 3.5v8"/><path d="M6.7 6.7a8 8 0 1 0 10.6 0"/>',
   menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
 };
@@ -76,7 +77,7 @@ async function loginWithEmail(email, btn, btnLabel) {
     if (data.found) {
       saveUser({
         email, nama: data.nama, jawatan: data.jawatan, gambar: data.gambar, role: data.role || "",
-        telefon: data.telefon || "", emel1: data.emel1 || email, emel2: data.emel2 || "",
+        role2: data.role2 || "", telefon: data.telefon || "", emel1: data.emel1 || email, emel2: data.emel2 || "",
       });
       location.reload();
     } else {
