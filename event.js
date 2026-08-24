@@ -12,6 +12,7 @@ const EV_UNIT_COLOR_VAR = {
   "Kokurikulum": "--violet",
 };
 const EV_BULAN = ["Januari","Februari","Mac","April","Mei","Jun","Julai","Ogos","September","Oktober","November","Disember"];
+const EV_BULAN_SHORT = ["Jan","Feb","Mac","Apr","Mei","Jun","Jul","Ogos","Sept","Okt","Nov","Dis"];
 const EV_DOW = ["Ahd","Isn","Sel","Rab","Kha","Jum","Sab"];
 
 let evEvents = [];
@@ -64,7 +65,7 @@ async function evRenderHomeTicker() {
   content.innerHTML = upcoming
     .map((ev) => {
       const [y, m, d] = ev.tarikhDari.split("-").map(Number);
-      const dLabel = new Date(y, m - 1, d).toLocaleDateString("ms-MY", { day: "numeric", month: "short" });
+      const dLabel = `${d} ${EV_BULAN_SHORT[m - 1]}`;
       return `<span><b>${dLabel}</b> — ${evEscape(ev.tajuk)} (${evEscape(ev.unit)})</span>`;
     })
     .join('<span class="sep">•</span>');

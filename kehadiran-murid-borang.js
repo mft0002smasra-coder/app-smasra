@@ -154,16 +154,18 @@ function kmRender() {
 /* ================= Screen: Menu Utama ================= */
 function renderMenu(c) {
   const today = new Date();
-  const hari = today.toLocaleDateString("ms-MY", { weekday: "long" });
-  const tarikhFmt = today.toLocaleDateString("ms-MY", { day: "numeric", month: "short", year: "numeric" });
+  const KM_HARI = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
+  const KM_BULAN_SHORT = ["Jan","Feb","Mac","Apr","Mei","Jun","Jul","Ogos","Sept","Okt","Nov","Dis"];
+  const hari = KM_HARI[today.getDay()];
+  const tarikhFmt = `${today.getDate()} ${KM_BULAN_SHORT[today.getMonth()]} ${today.getFullYear()}`;
   c.innerHTML = `
-    <div class="glass card-pad" style="margin-bottom:var(--gap)">
+    <div class="km-menu-title">
       <div class="title-lg">🏫 Sistem Kehadiran Murid</div>
       <div class="sub-dim" style="margin-bottom:0">Hari: <b style="color:var(--text)">${hari}</b><br>Tarikh: <b style="color:var(--text)">${tarikhFmt}</b></div>
     </div>
     <div class="module-grid">
-      <div class="module-tile" onclick="startIsiBorang()" style="grid-column:1 / -1"><span data-icon="announce"></span><span class="module-tile-label">Isi Borang Kehadiran</span></div>
-      <div class="module-tile" onclick="kmGoto('editPilihTarikh')" style="grid-column:1 / -1"><span data-icon="calendar"></span><span class="module-tile-label">Edit Kehadiran</span></div>
+      <div class="module-tile" onclick="startIsiBorang()"><span data-icon="announce"></span><span class="module-tile-label">Isi Borang Kehadiran</span></div>
+      <div class="module-tile" onclick="kmGoto('editPilihTarikh')"><span data-icon="calendar"></span><span class="module-tile-label">Edit Kehadiran</span></div>
     </div>
   `;
   renderIcons();
