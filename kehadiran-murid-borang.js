@@ -158,12 +158,37 @@ function renderMenu(c) {
   const KM_BULAN_SHORT = ["Jan","Feb","Mac","Apr","Mei","Jun","Jul","Ogos","Sept","Okt","Nov","Dis"];
   const hari = KM_HARI[today.getDay()];
   const tarikhFmt = `${today.getDate()} ${KM_BULAN_SHORT[today.getMonth()]} ${today.getFullYear()}`;
+  const todayKey = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
+
+  const totalKelas = kmData.kelas.length;
+  const kelasIsiSet = new Set(kmData.kehadiran.filter((r) => r.tarikh === todayKey).map((r) => r.kelas));
+  const kelasIsiCount = kmData.kelas.filter((k) => kelasIsiSet.has(k.nama)).length;
+  const kelasBelumIsi = kmData.kelas.filter((k) => !kelasIsiSet.has(k.nama));
+  const pctIsi = totalKelas ? Math.round((kelasIsiCount / totalKelas) * 100) : 0;
+
+  const belumIsiHtml = kelasBelumIsi.length
+    ? kelasBelumIsi.map((k) => `<span class="km-chip">${k.nama}</span>`).join("")
+    : `<div class="km-all-done">🎉 Semua kelas telah isi kehadiran hari ini!</div>`;
+
   c.innerHTML = `
     <div class="km-menu-title">
       <div class="title-lg">🏫 Sistem Kehadiran Murid</div>
-      <div class="sub-dim" style="margin-bottom:0">Hari: <b style="color:var(--text)">${hari}</b><br>Tarikh: <b style="color:var(--text)">${tarikhFmt}</b></div>
+      <div class="sub-dim" style="margin-bottom:0">Hari: <b style="color:var(--text)">${hari}</b> &middot; Tarikh: <b style="color:var(--text)">${tarikhFmt}</b></div>
     </div>
-    <div class="module-grid">
+
+    <div class="glass card-pad km-status-card">
+      <div class="km-status-row">
+        <div class="km-status-num">${kelasIsiCount}<span class="km-status-of">/${totalKelas}</span></div>
+        <div class="km-status-label">Kelas Telah Isi<br>Kehadiran Hari Ini</div>
+      </div>
+      <div class="km-progress-bar"><div class="km-progress-fill" style="width:${pctIsi}%"></div></div>
+    </div>
+
+    <div class="section-label" style="margin-top:var(--gap)">Kelas Belum Isi</div>
+    <div class="km-belum-list">${belumIsiHtml}</div>
+
+    <div class="section-label" style="margin-top:var(--gap)">Tindakan</div>
+    <div class="km-action-grid">
       <div class="module-tile" onclick="startIsiBorang()"><span data-icon="announce"></span><span class="module-tile-label">Isi Borang Kehadiran</span></div>
       <div class="module-tile" onclick="kmGoto('editPilihTarikh')"><span data-icon="calendar"></span><span class="module-tile-label">Edit Kehadiran</span></div>
     </div>

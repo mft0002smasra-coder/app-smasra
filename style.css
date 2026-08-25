@@ -412,9 +412,31 @@ textarea.field-input{ resize:vertical;min-height:100px;font-size:15px; }
 /* ============================================================
    KEHADIRAN MURID — borang (Isi/Edit/Analisis asas)
    ============================================================ */
+.card-pad{ padding:20px; }
+.title-lg{ font-family:'Orbitron',sans-serif;font-size:16px;color:var(--text);margin-bottom:6px;line-height:1.3; }
+.sub-dim{ font-size:13px;color:var(--text-dim);line-height:1.5;margin-bottom:16px; }
+
 .km-menu-title{ text-align:center;margin-bottom:var(--gap); }
 .km-menu-title .title-lg{ text-align:center; }
 .km-menu-title .sub-dim{ text-align:center; }
+
+.km-status-card{ text-align:center; }
+.km-status-row{ display:flex;flex-direction:column;align-items:center;gap:2px;margin-bottom:12px; }
+.km-status-num{ font-family:'Orbitron',sans-serif;font-size:34px;font-weight:800;color:var(--cyan);line-height:1; }
+.km-status-of{ font-size:16px;color:var(--text-dim);font-weight:600; }
+.km-status-label{ font-size:11.5px;color:var(--text-dim);line-height:1.4;margin-top:4px; }
+.km-progress-bar{ height:7px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden; }
+.km-progress-fill{ height:100%;border-radius:99px;background:linear-gradient(90deg,var(--cyan),var(--mint));transition:width .4s ease; }
+
+.km-belum-list{ display:flex;flex-wrap:wrap;gap:7px; }
+.km-chip{
+  font-size:12px;font-weight:600;color:var(--amber);background:rgba(255,180,84,.1);
+  border:1px solid rgba(255,180,84,.3);padding:6px 12px;border-radius:999px;
+}
+.km-all-done{ font-size:13px;color:var(--mint);background:rgba(57,255,176,.08);border:1px solid rgba(57,255,176,.3);border-radius:12px;padding:12px;width:100%;text-align:center; }
+
+.km-action-grid{ display:grid;grid-template-columns:repeat(2,1fr);gap:10px; }
+.km-action-grid .module-tile{ background:var(--panel-a);border:1px solid var(--line);border-radius:14px;padding:16px 8px; }
 .km-back-link{
   display:inline-flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;
   color:var(--cyan);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13.5px;
@@ -589,6 +611,9 @@ table.ma-absent-table tbody tr:last-child td{ border-bottom:none; }
 .ma-modal-stats{ flex:1;display:flex;flex-direction:column;gap:7px; }
 .ma-modal-stat-line{ display:flex;justify-content:space-between;font-size:13px;padding:7px 10px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--line); }
 .ma-modal-stat-line .lbl{ color:var(--text-dim); }
+.ma-modal-stat-line .val{ color:var(--text);font-weight:700; }
+.ma-ring-bg{ fill:none;stroke:rgba(255,255,255,.08);stroke-width:7; }
+.ma-ring-fg{ fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dasharray .5s ease; }
 .ma-modal-absent-title{ font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--amber);margin:14px 0 7px; }
 .ma-modal-absent-list{ display:flex;flex-wrap:wrap;gap:5px; }
 .ma-modal-recorder{ margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:11px;color:var(--cyan); }

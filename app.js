@@ -8,10 +8,10 @@ const SCHOOL_LOGO_URL = "https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRi
 const APPSHEET_ERKS_URL = "https://www.appsheet.com/start/210829a8-31c7-4ade-ba58-fcd8cf73c305";
 
 // GANTI dengan URL Web App selepas awak deploy Code.gs (Deploy > New deployment > Web app)
-const API_URL = "https://script.google.com/macros/s/AKfycbxNMX-PHWy4t8PdQhj-jekw9T8V7b1lN2M8sQ9d8jybfeSLvKS9jB8XuKbjjYRwshcz/exec";
+const API_URL = "PASTE_URL_APPS_SCRIPT_ANDA_DI_SINI";
 
 // GANTI dengan OAuth Client ID dari Google Cloud Console untuk aktifkan "Sign in with Google"
-const GOOGLE_CLIENT_ID = "702368440468-u7uoc6396frmum2j0mllbc3llqi4tgbn.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "PASTE_GOOGLE_CLIENT_ID_ANDA_DI_SINI.apps.googleusercontent.com";
 
 const USER_KEY = "smasra_user";
 
@@ -149,7 +149,10 @@ function updateClock() {
 
 function renderHeader(user) {
   document.querySelectorAll(".school-logo-img").forEach((img) => { img.src = SCHOOL_LOGO_URL; });
-  document.querySelectorAll(".user-avatar-img").forEach((img) => { img.src = user.gambar || SCHOOL_LOGO_URL; });
+  document.querySelectorAll(".user-avatar-img").forEach((img) => {
+    img.src = user.gambar || SCHOOL_LOGO_URL;
+    img.onerror = function () { this.onerror = null; this.src = SCHOOL_LOGO_URL; };
+  });
   const greet = document.getElementById("header-greet-name");
   if (greet) greet.textContent = user.nama || user.email;
   updateClock();
@@ -197,7 +200,7 @@ function escapeAttr(str) { return String(str).replace(/"/g, "&quot;"); }
 
 function renderAnnounceCard(item) {
   const img = item.gambar
-    ? `<img class="announce-img" src="${escapeAttr(item.gambar)}" alt="Gambar pengumuman" loading="lazy">`
+    ? `<img class="announce-img" src="${escapeAttr(item.gambar)}" alt="Gambar pengumuman" loading="lazy" onerror="this.style.display='none'">`
     : "";
   return `<div class="glass announce-card">${img}<div class="announce-body"><div class="announce-text">${escapeHtml(item.teks || "")}</div></div></div>`;
 }
@@ -244,7 +247,7 @@ async function loadBanner() {
       return;
     }
     track.innerHTML = bannerImages
-      .map((url) => `<div class="banner-slide"><img src="${escapeAttr(url)}" alt="Banner sekolah" loading="lazy"></div>`)
+      .map((url) => `<div class="banner-slide"><img src="${escapeAttr(url)}" alt="Banner sekolah" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`)
       .join("");
     dots.innerHTML = bannerImages
       .map((_, i) => `<button class="banner-dot${i === 0 ? " active" : ""}" onclick="event.stopPropagation();goToBanner(${i})" aria-label="Slaid ${i + 1}"></button>`)
