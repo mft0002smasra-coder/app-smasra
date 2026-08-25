@@ -2,7 +2,7 @@
 const KM_SHEET_ID = "1ZjUjYPY5QBxOrOIDI6PixpS5ygdatAsZ4HT_uT-iMMA";
 
 // GANTI dengan URL Web App selepas deploy Code-KehadiranMurid.gs (projek Apps Script BERASINGAN)
-const KM_API_URL = "PASTE_URL_APPS_SCRIPT_KEHADIRAN_MURID_ANDA_DI_SINI";
+const KM_API_URL = "https://script.google.com/macros/s/AKfycbwNJgwaxELxNJ1jmRbqszvy_uphXhazSjTwplL2IxuVLyTJ9FZnQqe8eUNvnyPBK3p7/exec";
 function kmApiConfigured() { return KM_API_URL && KM_API_URL.indexOf("PASTE_") !== 0; }
 
 let kmData = { kelas: [], kehadiran: [] };
