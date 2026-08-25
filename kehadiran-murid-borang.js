@@ -1,6 +1,10 @@
 /* ================= Konfigurasi & fetch data ================= */
 const KM_SHEET_ID = "1ZjUjYPY5QBxOrOIDI6PixpS5ygdatAsZ4HT_uT-iMMA";
 
+// GANTI dengan URL Web App selepas deploy Code-KehadiranMurid.gs (projek Apps Script BERASINGAN)
+const KM_API_URL = "PASTE_URL_APPS_SCRIPT_KEHADIRAN_MURID_ANDA_DI_SINI";
+function kmApiConfigured() { return KM_API_URL && KM_API_URL.indexOf("PASTE_") !== 0; }
+
 let kmData = { kelas: [], kehadiran: [] };
 let kmLoaded = false;
 let kmError = null;
@@ -265,28 +269,71 @@ function renderAskNama(c) {
       <button class="btn-danger" onclick="kmResetToMenu()">Batal</button>
     </div>`;
 }
-function submitNama() {
+async function submitNama() {
   const v = document.getElementById("input-nama").value.trim();
   KM_S.nama = v.toLowerCase() === "tiada" ? "" : v;
-  // SIMULASI simpan — belum tulis balik ke Sheet sebenar
+
+  if (!kmApiConfigured()) {
+    KM_S.saveError = "API Kehadiran Murid belum disambungkan (KM_API_URL belum diisi).";
+    kmGoto("ringkasan");
+    return;
+  }
+
+  const btn = document.querySelector('#km-content button[onclick="submitNama()"]');
+  if (btn) { btn.disabled = true; btn.textContent = "Menyimpan..."; }
+
+  const user = getSavedUser();
+  try {
+    const res = await fetch(KM_API_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "saveKehadiran",
+        kelas: KM_S.kelas,
+        tarikh: KM_S.tarikh,
+        hadir: KM_S.hadir,
+        tidakHadir: KM_S.tidak,
+        namaTidakHadir: KM_S.nama,
+        direkodOleh: (user && user.nama) || (user && user.email) || "",
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      KM_S.saveError = null;
+      // Kemas kini cache tempatan supaya Menu Utama terus tepat tanpa reload
+      kmData.kehadiran = kmData.kehadiran.filter((r) => !(r.tarikh === KM_S.tarikh && r.kelas === KM_S.kelas));
+      kmData.kehadiran.push({ tarikh: KM_S.tarikh, kelas: KM_S.kelas, hadir: KM_S.hadir, tidak: KM_S.tidak, nama: KM_S.nama, direkodOleh: (user && user.nama) || "" });
+    } else {
+      KM_S.saveError = data.message || "Gagal simpan ke Sheet.";
+    }
+  } catch (err) {
+    KM_S.saveError = "Ralat sambungan ke server.";
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = KM_S.mode === "edit" ? "Kemaskini" : "Hantar"; }
   kmGoto("ringkasan");
 }
 
 function renderRingkasan(c) {
   const pct = kmCalcPercent(KM_S.hadir, KM_S.tidak);
+  const user = getSavedUser();
+  const statusTag = KM_S.saveError
+    ? `<span style="font-size:11px;color:var(--danger);font-weight:600">(gagal disimpan)</span>`
+    : `<span style="font-size:11px;color:var(--mint);font-weight:600">(disimpan ke Sheet)</span>`;
   c.innerHTML = `
     <div class="glass card-pad">
-      <div class="title-lg">✅ ${KM_S.mode === 'edit' ? 'Rekod Dikemaskini' : 'Rekod Diterima'} <span style="font-size:11px;color:var(--amber);font-weight:600">(simulasi)</span></div>
+      <div class="title-lg">${KM_S.saveError ? '⚠️' : '✅'} ${KM_S.mode === 'edit' ? 'Rekod Dikemaskini' : 'Rekod Diterima'} ${statusTag}</div>
       <div class="sub-dim">${kmEscape(KM_S.kelas)} (${KM_S.bilMurid} orang) — ${KM_S.tarikh}</div>
+      ${KM_S.saveError ? `<div class="error-text" style="margin-bottom:0">${kmEscape(KM_S.saveError)}</div>` : ""}
       <div style="margin-top:14px">
         <div class="summary-row"><span class="lbl">Hadir</span><span>${KM_S.hadir}/${KM_S.bilMurid}</span></div>
         <div class="summary-row"><span class="lbl">Tidak Hadir</span><span>${KM_S.tidak}/${KM_S.bilMurid}</span></div>
         <div class="summary-row"><span class="lbl">Nama Tidak Hadir</span><span style="text-align:right;max-width:60%">${kmEscape(KM_S.nama || 'Tiada')}</span></div>
         <div class="summary-row"><span class="lbl">% Kehadiran</span><span class="pct-badge ${kmPctClass(pct)}">${pct}</span></div>
-        <div class="summary-row"><span class="lbl">Direkod oleh</span><span>Awak (staf log masuk)</span></div>
+        <div class="summary-row"><span class="lbl">Direkod oleh</span><span>${kmEscape((user && user.nama) || 'Awak')}</span></div>
       </div>
     </div>
     <div class="btn-stack">
+      ${KM_S.saveError ? `<button class="btn-primary" onclick="submitNama()">🔁 Cuba Simpan Semula</button>` : ""}
       <button class="btn-primary" onclick="editRingkasan()">✏️ Edit</button>
       <button class="btn-ghost" onclick="startIsiBorang()">🔙 Kembali Pilih Kelas</button>
       <button class="btn-ghost" onclick="kmResetToMenu()">🏠 Menu Utama</button>
