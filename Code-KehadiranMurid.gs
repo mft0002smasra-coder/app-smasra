@@ -60,7 +60,7 @@ function saveKehadiran(body) {
   var hadir = Number(body.hadir) || 0;
   var tidakHadir = Number(body.tidakHadir) || 0;
   var jumlah = hadir + tidakHadir;
-  var peratus = jumlah > 0 ? ((hadir / jumlah) * 100).toFixed(2) + "%" : "0%";
+  var peratus = jumlah > 0 ? Math.round((hadir / jumlah) * 100) : 0;
 
   var sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("Kehadiran");
   if (!sheet) {
