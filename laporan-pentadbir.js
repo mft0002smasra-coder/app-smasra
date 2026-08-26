@@ -10,7 +10,7 @@
    4. Salin URL .../exec, paste ke LPB_API_URL di bawah
    ============================================================ */
 
-const LPB_API_URL = "PASTE_URL_APPS_SCRIPT_LAPORAN_PENTADBIR_DI_SINI";
+const LPB_API_URL = "https://script.google.com/macros/s/AKfycbz5_GFp1P_qlhC_RsFlzrNFIkHFjZwJ3u5Yh7zbh18JPdAp-1iP7cIkQRBtlKQzjmRY0A/exec";
 
 function lpbApiConfigured() { return LPB_API_URL && LPB_API_URL.indexOf("PASTE_") !== 0; }
 
