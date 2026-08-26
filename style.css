@@ -803,3 +803,5 @@ table.ma-absent-table tbody tr:last-child td{ border-bottom:none; }
 .lpb-confirm-box .icon{ width:34px; height:34px; color:var(--danger); margin:0 auto 10px; }
 .lpb-confirm-box h3{ font-family:'Orbitron',sans-serif; font-size:13.5px; color:var(--text); margin-bottom:8px; }
 .lpb-confirm-box p{ font-size:12.5px; color:var(--text-dim); margin-bottom:16px; line-height:1.5; }
+
+#lpb-access-denied .external-card .icon{ color:var(--danger); }

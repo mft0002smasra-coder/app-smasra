@@ -40,6 +40,16 @@ function lpbEscape(str) {
 
 function lpbInit(user) {
   lpbCurrentUser = user;
+
+  const isPentadbir = String(user.role2 || "").trim().toLowerCase() === "pentadbir";
+  if (!isPentadbir) {
+    document.getElementById("lpb-app").classList.add("hidden");
+    document.getElementById("lpb-access-denied").classList.remove("hidden");
+    document.getElementById("lpb-nav-wrap").classList.add("hidden");
+    renderIcons();
+    return;
+  }
+
   document.getElementById("lpb-nav-wrap").classList.remove("hidden");
 
   const blokSelect = document.getElementById("lpb-blok");

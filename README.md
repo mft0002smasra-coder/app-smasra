@@ -103,9 +103,12 @@ Modul ni guna **projek Apps Script + Google Sheet + folder Drive berasingan** (s
 Upload `laporan-pentadbir.html` dan `laporan-pentadbir.js` (dan `style.css`, `app.js`, `service-worker.js` yang dikemaskini) ke root repo, ganti fail lama.
 
 **Nota penting:**
+- Hanya staf dengan **Role2 = "Pentadbir"** (lajur H, DatabaseSTAFF) boleh guna modul ini. Kalau bukan, paparan akan tunjuk mesej "Akses Terhad" dan pautan kembali ke Laman Utama — semakan ni dibuat di **frontend DAN backend** (`lpbIsPentadbir()` dalam `Code-LaporanPentadbir.gs` semak terus ke sheet DatabaseSTAFF dalam spreadsheet APP SMASRA utama), jadi walaupun URL API dipanggil terus pun, tambah/padam laporan akan ditolak untuk staf bukan Pentadbir.
+- **Penting:** akaun Google yang deploy `Code-LaporanPentadbir.gs` (Execute as: Me) perlu ada akses baca ke spreadsheet APP SMASRA utama (`1EohV_hfuS6SDgiqDn--QQiM_y92_K4jvGyh87nA3HOo`) juga, bukan setakat sheet "List Laporan" — kalau tidak, semakan akses akan sentiasa gagal (fail selamat = tolak akses).
 - Senarai laporan dikumpul ikut **Nama Pentadbir + Tarikh** — kalau seorang pentadbir isi borang beberapa kali (beberapa blok/kelas) pada tarikh sama, semua rekod tu akan digabung jadi **satu laporan** dalam senarai & dalam jadual PDF/PNG.
 - Padam laporan akan padam **semua baris** bagi Nama+Tarikh tersebut (dan cuba padam gambar berkaitan di Drive), selepas pengesahan.
 - Muat turun laporan guna `html2canvas` (dimuatkan dari CDN) untuk hasilkan fail `.png` bersaiz A4 potrait.
+- Ikon Laporan Pentadbir juga ada di **bottom nav utama** (slot kiri, sebelah Home) pada semua muka app, bukan setakat drawer & module tile.
 - Bila kod `Code-LaporanPentadbir.gs` diubah & disimpan semula, WAJIB buat **New version** di Manage deployments (rujuk amaran di atas), atau URL lama akan terus guna kod lama.
 
 ## Nota
