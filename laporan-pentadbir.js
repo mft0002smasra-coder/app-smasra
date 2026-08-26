@@ -41,7 +41,7 @@ function lpbEscape(str) {
 function lpbInit(user) {
   lpbCurrentUser = user;
 
-  const isPentadbir = String(user.role2 || "").trim().toLowerCase() === "pentadbir";
+  const isPentadbir = String(user.role2 || "").trim().toLowerCase() === "Pentadbir";
   if (!isPentadbir) {
     document.getElementById("lpb-app").classList.add("hidden");
     document.getElementById("lpb-access-denied").classList.remove("hidden");
