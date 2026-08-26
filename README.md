@@ -73,6 +73,41 @@ Lajur G (DicatatOleh) diisi automatik oleh sistem — tak perlu isi manual.
 
 Selepas tambah lajur/tab baru ni, **redeploy Apps Script** (Manage deployments > pensil > New version) supaya perubahan Code.gs berkuat kuasa.
 
+## Menyediakan modul Laporan Pentadbir Bertugas
+
+Modul ni guna **projek Apps Script + Google Sheet + folder Drive berasingan** (sama corak dengan Kehadiran Murid), supaya tak sentuh backend app utama.
+
+**1. Google Sheet "List Laporan"**
+- Sheet: `https://docs.google.com/spreadsheets/d/16DsM_I0pRsQ41gFVRWHTk8XDbDn8M7LOkiWGPin1fPQ/edit`
+- Tab mesti bernama tepat: **List Laporan**
+- Lajur (baris 1 = header rujukan, kod baca ikut turutan lajur A–J):
+  `A:ID | B:Tarikh | C:Masa | D:NamaPentadbir | E:BlokKelas | F:Catatan | G:Gambar1 | H:Gambar2 | I:DicatatOleh | J:MasaHantar`
+
+**2. Folder Google Drive untuk gambar**
+- Folder: `https://drive.google.com/drive/folders/1c1kgKvFVz2v6lbW7Tm4xS0sJj9Dalef8`
+- Pastikan akaun Google yang akan "Execute as: Me" semasa deploy ada akses **Editor** ke folder ni.
+
+**3. Deploy backend**
+1. Buka Google Sheet "List Laporan" > Extensions > Apps Script > **New project** (projek BAHARU, jangan guna projek sedia ada)
+2. Padam kod default, salin-tampal semua kandungan `Code-LaporanPentadbir.gs`
+3. Deploy > New deployment > ikon gear > Web app
+   - Execute as: **Me**
+   - Who has access: **Anyone**
+4. Deploy, salin URL `.../exec`
+
+**4. Sambungkan frontend**
+1. Buka `laporan-pentadbir.js`
+2. Cari `const LPB_API_URL = "PASTE_URL_APPS_SCRIPT_LAPORAN_PENTADBIR_DI_SINI";` — ganti dengan URL dari langkah 3
+
+**5. Muat naik fail baharu ke GitHub Pages**
+Upload `laporan-pentadbir.html` dan `laporan-pentadbir.js` (dan `style.css`, `app.js`, `service-worker.js` yang dikemaskini) ke root repo, ganti fail lama.
+
+**Nota penting:**
+- Senarai laporan dikumpul ikut **Nama Pentadbir + Tarikh** — kalau seorang pentadbir isi borang beberapa kali (beberapa blok/kelas) pada tarikh sama, semua rekod tu akan digabung jadi **satu laporan** dalam senarai & dalam jadual PDF/PNG.
+- Padam laporan akan padam **semua baris** bagi Nama+Tarikh tersebut (dan cuba padam gambar berkaitan di Drive), selepas pengesahan.
+- Muat turun laporan guna `html2canvas` (dimuatkan dari CDN) untuk hasilkan fail `.png` bersaiz A4 potrait.
+- Bila kod `Code-LaporanPentadbir.gs` diubah & disimpan semula, WAJIB buat **New version** di Manage deployments (rujuk amaran di atas), atau URL lama akan terus guna kod lama.
+
 ## Nota
 - Drawer menu (kiri) dan bottom nav (bawah) guna ikon sahaja tanpa label teks, ikut permintaan reka bentuk
 - Bottom nav ada 5 slot — Home, Event, Profil aktif; 2 lagi placeholder untuk modul akan datang

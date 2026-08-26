@@ -1,357 +1,183 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ms">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Laporan Pentadbir Bertugas</title>
+<title>Laporan Pentadbir Bertugas — SM Arab (Jaim) Al-Asyraf</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#030b12">
+<link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<style>
-  .lp-page { display: none; padding: 20px 16px; padding-bottom: 90px; }
-  .lp-page.active { display: block; }
-  .bottom-nav-4 { grid-template-columns: repeat(4, 1fr) !important; }
-  
-  .a4-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 60;
-    display: none; align-items: center; justify-content: center; padding: 15px; flex-direction: column;
-  }
-  .a4-overlay.show { display: flex; }
-  .a4-paper {
-    background: white; color: black; width: 100%; max-width: 794px; padding: 30px;
-    font-family: Arial, sans-serif; border-radius: 4px; overflow-y: auto; max-height: 75vh;
-  }
-  .a4-title { font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 20px; line-height: 1.4; text-transform: uppercase; }
-  .a4-meta { font-size: 14px; margin-bottom: 15px; }
-  .a4-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-  .a4-table th, .a4-table td { border: 1px solid black; padding: 8px; text-align: left; vertical-align: top; }
-  .a4-table th { background-color: #e2e8f0; font-weight: bold; }
-  .a4-img-container { display: flex; gap: 8px; flex-wrap: wrap; }
-  .a4-img-preview { max-width: 120px; max-height: 120px; border: 1px solid #ccc; border-radius: 4px; object-fit: cover; }
-  
-  .lp-list-item { background: var(--panel-a); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-  .lp-list-info { flex: 1; cursor: pointer; }
-  .lp-list-title { font-weight: 700; color: var(--cyan); margin-bottom: 4px; }
-  .lp-list-date { font-size: 12px; color: var(--text-dim); }
-  .lp-del-btn { color: var(--danger); background: rgba(248,113,113,0.1); border: 1px solid var(--danger); border-radius: 6px; padding: 6px 10px; cursor: pointer; }
-  .loading-spinner { text-align: center; color: var(--cyan); padding: 20px; font-weight: bold; }
-</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 <div class="bg-fx"></div>
 
-<div id="page-borang" class="lp-page active wrap">
-  <div class="section-label">Pemantauan Blok / Kelas</div>
-  <div class="glass card-pad">
-    <form id="lp-form">
-      <label class="field-label">Nama Pentadbir Bertugas</label>
-      <input type="text" id="lp-nama" class="field-input" readonly style="opacity:0.7">
-      
-      <label class="field-label" style="margin-top:14px">Tarikh</label>
-      <input type="date" id="lp-tarikh" class="field-input" required>
-      
-      <label class="field-label" style="margin-top:14px">Masa</label>
-      <input type="time" id="lp-masa" class="field-input" required>
-      
-      <label class="field-label" style="margin-top:14px">Pilihan Blok / Kelas</label>
-      <select id="lp-lokasi" class="field-input" required>
-        <option value="">-- Sila Pilih --</option>
-        <optgroup label="Fasiliti & Kawasan">
-          <option>BLOK A</option><option>BLOK B</option><option>BLOK C</option>
-          <option>KANTIN</option><option>ASPURA</option><option>ASPURI</option>
-          <option>DEWAN MAKAN</option><option>KAWASAN SEKOLAH</option><option>KAWASAN ASRAMA</option>
-        </optgroup>
-        <optgroup label="Tingkatan 1-6">
-          <option>1 Ar-Razi</option><option>1 Ibnu Rushd</option><option>1 Al-Farabi</option>
-          <option>2 Ar-Razi</option><option>2 Ibnu Rushd</option><option>2 Al-Farabi</option>
-          <option>3 Ar-Razi</option><option>3 Ibnu Rushd</option><option>3 Al-Farabi</option>
-          <option>4 Ar-Razi</option><option>4 Ibnu Rushd</option><option>4 Al-Farabi</option>
-          <option>5 Ar-Razi</option><option>5 Ibnu Rushd</option><option>5 Al-Farabi</option>
-          <option>6 Al-Ghazali</option><option>6 Al Bukhari</option>
-        </optgroup>
-      </select>
-      
-      <label class="field-label" style="margin-top:14px">Catatan / Ulasan</label>
-      <textarea id="lp-catatan" class="field-input" required placeholder="Masukkan ulasan atau pemerhatian..."></textarea>
-      
-      <label class="field-label" style="margin-top:14px">Muat Naik Gambar (Maksimum 2 keping)</label>
-      <input type="file" id="lp-gambar" class="field-input" accept="image/*" multiple>
-      
-      <button type="submit" id="lp-submit-btn" class="btn-primary" style="margin-top: 20px; width: 100%;">Hantar Laporan</button>
-    </form>
-  </div>
-</div>
+<div class="wrap">
 
-<div id="page-list" class="lp-page wrap">
-  <div class="section-label">Senarai Laporan</div>
-  <div class="ma-filterbar" style="display: flex; gap: 10px; margin-bottom: 15px;">
-    <div class="ma-field ma-field-fill" style="flex: 1;">
-      <label class="field-label">Tahun</label>
-      <select id="lp-filter-tahun" class="field-input" onchange="renderLaporanList()"><option value="2026">2026</option></select>
-    </div>
-    <div class="ma-field ma-field-fill" style="flex: 1;">
-      <label class="field-label">Bulan</label>
-      <select id="lp-filter-bulan" class="field-input" onchange="renderLaporanList()">
-        <option value="all">Semua</option>
-        <option value="01">Jan</option><option value="02">Feb</option><option value="03">Mac</option>
-        <option value="04">Apr</option><option value="05">Mei</option><option value="06">Jun</option>
-        <option value="07">Jul</option><option value="08">Ogos</option><option value="09">Sep</option>
-        <option value="10">Okt</option><option value="11">Nov</option><option value="12">Dis</option>
-      </select>
+  <div id="login-screen" class="hidden">
+    <img class="logo-plain school-logo-img" alt="Logo Sekolah">
+    <div class="brand-title">SM ARAB (JAIM) AL-ASYRAF</div>
+    <div class="brand-sub">Sistem Pengurusan Sekolah</div>
+    <div class="glass">
+      <div class="gsi-wrap" id="google-btn-container"></div>
+      <div class="divider">Atau</div>
+      <form id="login-form">
+        <label class="field-label" for="login-email">Emel Rasmi</label>
+        <input class="field-input" type="email" id="login-email" placeholder="nama@moe-dl.edu.my" autocomplete="email" required>
+        <button class="btn-primary" type="submit" id="login-btn">Log Masuk</button>
+        <div class="error-text hidden" id="login-error"></div>
+      </form>
     </div>
   </div>
-  <div id="lp-list-container">
-    <div class="loading-spinner">Sila tunggu, memuatkan data...</div>
-  </div>
-</div>
 
-<div class="a4-overlay" id="a4-modal">
-  <div style="display:flex; gap:10px; margin-bottom:15px;">
-    <button class="btn-ghost" style="background:#fff; color:#000; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;" onclick="closeA4()">Tutup</button>
-    <button class="btn-primary" style="padding:8px 16px; border-radius:6px; cursor:pointer;" onclick="downloadA4()">Muat Turun .PNG</button>
-  </div>
-  
-  <div class="a4-paper" id="a4-content">
-    <div class="a4-title">PEMANTAUAN PENTADBIR BERTUGAS<br>("MANAGEMENT BY WALKING AROUND")<br>SM ARAB (JAIM) AL-ASYRAF</div>
-    <div class="a4-meta">
-      <strong>NAMA PENTADBIR BERTUGAS:</strong> <span id="a4-nama"></span><br>
-      <strong>TARIKH:</strong> <span id="a4-tarikh"></span>
+  <!-- Tiada header di muka ini — hanya navigation bar khas di bawah -->
+  <div id="app-content" class="hidden lpb-noheader">
+    <div id="lpb-app">
+
+      <div class="lpb-top">
+        <div>
+          <div class="lpb-top-title">Laporan Pentadbir Bertugas</div>
+          <div class="lpb-top-sub">Management By Walking Around</div>
+        </div>
+      </div>
+
+      <!-- ===== PAGE 1: BORANG PEMANTAUAN ===== -->
+      <div class="lpb-page active" id="lpb-page-borang">
+        <div class="lpb-form-wrap">
+
+          <div id="lpb-form-box">
+            <form id="lpb-form">
+              <label class="field-label" for="lpb-nama">Nama Pentadbir Bertugas</label>
+              <input class="field-input" type="text" id="lpb-nama" placeholder="Nama penuh" required>
+
+              <label class="field-label" for="lpb-tarikh" style="margin-top:14px">Tarikh</label>
+              <input class="field-input" type="date" id="lpb-tarikh" required>
+
+              <label class="field-label" for="lpb-masa" style="margin-top:14px">Masa</label>
+              <input class="field-input" type="time" id="lpb-masa" required>
+
+              <label class="field-label" for="lpb-blok" style="margin-top:14px">Pilihan Blok / Kelas</label>
+              <select class="field-input" id="lpb-blok" required></select>
+
+              <label class="field-label" for="lpb-catatan" style="margin-top:14px">Catatan / Ulasan</label>
+              <textarea class="field-input" id="lpb-catatan" placeholder="Catatan pemantauan..." required></textarea>
+
+              <label class="field-label" style="margin-top:14px">Upload Gambar (maksimum 2 keping)</label>
+              <div class="lpb-photo-grid">
+                <div class="lpb-photo-slot" id="lpb-photo-slot-1">
+                  <span data-icon="camera"></span>
+                  <span>Gambar 1</span>
+                  <input type="file" accept="image/*" id="lpb-photo-input-1">
+                </div>
+                <div class="lpb-photo-slot" id="lpb-photo-slot-2">
+                  <span data-icon="camera"></span>
+                  <span>Gambar 2</span>
+                  <input type="file" accept="image/*" id="lpb-photo-input-2">
+                </div>
+              </div>
+
+              <div class="error-text hidden" id="lpb-form-error"></div>
+              <button class="btn-primary" type="submit" id="lpb-submit-btn">Hantar Laporan</button>
+            </form>
+          </div>
+
+          <div class="glass lpb-success-box hidden" id="lpb-success-box">
+            <span data-icon="clipboard"></span>
+            <h3>Laporan Berjaya Dihantar</h3>
+            <p>Rekod pemantauan telah disimpan.</p>
+            <button class="btn-primary" style="width:auto;padding:11px 22px" onclick="lpbResetForm()">Tambah Rekod Lagi</button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ===== PAGE 2: SENARAI LAPORAN ===== -->
+      <div class="lpb-page" id="lpb-page-senarai">
+        <div class="lpb-list-wrap">
+
+          <div class="lpb-filterbar">
+            <div class="ma-field ma-field-fill">
+              <label>Tahun</label>
+              <select id="lpb-filter-year"></select>
+            </div>
+            <div class="ma-field ma-field-fill">
+              <label>Bulan</label>
+              <select id="lpb-filter-month"></select>
+            </div>
+          </div>
+
+          <div id="lpb-list-container">
+            <div class="empty-state">Memuatkan senarai laporan...</div>
+          </div>
+
+        </div>
+      </div>
+
     </div>
-    <table class="a4-table">
-      <thead>
-        <tr>
-          <th style="width:15%">MASA</th>
-          <th style="width:25%">BLOK/KELAS</th>
-          <th style="width:35%">CATATAN/ULASAN PEMANTAU</th>
-          <th style="width:25%">GAMBAR</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td id="a4-masa"></td>
-          <td id="a4-lokasi"></td>
-          <td id="a4-catatan"></td>
-          <td id="a4-gambar">Tiada Gambar</td>
-        </tr>
-      </tbody>
-    </table>
   </div>
-</div>
 
-<div class="bottom-nav-wrap">
-  <nav class="bottom-nav bottom-nav-4">
-    <a class="bn-item" href="javascript:history.back()" aria-label="Kembali"><span data-icon="back"></span><span class="bn-label">Kembali</span></a>
-    <a class="bn-item active" id="nav-borang" href="#" onclick="lpSwitchTab('borang'); return false;"><span data-icon="clipboard"></span><span class="bn-label">Borang</span></a>
-    <a class="bn-item" id="nav-list" href="#" onclick="lpSwitchTab('list'); return false;"><span data-icon="folder"></span><span class="bn-label">Senarai</span></a>
-    <a class="bn-item" href="index.html" aria-label="Home"><span data-icon="home"></span><span class="bn-label">Home</span></a>
-  </nav>
+  <!-- ===== Navigation khas (Kembali / Borang / Senarai / Home) ===== -->
+  <div class="lpb-nav-wrap hidden" id="lpb-nav-wrap">
+    <nav class="lpb-nav">
+      <button class="lpb-nav-item" id="lpb-nav-back" onclick="lpbGoBack()"><span data-icon="back"></span><span class="lpb-nav-label">Kembali</span></button>
+      <button class="lpb-nav-item active" id="lpb-nav-borang" onclick="lpbSwitchPage('borang')"><span data-icon="add"></span><span class="lpb-nav-label">Borang</span></button>
+      <button class="lpb-nav-item" id="lpb-nav-senarai" onclick="lpbSwitchPage('senarai')"><span data-icon="list"></span><span class="lpb-nav-label">Senarai</span></button>
+      <a class="lpb-nav-item" href="index.html"><span data-icon="home"></span><span class="lpb-nav-label">Home</span></a>
+    </nav>
+  </div>
+
+  <!-- ===== Popup laporan A4 ===== -->
+  <div class="lpb-report-overlay" id="lpb-report-overlay">
+    <div class="lpb-report-shell">
+      <div class="lpb-report-actions">
+        <button class="lpb-btn-close" onclick="lpbCloseReport()"><span data-icon="back"></span>Tutup</button>
+        <button class="lpb-btn-download" onclick="lpbDownloadReport()"><span data-icon="download"></span>Muat Turun PNG</button>
+        <button class="lpb-btn-delete" onclick="lpbAskDelete()"><span data-icon="trash"></span>Padam</button>
+      </div>
+      <div class="lpb-a4" id="lpb-a4-content">
+        <div class="lpb-a4-head">
+          <img id="lpb-a4-logo" src="" alt="Logo">
+          <div class="lpb-a4-title">PEMANTAUAN PENTADBIR BERTUGAS<br>("MANAGEMENT BY WALKING AROUND")<br>SM ARAB (JAIM) AL-ASYRAF</div>
+        </div>
+        <div class="lpb-a4-meta">
+          <div><b>Nama Pentadbir Bertugas :</b> <span id="lpb-a4-nama"></span></div>
+          <div><b>Tarikh :</b> <span id="lpb-a4-tarikh"></span></div>
+        </div>
+        <table class="lpb-a4-table">
+          <thead>
+            <tr><th>Masa</th><th>Blok / Kelas</th><th>Catatan / Ulasan Pemantau</th><th>Gambar</th></tr>
+          </thead>
+          <tbody id="lpb-a4-tbody"></tbody>
+        </table>
+        <div class="lpb-a4-foot" id="lpb-a4-foot"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Confirm delete ===== -->
+  <div class="lpb-confirm-overlay" id="lpb-confirm-overlay">
+    <div class="glass lpb-confirm-box">
+      <span data-icon="trash"></span>
+      <h3>Padam Laporan Ini?</h3>
+      <p>Tindakan ini akan memadam semua rekod pemantauan bagi laporan ini secara kekal. Adakah anda pasti?</p>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="lpbCancelDelete()">Batal</button>
+        <button class="btn-danger" style="margin-top:0;flex:1;width:auto" onclick="lpbConfirmDelete()">Ya, Padam</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script src="app.js"></script>
+<script src="laporan-pentadbir.js"></script>
 <script>
-  // MASUKKAN URL WEB APP APPS SCRIPT ANDA DI SINI:
-  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz5_GFp1P_qlhC_RsFlzrNFIkHFjZwJ3u5Yh7zbh18JPdAp-1iP7cIkQRBtlKQzjmRY0A/exec";
-
-  let fetchedReports = [];
-
-  function lpSwitchTab(tab) {
-    document.getElementById('page-borang').classList.remove('active');
-    document.getElementById('page-list').classList.remove('active');
-    document.getElementById('nav-borang').classList.remove('active');
-    document.getElementById('nav-list').classList.remove('active');
-    
-    document.getElementById('page-' + tab).classList.add('active');
-    document.getElementById('nav-' + tab).classList.add('active');
-    
-    if(tab === 'list') loadLaporanFromSheet();
-  }
-
-  function initLaporan(user) {
-    if (user && (user.nama || user.email)) {
-      document.getElementById('lp-nama').value = user.nama || user.email;
-    } else {
-      document.getElementById('lp-nama').value = "Pentadbir Bertugas";
-    }
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('lp-tarikh').value = today;
-    if (typeof renderIcons === 'function') renderIcons();
-  }
-
-  function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve({ base64: reader.result.split(',')[1], type: file.type, name: file.name });
-      reader.onerror = error => reject(error);
-    });
-  }
-
-  document.getElementById('lp-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const submitBtn = document.getElementById('lp-submit-btn');
-    submitBtn.disabled = true;
-    submitBtn.innerText = "Memproses & Memuat Naik Gambar...";
-
-    try {
-      const files = document.getElementById('lp-gambar').files;
-      let g1 = null, g2 = null;
-      if (files.length > 0) g1 = await fileToBase64(files[0]);
-      if (files.length > 1) g2 = await fileToBase64(files[1]);
-
-      const payload = {
-        action: 'addReport',
-        nama: document.getElementById('lp-nama').value,
-        tarikh: document.getElementById('lp-tarikh').value,
-        masa: document.getElementById('lp-masa').value,
-        lokasi: document.getElementById('lp-lokasi').value,
-        catatan: document.getElementById('lp-catatan').value,
-        gambar1: g1,
-        gambar2: g2
-      };
-
-      const res = await fetch(WEB_APP_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      });
-
-      const result = await res.json();
-      if (result.status === 'success') {
-        alert('Laporan berjaya disimpan ke Google Sheet dan gambar dimuat naik ke Drive!');
-        this.reset();
-        const user = typeof getSavedUser === 'function' ? getSavedUser() : null;
-        document.getElementById('lp-nama').value = user ? (user.nama || user.email) : "Pentadbir Bertugas";
-        lpSwitchTab('list');
-      } else {
-        alert('Gagal: ' + result.message);
-      }
-    } catch (err) {
-      alert('Ralat sistem: ' + err.message);
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.innerText = "Hantar Laporan";
-    }
-  });
-
-  async function loadLaporanFromSheet() {
-    const container = document.getElementById('lp-list-container');
-    container.innerHTML = '<div class="loading-spinner">Sila tunggu, memuatkan data dari Google Sheet...</div>';
-
-    try {
-      const res = await fetch(`${WEB_APP_URL}?action=getReports`);
-      const result = await res.json();
-      if (result.status === 'success') {
-        fetchedReports = result.data;
-        renderLaporanList();
-      } else {
-        container.innerHTML = `<div class="empty-state">Ralat: ${result.message}</div>`;
-      }
-    } catch (err) {
-      container.innerHTML = `<div class="empty-state">Gagal berhubung dengan Google Sheet. Sila semak WEB_APP_URL.</div>`;
-    }
-  }
-
-  function renderLaporanList() {
-    const container = document.getElementById('lp-list-container');
-    const filterBulan = document.getElementById('lp-filter-bulan').value;
-    container.innerHTML = '';
-    
-    const filtered = fetchedReports.filter(r => {
-      if (filterBulan === 'all') return true;
-      if (!r.tarikh) return false;
-      const month = r.tarikh.split('-')[1];
-      return month === filterBulan;
-    });
-
-    if (filtered.length === 0) {
-      container.innerHTML = '<div class="empty-state" style="text-align:center; padding: 20px; color: var(--text-dim);">Tiada laporan ditemui.</div>';
-      return;
-    }
-
-    filtered.forEach(r => {
-      const item = document.createElement('div');
-      item.className = 'lp-list-item';
-      item.innerHTML = `
-        <div class="lp-list-info" onclick="openA4('${r.id}')">
-          <div class="lp-list-title">${r.lokasi}</div>
-          <div class="lp-list-date">?? ${r.tarikh} | ?? ${r.masa}</div>
-        </div>
-        <button class="lp-del-btn" onclick="deleteReport('${r.id}')">Padam</button>
-      `;
-      container.appendChild(item);
-    });
-  }
-
-  async function deleteReport(id) {
-    if (confirm("Adakah anda pasti mahu memadam laporan ini dari Google Sheet?")) {
-      try {
-        const res = await fetch(WEB_APP_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'deleteReport', id: id })
-        });
-        const result = await res.json();
-        if (result.status === 'success') {
-          alert('Laporan berjaya dipadam dari Google Sheet.');
-          loadLaporanFromSheet();
-        } else {
-          alert('Gagal memadam: ' + result.message);
-        }
-      } catch (err) {
-        alert('Ralat: ' + err.message);
-      }
-    }
-  }
-
-  function openA4(id) {
-    const report = fetchedReports.find(r => r.id.toString() === id.toString());
-    if (!report) return;
-    
-    document.getElementById('a4-nama').innerText = report.nama || '-';
-    document.getElementById('a4-tarikh').innerText = report.tarikh || '-';
-    document.getElementById('a4-masa').innerText = report.masa || '-';
-    document.getElementById('a4-lokasi').innerText = report.lokasi || '-';
-    document.getElementById('a4-catatan').innerText = report.catatan || '-';
-    
-    const gambarTd = document.getElementById('a4-gambar');
-    gambarTd.innerHTML = '';
-    
-    let imgHTML = '<div class="a4-img-container">';
-    if (report.gambar1) imgHTML += `<img src="${report.gambar1}" class="a4-img-preview" crossorigin="anonymous">`;
-    if (report.gambar2) imgHTML += `<img src="${report.gambar2}" class="a4-img-preview" crossorigin="anonymous">`;
-    imgHTML += '</div>';
-    
-    if (!report.gambar1 && !report.gambar2) {
-      gambarTd.innerText = 'Tiada Gambar';
-    } else {
-      gambarTd.innerHTML = imgHTML;
-    }
-    
-    document.getElementById('a4-modal').classList.add('show');
-  }
-
-  function closeA4() {
-    document.getElementById('a4-modal').classList.remove('show');
-  }
-
-  function downloadA4() {
-    const element = document.getElementById('a4-content');
-    html2canvas(element, { scale: 2, useCORS: true }).then(canvas => {
-      const link = document.createElement('a');
-      link.download = `Laporan_Pemantauan_${document.getElementById('a4-tarikh').innerText}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    });
-  }
-
-  if (typeof initApp === 'function') {
-    initApp(initLaporan);
-  } else {
-    document.addEventListener('DOMContentLoaded', () => initLaporan(null));
-  }
+  initApp(lpbInit);
 </script>
 </body>
 </html>
