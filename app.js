@@ -29,6 +29,8 @@ const ICONS = {
   event: '<rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M3.5 9.5h17"/><path d="M8 3v4M16 3v4"/><circle cx="12" cy="14.5" r="2.2" fill="currentColor" stroke="none"/>',
   power: '<path d="M12 3.5v8"/><path d="M6.7 6.7a8 8 0 1 0 10.6 0"/>',
   menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  clipboard: '<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>',
+  back: '<path d="M19 12H5M12 19l-7-7 7-7"/>',
 };
 
 function iconSvg(name) {
