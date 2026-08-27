@@ -12,7 +12,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 <div class="bg-fx"></div>
@@ -35,150 +34,107 @@
     </div>
   </div>
 
-  <!-- Tiada header di muka ini — hanya navigation bar khas di bawah -->
-  <div id="app-content" class="hidden lpb-noheader">
+  <div id="app-content" class="hidden">
 
-    <!-- Sekatan akses: hanya staf dengan Role2 = Pentadbir boleh guna modul ini -->
-    <div id="lpb-access-denied" class="hidden">
-      <div class="glass external-card" style="margin-top:14vh">
-        <span data-icon="lock"></span>
-        <h3>Akses Terhad</h3>
-        <p>Modul Laporan Pentadbir Bertugas hanya untuk staf yang dilantik sebagai <b>Pentadbir</b>. Sila hubungi admin sekolah jika ini satu kesilapan.</p>
-        <a class="btn-primary" href="index.html" style="display:block;text-decoration:none;text-align:center">Kembali ke Laman Utama</a>
+    <!-- Nav khas (TIADA header) -->
+    <div class="lp-nav">
+      <button class="lp-nav-btn" onclick="location.href='index.html'" aria-label="Kembali"><span data-icon="home"></span></button>
+      <div class="lp-nav-mid">
+        <button class="lp-nav-btn active" id="lp-nav-borang" onclick="lpSwitchPage('borang')" aria-label="Borang"><span data-icon="clipboard"></span></button>
+        <button class="lp-nav-btn" id="lp-nav-senarai" onclick="lpSwitchPage('senarai')" aria-label="Senarai Laporan"><span data-icon="folder"></span></button>
       </div>
+      <button class="lp-nav-btn" onclick="location.href='index.html'" aria-label="Home"><span data-icon="home"></span></button>
     </div>
 
-    <div id="lpb-app">
+    <div id="lp-main-content">
+      <div class="section-label">Pemantauan Blok/Kelas</div>
 
-      <div class="lpb-top">
-        <div>
-          <div class="lpb-top-title">Laporan Pentadbir Bertugas</div>
-          <div class="lpb-top-sub">Management By Walking Around</div>
-        </div>
-      </div>
+      <!-- ============ Page 1: Borang ============ -->
+      <div class="lp-page" id="lp-page-borang">
+        <form id="lp-form" class="glass card-pad">
+          <label class="field-label" for="lp-nama">Nama Pentadbir Bertugas</label>
+          <input class="field-input" type="text" id="lp-nama" placeholder="Nama penuh" required>
 
-      <!-- ===== PAGE 1: BORANG PEMANTAUAN ===== -->
-      <div class="lpb-page active" id="lpb-page-borang">
-        <div class="lpb-form-wrap">
+          <label class="field-label" for="lp-tarikh" style="margin-top:14px">Tarikh</label>
+          <input class="field-input" type="date" id="lp-tarikh" required>
 
-          <div id="lpb-form-box">
-            <form id="lpb-form">
-              <label class="field-label" for="lpb-nama">Nama Pentadbir Bertugas</label>
-              <input class="field-input" type="text" id="lpb-nama" placeholder="Nama penuh" required>
+          <label class="field-label" for="lp-masa" style="margin-top:14px">Masa</label>
+          <input class="field-input" type="time" id="lp-masa" required>
 
-              <label class="field-label" for="lpb-tarikh" style="margin-top:14px">Tarikh</label>
-              <input class="field-input" type="date" id="lpb-tarikh" required>
+          <label class="field-label" for="lp-blok" style="margin-top:14px">Pilihan Blok/Kelas</label>
+          <select class="field-input" id="lp-blok" required></select>
 
-              <label class="field-label" for="lpb-masa" style="margin-top:14px">Masa</label>
-              <input class="field-input" type="time" id="lpb-masa" required>
+          <label class="field-label" for="lp-catatan" style="margin-top:14px">Catatan/Ulasan</label>
+          <textarea class="field-input" id="lp-catatan" placeholder="Catatan pemantauan..."></textarea>
 
-              <label class="field-label" for="lpb-blok" style="margin-top:14px">Pilihan Blok / Kelas</label>
-              <select class="field-input" id="lpb-blok" required></select>
-
-              <label class="field-label" for="lpb-catatan" style="margin-top:14px">Catatan / Ulasan</label>
-              <textarea class="field-input" id="lpb-catatan" placeholder="Catatan pemantauan..." required></textarea>
-
-              <label class="field-label" style="margin-top:14px">Upload Gambar (maksimum 2 keping)</label>
-              <div class="lpb-photo-grid">
-                <div class="lpb-photo-slot" id="lpb-photo-slot-1">
-                  <span data-icon="camera"></span>
-                  <span>Gambar 1</span>
-                  <input type="file" accept="image/*" id="lpb-photo-input-1">
-                </div>
-                <div class="lpb-photo-slot" id="lpb-photo-slot-2">
-                  <span data-icon="camera"></span>
-                  <span>Gambar 2</span>
-                  <input type="file" accept="image/*" id="lpb-photo-input-2">
-                </div>
-              </div>
-
-              <div class="error-text hidden" id="lpb-form-error"></div>
-              <button class="btn-primary" type="submit" id="lpb-submit-btn">Hantar Laporan</button>
-            </form>
-          </div>
-
-          <div class="glass lpb-success-box hidden" id="lpb-success-box">
-            <span data-icon="clipboard"></span>
-            <h3>Laporan Berjaya Dihantar</h3>
-            <p>Rekod pemantauan telah disimpan.</p>
-            <button class="btn-primary" style="width:auto;padding:11px 22px" onclick="lpbResetForm()">Tambah Rekod Lagi</button>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- ===== PAGE 2: SENARAI LAPORAN ===== -->
-      <div class="lpb-page" id="lpb-page-senarai">
-        <div class="lpb-list-wrap">
-
-          <div class="lpb-filterbar">
-            <div class="ma-field ma-field-fill">
-              <label>Tahun</label>
-              <select id="lpb-filter-year"></select>
+          <label class="field-label" style="margin-top:14px">Gambar (maksimum 2 keping)</label>
+          <div class="lp-img-upload-row">
+            <div class="lp-img-slot" onclick="document.getElementById('lp-file-1').click()">
+              <img class="hidden" id="lp-preview-1" alt="Gambar 1">
+              <div class="lp-img-empty" id="lp-preview-empty-1"><span data-icon="event" class="icon"></span><br>Gambar 1</div>
+              <div class="lp-img-remove hidden" onclick="event.stopPropagation();lpRemoveImage(1)">✕</div>
+              <input type="file" id="lp-file-1" accept="image/*" capture="environment" class="hidden" onchange="lpHandleImagePick(1,this)">
             </div>
-            <div class="ma-field ma-field-fill">
-              <label>Bulan</label>
-              <select id="lpb-filter-month"></select>
+            <div class="lp-img-slot" onclick="document.getElementById('lp-file-2').click()">
+              <img class="hidden" id="lp-preview-2" alt="Gambar 2">
+              <div class="lp-img-empty" id="lp-preview-empty-2"><span data-icon="event" class="icon"></span><br>Gambar 2</div>
+              <div class="lp-img-remove hidden" onclick="event.stopPropagation();lpRemoveImage(2)">✕</div>
+              <input type="file" id="lp-file-2" accept="image/*" capture="environment" class="hidden" onchange="lpHandleImagePick(2,this)">
             </div>
           </div>
 
-          <div id="lpb-list-container">
-            <div class="empty-state">Memuatkan senarai laporan...</div>
-          </div>
-
-        </div>
+          <div class="error-text hidden" id="lp-form-error"></div>
+          <button type="submit" class="btn-primary" id="lp-submit-btn">Hantar Rekod</button>
+        </form>
       </div>
 
+      <!-- ============ Page 2: Senarai Laporan ============ -->
+      <div class="lp-page hidden" id="lp-page-senarai">
+        <div class="lp-filterbar">
+          <select id="lp-filter-year"></select>
+          <select id="lp-filter-month"></select>
+        </div>
+        <div id="lp-list"><div class="empty-state">Memuatkan senarai...</div></div>
+      </div>
     </div>
-  </div>
 
-  <!-- ===== Navigation khas (Kembali / Borang / Senarai / Home) ===== -->
-  <div class="lpb-nav-wrap hidden" id="lpb-nav-wrap">
-    <nav class="lpb-nav">
-      <button class="lpb-nav-item" id="lpb-nav-back" onclick="lpbGoBack()"><span data-icon="back"></span><span class="lpb-nav-label">Kembali</span></button>
-      <button class="lpb-nav-item active" id="lpb-nav-borang" onclick="lpbSwitchPage('borang')"><span data-icon="add"></span><span class="lpb-nav-label">Borang</span></button>
-      <button class="lpb-nav-item" id="lpb-nav-senarai" onclick="lpbSwitchPage('senarai')"><span data-icon="list"></span><span class="lpb-nav-label">Senarai</span></button>
-      <a class="lpb-nav-item" href="index.html"><span data-icon="home"></span><span class="lpb-nav-label">Home</span></a>
-    </nav>
-  </div>
-
-  <!-- ===== Popup laporan A4 ===== -->
-  <div class="lpb-report-overlay" id="lpb-report-overlay">
-    <div class="lpb-report-shell">
-      <div class="lpb-report-actions">
-        <button class="lpb-btn-close" onclick="lpbCloseReport()"><span data-icon="back"></span>Tutup</button>
-        <button class="lpb-btn-download" onclick="lpbDownloadReport()"><span data-icon="download"></span>Muat Turun PNG</button>
-        <button class="lpb-btn-delete" onclick="lpbAskDelete()"><span data-icon="trash"></span>Padam</button>
+    <!-- ============ Popup: akses ditolak (bukan Pentadbir) ============ -->
+    <div class="modal-overlay-center hidden" id="lp-access-denied-overlay">
+      <div class="glass modal-sheet" style="text-align:center">
+        <div style="font-size:38px;margin-bottom:10px">🔒</div>
+        <div class="modal-title" style="margin-bottom:8px">AKSES TERHAD</div>
+        <div class="sub-dim">Modul ini hanya untuk staf dengan peranan <b style="color:var(--text)">Pentadbir</b>. Hubungi admin sekolah kalau ni satu kesilapan.</div>
+        <button class="btn-primary" onclick="location.href='index.html'">Kembali ke Laman Utama</button>
       </div>
-      <div class="lpb-a4" id="lpb-a4-content">
-        <div class="lpb-a4-head">
-          <img id="lpb-a4-logo" src="" alt="Logo">
-          <div class="lpb-a4-title">PEMANTAUAN PENTADBIR BERTUGAS<br>("MANAGEMENT BY WALKING AROUND")<br>SM ARAB (JAIM) AL-ASYRAF</div>
+    </div>
+
+  </div>
+
+  <!-- ============ Popup: laporan A4 formal ============ -->
+  <div class="lp-report-overlay hidden" id="lp-report-overlay">
+    <div class="lp-report-box">
+      <div class="lp-report-box-wrap">
+        <button class="lp-report-close" onclick="lpCloseReport()">✕</button>
+        <div class="lp-report-scroll">
+          <div class="lp-report-content" id="lp-report-content"></div>
         </div>
-        <div class="lpb-a4-meta">
-          <div><b>Nama Pentadbir Bertugas :</b> <span id="lpb-a4-nama"></span></div>
-          <div><b>Tarikh :</b> <span id="lpb-a4-tarikh"></span></div>
-        </div>
-        <table class="lpb-a4-table">
-          <thead>
-            <tr><th>Masa</th><th>Blok / Kelas</th><th>Catatan / Ulasan Pemantau</th><th>Gambar</th></tr>
-          </thead>
-          <tbody id="lpb-a4-tbody"></tbody>
-        </table>
-        <div class="lpb-a4-foot" id="lpb-a4-foot"></div>
+      </div>
+      <div class="lp-report-actions">
+        <button class="lp-btn-delete" onclick="lpConfirmDelete()">Padam Laporan</button>
+        <button class="lp-btn-download" id="lp-download-btn" onclick="lpDownloadPng()">Muat Turun PNG</button>
       </div>
     </div>
   </div>
 
-  <!-- ===== Confirm delete ===== -->
-  <div class="lpb-confirm-overlay" id="lpb-confirm-overlay">
-    <div class="glass lpb-confirm-box">
-      <span data-icon="trash"></span>
-      <h3>Padam Laporan Ini?</h3>
-      <p>Tindakan ini akan memadam semua rekod pemantauan bagi laporan ini secara kekal. Adakah anda pasti?</p>
+  <!-- ============ Popup: pengesahan padam ============ -->
+  <div class="modal-overlay-center hidden" id="lp-confirm-overlay">
+    <div class="glass modal-sheet" style="text-align:center">
+      <div style="font-size:34px;margin-bottom:8px">⚠️</div>
+      <div class="modal-title">PADAM LAPORAN?</div>
+      <div class="sub-dim">Tindakan ni tak boleh dibatalkan. Semua rekod pemantauan untuk laporan ni akan dipadam terus dari Sheet.</div>
       <div class="modal-actions">
-        <button class="btn-ghost" onclick="lpbCancelDelete()">Batal</button>
-        <button class="btn-danger" style="margin-top:0;flex:1;width:auto" onclick="lpbConfirmDelete()">Ya, Padam</button>
+        <button class="btn-ghost" onclick="lpCancelDelete()">Batal</button>
+        <button class="btn-danger" id="lp-confirm-delete-btn" onclick="lpDoDelete()" style="margin-top:0">Ya, Padam</button>
       </div>
     </div>
   </div>
@@ -188,7 +144,7 @@
 <script src="app.js"></script>
 <script src="laporan-pentadbir.js"></script>
 <script>
-  initApp(lpbInit);
+  initApp(lpInit);
 </script>
 </body>
 </html>

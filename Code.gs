@@ -29,6 +29,7 @@ function doGet(e) {
   if (action === "getPengumuman") return getPengumuman();
   if (action === "getBanner") return getBanner();
   if (action === "getEvents") return getEvents();
+  if (action === "getLaporanPentadbir") return getLaporanPentadbir();
   return jsonResponse({ error: "Unknown action: " + action });
 }
 
@@ -41,6 +42,8 @@ function doPost(e) {
   }
   if (body.action === "addPengumuman") return addPengumuman(body);
   if (body.action === "addEvent") return addEvent(body);
+  if (body.action === "addLaporanPentadbir") return addLaporanPentadbir(body);
+  if (body.action === "deleteLaporanPentadbir") return deleteLaporanPentadbir(body);
   return jsonResponse({ success: false, message: "Unknown action: " + body.action });
 }
 
@@ -199,4 +202,111 @@ function addEvent(body) {
     user.nama || body.email,
   ]);
   return jsonResponse({ success: true });
+}
+
+/* ---------------- LAPORAN PENTADBIR BERTUGAS ---------------- */
+// Tab "LaporanPentadbirBertugas" (baris 1 = header, data bermula baris 2):
+// A=Tarikh, B=Masa, C=BlokKelas, D=Catatan, E=Gambar1, F=Gambar2, G=NamaPentadbir, H=DicatatOleh(emel)
+
+function lpFmtDateISO(d) {
+  return Utilities.formatDate(new Date(d), Session.getScriptTimeZone() || "GMT+8", "yyyy-MM-dd");
+}
+
+function getLaporanPentadbir() {
+  try {
+    var sheet = getSheet("LaporanPentadbirBertugas");
+    if (!sheet) return jsonResponse([]);
+    var data = sheet.getDataRange().getValues();
+    var list = [];
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      if (!row[0] || !row[2]) continue; // perlu tarikh + blok/kelas
+      list.push({
+        rowNum: i + 1,
+        tarikh: lpFmtDateISO(row[0]),
+        masa: row[1] || "",
+        blokKelas: row[2] || "",
+        catatan: row[3] || "",
+        gambar1: row[4] || "",
+        gambar2: row[5] || "",
+        namaPentadbir: row[6] || "",
+      });
+    }
+    return jsonResponse(list);
+  } catch (err) {
+    return jsonResponse([]);
+  }
+}
+
+function lpSaveImageToDrive(base64DataUrl, filenamePrefix) {
+  if (!base64DataUrl || base64DataUrl.indexOf("base64,") === -1) return "";
+  try {
+    var parts = base64DataUrl.split("base64,");
+    var meta = parts[0]; // contoh: "data:image/jpeg;"
+    var mimeMatch = meta.match(/data:(image\/[a-zA-Z0-9.+-]+);/);
+    var mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
+    var bytes = Utilities.base64Decode(parts[1]);
+    var blob = Utilities.newBlob(bytes, mimeType, filenamePrefix + "." + (mimeType.split("/")[1] || "jpg"));
+    var file = DriveApp.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return "https://lh3.googleusercontent.com/d/" + file.getId();
+  } catch (err) {
+    return "";
+  }
+}
+
+function addLaporanPentadbir(body) {
+  var user = findUserByEmail(body.email);
+  if (!body.tarikh || !body.blokKelas || !body.namaPentadbir) {
+    return jsonResponse({ success: false, message: "Sila lengkapkan nama pentadbir, tarikh, dan blok/kelas." });
+  }
+  var sheet = getSheet("LaporanPentadbirBertugas");
+  if (!sheet) {
+    return jsonResponse({ success: false, message: 'Tab "LaporanPentadbirBertugas" tidak dijumpai dalam Sheet.' });
+  }
+
+  var stamp = new Date().getTime();
+  var gambar1Url = lpSaveImageToDrive(body.gambar1, "pemantauan_" + stamp + "_1");
+  var gambar2Url = lpSaveImageToDrive(body.gambar2, "pemantauan_" + stamp + "_2");
+
+  sheet.appendRow([
+    new Date(body.tarikh),
+    body.masa || "",
+    body.blokKelas,
+    body.catatan || "",
+    gambar1Url,
+    gambar2Url,
+    body.namaPentadbir,
+    (user && user.email) || body.email || "",
+  ]);
+  return jsonResponse({ success: true });
+}
+
+/**
+ * Padam SEMUA baris yang sepadan dengan namaPentadbir + tarikh (satu laporan hari tu).
+ */
+function deleteLaporanPentadbir(body) {
+  if (!body.namaPentadbir || !body.tarikh) {
+    return jsonResponse({ success: false, message: "Maklumat tidak lengkap untuk padam." });
+  }
+  var sheet = getSheet("LaporanPentadbirBertugas");
+  if (!sheet) return jsonResponse({ success: false, message: "Tab tidak dijumpai." });
+
+  var data = sheet.getDataRange().getValues();
+  var rowsToDelete = [];
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (!row[0]) continue;
+    var rowTarikh = lpFmtDateISO(row[0]);
+    var rowNama = String(row[6] || "").trim();
+    if (rowTarikh === body.tarikh && rowNama === String(body.namaPentadbir).trim()) {
+      rowsToDelete.push(i + 1);
+    }
+  }
+  // padam dari bawah ke atas supaya nombor baris tak beralih semasa proses
+  rowsToDelete.sort(function (a, b) { return b - a; });
+  for (var j = 0; j < rowsToDelete.length; j++) {
+    sheet.deleteRow(rowsToDelete[j]);
+  }
+  return jsonResponse({ success: true, deleted: rowsToDelete.length });
 }

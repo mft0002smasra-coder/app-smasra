@@ -1,20 +1,8 @@
 /* ============================================================
-   LAPORAN PENTADBIR BERTUGAS — logik borang, senarai & laporan A4
-   PROJEK APPS SCRIPT BERASINGAN (ikut corak Kehadiran Murid),
-   supaya tak sentuh backend app utama / Kehadiran Murid.
-   ------------------------------------------------------------
-   Cara pasang backend:
-   1. Buka Google Sheet "List Laporan" (link diberikan oleh admin)
-   2. Extensions > Apps Script > projek BAHARU > tampal Code-LaporanPentadbir.gs
-   3. Deploy > New deployment > Web app (Execute as: Me, Who has access: Anyone)
-   4. Salin URL .../exec, paste ke LPB_API_URL di bawah
+   LAPORAN PENTADBIR BERTUGAS
    ============================================================ */
 
-const LPB_API_URL = "https://script.google.com/macros/s/AKfycbz5_GFp1P_qlhC_RsFlzrNFIkHFjZwJ3u5Yh7zbh18JPdAp-1iP7cIkQRBtlKQzjmRY0A/exec";
-
-function lpbApiConfigured() { return LPB_API_URL && LPB_API_URL.indexOf("PASTE_") !== 0; }
-
-const LPB_BLOK_OPTIONS = [
+const LP_BLOK_LIST = [
   "BLOK A", "BLOK B", "BLOK C", "KANTIN",
   "1 Ar-Razi", "1 Ibnu Rushd", "1 Al-Farabi",
   "2 Ar-Razi", "2 Ibnu Rushd", "2 Al-Farabi",
@@ -24,171 +12,117 @@ const LPB_BLOK_OPTIONS = [
   "6 Al-Ghazali", "6 Al Bukhari",
   "ASPURA", "ASPURI", "DEWAN MAKAN", "KAWASAN SEKOLAH", "KAWASAN ASRAMA",
 ];
+const LP_BULAN = ["Januari","Februari","Mac","April","Mei","Jun","Julai","Ogos","September","Oktober","November","Disember"];
 
-const LPB_BULAN = ["Januari","Februari","Mac","April","Mei","Jun","Julai","Ogos","September","Oktober","November","Disember"];
+let lpRecords = [];
+let lpCurrentUser = null;
+let lpImageData = { 1: null, 2: null };
+let lpHtml2canvasReady = false;
+let lpDeleteTarget = null;
 
-let lpbCurrentUser = null;
-let lpbReports = [];          // senarai mentah dari server (satu baris = satu blok/kelas diperiksa)
-let lpbPhotos = [null, null]; // { dataUrl, base64, mimeType } untuk slot 1 & 2
-let lpbActiveGroupKey = null; // tarikh|nama laporan yang sedang dibuka dalam popup
+function lpEscape(str) { return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+function lpPad2(n) { return String(n).padStart(2, "0"); }
 
-function lpbEscape(str) {
-  return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+/* ---------------- Navigasi dalam-page (Borang / Senarai) ---------------- */
+function lpSwitchPage(name) {
+  document.getElementById("lp-page-borang").classList.toggle("hidden", name !== "borang");
+  document.getElementById("lp-page-senarai").classList.toggle("hidden", name !== "senarai");
+  document.getElementById("lp-nav-borang").classList.toggle("active", name === "borang");
+  document.getElementById("lp-nav-senarai").classList.toggle("active", name === "senarai");
+  if (name === "senarai") lpRenderList();
 }
 
-/* ---------------- Init ---------------- */
-
-function lpbInit(user) {
-  lpbCurrentUser = user;
-
-  const isPentadbir = String(user.role2 || "").trim().toLowerCase() === "pentadbir";
-  if (!isPentadbir) {
-    document.getElementById("lpb-app").classList.add("hidden");
-    document.getElementById("lpb-access-denied").classList.remove("hidden");
-    document.getElementById("lpb-nav-wrap").classList.add("hidden");
-    renderIcons();
-    return;
-  }
-
-  document.getElementById("lpb-nav-wrap").classList.remove("hidden");
-
-  const blokSelect = document.getElementById("lpb-blok");
-  blokSelect.innerHTML = LPB_BLOK_OPTIONS.map((b) => `<option value="${lpbEscape(b)}">${lpbEscape(b)}</option>`).join("");
-
-  document.getElementById("lpb-nama").value = user.nama || "";
-  document.getElementById("lpb-tarikh").valueAsDate = new Date();
-  const now = new Date();
-  document.getElementById("lpb-masa").value = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-
-  lpbSetupPhotoSlot(1);
-  lpbSetupPhotoSlot(2);
-
-  document.getElementById("lpb-form").addEventListener("submit", lpbSubmitForm);
-  document.getElementById("lpb-a4-logo").src = SCHOOL_LOGO_URL;
-
-  lpbBuildFilterOptions();
-  document.getElementById("lpb-filter-year").addEventListener("change", lpbRenderList);
-  document.getElementById("lpb-filter-month").addEventListener("change", lpbRenderList);
-
-  lpbSwitchPage("borang");
-}
-
-function lpbGoBack() {
-  if (window.history.length > 1) window.history.back();
-  else location.href = "index.html";
-}
-
-function lpbSwitchPage(name) {
-  document.getElementById("lpb-page-borang").classList.toggle("active", name === "borang");
-  document.getElementById("lpb-page-senarai").classList.toggle("active", name === "senarai");
-  document.getElementById("lpb-nav-borang").classList.toggle("active", name === "borang");
-  document.getElementById("lpb-nav-senarai").classList.toggle("active", name === "senarai");
-  if (name === "senarai") lpbLoadList();
-}
-
-/* ---------------- Upload gambar (resize + preview) ---------------- */
-
-function lpbSetupPhotoSlot(n) {
-  const input = document.getElementById(`lpb-photo-input-${n}`);
-  input.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    lpbResizeImage(file, 1000, 0.72).then((result) => {
-      lpbPhotos[n - 1] = result;
-      lpbRenderPhotoSlot(n);
-    });
-  });
-}
-
-function lpbResizeImage(file, maxDim, quality) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        let { width, height } = img;
-        if (width > maxDim || height > maxDim) {
-          if (width > height) { height = Math.round(height * (maxDim / width)); width = maxDim; }
-          else { width = Math.round(width * (maxDim / height)); height = maxDim; }
-        }
-        const canvas = document.createElement("canvas");
-        canvas.width = width; canvas.height = height;
-        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL("image/jpeg", quality);
-        resolve({ dataUrl, base64: dataUrl.split(",")[1], mimeType: "image/jpeg" });
-      };
-      img.src = reader.result;
+/* ---------------- Borang: mampat & pratonton gambar ---------------- */
+function lpHandleImagePick(slot, input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const maxW = 1000;
+      const scale = Math.min(1, maxW / img.width);
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+      lpImageData[slot] = dataUrl;
+      const preview = document.getElementById(`lp-preview-${slot}`);
+      preview.src = dataUrl;
+      preview.classList.remove("hidden");
+      document.getElementById(`lp-preview-empty-${slot}`).classList.add("hidden");
     };
-    reader.readAsDataURL(file);
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function lpRemoveImage(slot) {
+  lpImageData[slot] = null;
+  document.getElementById(`lp-file-${slot}`).value = "";
+  document.getElementById(`lp-preview-${slot}`).classList.add("hidden");
+  document.getElementById(`lp-preview-empty-${slot}`).classList.remove("hidden");
+}
+
+function lpResetForm() {
+  const form = document.getElementById("lp-form");
+  form.reset();
+  lpImageData = { 1: null, 2: null };
+  [1, 2].forEach((slot) => {
+    document.getElementById(`lp-preview-${slot}`).classList.add("hidden");
+    document.getElementById(`lp-preview-empty-${slot}`).classList.remove("hidden");
   });
+  const now = new Date();
+  document.getElementById("lp-tarikh").value = `${now.getFullYear()}-${lpPad2(now.getMonth() + 1)}-${lpPad2(now.getDate())}`;
+  document.getElementById("lp-masa").value = `${lpPad2(now.getHours())}:${lpPad2(now.getMinutes())}`;
+  if (lpCurrentUser) document.getElementById("lp-nama").value = lpCurrentUser.nama || "";
 }
 
-function lpbRenderPhotoSlot(n) {
-  const slot = document.getElementById(`lpb-photo-slot-${n}`);
-  const photo = lpbPhotos[n - 1];
-  if (!photo) {
-    slot.innerHTML = `<span data-icon="camera"></span><span>Gambar ${n}</span><input type="file" accept="image/*" id="lpb-photo-input-${n}">`;
-    renderIcons();
-    lpbSetupPhotoSlot(n);
-    return;
-  }
-  slot.innerHTML = `<img src="${photo.dataUrl}" alt="Pratonton gambar ${n}"><button type="button" class="lpb-photo-remove" onclick="lpbRemovePhoto(${n})">&times;</button>`;
-}
-
-function lpbRemovePhoto(n) {
-  lpbPhotos[n - 1] = null;
-  lpbRenderPhotoSlot(n);
-}
-
-/* ---------------- Hantar borang ---------------- */
-
-async function lpbSubmitForm(e) {
+async function lpSubmitForm(e) {
   e.preventDefault();
-  const errEl = document.getElementById("lpb-form-error");
+  const errEl = document.getElementById("lp-form-error");
   errEl.classList.add("hidden");
 
-  const nama = document.getElementById("lpb-nama").value.trim();
-  const tarikhRaw = document.getElementById("lpb-tarikh").value; // yyyy-mm-dd
-  const masa = document.getElementById("lpb-masa").value;
-  const blok = document.getElementById("lpb-blok").value;
-  const catatan = document.getElementById("lpb-catatan").value.trim();
+  const nama = document.getElementById("lp-nama").value.trim();
+  const tarikh = document.getElementById("lp-tarikh").value;
+  const masa = document.getElementById("lp-masa").value;
+  const blok = document.getElementById("lp-blok").value;
+  const catatan = document.getElementById("lp-catatan").value.trim();
 
-  if (!nama || !tarikhRaw || !masa || !blok || !catatan) {
-    errEl.textContent = "Sila lengkapkan semua ruangan.";
+  if (!nama || !tarikh || !blok) {
+    errEl.textContent = "Sila lengkapkan nama pentadbir, tarikh, dan blok/kelas.";
     errEl.classList.remove("hidden");
     return;
   }
-  if (!lpbApiConfigured()) {
-    errEl.textContent = "Sistem belum disambungkan ke Apps Script (LPB_API_URL belum diisi).";
+  if (!apiConfigured()) {
+    errEl.textContent = "API belum disambungkan (API_URL belum diisi dalam app.js).";
     errEl.classList.remove("hidden");
     return;
   }
 
-  const [y, m, d] = tarikhRaw.split("-");
-  const tarikh = `${d}/${m}/${y}`; // format seragam dd/mm/yyyy macam modul Kehadiran Murid
-
-  const btn = document.getElementById("lpb-submit-btn");
+  const btn = document.getElementById("lp-submit-btn");
   btn.disabled = true;
   btn.textContent = "Menghantar...";
-
   try {
-    const res = await fetch(LPB_API_URL, {
+    const res = await fetch(API_URL, {
       method: "POST",
       body: JSON.stringify({
         action: "addLaporanPentadbir",
-        email: lpbCurrentUser.email,
+        email: lpCurrentUser.email,
         namaPentadbir: nama,
         tarikh, masa, blokKelas: blok, catatan,
-        gambar1: lpbPhotos[0] ? { data: lpbPhotos[0].base64, mimeType: lpbPhotos[0].mimeType } : null,
-        gambar2: lpbPhotos[1] ? { data: lpbPhotos[1].base64, mimeType: lpbPhotos[1].mimeType } : null,
+        gambar1: lpImageData[1] || "",
+        gambar2: lpImageData[2] || "",
       }),
     });
     const data = await res.json();
     if (data.success) {
-      document.getElementById("lpb-form-box").classList.add("hidden");
-      document.getElementById("lpb-success-box").classList.remove("hidden");
+      lpResetForm();
+      alert("Rekod pemantauan berjaya dihantar!");
+      await lpLoadRecords();
     } else {
-      errEl.textContent = data.message || "Gagal hantar laporan.";
+      errEl.textContent = data.message || "Gagal hantar rekod.";
       errEl.classList.remove("hidden");
     }
   } catch (err) {
@@ -196,176 +130,214 @@ async function lpbSubmitForm(e) {
     errEl.classList.remove("hidden");
   }
   btn.disabled = false;
-  btn.textContent = "Hantar Laporan";
+  btn.textContent = "Hantar Rekod";
 }
 
-function lpbResetForm() {
-  document.getElementById("lpb-form").reset();
-  document.getElementById("lpb-nama").value = lpbCurrentUser.nama || "";
-  document.getElementById("lpb-tarikh").valueAsDate = new Date();
-  lpbPhotos = [null, null];
-  lpbRenderPhotoSlot(1);
-  lpbRenderPhotoSlot(2);
-  document.getElementById("lpb-success-box").classList.add("hidden");
-  document.getElementById("lpb-form-box").classList.remove("hidden");
-}
-
-/* ---------------- Senarai laporan (kumpul ikut Nama + Tarikh) ---------------- */
-
-function lpbBuildFilterOptions() {
-  const yearSelect = document.getElementById("lpb-filter-year");
-  const monthSelect = document.getElementById("lpb-filter-month");
-  const thisYear = new Date().getFullYear();
-  let yearsHtml = `<option value="">Semua Tahun</option>`;
-  for (let y = thisYear + 1; y >= thisYear - 3; y--) yearsHtml += `<option value="${y}">${y}</option>`;
-  yearSelect.innerHTML = yearsHtml;
-  yearSelect.value = thisYear;
-
-  let monthsHtml = `<option value="">Semua Bulan</option>`;
-  LPB_BULAN.forEach((b, i) => { monthsHtml += `<option value="${i + 1}">${b}</option>`; });
-  monthSelect.innerHTML = monthsHtml;
-}
-
-async function lpbLoadList() {
-  const container = document.getElementById("lpb-list-container");
-  if (!lpbApiConfigured()) {
-    container.innerHTML = '<div class="empty-state">API belum disambungkan (LPB_API_URL belum diisi dalam laporan-pentadbir.js).</div>';
-    return;
-  }
-  container.innerHTML = '<div class="empty-state">Memuatkan senarai laporan...</div>';
+/* ---------------- Senarai laporan (dikumpul ikut Nama + Tarikh) ---------------- */
+async function lpLoadRecords() {
+  if (!apiConfigured()) return;
   try {
-    const res = await fetch(`${LPB_API_URL}?action=getLaporanPentadbir`);
-    lpbReports = await res.json();
-    lpbRenderList();
-  } catch (err) {
-    container.innerHTML = '<div class="empty-state">Gagal muatkan senarai laporan. Cuba lagi.</div>';
+    const res = await fetch(`${API_URL}?action=getLaporanPentadbir`);
+    lpRecords = await res.json();
+  } catch (e) {
+    lpRecords = [];
   }
 }
 
-function lpbGroupReports(list) {
-  const groups = {};
-  list.forEach((r) => {
-    const key = `${r.tarikh}|${r.namaPentadbir}`;
-    if (!groups[key]) groups[key] = { tarikh: r.tarikh, namaPentadbir: r.namaPentadbir, entries: [] };
-    groups[key].entries.push(r);
+function lpGroupedReports() {
+  const map = new Map();
+  lpRecords.forEach((r) => {
+    const key = r.namaPentadbir + "|" + r.tarikh;
+    if (!map.has(key)) map.set(key, { namaPentadbir: r.namaPentadbir, tarikh: r.tarikh, items: [] });
+    map.get(key).items.push(r);
   });
-  return Object.values(groups).sort((a, b) => lpbDateSortVal(b.tarikh) - lpbDateSortVal(a.tarikh));
+  const groups = Array.from(map.values());
+  groups.forEach((g) => g.items.sort((a, b) => a.masa.localeCompare(b.masa)));
+  groups.sort((a, b) => b.tarikh.localeCompare(a.tarikh));
+  return groups;
 }
 
-function lpbDateSortVal(ddmmyyyy) {
-  const [d, m, y] = String(ddmmyyyy).split("/").map(Number);
-  return new Date(y, (m || 1) - 1, d || 1).getTime();
+function lpInitFilters() {
+  const years = Array.from(new Set(lpRecords.map((r) => r.tarikh.slice(0, 4))));
+  years.add ? null : null;
+  const yearSet = new Set(years);
+  yearSet.add(String(new Date().getFullYear()));
+  const yearArr = Array.from(yearSet).sort((a, b) => b - a);
+
+  const yearSel = document.getElementById("lp-filter-year");
+  yearSel.innerHTML = `<option value="">Semua Tahun</option>` + yearArr.map((y) => `<option value="${y}">${y}</option>`).join("");
+
+  const monthSel = document.getElementById("lp-filter-month");
+  monthSel.innerHTML = `<option value="">Semua Bulan</option>` + LP_BULAN.map((b, i) => `<option value="${i + 1}">${b}</option>`).join("");
 }
 
-function lpbRenderList() {
-  const container = document.getElementById("lpb-list-container");
-  const yearFilter = document.getElementById("lpb-filter-year").value;
-  const monthFilter = document.getElementById("lpb-filter-month").value;
+function lpRenderList() {
+  if (!lpRecords.length) {
+    lpLoadRecords().then(() => { lpInitFilters(); lpRenderListInner(); });
+  } else {
+    lpRenderListInner();
+  }
+}
 
-  const filtered = lpbReports.filter((r) => {
-    const parts = String(r.tarikh).split("/"); // dd/mm/yyyy
-    if (parts.length !== 3) return false;
-    const [, mm, yyyy] = parts;
-    if (yearFilter && yyyy !== String(yearFilter)) return false;
-    if (monthFilter && Number(mm) !== Number(monthFilter)) return false;
-    return true;
-  });
+function lpRenderListInner() {
+  const year = document.getElementById("lp-filter-year").value;
+  const month = document.getElementById("lp-filter-month").value;
 
-  const groups = lpbGroupReports(filtered);
+  let groups = lpGroupedReports();
+  if (year) groups = groups.filter((g) => g.tarikh.slice(0, 4) === year);
+  if (month) groups = groups.filter((g) => String(parseInt(g.tarikh.slice(5, 7), 10)) === month);
+
+  const listEl = document.getElementById("lp-list");
   if (!groups.length) {
-    container.innerHTML = '<div class="empty-state">Tiada laporan untuk tempoh ini.</div>';
+    listEl.innerHTML = `<div class="empty-state">Tiada laporan dijumpai.</div>`;
     return;
   }
-
-  container.innerHTML = groups.map((g) => {
-    const fotoCount = g.entries.reduce((n, e) => n + (e.gambar1 ? 1 : 0) + (e.gambar2 ? 1 : 0), 0);
-    return `
-    <div class="lpb-card" onclick="lpbOpenReport('${lpbEscape(g.tarikh)}','${encodeURIComponent(g.namaPentadbir)}')">
-      <div class="lpb-card-top">
-        <span class="lpb-card-blok">${g.entries.length} Lokasi Diperiksa</span>
-        <span class="lpb-card-date">${lpbEscape(g.tarikh)}</span>
+  listEl.innerHTML = groups.map((g) => {
+    const [y, m, d] = g.tarikh.split("-");
+    return `<div class="lp-list-item" onclick="lpOpenReport('${lpEscape(g.namaPentadbir)}','${g.tarikh}')">
+      <div class="lp-list-main">
+        <div class="lp-list-nama">${lpEscape(g.namaPentadbir)}</div>
+        <div class="lp-list-sub">${d}/${m}/${y} &middot; ${g.items.length} rekod</div>
       </div>
-      <div class="lpb-card-nama">👤 ${lpbEscape(g.namaPentadbir)}</div>
-      <div class="lpb-card-catatan">${lpbEscape(g.entries.map((e) => e.blokKelas).join(", "))}</div>
-      ${fotoCount ? `<div class="lpb-card-foto-badge">📷 ${fotoCount} gambar</div>` : ""}
+      <span class="lp-list-arrow">&rsaquo;</span>
     </div>`;
   }).join("");
 }
 
-/* ---------------- Popup laporan A4 ---------------- */
+/* ---------------- Popup laporan (format A4, formal) ---------------- */
+function lpOpenReport(namaPentadbir, tarikh) {
+  const items = lpRecords.filter((r) => r.namaPentadbir === namaPentadbir && r.tarikh === tarikh)
+    .sort((a, b) => a.masa.localeCompare(b.masa));
+  const [y, m, d] = tarikh.split("-");
+  const tarikhFmt = `${d}/${m}/${y}`;
 
-function lpbOpenReport(tarikh, namaEncoded) {
-  const nama = decodeURIComponent(namaEncoded);
-  lpbActiveGroupKey = `${tarikh}|${nama}`;
-  const entries = lpbReports
-    .filter((r) => r.tarikh === tarikh && r.namaPentadbir === nama)
-    .sort((a, b) => String(a.masa).localeCompare(String(b.masa)));
-
-  document.getElementById("lpb-a4-nama").textContent = nama;
-  document.getElementById("lpb-a4-tarikh").textContent = tarikh;
-  document.getElementById("lpb-a4-foot").textContent = `Dijana pada ${new Date().toLocaleString("ms-MY")}`;
-
-  document.getElementById("lpb-a4-tbody").innerHTML = entries.map((e) => {
-    const photos = [e.gambar1, e.gambar2].filter(Boolean)
-      .map((url) => `<img src="${lpbEscape(url)}" crossorigin="anonymous">`).join("");
+  const rows = items.map((r) => {
+    const imgs = [r.gambar1, r.gambar2].filter(Boolean)
+      .map((url) => `<img src="${lpEscape(url)}" class="lp-report-img">`).join("");
     return `<tr>
-      <td class="lpb-a4-col-masa">${lpbEscape(e.masa)}</td>
-      <td class="lpb-a4-col-blok">${lpbEscape(e.blokKelas)}</td>
-      <td>${lpbEscape(e.catatan)}</td>
-      <td><div class="lpb-a4-photos">${photos || "-"}</div></td>
+      <td>${lpEscape(r.masa || "-")}</td>
+      <td>${lpEscape(r.blokKelas)}</td>
+      <td style="white-space:pre-wrap">${lpEscape(r.catatan || "-")}</td>
+      <td>${imgs || "-"}</td>
     </tr>`;
   }).join("");
 
-  document.getElementById("lpb-report-overlay").classList.add("show");
+  document.getElementById("lp-report-content").innerHTML = `
+    <div class="lp-report-title">PEMANTAUAN PENTADBIR BERTUGAS<br>("MANAGEMENT BY WALKING AROUND")<br>SM ARAB (JAIM) AL-ASYRAF</div>
+    <div class="lp-report-meta">
+      <div><b>Nama Pentadbir Bertugas:</b> ${lpEscape(namaPentadbir)}</div>
+      <div><b>Tarikh:</b> ${tarikhFmt}</div>
+    </div>
+    <table class="lp-report-table">
+      <thead><tr><th>Masa</th><th>Blok/Kelas</th><th>Catatan/Ulasan Pemantau</th><th>Gambar</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+
+  lpDeleteTarget = { namaPentadbir, tarikh };
+  document.getElementById("lp-report-overlay").classList.remove("hidden");
+}
+function lpCloseReport() {
+  document.getElementById("lp-report-overlay").classList.add("hidden");
 }
 
-function lpbCloseReport() {
-  document.getElementById("lpb-report-overlay").classList.remove("show");
-  lpbActiveGroupKey = null;
+/* ---------------- Muat turun PNG (html2canvas, CDN dinamik) ---------------- */
+function lpLoadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error("gagal muat " + src));
+    document.head.appendChild(s);
+  });
 }
-
-async function lpbDownloadReport() {
-  const node = document.getElementById("lpb-a4-content");
+async function lpEnsureHtml2Canvas() {
+  if (lpHtml2canvasReady || typeof html2canvas !== "undefined") { lpHtml2canvasReady = true; return; }
+  const cdns = [
+    "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
+    "https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js",
+  ];
+  for (const url of cdns) {
+    try { await lpLoadScript(url); if (typeof html2canvas !== "undefined") { lpHtml2canvasReady = true; return; } } catch (e) {}
+  }
+}
+async function lpDownloadPng() {
+  const btn = document.getElementById("lp-download-btn");
+  btn.disabled = true;
+  btn.textContent = "Menyediakan...";
+  await lpEnsureHtml2Canvas();
+  if (typeof html2canvas === "undefined") {
+    alert("Gagal muatkan pustaka export. Cuba lagi bila ada sambungan internet.");
+    btn.disabled = false;
+    btn.textContent = "Muat Turun PNG";
+    return;
+  }
+  const el = document.getElementById("lp-report-content");
   try {
-    const canvas = await html2canvas(node, { backgroundColor: "#ffffff", scale: 2, useCORS: true });
+    const canvas = await html2canvas(el, { backgroundColor: "#ffffff", scale: 2, useCORS: true });
     const link = document.createElement("a");
-    const safeName = (document.getElementById("lpb-a4-nama").textContent + "-" + document.getElementById("lpb-a4-tarikh").textContent)
-      .replace(/[^a-z0-9]+/gi, "-");
-    link.download = `Laporan-Pentadbir-${safeName}.png`;
+    link.download = `Laporan_Pentadbir_${(lpDeleteTarget.namaPentadbir || "").replace(/\s+/g, "_")}_${lpDeleteTarget.tarikh}.png`;
     link.href = canvas.toDataURL("image/png");
     link.click();
   } catch (err) {
-    alert("Gagal jana fail PNG. Cuba lagi.");
+    alert("Gagal jana PNG: " + err.message);
   }
+  btn.disabled = false;
+  btn.textContent = "Muat Turun PNG";
 }
 
 /* ---------------- Padam laporan (dengan pengesahan) ---------------- */
-
-function lpbAskDelete() {
-  document.getElementById("lpb-confirm-overlay").classList.add("show");
+function lpConfirmDelete() {
+  document.getElementById("lp-confirm-overlay").classList.remove("hidden");
 }
-function lpbCancelDelete() {
-  document.getElementById("lpb-confirm-overlay").classList.remove("show");
+function lpCancelDelete() {
+  document.getElementById("lp-confirm-overlay").classList.add("hidden");
 }
-
-async function lpbConfirmDelete() {
-  document.getElementById("lpb-confirm-overlay").classList.remove("show");
-  if (!lpbActiveGroupKey) return;
-  const [tarikh, nama] = lpbActiveGroupKey.split("|");
-
+async function lpDoDelete() {
+  if (!lpDeleteTarget) return;
+  const btn = document.getElementById("lp-confirm-delete-btn");
+  btn.disabled = true;
+  btn.textContent = "Memadam...";
   try {
-    const res = await fetch(LPB_API_URL, {
+    const res = await fetch(API_URL, {
       method: "POST",
-      body: JSON.stringify({ action: "deleteLaporanPentadbir", email: lpbCurrentUser.email, tarikh, namaPentadbir: nama }),
+      body: JSON.stringify({ action: "deleteLaporanPentadbir", namaPentadbir: lpDeleteTarget.namaPentadbir, tarikh: lpDeleteTarget.tarikh }),
     });
     const data = await res.json();
     if (data.success) {
-      lpbCloseReport();
-      await lpbLoadList();
+      lpCancelDelete();
+      lpCloseReport();
+      await lpLoadRecords();
+      lpRenderListInner();
     } else {
       alert(data.message || "Gagal padam laporan.");
     }
   } catch (err) {
     alert("Ralat sambungan ke server.");
   }
+  btn.disabled = false;
+  btn.textContent = "Ya, Padam";
+}
+
+/* ---------------- Init ---------------- */
+function lpInit(user) {
+  lpCurrentUser = user;
+
+  const role2Norm = String(user.role2 || "").trim().toLowerCase();
+  if (role2Norm !== "pentadbir") {
+    document.getElementById("lp-access-denied-overlay").classList.remove("hidden");
+    document.getElementById("lp-main-content").classList.add("hidden");
+    return;
+  }
+
+  const blokSel = document.getElementById("lp-blok");
+  blokSel.innerHTML = `<option value="">Pilih Blok/Kelas</option>` + LP_BLOK_LIST.map((b) => `<option value="${b}">${b}</option>`).join("");
+
+  lpResetForm();
+  document.getElementById("lp-form").addEventListener("submit", lpSubmitForm);
+  document.getElementById("lp-filter-year").addEventListener("change", lpRenderListInner);
+  document.getElementById("lp-filter-month").addEventListener("change", lpRenderListInner);
+
+  lpInitFilters();
 }
