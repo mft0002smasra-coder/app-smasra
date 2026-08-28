@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="style.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
-<body>
+<body class="lp-no-header">
 <div class="bg-fx"></div>
 
 <div class="wrap">
@@ -35,16 +35,6 @@
   </div>
 
   <div id="app-content" class="hidden">
-
-    <!-- Nav khas (TIADA header) -->
-    <div class="lp-nav">
-      <button class="lp-nav-btn" onclick="location.href='index.html'" aria-label="Kembali"><span data-icon="home"></span></button>
-      <div class="lp-nav-mid">
-        <button class="lp-nav-btn active" id="lp-nav-borang" onclick="lpSwitchPage('borang')" aria-label="Borang"><span data-icon="clipboard"></span></button>
-        <button class="lp-nav-btn" id="lp-nav-senarai" onclick="lpSwitchPage('senarai')" aria-label="Senarai Laporan"><span data-icon="folder"></span></button>
-      </div>
-      <button class="lp-nav-btn" onclick="location.href='index.html'" aria-label="Home"><span data-icon="home"></span></button>
-    </div>
 
     <div id="lp-main-content">
       <div class="section-label">Pemantauan Blok/Kelas</div>
@@ -106,6 +96,15 @@
         <div class="sub-dim">Modul ini hanya untuk staf dengan peranan <b style="color:var(--text)">Pentadbir</b>. Hubungi admin sekolah kalau ni satu kesilapan.</div>
         <button class="btn-primary" onclick="location.href='index.html'">Kembali ke Laman Utama</button>
       </div>
+    </div>
+
+    <div class="bottom-nav-wrap">
+      <nav class="bottom-nav lp-bottom-nav">
+        <a class="bn-item" href="#" onclick="history.length>1?history.back():location.href='index.html';return false;" aria-label="Kembali"><span data-icon="back"></span><span class="bn-label">Kembali</span></a>
+        <button class="bn-item active" id="lp-nav-borang" onclick="lpSwitchPage('borang')" aria-label="Borang"><span data-icon="clipboard"></span><span class="bn-label">Borang</span></button>
+        <button class="bn-item" id="lp-nav-senarai" onclick="lpSwitchPage('senarai')" aria-label="Senarai"><span data-icon="folder"></span><span class="bn-label">Senarai</span></button>
+        <a class="bn-item" href="index.html" aria-label="Home"><span data-icon="home"></span><span class="bn-label">Home</span></a>
+      </nav>
     </div>
 
   </div>

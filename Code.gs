@@ -208,8 +208,20 @@ function addEvent(body) {
 // Tab "LaporanPentadbirBertugas" (baris 1 = header, data bermula baris 2):
 // A=Tarikh, B=Masa, C=BlokKelas, D=Catatan, E=Gambar1, F=Gambar2, G=NamaPentadbir, H=DicatatOleh(emel)
 
+// GANTI dengan ID folder Google Drive kalau nak gambar disimpan ke folder khas
+// (buka folder tu di Drive, salin ID dari URL selepas /folders/ ).
+// Biarkan kosong ("") untuk simpan terus ke root Drive akaun pemilik Apps Script.
+var LAPORAN_DRIVE_FOLDER_ID = "";
+
 function lpFmtDateISO(d) {
   return Utilities.formatDate(new Date(d), Session.getScriptTimeZone() || "GMT+8", "yyyy-MM-dd");
+}
+
+function lpFmtMasa(val) {
+  if (val instanceof Date) {
+    return Utilities.formatDate(val, Session.getScriptTimeZone() || "GMT+8", "h:mm a");
+  }
+  return val || "";
 }
 
 function getLaporanPentadbir() {
@@ -224,7 +236,7 @@ function getLaporanPentadbir() {
       list.push({
         rowNum: i + 1,
         tarikh: lpFmtDateISO(row[0]),
-        masa: row[1] || "",
+        masa: lpFmtMasa(row[1]),
         blokKelas: row[2] || "",
         catatan: row[3] || "",
         gambar1: row[4] || "",
@@ -247,7 +259,12 @@ function lpSaveImageToDrive(base64DataUrl, filenamePrefix) {
     var mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
     var bytes = Utilities.base64Decode(parts[1]);
     var blob = Utilities.newBlob(bytes, mimeType, filenamePrefix + "." + (mimeType.split("/")[1] || "jpg"));
-    var file = DriveApp.createFile(blob);
+    var file;
+    if (LAPORAN_DRIVE_FOLDER_ID) {
+      file = DriveApp.getFolderById(LAPORAN_DRIVE_FOLDER_ID).createFile(blob);
+    } else {
+      file = DriveApp.createFile(blob);
+    }
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     return "https://lh3.googleusercontent.com/d/" + file.getId();
   } catch (err) {

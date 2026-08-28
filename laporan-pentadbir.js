@@ -223,7 +223,10 @@ function lpOpenReport(namaPentadbir, tarikh) {
   }).join("");
 
   document.getElementById("lp-report-content").innerHTML = `
-    <div class="lp-report-title">PEMANTAUAN PENTADBIR BERTUGAS<br>("MANAGEMENT BY WALKING AROUND")<br>SM ARAB (JAIM) AL-ASYRAF</div>
+    <div class="lp-report-header">
+      <img src="${SCHOOL_LOGO_URL}" class="lp-report-logo" crossorigin="anonymous">
+      <div class="lp-report-title">PEMANTAUAN PENTADBIR BERTUGAS<br>("MANAGEMENT BY WALKING AROUND")<br>SM ARAB (JAIM) AL-ASYRAF</div>
+    </div>
     <div class="lp-report-meta">
       <div><b>Nama Pentadbir Bertugas:</b> ${lpEscape(namaPentadbir)}</div>
       <div><b>Tarikh:</b> ${tarikhFmt}</div>
