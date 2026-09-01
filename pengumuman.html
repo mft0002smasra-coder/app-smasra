@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Pengumuman — SM Arab (Jaim) Al-Asyraf</title>
+<title>Hebahan — SM Arab (Jaim) Al-Asyraf</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#030b12">
 <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN">
@@ -53,7 +53,7 @@
       </header>
     </div>
 
-    <div class="section-label">Pengumuman</div>
+    <div class="section-label">Hebahan</div>
     <div id="pengumuman-list">
       <div class="empty-state">Memuatkan pengumuman...</div>
     </div>
@@ -64,14 +64,13 @@
   <nav class="drawer" id="drawer">
     <div class="drawer-logo-row"><img class="school-logo-img" alt=""><span>SMASRA</span></div>
     <a class="drawer-item" href="index.html"><span data-icon="home"></span><span class="drawer-label">Laman Utama</span></a>
-    <a class="drawer-item active" href="pengumuman.html"><span data-icon="announce"></span><span class="drawer-label">Pengumuman</span></a>
+    <a class="drawer-item active" href="pengumuman.html"><span data-icon="announce"></span><span class="drawer-label">Hebahan</span></a>
+    <a class="drawer-item" href="laporan-pentadbir.html"><span data-icon="clipboard"></span><span class="drawer-label">Laporan Pentadbir</span></a>
+    <div class="drawer-item soon"><span data-icon="folder"></span><span class="drawer-label">Laporan Guru Bertugas</span></div>
     <a class="drawer-item" href="kehadiran-staf.html"><span data-icon="calendar"></span><span class="drawer-label">Kehadiran Staf</span></a>
     <a class="drawer-item" href="kehadiran-murid.html"><span data-icon="graduate"></span><span class="drawer-label">Kehadiran Murid</span></a>
+    <a class="drawer-item" href="tempahan-bilik.html"><span data-icon="door"></span><span class="drawer-label">Tempahan Bilik Khas</span></a>
     <a class="drawer-item" href="event.html"><span data-icon="event"></span><span class="drawer-label">Event</span></a>
-    <a class="drawer-item" href="laporan-pentadbir.html"><span data-icon="clipboard"></span><span class="drawer-label">Laporan Pentadbir</span></a>
-    <div class="drawer-item soon"><span data-icon="folder"></span><span class="drawer-label">Laporan Guru</span></div>
-    <a class="drawer-item" href="tempahan-bilik.html"><span data-icon="door"></span><span class="drawer-label">Tempahan Bilik</span></a>
-    <div class="drawer-item soon"><span data-icon="chart"></span><span class="drawer-label">Prestasi Kerja</span></div>
     <div class="drawer-spacer"></div>
     <a class="drawer-item drawer-logout" href="#" onclick="logout();return false;"><span data-icon="power"></span><span class="drawer-label">Log Keluar</span></a>
   </nav>
@@ -91,11 +90,11 @@
 
 <div class="modal-overlay hidden" id="modal-overlay">
   <div class="glass modal-sheet">
-    <div class="modal-title">TAMBAH PENGUMUMAN</div>
+    <div class="modal-title">TAMBAH HEBAHAN</div>
     <form id="pengumuman-form">
       <label class="field-label" for="pengumuman-gambar">Link Gambar (pilihan)</label>
       <input class="field-input" type="url" id="pengumuman-gambar" placeholder="https://lh3.googleusercontent.com/d/...">
-      <label class="field-label" for="pengumuman-teks" style="margin-top:14px">Teks Pengumuman</label>
+      <label class="field-label" for="pengumuman-teks" style="margin-top:14px">Teks Hebahan</label>
       <textarea class="field-input" id="pengumuman-teks" placeholder="Tulis pengumuman di sini..." required></textarea>
       <div class="error-text hidden" id="pengumuman-error"></div>
       <div class="modal-actions">

@@ -70,12 +70,26 @@
 
     <div class="section-label">Menu Utama</div>
     <div class="module-grid">
-      <a class="module-tile" href="pengumuman.html"><span data-icon="announce"></span><span class="module-tile-label">Pengumuman</span></a>
+      <a class="module-tile" href="pengumuman.html"><span data-icon="announce"></span><span class="module-tile-label">Hebahan</span></a>
+      <a class="module-tile" href="laporan-pentadbir.html"><span data-icon="clipboard"></span><span class="module-tile-label">Laporan Pentadbir</span></a>
+      <div class="module-tile soon"><span data-icon="folder"></span><span class="module-tile-label">Laporan Guru Bertugas</span></div>
       <a class="module-tile" href="kehadiran-staf.html"><span data-icon="calendar"></span><span class="module-tile-label">Kehadiran Staf</span></a>
       <a class="module-tile" href="kehadiran-murid.html"><span data-icon="graduate"></span><span class="module-tile-label">Kehadiran Murid</span></a>
-      <a class="module-tile" href="laporan-pentadbir.html"><span data-icon="clipboard"></span><span class="module-tile-label">Laporan Pentadbir</span></a>
-      <div class="module-tile soon"><span data-icon="folder"></span><span class="module-tile-label">Laporan Guru</span></div>
       <a class="module-tile" href="tempahan-bilik.html"><span data-icon="door"></span><span class="module-tile-label">Tempahan Bilik Khas</span></a>
+    </div>
+
+    <div class="glass card-pad hidden" id="db-home-analysis-wrap" style="margin-top:var(--gap)">
+      <div class="section-label" style="margin-top:0">Analisis Kehadiran Saya &middot; Bulan Ini</div>
+      <div class="db-my-grid">
+        <div class="db-my-col">
+          <div class="db-my-col-title">Rekod Kehadiran</div>
+          <div id="db-my-kehadiran-list"></div>
+        </div>
+        <div class="db-my-col">
+          <div class="db-my-col-title">Rekod Keberadaan</div>
+          <div id="db-my-keberadaan-list"></div>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -85,14 +99,13 @@
   <nav class="drawer" id="drawer">
     <div class="drawer-logo-row"><img class="school-logo-img" alt=""><span>SMASRA</span></div>
     <a class="drawer-item active" href="index.html"><span data-icon="home"></span><span class="drawer-label">Laman Utama</span></a>
-    <a class="drawer-item" href="pengumuman.html"><span data-icon="announce"></span><span class="drawer-label">Pengumuman</span></a>
+    <a class="drawer-item" href="pengumuman.html"><span data-icon="announce"></span><span class="drawer-label">Hebahan</span></a>
+    <a class="drawer-item" href="laporan-pentadbir.html"><span data-icon="clipboard"></span><span class="drawer-label">Laporan Pentadbir</span></a>
+    <div class="drawer-item soon"><span data-icon="folder"></span><span class="drawer-label">Laporan Guru Bertugas</span></div>
     <a class="drawer-item" href="kehadiran-staf.html"><span data-icon="calendar"></span><span class="drawer-label">Kehadiran Staf</span></a>
     <a class="drawer-item" href="kehadiran-murid.html"><span data-icon="graduate"></span><span class="drawer-label">Kehadiran Murid</span></a>
+    <a class="drawer-item" href="tempahan-bilik.html"><span data-icon="door"></span><span class="drawer-label">Tempahan Bilik Khas</span></a>
     <a class="drawer-item" href="event.html"><span data-icon="event"></span><span class="drawer-label">Event</span></a>
-    <a class="drawer-item" href="laporan-pentadbir.html"><span data-icon="clipboard"></span><span class="drawer-label">Laporan Pentadbir</span></a>
-    <div class="drawer-item soon"><span data-icon="folder"></span><span class="drawer-label">Laporan Guru</span></div>
-    <a class="drawer-item" href="tempahan-bilik.html"><span data-icon="door"></span><span class="drawer-label">Tempahan Bilik</span></a>
-    <div class="drawer-item soon"><span data-icon="chart"></span><span class="drawer-label">Prestasi Kerja</span></div>
     <div class="drawer-spacer"></div>
     <a class="drawer-item drawer-logout" href="#" onclick="logout();return false;"><span data-icon="power"></span><span class="drawer-label">Log Keluar</span></a>
   </nav>
@@ -117,10 +130,12 @@
 
 <script src="app.js"></script>
 <script src="event.js"></script>
+<script src="erks-database.js"></script>
 <script>
   function renderHome(user) {
     loadBanner();
     evRenderHomeTicker();
+    dbLoadHomeAnalysis(user);
   }
   initApp(renderHome);
 </script>

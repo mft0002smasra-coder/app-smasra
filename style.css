@@ -863,6 +863,20 @@ table.db-book-table tbody tr:nth-child(odd) td{ background:rgba(255,255,255,.02)
 }
 .db-book-empty{ text-align:center;color:var(--text-dim);font-size:11px;padding:20px 0; }
 
+/* ---------- Kad "Analisis Kehadiran Saya" (Home) ---------- */
+.db-my-grid{ display:grid;grid-template-columns:1fr 1fr;gap:14px; }
+.db-my-col{ min-width:0; }
+.db-my-col-title{
+  font-family:'Orbitron',sans-serif;font-size:9.5px;letter-spacing:.5px;color:var(--cyan);
+  text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid var(--line);padding-bottom:6px;
+}
+.db-my-row{ display:flex;justify-content:space-between;align-items:baseline;gap:6px;padding:6px 0;border-bottom:1px solid var(--line);font-size:10.5px; }
+.db-my-row:last-child{ border-bottom:none; }
+.db-my-date{ font-family:'Orbitron',sans-serif;color:var(--text-dim);flex-shrink:0;font-size:9.5px; }
+.db-my-ok{ color:var(--mint);font-weight:700;font-family:'Orbitron',sans-serif;font-size:9.5px; }
+.db-my-bad{ color:var(--danger);font-weight:700;font-size:8.5px;text-align:right; }
+.db-my-tujuan{ color:var(--amber);font-weight:600;font-size:9px;text-align:right; }
+
 @media (min-width:700px){
   .db-option-grid{ grid-template-columns:1fr; }
   table.db-book-table thead th, table.db-book-table tbody td{ font-size:12px;padding:6px 8px; }
