@@ -83,11 +83,11 @@
       <div class="db-my-grid">
         <div class="db-my-col">
           <div class="db-my-col-title">Rekod Kehadiran</div>
-          <div id="db-my-kehadiran-list"></div>
+          <div class="db-my-list" id="db-my-kehadiran-list"></div>
         </div>
         <div class="db-my-col">
           <div class="db-my-col-title">Rekod Keberadaan</div>
-          <div id="db-my-keberadaan-list"></div>
+          <div class="db-my-list" id="db-my-keberadaan-list"></div>
         </div>
       </div>
     </div>
@@ -136,6 +136,8 @@
     loadBanner();
     evRenderHomeTicker();
     dbLoadHomeAnalysis(user);
+    setTimeout(dbSizeHomeAnalysisCard, 400);
+    setTimeout(dbSizeHomeAnalysisCard, 1000);
   }
   initApp(renderHome);
 </script>

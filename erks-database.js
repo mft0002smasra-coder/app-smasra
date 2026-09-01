@@ -4,7 +4,7 @@
    berlanggar dengan skrip rks-analysis (ma-/rks- sudah dipakai di muka sama).
    ============================================================ */
 
-const DB_API_URL = "https://script.google.com/macros/s/AKfycbzpMRGdwOUp9h6WagE04JMsZHajgIqd08BSL-9_oQdLOKk1FLC9PpsWyzCU1Irqbv9o/exec";
+const DB_API_URL = "PASTE_URL_APPS_SCRIPT_DATABASE_ANDA_DI_SINI";
 function dbApiConfigured() { return DB_API_URL && DB_API_URL.indexOf("PASTE_") !== 0; }
 
 const DB_SHEET_ID_READ = "1gCC26pdp5dqMwEYg6gzuGaiXhq6iA1M3gruLkkIzO5s";
@@ -291,6 +291,23 @@ function dbParseDDMMMYY(str) {
   return new Date(2000 + parseInt(m[3], 10), mon, parseInt(m[1], 10));
 }
 
+/**
+ * Parser tarikh fleksibel — sel gviz boleh datang dalam pelbagai bentuk
+ * (objek Date terbalut "Date(y,m,d,...)", teks "dd/mm/yyyy", atau teks
+ * "dd-MMM-yy"). Cuba semua bentuk supaya tak bergantung andaian tunggal.
+ */
+function dbParseFlexibleDate(cell) {
+  if (!cell) return null;
+  let d = dbParseGDate(cell.v);
+  if (d) return d;
+  const str = String(cell.f || cell.v || "").trim();
+  let m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
+  d = dbParseDDMMMYY(str);
+  if (d) return d;
+  return null;
+}
+
 /* ================= Kad "Analisis Kehadiran Saya" (Home) ================= */
 async function dbLoadHomeAnalysis(user) {
   const wrap = document.getElementById("db-home-analysis-wrap");
@@ -299,34 +316,32 @@ async function dbLoadHomeAnalysis(user) {
   if (!dbStaff) { wrap.classList.add("hidden"); return; }
 
   try {
-    const [kehadiranRows, rekodRows] = await Promise.all([
-      dbFetchSheet("Kehadiran"),
-      dbFetchSheet("Rekod"),
-    ]);
-
-    const myKehadiran = kehadiranRows.map((r) => {
+    // Tab "Rekod Semua": A=ID,B=TimeStamp,C=No.KP,D=Nama,E=Jawatan,F=Tujuan,
+    // G=LatLong,H=Perkara,I=TEMPAT,J=Mula,K=Tamat — Kehadiran & Keberadaan
+    // digabung dalam SATU jadual ni.
+    const rows = await dbFetchSheet("Rekod Semua");
+    const myRows = rows.map((r) => {
       const c = r.c || [];
-      const ts = dbParseGDate(c[1] && c[1].v);
       return {
-        tarikhKey: ts ? dbYmd(ts) : null,
-        masa: ts ? `${String(ts.getHours()).padStart(2,"0")}:${String(ts.getMinutes()).padStart(2,"0")}` : "-",
         noKP: String((c[2] && c[2].v) || "").trim(),
-        tujuan: (c[5] && c[5].v) || "",
+        tujuan: String((c[5] && c[5].v) || "").trim(),
+        ts: dbParseFlexibleDate(c[1]),
+        mula: dbParseFlexibleDate(c[9]),
+        tamat: dbParseFlexibleDate(c[10]),
       };
-    }).filter((r) => r.tarikhKey && r.noKP === dbStaff.noKP);
+    }).filter((r) => r.noKP === dbStaff.noKP);
 
-    const myRekod = rekodRows.map((r) => {
-      const c = r.c || [];
-      return {
-        noKP: String((c[3] && c[3].v) || "").trim(),
-        tujuan: (c[6] && c[6].v) || "",
-        mula: dbParseDDMMMYY(c[10] && c[10].v),
-        tamat: dbParseDDMMMYY(c[11] && c[11].v),
-      };
-    }).filter((r) => r.noKP === dbStaff.noKP && r.mula);
+    const myKehadiran = myRows
+      .filter((r) => r.tujuan.toUpperCase().includes("MASUK") && r.ts)
+      .map((r) => ({ tarikhKey: dbYmd(r.ts), masa: `${String(r.ts.getHours()).padStart(2,"0")}:${String(r.ts.getMinutes()).padStart(2,"0")}` }));
+
+    const myRekod = myRows
+      .filter((r) => !r.tujuan.toUpperCase().includes("MASUK") && !r.tujuan.toUpperCase().includes("KELUAR") && r.mula)
+      .map((r) => ({ tujuan: r.tujuan, mula: r.mula, tamat: r.tamat || r.mula }));
 
     dbRenderHomeAnalysis(myKehadiran, myRekod);
     wrap.classList.remove("hidden");
+    dbSizeHomeAnalysisCard();
   } catch (e) {
     wrap.classList.add("hidden");
   }
@@ -344,7 +359,7 @@ function dbRenderHomeAnalysis(myKehadiran, myRekod) {
     const dow = dateObj.getDay();
     if (dow === 0 || dow === 6) continue; // langkau Sabtu/Ahad
     const dateKey = dbYmd(dateObj);
-    const rec = myKehadiran.find((r) => r.tarikhKey === dateKey && r.tujuan.toUpperCase().includes("MASUK"));
+    const rec = myKehadiran.find((r) => r.tarikhKey === dateKey);
     kehadiranRows.push({ dateObj, masaMasuk: rec ? rec.masa : null });
   }
   const kehadiranHtml = kehadiranRows.length
@@ -536,3 +551,15 @@ async function dbBootBook() {
   spread.addEventListener("touchstart", dbBookTouchStart, { passive: true });
   spread.addEventListener("touchend", dbBookTouchEnd, { passive: true });
 }
+
+/* ---------------- Tinggi kad Analisis Kehadiran Saya (Home) ---------------- */
+function dbSizeHomeAnalysisCard() {
+  const card = document.getElementById("db-home-analysis-wrap");
+  if (!card || card.classList.contains("hidden")) return;
+  const bottomNav = document.querySelector(".bottom-nav-wrap");
+  const navHeight = bottomNav ? bottomNav.offsetHeight : 60;
+  const cardTop = card.getBoundingClientRect().top;
+  const available = window.innerHeight - cardTop - navHeight - 16;
+  card.style.height = Math.max(180, available) + "px";
+}
+window.addEventListener("resize", dbSizeHomeAnalysisCard);
