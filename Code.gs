@@ -221,7 +221,17 @@ function lpFmtMasa(val) {
   if (val instanceof Date) {
     return Utilities.formatDate(val, Session.getScriptTimeZone() || "GMT+8", "h:mm a");
   }
-  return val || "";
+  var str = String(val || "").trim();
+  var m = str.match(/^(\d{1,2}):(\d{2})/);
+  if (m) {
+    var h = parseInt(m[1], 10);
+    var min = m[2];
+    var suffix = h >= 12 ? "PM" : "AM";
+    var h12 = h % 12;
+    if (h12 === 0) h12 = 12;
+    return h12 + ":" + min + " " + suffix;
+  }
+  return str;
 }
 
 function getLaporanPentadbir() {
@@ -264,7 +274,11 @@ function lpSaveImageToDrive(base64DataUrl, filenamePrefix) {
   } else {
     file = DriveApp.createFile(blob);
   }
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  try {
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch (shareErr) {
+    // fail dah wujud dalam folder — teruskan walau setSharing gagal (contoh: dasar Shared Drive)
+  }
   return "https://lh3.googleusercontent.com/d/" + file.getId();
 }
 
@@ -314,6 +328,9 @@ function addLaporanPentadbir(body) {
     body.namaPentadbir,
     (user && user.email) || body.email || "",
   ]);
+  // Paksa lajur Masa (B) jadi format teks supaya Sheets tak auto-tukar jadi objek Date/Time
+  var newRow = sheet.getLastRow();
+  sheet.getRange(newRow, 2).setNumberFormat("@").setValue(body.masa || "");
   return jsonResponse({ success: true, warning: imgWarnings.length ? imgWarnings.join(" | ") : null });
 }
 
