@@ -4,7 +4,7 @@
    berlanggar dengan skrip rks-analysis (ma-/rks- sudah dipakai di muka sama).
    ============================================================ */
 
-const DB_API_URL = "https://script.google.com/macros/s/AKfycbzpMRGdwOUp9h6WagE04JMsZHajgIqd08BSL-9_oQdLOKk1FLC9PpsWyzCU1Irqbv9o/exec";
+const DB_API_URL = "PASTE_URL_APPS_SCRIPT_DATABASE_ANDA_DI_SINI";
 function dbApiConfigured() { return DB_API_URL && DB_API_URL.indexOf("PASTE_") !== 0; }
 
 const DB_SHEET_ID_READ = "1gCC26pdp5dqMwEYg6gzuGaiXhq6iA1M3gruLkkIzO5s";
@@ -254,10 +254,15 @@ async function dbSubmitKeberadaan() {
   btn.disabled = false; btn.textContent = "Hantar Rekod";
 }
 
-/* ================= Buku Kehadiran Staf (flip book) ================= */
+/* ================= Buku Kehadiran Staf (senarai penuh, 30/muka) ================= */
 const DB_BULAN = ["Januari","Februari","Mac","April","Mei","Jun","Julai","Ogos","September","Oktober","November","Disember"];
-let dbBookRecords = [];
+const DB_ROWS_PER_PAGE = 30;
+let dbBookRecords = [];   // rekod Kehadiran (kehadiran sahaja, MASA MASUK)
+let dbStaffRoster = [];   // semua staf dari tab Database
+let dbBookPages = [];     // senarai "muka" hasil pagination (ikut tarikh + chunk 30)
+let dbBookPageIdx = 0;
 let dbBookFlipping = false;
+let dbTouchStartX = null;
 
 async function dbFetchSheet(sheetName) {
   const url = `https://docs.google.com/spreadsheets/d/${DB_SHEET_ID_READ}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&_ts=${Date.now()}`;
@@ -277,108 +282,163 @@ function dbParseGDate(cellValue) {
 function dbYmd(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
 
 async function dbLoadBookRecords() {
-  const rows = await dbFetchSheet("Kehadiran");
-  dbBookRecords = rows.map((r) => {
+  const [kehadiranRows, staffRows] = await Promise.all([
+    dbFetchSheet("Kehadiran"),
+    dbFetchSheet("Database"),
+  ]);
+
+  dbBookRecords = kehadiranRows.map((r) => {
     const c = r.c || [];
     const ts = dbParseGDate(c[1] && c[1].v);
     return {
       tarikhKey: ts ? dbYmd(ts) : null,
       masa: ts ? `${String(ts.getHours()).padStart(2,"0")}:${String(ts.getMinutes()).padStart(2,"0")}` : "-",
-      noKP: (c[2] && c[2].v) || "",
-      nama: (c[3] && c[3].v) || "",
-      jawatan: (c[4] && c[4].v) || "",
+      noKP: String((c[2] && c[2].v) || "").trim(),
       tujuan: (c[5] && c[5].v) || "",
     };
-  }).filter((r) => r.tarikhKey && r.nama);
+  }).filter((r) => r.tarikhKey && r.noKP);
+
+  dbStaffRoster = staffRows.map((r) => {
+    const c = r.c || [];
+    return {
+      noKP: String((c[1] && c[1].v) || "").trim(),
+      nama: (c[2] && c[2].v) || "",
+      jawatan: (c[3] && c[3].v) || "",
+    };
+  }).filter((s) => s.nama);
+}
+
+function dbMasaMasukFor(noKP, tarikhKey) {
+  const rec = dbBookRecords.find((r) => r.noKP === noKP && r.tarikhKey === tarikhKey && r.tujuan.toUpperCase().includes("MASUK"));
+  return rec ? rec.masa : null;
+}
+
+function dbChunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
 }
 
 function dbInitBookFilters() {
   const today = new Date();
-  const years = Array.from(new Set(dbBookRecords.map((r) => r.tarikhKey.slice(0,4))));
-  const yearSet = new Set(years); yearSet.add(String(today.getFullYear()));
-  const yearArr = Array.from(yearSet).sort((a,b)=>b-a);
-
   const yearSel = document.getElementById("db-book-year");
-  yearSel.innerHTML = yearArr.map((y) => `<option value="${y}">${y}</option>`).join("");
-  yearSel.value = String(today.getFullYear());
+  const y = today.getFullYear();
+  yearSel.innerHTML = [y-1, y, y+1].map((v) => `<option value="${v}">${v}</option>`).join("");
+  yearSel.value = String(y);
 
   const monthSel = document.getElementById("db-book-month");
-  monthSel.innerHTML = DB_BULAN.map((b,i) => `<option value="${i+1}">${b}</option>`).join("");
+  monthSel.innerHTML = `<option value="">— Bulan —</option>` + DB_BULAN.map((b,i) => `<option value="${i+1}">${b}</option>`).join("");
   monthSel.value = String(today.getMonth()+1);
 
   document.getElementById("db-book-date").value = dbYmd(today);
 
-  yearSel.addEventListener("change", dbSyncBookMonthToDate);
-  monthSel.addEventListener("change", dbSyncBookMonthToDate);
-  document.getElementById("db-book-date").addEventListener("change", dbRenderBook);
-}
-function dbSyncBookMonthToDate() {
-  const y = document.getElementById("db-book-year").value;
-  const m = document.getElementById("db-book-month").value;
-  const dateInput = document.getElementById("db-book-date");
-  const currentDay = dateInput.value ? dateInput.value.slice(8,10) : "01";
-  dateInput.value = `${y}-${String(m).padStart(2,"0")}-${currentDay}`;
-  dbRenderBook();
+  yearSel.addEventListener("change", dbBuildAndRenderPages);
+  monthSel.addEventListener("change", dbBuildAndRenderPages);
+  document.getElementById("db-book-date").addEventListener("change", dbBuildAndRenderPages);
+  document.getElementById("db-book-date-clear").addEventListener("click", () => {
+    document.getElementById("db-book-date").value = "";
+    dbBuildAndRenderPages();
+  });
 }
 
-function dbRenderBook() {
-  const dateStr = document.getElementById("db-book-date").value;
-  if (!dateStr) return;
-  const [y,m,d] = dateStr.split("-");
-  document.getElementById("db-book-year").value = y;
-  document.getElementById("db-book-month").value = String(parseInt(m,10));
+function dbBuildAndRenderPages() {
+  const year = document.getElementById("db-book-year").value;
+  const month = document.getElementById("db-book-month").value; // "" boleh kosong
+  const dateStr = document.getElementById("db-book-date").value; // "" boleh kosong
 
-  const dayRecords = dbBookRecords.filter((r) => r.tarikhKey === dateStr).sort((a,b)=>a.masa.localeCompare(b.masa));
+  let dateList = [];
+  if (dateStr) {
+    dateList = [dateStr];
+  } else if (month) {
+    const daysInMonth = new Date(parseInt(year,10), parseInt(month,10), 0).getDate();
+    dateList = Array.from({ length: daysInMonth }, (_, i) => `${year}-${String(month).padStart(2,"0")}-${String(i+1).padStart(2,"0")}`);
+  }
+
+  dbBookPages = [];
+  dateList.forEach((d) => {
+    const chunks = dbChunk(dbStaffRoster, DB_ROWS_PER_PAGE);
+    (chunks.length ? chunks : [[]]).forEach((chunk, idx) => {
+      dbBookPages.push({ dateStr: d, staffChunk: chunk, chunkIndex: idx, totalChunks: chunks.length || 1, startNo: idx * DB_ROWS_PER_PAGE + 1 });
+    });
+  });
+
+  // Cuba kekal pada tarikh yang sama bila boleh (contoh: tukar tahun/bulan)
+  dbBookPageIdx = 0;
+  dbRenderBookPage();
+}
+
+function dbRenderBookPage() {
+  const wrap = document.getElementById("db-book-page-wrap");
+  const emptyEl = document.getElementById("db-book-empty-state");
+
+  if (!dbBookPages.length) {
+    wrap.classList.add("hidden");
+    emptyEl.classList.remove("hidden");
+    document.getElementById("db-book-count").textContent = "";
+    return;
+  }
+  emptyEl.classList.add("hidden");
+  wrap.classList.remove("hidden");
+
+  if (dbBookPageIdx < 0) dbBookPageIdx = 0;
+  if (dbBookPageIdx >= dbBookPages.length) dbBookPageIdx = dbBookPages.length - 1;
+  const page = dbBookPages[dbBookPageIdx];
+
+  const [y,m,d] = page.dateStr.split("-");
   const dateLabel = `${d} ${DB_BULAN[parseInt(m,10)-1]} ${y}`;
+  const pageLabel = page.totalChunks > 1 ? ` &middot; Muka ${page.chunkIndex+1}/${page.totalChunks}` : "";
+  document.getElementById("db-book-date-label").innerHTML = dateLabel + pageLabel;
+  document.getElementById("db-book-count").textContent = `${dbBookPageIdx+1} / ${dbBookPages.length}`;
 
-  const half = Math.ceil(dayRecords.length / 2);
-  const leftItems = dayRecords.slice(0, half);
-  const rightItems = dayRecords.slice(half);
+  const rows = page.staffChunk.map((s, i) => {
+    const masaMasuk = dbMasaMasukFor(s.noKP, page.dateStr);
+    const catatan = masaMasuk
+      ? `<span class="db-book-ok">Hadir</span>`
+      : `<span class="db-book-badge">Belum Mengisi Sistem eRKS</span>`;
+    return `<tr>
+      <td class="db-book-bil">${page.startNo + i}</td>
+      <td class="db-book-nama-cell">${dbEscape(s.nama)}</td>
+      <td class="db-book-jawatan-cell">${dbEscape(s.jawatan)}</td>
+      <td class="db-book-masa-cell">${masaMasuk || "-"}</td>
+      <td class="db-book-catatan-cell">${catatan}</td>
+    </tr>`;
+  }).join("");
 
-  document.getElementById("db-book-date-label-left").textContent = dateLabel;
-  document.getElementById("db-book-date-label-right").textContent = dateLabel;
-  document.getElementById("db-book-left").innerHTML = dbBuildBookPage(leftItems, 1);
-  document.getElementById("db-book-right").innerHTML = dbBuildBookPage(rightItems, half + 1);
-  document.getElementById("db-book-count").textContent = `${dayRecords.length} rekod`;
+  document.getElementById("db-book-tbody").innerHTML = rows || `<tr><td colspan="5" class="db-book-empty">Tiada staf dalam senarai.</td></tr>`;
 }
 
-function dbBuildBookPage(items, startNo) {
-  if (!items.length) return `<div class="db-book-empty">Tiada rekod</div>`;
-  return items.map((r, i) => `
-    <div class="db-book-row">
-      <span class="db-book-no">${startNo + i}</span>
-      <div class="db-book-info">
-        <div class="db-book-nama">${dbEscape(r.nama)}</div>
-        <div class="db-book-meta">${dbEscape(r.jawatan)} &middot; ${r.masa}</div>
-      </div>
-      <span class="db-book-tujuan ${r.tujuan.includes("KELUAR") ? "out" : "in"}">${dbEscape(r.tujuan)}</span>
-    </div>`).join("");
-}
-
-function dbChangeBookDay(delta) {
-  if (dbBookFlipping) return;
-  const dateInput = document.getElementById("db-book-date");
-  const d = new Date(dateInput.value + "T00:00:00");
-  d.setDate(d.getDate() + delta);
-  dateInput.value = dbYmd(d);
-
-  const book = document.getElementById("db-book");
+function dbChangeBookPage(delta) {
+  if (dbBookFlipping || !dbBookPages.length) return;
   dbBookFlipping = true;
-  book.classList.add(delta > 0 ? "flip-next" : "flip-prev");
+  const spread = document.getElementById("db-book-spread");
+  spread.classList.add(delta > 0 ? "flip-next" : "flip-prev");
   setTimeout(() => {
-    dbRenderBook();
-    book.classList.remove("flip-next", "flip-prev");
+    dbBookPageIdx += delta;
+    dbRenderBookPage();
+    spread.classList.remove("flip-next", "flip-prev");
     dbBookFlipping = false;
-  }, 260);
+  }, 220);
+}
+
+function dbBookTouchStart(e) { dbTouchStartX = e.touches[0].clientX; }
+function dbBookTouchEnd(e) {
+  if (dbTouchStartX === null) return;
+  const dx = e.changedTouches[0].clientX - dbTouchStartX;
+  if (Math.abs(dx) > 50) dbChangeBookPage(dx < 0 ? 1 : -1);
+  dbTouchStartX = null;
 }
 
 let dbBookLoaded = false;
 async function dbBootBook() {
-  if (dbBookLoaded) { dbRenderBook(); return; }
+  if (dbBookLoaded) { dbRenderBookPage(); return; }
   dbBookLoaded = true;
   document.getElementById("db-book-loading").classList.remove("hidden");
   await dbLoadBookRecords();
   dbInitBookFilters();
-  dbRenderBook();
+  dbBuildAndRenderPages();
   document.getElementById("db-book-loading").classList.add("hidden");
+
+  const spread = document.getElementById("db-book-spread");
+  spread.addEventListener("touchstart", dbBookTouchStart, { passive: true });
+  spread.addEventListener("touchend", dbBookTouchEnd, { passive: true });
 }

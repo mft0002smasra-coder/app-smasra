@@ -177,29 +177,32 @@
 
   </div>
 
-  <!-- Tab: Buku Kehadiran Staf (flip book) -->
+  <!-- Tab: Buku Kehadiran Staf (senarai penuh, 30/muka, swipe/panah) -->
   <div class="tab-panel hidden" id="tab-panel-buku">
     <div class="db-book-filterbar">
       <select id="db-book-year"></select>
       <select id="db-book-month"></select>
       <input type="date" id="db-book-date">
+      <button class="db-book-clear-btn" id="db-book-date-clear" type="button" title="Kosongkan tarikh">✕</button>
     </div>
-    <div id="db-book-loading" class="empty-state hidden">Memuatkan rekod...</div>
-    <div class="db-book-nav">
-      <button class="db-book-nav-btn" onclick="dbChangeBookDay(-1)" aria-label="Hari sebelum">&larr;</button>
-      <span class="db-book-count" id="db-book-count">0 rekod</span>
-      <button class="db-book-nav-btn" onclick="dbChangeBookDay(1)" aria-label="Hari seterusnya">&rarr;</button>
-    </div>
-    <div id="db-book">
+    <div id="db-book-loading" class="empty-state hidden">Memuatkan senarai staf...</div>
+
+    <div id="db-book-empty-state" class="empty-state hidden">Sila pilih sekurang-kurangnya bulan untuk papar senarai.</div>
+
+    <div id="db-book-page-wrap" ontouchstart="dbBookTouchStart(event)" ontouchend="dbBookTouchEnd(event)">
       <div class="db-book-spread" id="db-book-spread">
-        <div class="db-book-page">
-          <div class="db-book-page-label" id="db-book-date-label-left">-</div>
-          <div id="db-book-left"></div>
+        <div class="db-book-page-label" id="db-book-date-label">-</div>
+        <div class="db-book-table-wrap">
+          <table class="db-book-table">
+            <thead><tr><th>Bil</th><th>Nama Staf</th><th>Jawatan</th><th>Masa Masuk</th><th>Catatan</th></tr></thead>
+            <tbody id="db-book-tbody"></tbody>
+          </table>
         </div>
-        <div class="db-book-page">
-          <div class="db-book-page-label" id="db-book-date-label-right">-</div>
-          <div id="db-book-right"></div>
-        </div>
+      </div>
+      <div class="db-book-nav">
+        <button class="db-book-nav-btn" onclick="dbChangeBookPage(-1)" aria-label="Muka sebelum">&larr;</button>
+        <span class="db-book-count" id="db-book-count">-</span>
+        <button class="db-book-nav-btn" onclick="dbChangeBookPage(1)" aria-label="Muka seterusnya">&rarr;</button>
       </div>
     </div>
   </div>
@@ -555,8 +558,8 @@
       : '<div class="rks-list-item" style="color:var(--mint)">Hebat! Semua AKP dah lengkapkan eRKS.</div>';
   }
 
-  function renderKehadiranStaf(user) {
-    dbLoadStaff(user);
+  async function renderKehadiranStaf(user) {
+    await dbLoadStaff(user);
     const params = new URLSearchParams(location.search);
     if (params.get("open") === "kehadiran") {
       dbOpenKehadiranForm();

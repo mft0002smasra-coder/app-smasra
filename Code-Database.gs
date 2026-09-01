@@ -110,6 +110,21 @@ function addKehadiran(body) {
  *              G=Tujuan, H=Perkara, I=Tempat, J=LatLong, K=Mula, L=Tamat,
  *              M=Masa Mula, N=Masa Tamat
  */
+function dbFmtTarikh(isoDateStr) {
+  var d = new Date(isoDateStr + "T00:00:00");
+  return Utilities.formatDate(d, Session.getScriptTimeZone() || "GMT+8", "dd-MMM-yy");
+}
+function dbFmtMasa(hhmm) {
+  if (!hhmm) return "";
+  var parts = String(hhmm).split(":");
+  var h = parseInt(parts[0], 10);
+  var m = parts[1] || "00";
+  var suffix = h >= 12 ? "PM" : "AM";
+  var h12 = h % 12;
+  if (h12 === 0) h12 = 12;
+  return (h12 < 10 ? "0" + h12 : h12) + ":" + m + " " + suffix;
+}
+
 function addKeberadaan(body) {
   if (!body.noKP || !body.nama || !body.tujuan || !body.mula || !body.tamat) {
     return dbJson({ success: false, message: "Sila lengkapkan tujuan, tarikh mula, dan tarikh tamat." });
@@ -128,10 +143,10 @@ function addKeberadaan(body) {
     body.perkara || "",
     body.tempat || "",
     body.latLong || "0.000000, 0.000000",
-    new Date(body.mula),
-    new Date(body.tamat),
-    body.masaMula || "",
-    body.masaTamat || "",
+    dbFmtTarikh(body.mula),
+    dbFmtTarikh(body.tamat),
+    dbFmtMasa(body.masaMula),
+    dbFmtMasa(body.masaTamat),
   ]);
   return dbJson({ success: true });
 }
