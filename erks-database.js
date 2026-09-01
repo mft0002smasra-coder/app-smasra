@@ -4,7 +4,7 @@
    berlanggar dengan skrip rks-analysis (ma-/rks- sudah dipakai di muka sama).
    ============================================================ */
 
-const DB_API_URL = "https://script.google.com/macros/s/AKfycbzpMRGdwOUp9h6WagE04JMsZHajgIqd08BSL-9_oQdLOKk1FLC9PpsWyzCU1Irqbv9o/exec";
+const DB_API_URL = "PASTE_URL_APPS_SCRIPT_DATABASE_ANDA_DI_SINI";
 function dbApiConfigured() { return DB_API_URL && DB_API_URL.indexOf("PASTE_") !== 0; }
 
 const DB_SHEET_ID_READ = "1gCC26pdp5dqMwEYg6gzuGaiXhq6iA1M3gruLkkIzO5s";
@@ -257,7 +257,10 @@ async function dbSubmitKeberadaan() {
 /* ================= Buku Kehadiran Staf (senarai penuh, 30/muka) ================= */
 const DB_BULAN = ["Januari","Februari","Mac","April","Mei","Jun","Julai","Ogos","September","Oktober","November","Disember"];
 const DB_ROWS_PER_PAGE = 30;
-let dbBookRecords = [];   // rekod Kehadiran (kehadiran sahaja, MASA MASUK)
+let dbBookKehadiranRows = [];  // raw rows tab Kehadiran (untuk bina peta ikut tahun/bulan dipilih)
+let dbBookRekodRows = [];      // raw rows tab Rekod
+let dbBookKehadiranMap = new Map();
+let dbBookRekodMap = new Map();
 let dbStaffRoster = [];   // semua staf dari tab Database
 let dbBookPages = [];     // senarai "muka" hasil pagination (ikut tarikh + chunk 30)
 let dbBookPageIdx = 0;
@@ -308,6 +311,104 @@ function dbParseFlexibleDate(cell) {
   return null;
 }
 
+/* ================= Bantuan kongsi: cross-reference Kehadiran + Rekod ================= */
+const DB_AWAL_730 = [
+  "PENGETUA", "PK PENTADBIRAN", "PK HAL EHWAL MURID", "PK KOKURIKULUM", "PK TINGKATAN 6",
+  "GKMP SAINS & MATEMATIK", "GKMP T&V", "GKMP KEMANUSIAAN", "GKMP BAHASA", "GKMP PAIBA",
+  "PPP", "GURU", "PEMBANTU MAKMAL",
+];
+
+function dbMasaMasukClean(raw) {
+  if (!raw) return "";
+  const s = String(raw).trim();
+  const m = s.match(/Date\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*(\d+)\s*,\s*(\d+)\s*/);
+  if (m) return `${m[1]}:${m[2]}`;
+  return s;
+}
+function dbFormatAmPm(timeStr) {
+  if (!timeStr || timeStr === "-") return "-";
+  const parts = timeStr.trim().split(":");
+  if (parts.length < 2) return timeStr;
+  let h = parseInt(parts[0], 10);
+  const mins = parts[1].padStart(2, "0");
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12; h = h || 12;
+  return `${h}:${mins} ${ampm}`;
+}
+
+/**
+ * Bina peta Kehadiran (kunci "noKP|yyyy-mm-dd" -> "H:M") dan Rekod/Keberadaan
+ * (kunci "nama|yyyy-mm-dd" -> {tujuan,perkara,masaMula}) untuk SATU
+ * tahun+bulan sahaja (cekap, elak proses data bulan lain).
+ */
+function dbBuildKehadiranRekodMaps(kehadiranRows, rekodRows, tahun, bulan) {
+  const kehadiranMap = new Map();
+  kehadiranRows.forEach((r) => {
+    const c = r.c || [];
+    const ts = dbParseGDate(c[1] && c[1].v) || dbParseGDate(c[0] && c[0].v);
+    if (!ts || ts.getFullYear() !== tahun || ts.getMonth() + 1 !== bulan) return;
+    const noKP = String((c[2] && c[2].v) || "").trim();
+    if (!noKP) return;
+    const hm = `${ts.getHours()}:${String(ts.getMinutes()).padStart(2, "0")}`;
+    kehadiranMap.set(`${noKP}|${dbYmd(ts)}`, hm);
+  });
+
+  const rekodMap = new Map();
+  rekodRows.forEach((r) => {
+    const c = r.c || [];
+    const nama = String((c[4] && c[4].v) || "").trim();
+    if (!nama) return;
+    const mula = dbParseFlexibleDate(c[10]);
+    const tamat = dbParseFlexibleDate(c[11]) || mula;
+    if (!mula) return;
+    const mulaD = new Date(mula); mulaD.setHours(0, 0, 0, 0);
+    const tamatD = new Date(tamat); tamatD.setHours(23, 59, 59, 999);
+    const info = {
+      tujuan: (c[6] && c[6].v) || "",
+      perkara: (c[7] && c[7].v) || "",
+      masaMula: dbMasaMasukClean((c[12] && (c[12].f || c[12].v)) || ""),
+    };
+    let cur = new Date(mulaD);
+    while (cur <= tamatD) {
+      if (cur.getFullYear() === tahun && cur.getMonth() + 1 === bulan) {
+        rekodMap.set(`${nama}|${dbYmd(cur)}`, info);
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+  });
+
+  return { kehadiranMap, rekodMap };
+}
+
+/**
+ * Cross-reference SATU staf pada SATU tarikh. Keutamaan: Rekod Keberadaan
+ * (kalau ada) > Kehadiran (LEWAT/TEPAT MASA ikut jawatan) > Belum Mengisi.
+ */
+function dbCrossRefDay(noKP, nama, jawatan, dateKey, kehadiranMap, rekodMap) {
+  const masaMasuk = kehadiranMap.get(`${noKP}|${dateKey}`);
+  const rekodInfo = rekodMap.get(`${String(nama).trim()}|${dateKey}`);
+  const jUpper = String(jawatan || "").toUpperCase().trim();
+  const isAwal = DB_AWAL_730.some((k) => jUpper.includes(k));
+  const hadMinit = isAwal ? 450 : 480;
+
+  let masaDisplay = "-", catatanHtml = "";
+  if (rekodInfo) {
+    catatanHtml = `<span class="db-badge db-badge-rekod">REKOD KEBERADAAN</span> <b>[${dbEscape(rekodInfo.tujuan)}]</b> ${dbEscape(rekodInfo.perkara)}`;
+    if (masaMasuk) masaDisplay = dbFormatAmPm(masaMasuk);
+    else if (rekodInfo.masaMula) masaDisplay = dbFormatAmPm(rekodInfo.masaMula);
+  } else if (masaMasuk) {
+    masaDisplay = dbFormatAmPm(masaMasuk);
+    const parts = masaMasuk.split(":").map(Number);
+    const totalMinit = parts[0] * 60 + parts[1];
+    catatanHtml = totalMinit > hadMinit
+      ? `<span class="db-badge db-badge-lewat">LEWAT</span>`
+      : `<span class="db-badge db-badge-tepat">TEPAT MASA</span>`;
+  } else {
+    catatanHtml = `<span class="db-badge db-badge-belum">TIDAK / BELUM MENGISI eRKS</span>`;
+  }
+  return { masaDisplay, catatanHtml };
+}
+
 /* ================= Kad "Analisis Kehadiran Saya" (Home) ================= */
 async function dbLoadHomeAnalysis(user) {
   const wrap = document.getElementById("db-home-analysis-wrap");
@@ -315,6 +416,10 @@ async function dbLoadHomeAnalysis(user) {
   wrap.classList.remove("hidden");
   document.getElementById("db-my-kehadiran-list").innerHTML = `<div class="empty-state" style="padding:14px 2px;font-size:11px">Memuatkan...</div>`;
   document.getElementById("db-my-keberadaan-list").innerHTML = "";
+
+  const today = new Date();
+  const tahun = today.getFullYear(), bulan = today.getMonth() + 1;
+  document.getElementById("db-my-month-label").textContent = `${DB_BULAN[bulan - 1]} ${tahun}`;
 
   if (!dbApiConfigured()) {
     dbShowHomeAnalysisError("DB_API_URL belum diisi dalam erks-database.js — tak dapat kesan staf.");
@@ -327,38 +432,60 @@ async function dbLoadHomeAnalysis(user) {
   }
 
   try {
-    // Tab "Rekod Semua": A=ID,B=TimeStamp,C=No.KP,D=Nama,E=Jawatan,F=Tujuan,
-    // G=LatLong,H=Perkara,I=TEMPAT,J=Mula,K=Tamat — Kehadiran & Keberadaan
-    // digabung dalam SATU jadual ni.
-    const rows = await dbFetchSheet("Rekod Semua");
-    const myRows = rows.map((r) => {
-      const c = r.c || [];
-      return {
-        noKP: String((c[2] && c[2].v) || "").trim(),
-        tujuan: String((c[5] && c[5].v) || "").trim(),
-        perkara: String((c[7] && c[7].v) || "").trim(),
-        ts: dbParseFlexibleDate(c[1]),
-        mula: dbParseFlexibleDate(c[9]),
-        tamat: dbParseFlexibleDate(c[10]),
-      };
-    }).filter((r) => r.noKP === dbStaff.noKP);
+    const [kehadiranRows, rekodRows] = await Promise.all([
+      dbFetchSheet("Kehadiran"),
+      dbFetchSheet("Rekod"),
+    ]);
+    const { kehadiranMap, rekodMap } = dbBuildKehadiranRekodMaps(kehadiranRows, rekodRows, tahun, bulan);
 
-    if (!rows.length) {
-      dbShowHomeAnalysisError('Tab "Rekod Semua" kosong/tak dijumpai — semak nama tab tepat (termasuk besar/kecil huruf & spasi).');
-      return;
+    // ---- Rekod Kehadiran (Isnin-Jumaat, hari ini ke belakang, terkini atas) ----
+    const p2 = (n) => String(n).padStart(2, "0");
+    const kehadiranRowsHtml = [];
+    for (let d = today.getDate(); d >= 1; d--) {
+      const dateObj = new Date(tahun, bulan - 1, d);
+      const dow = dateObj.getDay();
+      if (dow === 0 || dow === 6) continue;
+      const dateKey = dbYmd(dateObj);
+      const { masaDisplay, catatanHtml } = dbCrossRefDay(dbStaff.noKP, dbStaff.nama, dbStaff.jawatan, dateKey, kehadiranMap, rekodMap);
+      const dLabel = `${p2(d)}/${p2(bulan)}`;
+      kehadiranRowsHtml.push(`<div class="db-my-kh-row">
+        <span class="db-my-kh-date">${dLabel}</span>
+        <span class="db-my-kh-masa">${masaDisplay}</span>
+        <span class="db-my-kh-catatan">${catatanHtml}</span>
+      </div>`);
     }
+    document.getElementById("db-my-kehadiran-list").innerHTML = kehadiranRowsHtml.length
+      ? kehadiranRowsHtml.join("")
+      : `<div class="empty-state" style="padding:14px 2px;font-size:11px">Tiada hari bekerja setakat ini.</div>`;
 
-    const tujuanIsKehadiran = (t) => { const u = t.toUpperCase(); return u.includes("MASUK") || u.includes("KELUAR"); };
+    // ---- Rekod Keberadaan (bertindih bulan semasa, terkini atas) ----
+    const monthStart = new Date(tahun, bulan - 1, 1);
+    const monthEnd = new Date(tahun, bulan, 0, 23, 59, 59);
+    const myRekodList = [];
+    rekodRows.forEach((r) => {
+      const c = r.c || [];
+      const nama = String((c[4] && c[4].v) || "").trim();
+      if (nama !== dbStaff.nama.trim()) return;
+      const mula = dbParseFlexibleDate(c[10]);
+      const tamat = dbParseFlexibleDate(c[11]) || mula;
+      if (!mula || mula > monthEnd || tamat < monthStart) return;
+      myRekodList.push({ mula, tamat, tujuan: (c[6] && c[6].v) || "", perkara: (c[7] && c[7].v) || "" });
+    });
+    myRekodList.sort((a, b) => b.mula - a.mula);
 
-    const myKehadiran = myRows
-      .filter((r) => tujuanIsKehadiran(r.tujuan) && r.ts)
-      .map((r) => ({ tarikhKey: dbYmd(r.ts), masa: `${String(r.ts.getHours()).padStart(2,"0")}:${String(r.ts.getMinutes()).padStart(2,"0")}` }));
+    const keberadaanHtml = myRekodList.length
+      ? myRekodList.map((r) => {
+          const mLabel = `${p2(r.mula.getDate())}/${p2(r.mula.getMonth()+1)}`;
+          const tLabel = `${p2(r.tamat.getDate())}/${p2(r.tamat.getMonth()+1)}`;
+          const rangeLabel = mLabel === tLabel ? mLabel : `${mLabel}-${tLabel}`;
+          return `<div class="db-my-row db-my-row-stacked">
+            <span class="db-my-date">${rangeLabel}</span>
+            <span class="db-my-keberadaan-info"><span class="db-my-tujuan">${dbEscape(r.tujuan)}</span>${r.perkara ? `<span class="db-my-perkara">${dbEscape(r.perkara)}</span>` : ""}</span>
+          </div>`;
+        }).join("")
+      : `<div class="empty-state" style="padding:14px 2px;font-size:11px">Tiada rekod keberadaan bulan ini.</div>`;
+    document.getElementById("db-my-keberadaan-list").innerHTML = keberadaanHtml;
 
-    const myRekod = myRows
-      .filter((r) => !tujuanIsKehadiran(r.tujuan) && r.mula)
-      .map((r) => ({ tujuan: r.tujuan, perkara: r.perkara, mula: r.mula, tamat: r.tamat || r.mula }));
-
-    dbRenderHomeAnalysis(myKehadiran, myRekod);
     dbSizeHomeAnalysisCard();
   } catch (e) {
     dbShowHomeAnalysisError("Ralat baca Sheet: " + e.message);
@@ -371,68 +498,15 @@ function dbShowHomeAnalysisError(msg) {
   document.getElementById("db-my-keberadaan-list").innerHTML = "";
 }
 
-function dbRenderHomeAnalysis(myKehadiran, myRekod) {
-  const today = new Date();
-  const y = today.getFullYear(), m = today.getMonth();
-  const p2 = (n) => String(n).padStart(2, "0");
-
-  // ---- Kiri: Rekod Kehadiran (Isnin-Jumaat, hari ini ke belakang, terkini atas) ----
-  const kehadiranRows = [];
-  for (let d = today.getDate(); d >= 1; d--) {
-    const dateObj = new Date(y, m, d);
-    const dow = dateObj.getDay();
-    if (dow === 0 || dow === 6) continue; // langkau Sabtu/Ahad
-    const dateKey = dbYmd(dateObj);
-    const rec = myKehadiran.find((r) => r.tarikhKey === dateKey);
-    kehadiranRows.push({ dateObj, masaMasuk: rec ? rec.masa : null });
-  }
-  const kehadiranHtml = kehadiranRows.length
-    ? kehadiranRows.map((r) => {
-        const dLabel = `${p2(r.dateObj.getDate())}/${p2(r.dateObj.getMonth()+1)}`;
-        return r.masaMasuk
-          ? `<div class="db-my-row"><span class="db-my-date">${dLabel}</span><span class="db-my-ok">${r.masaMasuk}</span></div>`
-          : `<div class="db-my-row"><span class="db-my-date">${dLabel}</span><span class="db-my-bad">Tidak Mengisi eRKS</span></div>`;
-      }).join("")
-    : `<div class="empty-state" style="padding:14px 2px;font-size:11px">Tiada hari bekerja setakat ini.</div>`;
-
-  // ---- Kanan: Rekod Keberadaan (bertindih bulan semasa, terkini atas) ----
-  const monthStart = new Date(y, m, 1);
-  const monthEnd = new Date(y, m + 1, 0, 23, 59, 59);
-  const keberadaanFiltered = myRekod
-    .filter((r) => r.mula <= monthEnd && (r.tamat || r.mula) >= monthStart)
-    .sort((a, b) => b.mula - a.mula);
-  const keberadaanHtml = keberadaanFiltered.length
-    ? keberadaanFiltered.map((r) => {
-        const mLabel = `${p2(r.mula.getDate())}/${p2(r.mula.getMonth()+1)}`;
-        const tLabel = r.tamat ? `${p2(r.tamat.getDate())}/${p2(r.tamat.getMonth()+1)}` : mLabel;
-        const rangeLabel = mLabel === tLabel ? mLabel : `${mLabel}-${tLabel}`;
-        return `<div class="db-my-row db-my-row-stacked">
-          <span class="db-my-date">${rangeLabel}</span>
-          <span class="db-my-keberadaan-info"><span class="db-my-tujuan">${dbEscape(r.tujuan)}</span>${r.perkara ? `<span class="db-my-perkara">${dbEscape(r.perkara)}</span>` : ""}</span>
-        </div>`;
-      }).join("")
-    : `<div class="empty-state" style="padding:14px 2px;font-size:11px">Tiada rekod keberadaan bulan ini.</div>`;
-
-  document.getElementById("db-my-kehadiran-list").innerHTML = kehadiranHtml;
-  document.getElementById("db-my-keberadaan-list").innerHTML = keberadaanHtml;
-}
-
 async function dbLoadBookRecords() {
-  const [kehadiranRows, staffRows] = await Promise.all([
+  const [kehadiranRows, rekodRows, staffRows] = await Promise.all([
     dbFetchSheet("Kehadiran"),
+    dbFetchSheet("Rekod"),
     dbFetchSheet("Database"),
   ]);
 
-  dbBookRecords = kehadiranRows.map((r) => {
-    const c = r.c || [];
-    const ts = dbParseGDate(c[1] && c[1].v);
-    return {
-      tarikhKey: ts ? dbYmd(ts) : null,
-      masa: ts ? `${String(ts.getHours()).padStart(2,"0")}:${String(ts.getMinutes()).padStart(2,"0")}` : "-",
-      noKP: String((c[2] && c[2].v) || "").trim(),
-      tujuan: (c[5] && c[5].v) || "",
-    };
-  }).filter((r) => r.tarikhKey && r.noKP);
+  dbBookKehadiranRows = kehadiranRows;
+  dbBookRekodRows = rekodRows;
 
   dbStaffRoster = staffRows.map((r) => {
     const c = r.c || [];
@@ -442,11 +516,6 @@ async function dbLoadBookRecords() {
       jawatan: (c[3] && c[3].v) || "",
     };
   }).filter((s) => s.nama);
-}
-
-function dbMasaMasukFor(noKP, tarikhKey) {
-  const rec = dbBookRecords.find((r) => r.noKP === noKP && r.tarikhKey === tarikhKey && r.tujuan.toUpperCase().includes("MASUK"));
-  return rec ? rec.masa : null;
 }
 
 function dbChunk(arr, size) {
@@ -490,6 +559,13 @@ function dbBuildAndRenderPages() {
     dateList = Array.from({ length: daysInMonth }, (_, i) => `${year}-${String(month).padStart(2,"0")}-${String(i+1).padStart(2,"0")}`);
   }
 
+  // Bina peta cross-reference untuk tahun+bulan yang relevan (ikut tarikh pertama dalam senarai)
+  const refYear = dateList.length ? parseInt(dateList[0].slice(0,4), 10) : parseInt(year, 10);
+  const refMonth = dateList.length ? parseInt(dateList[0].slice(5,7), 10) : parseInt(month || (new Date().getMonth()+1), 10);
+  const maps = dbBuildKehadiranRekodMaps(dbBookKehadiranRows, dbBookRekodRows, refYear, refMonth);
+  dbBookKehadiranMap = maps.kehadiranMap;
+  dbBookRekodMap = maps.rekodMap;
+
   dbBookPages = [];
   dateList.forEach((d) => {
     const chunks = dbChunk(dbStaffRoster, DB_ROWS_PER_PAGE);
@@ -527,16 +603,13 @@ function dbRenderBookPage() {
   document.getElementById("db-book-count").textContent = `${dbBookPageIdx+1} / ${dbBookPages.length}`;
 
   const rows = page.staffChunk.map((s, i) => {
-    const masaMasuk = dbMasaMasukFor(s.noKP, page.dateStr);
-    const catatan = masaMasuk
-      ? `<span class="db-book-ok">Hadir</span>`
-      : `<span class="db-book-badge">Belum Mengisi Sistem eRKS</span>`;
+    const { masaDisplay, catatanHtml } = dbCrossRefDay(s.noKP, s.nama, s.jawatan, page.dateStr, dbBookKehadiranMap, dbBookRekodMap);
     return `<tr>
-      <td class="db-book-bil">${page.startNo + i}</td>
+      <td class="db-book-bil">${String(page.startNo + i).padStart(2, "0")}</td>
       <td class="db-book-nama-cell">${dbEscape(s.nama)}</td>
       <td class="db-book-jawatan-cell">${dbEscape(s.jawatan)}</td>
-      <td class="db-book-masa-cell">${masaMasuk || "-"}</td>
-      <td class="db-book-catatan-cell">${catatan}</td>
+      <td class="db-book-masa-cell">${masaDisplay}</td>
+      <td class="db-book-catatan-cell">${catatanHtml}</td>
     </tr>`;
   }).join("");
 
