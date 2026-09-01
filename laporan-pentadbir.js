@@ -119,7 +119,7 @@ async function lpSubmitForm(e) {
     const data = await res.json();
     if (data.success) {
       lpResetForm();
-      alert("Rekod pemantauan berjaya dihantar!");
+      alert(data.warning ? `Rekod dihantar, tapi ada masalah gambar:\n${data.warning}` : "Rekod pemantauan berjaya dihantar!");
       await lpLoadRecords();
     } else {
       errEl.textContent = data.message || "Gagal hantar rekod.";

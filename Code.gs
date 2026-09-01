@@ -292,14 +292,16 @@ function addLaporanPentadbir(body) {
 
   var stamp = new Date().getTime();
   var gambar1Url = "", gambar2Url = "";
+  var imgWarnings = [];
   try {
     gambar1Url = lpSaveImageToDrive(body.gambar1, "pemantauan_" + stamp + "_1");
+  } catch (imgErr1) {
+    imgWarnings.push("Gambar 1: " + imgErr1.message);
+  }
+  try {
     gambar2Url = lpSaveImageToDrive(body.gambar2, "pemantauan_" + stamp + "_2");
-  } catch (imgErr) {
-    return jsonResponse({
-      success: false,
-      message: "Gagal muat naik gambar ke Drive (" + imgErr.message + "). Buka Apps Script editor, jalankan fungsi 'authorizeDriveAccess' SEKALI untuk beri kebenaran akses Drive, lepas tu cuba lagi.",
-    });
+  } catch (imgErr2) {
+    imgWarnings.push("Gambar 2: " + imgErr2.message);
   }
 
   sheet.appendRow([
@@ -312,7 +314,7 @@ function addLaporanPentadbir(body) {
     body.namaPentadbir,
     (user && user.email) || body.email || "",
   ]);
-  return jsonResponse({ success: true });
+  return jsonResponse({ success: true, warning: imgWarnings.length ? imgWarnings.join(" | ") : null });
 }
 
 /**
