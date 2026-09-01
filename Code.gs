@@ -252,24 +252,32 @@ function getLaporanPentadbir() {
 
 function lpSaveImageToDrive(base64DataUrl, filenamePrefix) {
   if (!base64DataUrl || base64DataUrl.indexOf("base64,") === -1) return "";
-  try {
-    var parts = base64DataUrl.split("base64,");
-    var meta = parts[0]; // contoh: "data:image/jpeg;"
-    var mimeMatch = meta.match(/data:(image\/[a-zA-Z0-9.+-]+);/);
-    var mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
-    var bytes = Utilities.base64Decode(parts[1]);
-    var blob = Utilities.newBlob(bytes, mimeType, filenamePrefix + "." + (mimeType.split("/")[1] || "jpg"));
-    var file;
-    if (LAPORAN_DRIVE_FOLDER_ID) {
-      file = DriveApp.getFolderById(LAPORAN_DRIVE_FOLDER_ID).createFile(blob);
-    } else {
-      file = DriveApp.createFile(blob);
-    }
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    return "https://lh3.googleusercontent.com/d/" + file.getId();
-  } catch (err) {
-    return "";
+  var parts = base64DataUrl.split("base64,");
+  var meta = parts[0]; // contoh: "data:image/jpeg;"
+  var mimeMatch = meta.match(/data:(image\/[a-zA-Z0-9.+-]+);/);
+  var mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
+  var bytes = Utilities.base64Decode(parts[1]);
+  var blob = Utilities.newBlob(bytes, mimeType, filenamePrefix + "." + (mimeType.split("/")[1] || "jpg"));
+  var file;
+  if (LAPORAN_DRIVE_FOLDER_ID) {
+    file = DriveApp.getFolderById(LAPORAN_DRIVE_FOLDER_ID).createFile(blob);
+  } else {
+    file = DriveApp.createFile(blob);
   }
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return "https://lh3.googleusercontent.com/d/" + file.getId();
+}
+
+/**
+ * JALANKAN FUNGSI NI SEKALI SAHAJA dalam editor Apps Script (bukan sebagai Web App)
+ * — pilih "authorizeDriveAccess" di dropdown atas, klik Run.
+ * Ini akan minta kebenaran (authorize) akses Google Drive. Tanpa langkah ni,
+ * muat naik gambar dari borang akan gagal senyap (row tersimpan tapi gambar kosong).
+ */
+function authorizeDriveAccess() {
+  var testFile = DriveApp.createFile("test-akses-laporan-pentadbir.txt", "Fail ujian — boleh dipadam.", MimeType.PLAIN_TEXT);
+  Logger.log("Berjaya! Akses Drive sudah dibenarkan. Fail ujian: " + testFile.getUrl());
+  Logger.log("Awak boleh padam fail 'test-akses-laporan-pentadbir.txt' ni dari Google Drive sekarang.");
 }
 
 function addLaporanPentadbir(body) {
@@ -283,8 +291,16 @@ function addLaporanPentadbir(body) {
   }
 
   var stamp = new Date().getTime();
-  var gambar1Url = lpSaveImageToDrive(body.gambar1, "pemantauan_" + stamp + "_1");
-  var gambar2Url = lpSaveImageToDrive(body.gambar2, "pemantauan_" + stamp + "_2");
+  var gambar1Url = "", gambar2Url = "";
+  try {
+    gambar1Url = lpSaveImageToDrive(body.gambar1, "pemantauan_" + stamp + "_1");
+    gambar2Url = lpSaveImageToDrive(body.gambar2, "pemantauan_" + stamp + "_2");
+  } catch (imgErr) {
+    return jsonResponse({
+      success: false,
+      message: "Gagal muat naik gambar ke Drive (" + imgErr.message + "). Buka Apps Script editor, jalankan fungsi 'authorizeDriveAccess' SEKALI untuk beri kebenaran akses Drive, lepas tu cuba lagi.",
+    });
+  }
 
   sheet.appendRow([
     new Date(body.tarikh),
