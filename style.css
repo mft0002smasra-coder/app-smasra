@@ -879,6 +879,9 @@ table.db-book-table tbody tr:nth-child(odd) td{ background:rgba(255,255,255,.02)
 .db-my-ok{ color:var(--mint);font-weight:700;font-family:'Orbitron',sans-serif;font-size:9.5px; }
 .db-my-bad{ color:var(--danger);font-weight:700;font-size:8.5px;text-align:right; }
 .db-my-tujuan{ color:var(--amber);font-weight:600;font-size:9px;text-align:right; }
+.db-my-row-stacked{ align-items:flex-start; }
+.db-my-keberadaan-info{ display:flex;flex-direction:column;align-items:flex-end;gap:1px; }
+.db-my-perkara{ color:var(--text-dim);font-size:8.5px;text-align:right;font-weight:500; }
 
 @media (min-width:700px){
   .db-option-grid{ grid-template-columns:1fr; }

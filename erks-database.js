@@ -4,7 +4,7 @@
    berlanggar dengan skrip rks-analysis (ma-/rks- sudah dipakai di muka sama).
    ============================================================ */
 
-const DB_API_URL = "https://script.google.com/macros/s/AKfycbzpMRGdwOUp9h6WagE04JMsZHajgIqd08BSL-9_oQdLOKk1FLC9PpsWyzCU1Irqbv9o/exec";
+const DB_API_URL = "PASTE_URL_APPS_SCRIPT_DATABASE_ANDA_DI_SINI";
 function dbApiConfigured() { return DB_API_URL && DB_API_URL.indexOf("PASTE_") !== 0; }
 
 const DB_SHEET_ID_READ = "1gCC26pdp5dqMwEYg6gzuGaiXhq6iA1M3gruLkkIzO5s";
@@ -312,8 +312,19 @@ function dbParseFlexibleDate(cell) {
 async function dbLoadHomeAnalysis(user) {
   const wrap = document.getElementById("db-home-analysis-wrap");
   if (!wrap) return;
+  wrap.classList.remove("hidden");
+  document.getElementById("db-my-kehadiran-list").innerHTML = `<div class="empty-state" style="padding:14px 2px;font-size:11px">Memuatkan...</div>`;
+  document.getElementById("db-my-keberadaan-list").innerHTML = "";
+
+  if (!dbApiConfigured()) {
+    dbShowHomeAnalysisError("DB_API_URL belum diisi dalam erks-database.js — tak dapat kesan staf.");
+    return;
+  }
   await dbLoadStaff(user);
-  if (!dbStaff) { wrap.classList.add("hidden"); return; }
+  if (!dbStaff) {
+    dbShowHomeAnalysisError(`Gagal kesan staf untuk emel "${user.email}". Semak emel tu wujud dalam tab Database (lajur F) dan Apps Script Database dah redeploy.`);
+    return;
+  }
 
   try {
     // Tab "Rekod Semua": A=ID,B=TimeStamp,C=No.KP,D=Nama,E=Jawatan,F=Tujuan,
@@ -325,26 +336,39 @@ async function dbLoadHomeAnalysis(user) {
       return {
         noKP: String((c[2] && c[2].v) || "").trim(),
         tujuan: String((c[5] && c[5].v) || "").trim(),
+        perkara: String((c[7] && c[7].v) || "").trim(),
         ts: dbParseFlexibleDate(c[1]),
         mula: dbParseFlexibleDate(c[9]),
         tamat: dbParseFlexibleDate(c[10]),
       };
     }).filter((r) => r.noKP === dbStaff.noKP);
 
+    if (!rows.length) {
+      dbShowHomeAnalysisError('Tab "Rekod Semua" kosong/tak dijumpai — semak nama tab tepat (termasuk besar/kecil huruf & spasi).');
+      return;
+    }
+
+    const tujuanIsKehadiran = (t) => { const u = t.toUpperCase(); return u.includes("MASUK") || u.includes("KELUAR"); };
+
     const myKehadiran = myRows
-      .filter((r) => r.tujuan.toUpperCase().includes("MASUK") && r.ts)
+      .filter((r) => tujuanIsKehadiran(r.tujuan) && r.ts)
       .map((r) => ({ tarikhKey: dbYmd(r.ts), masa: `${String(r.ts.getHours()).padStart(2,"0")}:${String(r.ts.getMinutes()).padStart(2,"0")}` }));
 
     const myRekod = myRows
-      .filter((r) => !r.tujuan.toUpperCase().includes("MASUK") && !r.tujuan.toUpperCase().includes("KELUAR") && r.mula)
-      .map((r) => ({ tujuan: r.tujuan, mula: r.mula, tamat: r.tamat || r.mula }));
+      .filter((r) => !tujuanIsKehadiran(r.tujuan) && r.mula)
+      .map((r) => ({ tujuan: r.tujuan, perkara: r.perkara, mula: r.mula, tamat: r.tamat || r.mula }));
 
     dbRenderHomeAnalysis(myKehadiran, myRekod);
-    wrap.classList.remove("hidden");
     dbSizeHomeAnalysisCard();
   } catch (e) {
-    wrap.classList.add("hidden");
+    dbShowHomeAnalysisError("Ralat baca Sheet: " + e.message);
   }
+}
+
+function dbShowHomeAnalysisError(msg) {
+  const html = `<div class="empty-state" style="padding:14px 2px;font-size:10.5px;color:var(--danger)">${dbEscape(msg)}</div>`;
+  document.getElementById("db-my-kehadiran-list").innerHTML = html;
+  document.getElementById("db-my-keberadaan-list").innerHTML = "";
 }
 
 function dbRenderHomeAnalysis(myKehadiran, myRekod) {
@@ -382,7 +406,10 @@ function dbRenderHomeAnalysis(myKehadiran, myRekod) {
         const mLabel = `${p2(r.mula.getDate())}/${p2(r.mula.getMonth()+1)}`;
         const tLabel = r.tamat ? `${p2(r.tamat.getDate())}/${p2(r.tamat.getMonth()+1)}` : mLabel;
         const rangeLabel = mLabel === tLabel ? mLabel : `${mLabel}-${tLabel}`;
-        return `<div class="db-my-row"><span class="db-my-date">${rangeLabel}</span><span class="db-my-tujuan">${dbEscape(r.tujuan)}</span></div>`;
+        return `<div class="db-my-row db-my-row-stacked">
+          <span class="db-my-date">${rangeLabel}</span>
+          <span class="db-my-keberadaan-info"><span class="db-my-tujuan">${dbEscape(r.tujuan)}</span>${r.perkara ? `<span class="db-my-perkara">${dbEscape(r.perkara)}</span>` : ""}</span>
+        </div>`;
       }).join("")
     : `<div class="empty-state" style="padding:14px 2px;font-size:11px">Tiada rekod keberadaan bulan ini.</div>`;
 
