@@ -81,13 +81,14 @@
     <div class="glass card-pad hidden" id="db-home-analysis-wrap" style="margin-top:var(--gap)">
       <div class="db-my-header">
         <div class="db-my-title">REKOD KEHADIRAN SAYA</div>
-        <div class="db-my-subtitle" id="db-my-month-label">-</div>
+        <div class="db-my-month-nav">
+          <button class="db-my-arrow" onclick="dbChangeHomeMonth(-1)" aria-label="Bulan sebelum">&lsaquo;</button>
+          <span class="db-my-subtitle" id="db-my-month-label">-</span>
+          <button class="db-my-arrow" onclick="dbChangeHomeMonth(1)" aria-label="Bulan seterusnya">&rsaquo;</button>
+        </div>
       </div>
       <div class="db-my-scroll">
-        <div class="db-my-section-title">Rekod Kehadiran</div>
         <div id="db-my-kehadiran-list"></div>
-        <div class="db-my-section-title" style="margin-top:14px">Rekod Keberadaan</div>
-        <div id="db-my-keberadaan-list"></div>
       </div>
     </div>
 

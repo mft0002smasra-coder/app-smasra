@@ -4,7 +4,7 @@
    berlanggar dengan skrip rks-analysis (ma-/rks- sudah dipakai di muka sama).
    ============================================================ */
 
-const DB_API_URL = "https://script.google.com/macros/s/AKfycbzpMRGdwOUp9h6WagE04JMsZHajgIqd08BSL-9_oQdLOKk1FLC9PpsWyzCU1Irqbv9o/exec";
+const DB_API_URL = "PASTE_URL_APPS_SCRIPT_DATABASE_ANDA_DI_SINI";
 function dbApiConfigured() { return DB_API_URL && DB_API_URL.indexOf("PASTE_") !== 0; }
 
 const DB_SHEET_ID_READ = "1gCC26pdp5dqMwEYg6gzuGaiXhq6iA1M3gruLkkIzO5s";
@@ -367,6 +367,7 @@ function dbBuildKehadiranRekodMaps(kehadiranRows, rekodRows, tahun, bulan) {
       tujuan: (c[6] && c[6].v) || "",
       perkara: (c[7] && c[7].v) || "",
       masaMula: dbMasaMasukClean((c[12] && (c[12].f || c[12].v)) || ""),
+      masaTamat: dbMasaMasukClean((c[13] && (c[13].f || c[13].v)) || ""),
     };
     let cur = new Date(mulaD);
     while (cur <= tamatD) {
@@ -381,8 +382,10 @@ function dbBuildKehadiranRekodMaps(kehadiranRows, rekodRows, tahun, bulan) {
 }
 
 /**
- * Cross-reference SATU staf pada SATU tarikh. Keutamaan: Rekod Keberadaan
- * (kalau ada) > Kehadiran (LEWAT/TEPAT MASA ikut jawatan) > Belum Mengisi.
+ * Cross-reference SATU staf pada SATU tarikh. Keutamaan: Kehadiran (LEWAT/
+ * TEPAT MASA ikut jawatan) sebagai catatan utama; kalau Rekod Keberadaan
+ * WUJUD SEKALI pada hari sama, tambah perkara + masa mula/tamat sekali.
+ * Kalau cuma Rekod Keberadaan sahaja (tiada Kehadiran) -> badge tersendiri.
  */
 function dbCrossRefDay(noKP, nama, jawatan, dateKey, kehadiranMap, rekodMap) {
   const masaMasuk = kehadiranMap.get(`${noKP}|${dateKey}`);
@@ -392,17 +395,26 @@ function dbCrossRefDay(noKP, nama, jawatan, dateKey, kehadiranMap, rekodMap) {
   const hadMinit = isAwal ? 450 : 480;
 
   let masaDisplay = "-", catatanHtml = "";
-  if (rekodInfo) {
-    catatanHtml = `<span class="db-badge db-badge-rekod">REKOD KEBERADAAN</span> <b>[${dbEscape(rekodInfo.tujuan)}]</b> ${dbEscape(rekodInfo.perkara)}`;
-    if (masaMasuk) masaDisplay = dbFormatAmPm(masaMasuk);
-    else if (rekodInfo.masaMula) masaDisplay = dbFormatAmPm(rekodInfo.masaMula);
-  } else if (masaMasuk) {
+
+  if (masaMasuk) {
     masaDisplay = dbFormatAmPm(masaMasuk);
     const parts = masaMasuk.split(":").map(Number);
     const totalMinit = parts[0] * 60 + parts[1];
     catatanHtml = totalMinit > hadMinit
       ? `<span class="db-badge db-badge-lewat">LEWAT</span>`
       : `<span class="db-badge db-badge-tepat">TEPAT MASA</span>`;
+    if (rekodInfo) {
+      catatanHtml += ` <span class="db-badge db-badge-rekod">${dbEscape(rekodInfo.tujuan)}</span>`;
+      if (rekodInfo.perkara) catatanHtml += ` ${dbEscape(rekodInfo.perkara)}`;
+      if (rekodInfo.masaMula || rekodInfo.masaTamat) {
+        const mm = rekodInfo.masaMula ? dbFormatAmPm(rekodInfo.masaMula) : "-";
+        const mt = rekodInfo.masaTamat ? dbFormatAmPm(rekodInfo.masaTamat) : "-";
+        catatanHtml += ` <span class="db-my-masa-range">(${mm} &ndash; ${mt})</span>`;
+      }
+    }
+  } else if (rekodInfo) {
+    catatanHtml = `<span class="db-badge db-badge-rekod">REKOD KEBERADAAN</span> <b>[${dbEscape(rekodInfo.tujuan)}]</b> ${dbEscape(rekodInfo.perkara)}`;
+    if (rekodInfo.masaMula) masaDisplay = dbFormatAmPm(rekodInfo.masaMula);
   } else {
     catatanHtml = `<span class="db-badge db-badge-belum">TIDAK / BELUM MENGISI eRKS</span>`;
   }
@@ -410,16 +422,22 @@ function dbCrossRefDay(noKP, nama, jawatan, dateKey, kehadiranMap, rekodMap) {
 }
 
 /* ================= Kad "Analisis Kehadiran Saya" (Home) ================= */
+let dbHomeKehadiranRows = [];
+let dbHomeRekodRows = [];
+let dbHomeYear = new Date().getFullYear();
+let dbHomeMonth = new Date().getMonth() + 1;
+let dbHomeDataReady = false;
+
 async function dbLoadHomeAnalysis(user) {
   const wrap = document.getElementById("db-home-analysis-wrap");
   if (!wrap) return;
   wrap.classList.remove("hidden");
   document.getElementById("db-my-kehadiran-list").innerHTML = `<div class="empty-state" style="padding:14px 2px;font-size:11px">Memuatkan...</div>`;
-  document.getElementById("db-my-keberadaan-list").innerHTML = "";
 
   const today = new Date();
-  const tahun = today.getFullYear(), bulan = today.getMonth() + 1;
-  document.getElementById("db-my-month-label").textContent = `${DB_BULAN[bulan - 1]} ${tahun}`;
+  dbHomeYear = today.getFullYear();
+  dbHomeMonth = today.getMonth() + 1;
+  dbUpdateHomeMonthLabel();
 
   if (!dbApiConfigured()) {
     dbShowHomeAnalysisError("DB_API_URL belum diisi dalam erks-database.js — tak dapat kesan staf.");
@@ -436,66 +454,65 @@ async function dbLoadHomeAnalysis(user) {
       dbFetchSheet("Kehadiran"),
       dbFetchSheet("Rekod"),
     ]);
-    const { kehadiranMap, rekodMap } = dbBuildKehadiranRekodMaps(kehadiranRows, rekodRows, tahun, bulan);
-
-    // ---- Rekod Kehadiran (Isnin-Jumaat, hari ini ke belakang, terkini atas) ----
-    const p2 = (n) => String(n).padStart(2, "0");
-    const kehadiranRowsHtml = [];
-    for (let d = today.getDate(); d >= 1; d--) {
-      const dateObj = new Date(tahun, bulan - 1, d);
-      const dow = dateObj.getDay();
-      if (dow === 0 || dow === 6) continue;
-      const dateKey = dbYmd(dateObj);
-      const { masaDisplay, catatanHtml } = dbCrossRefDay(dbStaff.noKP, dbStaff.nama, dbStaff.jawatan, dateKey, kehadiranMap, rekodMap);
-      const dLabel = `${p2(d)}/${p2(bulan)}`;
-      kehadiranRowsHtml.push(`<div class="db-my-kh-row">
-        <span class="db-my-kh-date">${dLabel}</span>
-        <span class="db-my-kh-masa">${masaDisplay}</span>
-        <span class="db-my-kh-catatan">${catatanHtml}</span>
-      </div>`);
-    }
-    document.getElementById("db-my-kehadiran-list").innerHTML = kehadiranRowsHtml.length
-      ? kehadiranRowsHtml.join("")
-      : `<div class="empty-state" style="padding:14px 2px;font-size:11px">Tiada hari bekerja setakat ini.</div>`;
-
-    // ---- Rekod Keberadaan (bertindih bulan semasa, terkini atas) ----
-    const monthStart = new Date(tahun, bulan - 1, 1);
-    const monthEnd = new Date(tahun, bulan, 0, 23, 59, 59);
-    const myRekodList = [];
-    rekodRows.forEach((r) => {
-      const c = r.c || [];
-      const nama = String((c[4] && c[4].v) || "").trim();
-      if (nama !== dbStaff.nama.trim()) return;
-      const mula = dbParseFlexibleDate(c[10]);
-      const tamat = dbParseFlexibleDate(c[11]) || mula;
-      if (!mula || mula > monthEnd || tamat < monthStart) return;
-      myRekodList.push({ mula, tamat, tujuan: (c[6] && c[6].v) || "", perkara: (c[7] && c[7].v) || "" });
-    });
-    myRekodList.sort((a, b) => b.mula - a.mula);
-
-    const keberadaanHtml = myRekodList.length
-      ? myRekodList.map((r) => {
-          const mLabel = `${p2(r.mula.getDate())}/${p2(r.mula.getMonth()+1)}`;
-          const tLabel = `${p2(r.tamat.getDate())}/${p2(r.tamat.getMonth()+1)}`;
-          const rangeLabel = mLabel === tLabel ? mLabel : `${mLabel}-${tLabel}`;
-          return `<div class="db-my-row db-my-row-stacked">
-            <span class="db-my-date">${rangeLabel}</span>
-            <span class="db-my-keberadaan-info"><span class="db-my-tujuan">${dbEscape(r.tujuan)}</span>${r.perkara ? `<span class="db-my-perkara">${dbEscape(r.perkara)}</span>` : ""}</span>
-          </div>`;
-        }).join("")
-      : `<div class="empty-state" style="padding:14px 2px;font-size:11px">Tiada rekod keberadaan bulan ini.</div>`;
-    document.getElementById("db-my-keberadaan-list").innerHTML = keberadaanHtml;
-
-    dbSizeHomeAnalysisCard();
+    dbHomeKehadiranRows = kehadiranRows;
+    dbHomeRekodRows = rekodRows;
+    dbHomeDataReady = true;
+    dbRenderHomeMonth();
   } catch (e) {
     dbShowHomeAnalysisError("Ralat baca Sheet: " + e.message);
   }
 }
 
+function dbUpdateHomeMonthLabel() {
+  const el = document.getElementById("db-my-month-label");
+  if (el) el.textContent = `${DB_BULAN[dbHomeMonth - 1]} ${dbHomeYear}`;
+}
+
+function dbChangeHomeMonth(delta) {
+  if (!dbHomeDataReady) return;
+  dbHomeMonth += delta;
+  if (dbHomeMonth < 1) { dbHomeMonth = 12; dbHomeYear--; }
+  if (dbHomeMonth > 12) { dbHomeMonth = 1; dbHomeYear++; }
+  dbUpdateHomeMonthLabel();
+  dbRenderHomeMonth();
+}
+
+function dbRenderHomeMonth() {
+  if (!dbStaff) return;
+  const tahun = dbHomeYear, bulan = dbHomeMonth;
+  const { kehadiranMap, rekodMap } = dbBuildKehadiranRekodMaps(dbHomeKehadiranRows, dbHomeRekodRows, tahun, bulan);
+
+  const today = new Date();
+  const isCurrentMonth = tahun === today.getFullYear() && bulan === today.getMonth() + 1;
+  const daysInMonth = new Date(tahun, bulan, 0).getDate();
+  const startDay = isCurrentMonth ? today.getDate() : daysInMonth;
+
+  const p2 = (n) => String(n).padStart(2, "0");
+  const rowsHtml = [];
+  for (let d = startDay; d >= 1; d--) {
+    const dateObj = new Date(tahun, bulan - 1, d);
+    const dow = dateObj.getDay();
+    if (dow === 0 || dow === 6) continue;
+    const dateKey = dbYmd(dateObj);
+    const { masaDisplay, catatanHtml } = dbCrossRefDay(dbStaff.noKP, dbStaff.nama, dbStaff.jawatan, dateKey, kehadiranMap, rekodMap);
+    const dLabel = `${p2(d)}/${p2(bulan)}`;
+    rowsHtml.push(`<div class="db-my-kh-row">
+      <span class="db-my-kh-date">${dLabel}</span>
+      <span class="db-my-kh-masa">${masaDisplay}</span>
+      <span class="db-my-kh-catatan">${catatanHtml}</span>
+    </div>`);
+  }
+
+  document.getElementById("db-my-kehadiran-list").innerHTML = rowsHtml.length
+    ? rowsHtml.join("")
+    : `<div class="empty-state" style="padding:14px 2px;font-size:11px">Tiada hari bekerja bulan ini.</div>`;
+
+  dbSizeHomeAnalysisCard();
+}
+
 function dbShowHomeAnalysisError(msg) {
-  const html = `<div class="empty-state" style="padding:14px 2px;font-size:10.5px;color:var(--danger)">${dbEscape(msg)}</div>`;
-  document.getElementById("db-my-kehadiran-list").innerHTML = html;
-  document.getElementById("db-my-keberadaan-list").innerHTML = "";
+  document.getElementById("db-my-kehadiran-list").innerHTML =
+    `<div class="empty-state" style="padding:14px 2px;font-size:10.5px;color:var(--danger)">${dbEscape(msg)}</div>`;
 }
 
 async function dbLoadBookRecords() {
