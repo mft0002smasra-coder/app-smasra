@@ -87,9 +87,28 @@ Bila staf muat naik gambar dalam borang, Apps Script akan cipta fail terus dalam
 
 **4. Redeploy Apps Script** lepas tambah tab baru ni.
 
+## Menyediakan upgrade Kehadiran Staf (Borang Kehadiran/Keberadaan + Buku Kehadiran)
+
+**1. Deploy Code-Database.gs (projek Apps Script BAHARU, berasingan)**
+Spreadsheet "Database" (ID: `1gCC26pdp5dqMwEYg6gzuGaiXhq6iA1M3gruLkkIzO5s`) — sama spreadsheet yang Analisis eRKS baca. Ikut arahan penuh dalam fail `Code-Database.gs` (buat projek Apps Script BAHARU, bukan dalam projek bot sedia ada, supaya tak ganggu sistem lain yang guna spreadsheet sama).
+
+Selepas deploy, salin URL `.../exec`, buka `erks-database.js`, gantikan:
+```
+const DB_API_URL = "PASTE_URL_APPS_SCRIPT_DATABASE_ANDA_DI_SINI";
+```
+
+**2. Jalankan `authorizeDbAccess` SEKALI dalam editor** (macam Laporan Pentadbir) untuk sahkan akses Sheet sebelum guna borang.
+
+**3. Struktur Sheet yang digunakan** (sudah wujud, tak perlu ubah):
+- Tab **Database**: A=Gambar, B=No.KP, C=Nama, D=Jawatan, E=Telefon, F=Emel, G=Role
+- Tab **Kehadiran**: A=ID, B=TimeStamp, C=No.KP, D=Nama, E=Jawatan, F=Tujuan, G=LatLong
+- Tab **Rekod**: A=ID, B=TimeStamp, C=Gambar, D=No.KP, E=Nama, F=Jawatan, G=Tujuan, H=Perkara, I=Tempat, J=LatLong, K=Mula, L=Tamat, M=Masa Mula, N=Masa Tamat
+
+**4. Peta (Leaflet + OpenStreetMap)** — percuma, tiada API key diperlukan, dimuat secara dinamik dari CDN bila borang dibuka.
+
 ## Nota
 - Drawer menu (kiri) dan bottom nav (bawah) guna ikon sahaja tanpa label teks, ikut permintaan reka bentuk
-- Bottom nav ada 5 slot — Home, Event, Laporan Pentadbir, Profil aktif
+- Bottom nav ada 5 slot — Kehadiran, Event, Home, Laporan Pentadbir, Profil (ikon Kehadiran buka terus borang Kehadiran eRKS dari mana-mana muka)
 - Muka "Laporan Pentadbir Bertugas" sengaja **tiada header biasa** — guna nav khas sendiri (Kembali/Borang/Senarai/Home) ikut permintaan reka bentuk
 - Laporan A4 boleh dimuat turun sebagai PNG (guna pustaka html2canvas dimuat secara dinamik dari CDN)
 - Ikon "urus banner" (pensel) pada carousel kelihatan untuk Admin sahaja — belum berfungsi (akan datang)

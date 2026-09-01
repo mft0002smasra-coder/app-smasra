@@ -14,6 +14,7 @@ const CORE_ASSETS = [
   "kehadiran-murid-analisis.js",
   "event.js",
   "laporan-pentadbir.js",
+  "erks-database.js",
   "manifest.json",
 ];
 

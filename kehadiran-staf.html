@@ -58,15 +58,36 @@
     <div class="tab-switch">
       <button class="tab-btn active" id="tab-btn-erks" onclick="switchTab('erks')">eRKS</button>
       <button class="tab-btn" id="tab-btn-analisis" onclick="switchTab('analisis')">Analisis eRKS</button>
+      <button class="tab-btn" id="tab-btn-buku" onclick="switchTab('buku')">Buku Kehadiran</button>
     </div>
 
-    <!-- Tab: eRKS (buka app AppSheet, perlu sign-in sendiri) -->
+    <!-- Tab: eRKS — 3 kad pilihan -->
     <div class="tab-panel" id="tab-panel-erks">
-      <div class="glass external-card">
-        <span data-icon="external"></span>
-        <h3>SISTEM eRKS</h3>
-        <p>Rekod kehadiran staf diuruskan melalui app AppSheet berasingan. Tap butang di bawah untuk buka eRKS dalam tab baru — awak akan diminta log masuk dengan akaun Google sekolah awak.</p>
-        <a class="btn-primary" style="text-decoration:none;display:inline-block" href="" id="erks-link-btn" target="_blank" rel="noopener">Buka eRKS</a>
+      <div class="db-option-grid">
+        <div class="db-option-card" onclick="dbOpenKehadiranForm()">
+          <div class="db-option-icon"><span data-icon="calendar"></span></div>
+          <div class="db-option-main">
+            <div class="db-option-title">KEHADIRAN</div>
+            <div class="db-option-sub">Rekod masa masuk / keluar + lokasi semasa</div>
+          </div>
+          <span class="db-option-arrow">&rsaquo;</span>
+        </div>
+        <div class="db-option-card db-out" onclick="dbOpenKeberadaanForm()">
+          <div class="db-option-icon"><span data-icon="event"></span></div>
+          <div class="db-option-main">
+            <div class="db-option-title">KEBERADAAN</div>
+            <div class="db-option-sub">Cuti / urusan rasmi / keluar pejabat</div>
+          </div>
+          <span class="db-option-arrow">&rsaquo;</span>
+        </div>
+        <a class="db-option-card db-external" style="text-decoration:none;color:inherit" href="" id="erks-link-btn" target="_blank" rel="noopener">
+          <div class="db-option-icon"><span data-icon="external"></span></div>
+          <div class="db-option-main">
+            <div class="db-option-title">BUKA APP eRKS</div>
+            <div class="db-option-sub">Sistem penuh AppSheet (tab baru)</div>
+          </div>
+          <span class="db-option-arrow">&rsaquo;</span>
+        </a>
       </div>
     </div>
 
@@ -156,6 +177,33 @@
 
   </div>
 
+  <!-- Tab: Buku Kehadiran Staf (flip book) -->
+  <div class="tab-panel hidden" id="tab-panel-buku">
+    <div class="db-book-filterbar">
+      <select id="db-book-year"></select>
+      <select id="db-book-month"></select>
+      <input type="date" id="db-book-date">
+    </div>
+    <div id="db-book-loading" class="empty-state hidden">Memuatkan rekod...</div>
+    <div class="db-book-nav">
+      <button class="db-book-nav-btn" onclick="dbChangeBookDay(-1)" aria-label="Hari sebelum">&larr;</button>
+      <span class="db-book-count" id="db-book-count">0 rekod</span>
+      <button class="db-book-nav-btn" onclick="dbChangeBookDay(1)" aria-label="Hari seterusnya">&rarr;</button>
+    </div>
+    <div id="db-book">
+      <div class="db-book-spread" id="db-book-spread">
+        <div class="db-book-page">
+          <div class="db-book-page-label" id="db-book-date-label-left">-</div>
+          <div id="db-book-left"></div>
+        </div>
+        <div class="db-book-page">
+          <div class="db-book-page-label" id="db-book-date-label-right">-</div>
+          <div id="db-book-right"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Analisis eRKS -->
   <div id="rks-modal-guru-cuti" class="rks-modal-overlay" onclick="rksCloseModalOutside(event,'rks-modal-guru-cuti')">
     <div class="rks-modal-sheet">
@@ -182,6 +230,95 @@
     </div>
   </div>
 
+  <!-- ============ Modal: Borang Kehadiran ============ -->
+  <div class="modal-overlay-center hidden" id="db-kehadiran-overlay">
+    <div class="glass modal-sheet db-form-box">
+      <div class="modal-title">BORANG KEHADIRAN</div>
+
+      <label class="field-label">Nama</label>
+      <input class="db-readonly-field" id="db-kehadiran-nama" disabled>
+
+      <label class="field-label" style="margin-top:12px">No. KP</label>
+      <input class="db-readonly-field" id="db-kehadiran-nokp" disabled>
+
+      <label class="field-label" style="margin-top:12px">Jawatan</label>
+      <input class="db-readonly-field" id="db-kehadiran-jawatan" disabled>
+
+      <label class="field-label" style="margin-top:12px">Masa</label>
+      <div class="db-masa-display" id="db-kehadiran-masa">-</div>
+
+      <label class="field-label" style="margin-top:12px">Tujuan</label>
+      <input type="hidden" id="db-kehadiran-tujuan-value">
+      <div class="db-tujuan-row">
+        <button type="button" class="db-tujuan-btn" onclick="dbSetTujuanKehadiran('MASA MASUK', this)">Masa Masuk</button>
+        <button type="button" class="db-tujuan-btn" onclick="dbSetTujuanKehadiran('MASA KELUAR', this)">Masa Keluar</button>
+      </div>
+
+      <label class="field-label" style="margin-top:12px">LatLong</label>
+      <div class="db-latlong-text" id="db-kehadiran-latlong">-</div>
+      <div class="db-map hidden" id="db-kehadiran-map"></div>
+
+      <div class="error-text hidden" id="db-kehadiran-error"></div>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="dbCloseKehadiranForm()">Batal</button>
+        <button class="btn-primary" id="db-kehadiran-submit-btn" onclick="dbSubmitKehadiran()" style="margin-top:0">Hantar Rekod</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Modal: Borang Keberadaan ============ -->
+  <div class="modal-overlay-center hidden" id="db-keberadaan-overlay">
+    <div class="glass modal-sheet db-form-box">
+      <div class="modal-title">BORANG KEBERADAAN</div>
+
+      <label class="field-label">Nama</label>
+      <input class="db-readonly-field" id="db-keberadaan-nama" disabled>
+
+      <label class="field-label" style="margin-top:12px">No. KP</label>
+      <input class="db-readonly-field" id="db-keberadaan-nokp" disabled>
+
+      <label class="field-label" style="margin-top:12px">Jawatan</label>
+      <input class="db-readonly-field" id="db-keberadaan-jawatan" disabled>
+
+      <label class="field-label" style="margin-top:12px">Tujuan</label>
+      <select class="field-input" id="db-keberadaan-tujuan"></select>
+
+      <label class="field-label" style="margin-top:12px">Perkara</label>
+      <input class="field-input" type="text" id="db-keberadaan-perkara" placeholder="Cth: Mesyuarat LPK">
+
+      <label class="field-label" style="margin-top:12px">Tempat</label>
+      <input class="field-input" type="text" id="db-keberadaan-tempat" placeholder="Cth: Pejabat PPD">
+
+      <label class="field-label" style="margin-top:12px">Tarikh Mula</label>
+      <input class="field-input" type="date" id="db-keberadaan-mula">
+
+      <label class="field-label" style="margin-top:12px">Tarikh Tamat</label>
+      <input class="field-input" type="date" id="db-keberadaan-tamat">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+        <div>
+          <label class="field-label">Masa Mula (pilihan)</label>
+          <input class="field-input" type="time" id="db-keberadaan-masa-mula">
+        </div>
+        <div>
+          <label class="field-label">Masa Tamat (pilihan)</label>
+          <input class="field-input" type="time" id="db-keberadaan-masa-tamat">
+        </div>
+      </div>
+
+      <label class="field-label" style="margin-top:12px">LatLong (leret/klik peta untuk tetapkan)</label>
+      <div class="db-latlong-text" id="db-keberadaan-latlong">-</div>
+      <div class="db-map" id="db-keberadaan-map"></div>
+      <div class="db-map-hint">Seret penanda atau ketik pada peta untuk tetapkan lokasi tepat.</div>
+
+      <div class="error-text hidden" id="db-keberadaan-error"></div>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="dbCloseKeberadaanForm()">Batal</button>
+        <button class="btn-primary" id="db-keberadaan-submit-btn" onclick="dbSubmitKeberadaan()" style="margin-top:0">Hantar Rekod</button>
+      </div>
+    </div>
+  </div>
+
   <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
   <nav class="drawer" id="drawer">
     <div class="drawer-logo-row"><img class="school-logo-img" alt=""><span>SMASRA</span></div>
@@ -200,7 +337,7 @@
 
   <div class="bottom-nav-wrap">
     <nav class="bottom-nav">
-      <span class="bn-item bn-placeholder" aria-hidden="true"></span>
+      <a class="bn-item" href="kehadiran-staf.html?open=kehadiran" aria-label="Kehadiran"><span data-icon="calendar"></span><span class="bn-label">Kehadiran</span></a>
       <a class="bn-item" href="event.html" aria-label="Event"><span data-icon="event"></span><span class="bn-label">Event</span></a>
       <a class="bn-item" href="index.html" aria-label="Home"><span data-icon="home"></span><span class="bn-label">Home</span></a>
       <a class="bn-item" href="laporan-pentadbir.html" aria-label="Laporan"><span data-icon="clipboard"></span><span class="bn-label">Laporan</span></a>
@@ -211,6 +348,7 @@
 </div>
 
 <script src="app.js"></script>
+<script src="erks-database.js"></script>
 <script>
   /* ---------------- eRKS link + tab switching ---------------- */
   document.getElementById("erks-link-btn").href = APPSHEET_ERKS_URL;
@@ -218,9 +356,12 @@
   function switchTab(name) {
     document.getElementById("tab-panel-erks").classList.toggle("hidden", name !== "erks");
     document.getElementById("tab-panel-analisis").classList.toggle("hidden", name !== "analisis");
+    document.getElementById("tab-panel-buku").classList.toggle("hidden", name !== "buku");
     document.getElementById("tab-btn-erks").classList.toggle("active", name === "erks");
     document.getElementById("tab-btn-analisis").classList.toggle("active", name === "analisis");
+    document.getElementById("tab-btn-buku").classList.toggle("active", name === "buku");
     if (name === "analisis") rksInit();
+    if (name === "buku") dbBootBook();
   }
 
   /* ---------------- Dashboard Analisis eRKS ---------------- */
@@ -414,7 +555,13 @@
       : '<div class="rks-list-item" style="color:var(--mint)">Hebat! Semua AKP dah lengkapkan eRKS.</div>';
   }
 
-  function renderKehadiranStaf(user) {}
+  function renderKehadiranStaf(user) {
+    dbLoadStaff(user);
+    const params = new URLSearchParams(location.search);
+    if (params.get("open") === "kehadiran") {
+      dbOpenKehadiranForm();
+    }
+  }
   initApp(renderKehadiranStaf);
 </script>
 </body>
