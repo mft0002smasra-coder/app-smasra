@@ -7,6 +7,7 @@ const CORE_ASSETS = [
   "kehadiran-murid.html",
   "event.html",
   "laporan-pentadbir.html",
+  "tempahan-bilik.html",
   "style.css",
   "app.js",
   "kehadiran-murid-borang.js",

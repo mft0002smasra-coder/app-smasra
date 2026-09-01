@@ -1,0 +1,1352 @@
+﻿<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tempahan Bilik Khas — SMA (JAIM) Al-Asyraf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root{
+  --bg:#F5F8FC;
+  --bg-grid: rgba(11,94,215,0.05);
+  --navy:#081226;
+  --navy-2:#0D1B36;
+  --navy-3:#122448;
+  --blue:#0B5ED7;
+  --blue-dim:#0B5ED733;
+  --cyan:#22E6C8;
+  --gold:#FFC72C;
+  --danger:#FF5470;
+  --success:#2FE08A;
+  --text-dark:#0A1930;
+  --text-mid:#4C5B76;
+  --text-light:#EAF2FF;
+  --text-light-dim:#9FB3D6;
+  --radius:18px;
+  --shadow-lg: 0 24px 60px -20px rgba(8,18,38,0.35);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    linear-gradient(var(--bg-grid) 1px, transparent 1px) 0 0/40px 40px,
+    linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px) 0 0/40px 40px,
+    var(--bg);
+  font-family:'Inter',sans-serif;
+  color:var(--text-dark);
+  min-height:100vh;
+}
+.app{max-width:1240px;margin:0 auto;padding:16px 12px 60px;}
+@media(min-width:700px){ .app{padding:28px 20px 80px;} }
+
+/* ---------- HEADER (full-bleed KPM blue bar) ---------- */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  width:100%;
+  background:linear-gradient(120deg,var(--blue) 0%,#0A47AC 100%);
+  padding:10px 14px;
+  position:sticky;top:0;z-index:200;
+  overflow:hidden;
+  box-shadow:0 8px 30px -12px rgba(11,94,215,0.55);
+}
+@media(min-width:700px){ .topbar{padding:16px 32px;} }
+.back-to-home{
+  display:flex;align-items:center;gap:5px;color:rgba(255,255,255,0.85);text-decoration:none;
+  font-family:'Rajdhani',sans-serif;font-weight:600;font-size:11.5px;letter-spacing:0.4px;
+  padding:6px 10px;border-radius:9px;border:1px solid rgba(255,255,255,0.3);
+  position:relative;z-index:1;flex-shrink:0;
+}
+.back-to-home:hover{color:#fff;border-color:var(--gold);}
+.topbar::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(600px 140px at 10% 0%, rgba(255,255,255,0.10), transparent 60%),
+             radial-gradient(500px 160px at 95% 100%, rgba(34,230,200,0.25), transparent 60%);
+  pointer-events:none;
+}
+.brand{display:flex;align-items:center;gap:9px;position:relative;z-index:1;min-width:0;}
+.brand-badge{
+  width:38px;height:38px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Orbitron',sans-serif;font-weight:800;color:#fff;font-size:11px;
+  filter:drop-shadow(0 6px 14px rgba(0,0,0,0.45));
+}
+@media(min-width:700px){ .brand-badge{width:52px;height:52px;font-size:14px;} }
+.brand-badge img{width:100%;height:100%;object-fit:contain;}
+.brand-text{min-width:0;}
+.brand-text h1{
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.3px;
+  margin:0;color:#fff;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+@media(min-width:700px){ .brand-text h1{font-size:21px;} }
+.brand-text p{margin:1px 0 0;font-size:9px;color:rgba(255,255,255,0.75);letter-spacing:1px;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+@media(min-width:700px){ .brand-text p{font-size:12px;letter-spacing:1.5px;} }
+.nav-tabs{display:flex;gap:6px;position:relative;z-index:1;width:100%;order:3;}
+@media(min-width:700px){ .nav-tabs{width:auto;order:0;} }
+.nav-tab{
+  font-family:'Rajdhani',sans-serif;font-weight:600;font-size:12px;letter-spacing:0.3px;
+  padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.35);
+  background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85);
+  cursor:pointer;transition:all .2s ease;text-transform:uppercase;flex:1;text-align:center;
+}
+@media(min-width:700px){ .nav-tab{padding:10px 18px;font-size:14px;flex:none;} }
+.nav-tab:hover{color:#fff;border-color:var(--gold);}
+.nav-tab.active{background:#fff;color:var(--blue);border-color:transparent;box-shadow:0 6px 20px -6px rgba(0,0,0,0.35);}
+
+/* ---------- FOOTER (matches header blue) ---------- */
+.site-footer{
+  width:100%;
+  background:linear-gradient(120deg,var(--blue) 0%,#0A47AC 100%);
+  margin-top:40px;
+  padding:18px 32px;
+  position:relative;
+  box-shadow:0 -8px 24px -14px rgba(11,94,215,0.5);
+}
+.site-footer-inner{
+  max-width:1240px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
+  font-family:'Rajdhani',sans-serif;font-weight:600;font-size:12.5px;letter-spacing:0.4px;
+  color:rgba(255,255,255,0.9);
+}
+.site-footer-dim{color:rgba(255,255,255,0.6);}
+
+/* ---------- PAGE 1: CARDS ---------- */
+.page{display:none;}
+.page.active{display:block;}
+.section-head{margin:32px 0 18px;display:flex;align-items:baseline;gap:10px;}
+.section-head .eyebrow{font-family:'Rajdhani',sans-serif;font-weight:700;color:var(--blue);letter-spacing:2px;font-size:12px;text-transform:uppercase;}
+.section-head h2{font-family:'Rajdhani',sans-serif;font-size:24px;margin:0;color:var(--text-dark);font-weight:700;}
+
+.room-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+@media(min-width:700px){ .room-grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px;} }
+.room-card{
+  background:linear-gradient(160deg, rgba(10,16,30,0.72), rgba(4,7,15,0.85));
+  backdrop-filter:blur(14px) saturate(140%);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,0.10);
+  position:relative;overflow:hidden;cursor:pointer;
+  box-shadow:0 18px 40px -22px rgba(8,18,38,0.55);
+  transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+@media(min-width:700px){ .room-card{border-radius:var(--radius);} }
+.room-card::after{
+  content:'';position:absolute;inset:0;border-radius:14px;z-index:1;pointer-events:none;
+  background:linear-gradient(120deg, transparent 40%, rgba(34,230,200,0.10) 50%, transparent 60%);
+  opacity:0;transition:opacity .3s ease;
+}
+.room-card:hover{transform:translateY(-4px);border-color:rgba(34,230,200,0.55);box-shadow:0 22px 44px -18px rgba(34,230,200,0.35);}
+.room-card:hover::after{opacity:1;}
+.room-photo{
+  position:relative;height:82px;width:100%;overflow:hidden;
+  background:linear-gradient(150deg,#0D1B36,#081226);
+}
+@media(min-width:700px){ .room-photo{height:150px;} }
+.room-photo img{width:100%;height:100%;object-fit:cover;display:block;}
+.room-photo .ph-fallback{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  font-family:'Rajdhani',sans-serif;font-weight:700;color:rgba(255,255,255,0.18);font-size:22px;letter-spacing:1px;
+}
+@media(min-width:700px){ .room-photo .ph-fallback{font-size:34px;letter-spacing:2px;} }
+.room-photo .cap-tag{
+  position:absolute;left:7px;bottom:6px;z-index:2;
+  background:rgba(8,18,38,0.65);backdrop-filter:blur(6px);
+  color:#fff;font-size:8.5px;font-weight:600;padding:3px 7px;border-radius:20px;
+  border:1px solid rgba(255,255,255,0.18);
+}
+@media(min-width:700px){ .room-photo .cap-tag{left:12px;bottom:10px;font-size:11px;padding:5px 11px;} }
+.room-body{padding:10px 10px 12px;position:relative;z-index:1;overflow:hidden;border-radius:0 0 14px 14px;}
+@media(min-width:700px){ .room-body{padding:20px 22px 22px;border-radius:0 0 var(--radius) var(--radius);} }
+.room-body::before{
+  /* glossy sheen — scoped to the dark body area only, never over the photo */
+  content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(135deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 30%, transparent 55%);
+}
+.room-body > *{position:relative;z-index:1;}
+.room-card h3{font-family:'Rajdhani',sans-serif;font-size:12.5px;color:var(--text-light);margin:0 0 7px;font-weight:700;letter-spacing:0.1px;line-height:1.25;min-height:32px;}
+@media(min-width:700px){ .room-card h3{font-size:18px;margin:0 0 10px;min-height:0;} }
+.room-feats{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;}
+@media(min-width:700px){ .room-feats{gap:6px;margin-bottom:18px;} }
+.feat-chip{font-size:8.5px;background:rgba(255,255,255,0.06);color:var(--text-light-dim);padding:3px 7px;border-radius:20px;border:1px solid rgba(255,255,255,0.12);}
+@media(min-width:700px){ .feat-chip{font-size:11px;padding:5px 10px;} }
+.book-btn{
+  width:100%;padding:8px;border-radius:9px;border:none;
+  background:linear-gradient(120deg,var(--blue),#0A47AC);color:#fff;
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:10.5px;letter-spacing:0.3px;
+  cursor:pointer;text-transform:uppercase;transition:filter .2s;
+}
+@media(min-width:700px){ .book-btn{padding:11px;border-radius:12px;font-size:14px;letter-spacing:0.8px;} }
+.book-btn:hover{filter:brightness(1.15);}
+
+/* ---------- PAGE 2: SCHEDULE ---------- */
+.controls{
+  display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;
+  background:#fff;border:1px solid #E2E9F5;border-radius:16px;padding:18px 20px;margin-bottom:22px;
+  box-shadow:0 10px 30px -20px rgba(10,25,55,0.25);
+}
+.field{display:flex;flex-direction:column;gap:6px;}
+.field label{font-size:11px;font-weight:700;letter-spacing:1px;color:var(--text-mid);text-transform:uppercase;}
+.field input, .field select{
+  padding:9px 12px;border-radius:10px;border:1px solid #D7E1F2;font-family:'Inter',sans-serif;font-size:14px;color:var(--text-dark);background:#F8FAFE;
+}
+.field input:focus, .field select:focus{outline:2px solid var(--cyan);border-color:var(--cyan);}
+.day-badge{
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;color:var(--blue);
+  background:var(--blue-dim);padding:9px 16px;border-radius:10px;letter-spacing:0.5px;
+}
+.status-banner{display:none;font-size:12.5px;font-weight:600;padding:10px 16px;border-radius:10px;margin-bottom:14px;}
+.status-banner.show{display:block;}
+.status-banner.info{background:#E9F2FF;color:#0B5ED7;}
+.status-banner.warn{background:#FFF6E0;color:#8A6300;}
+.status-banner.err{background:#FFEAEF;color:#C81E4C;}
+.status-banner.ok{background:#E7FBF1;color:#1CAE68;}
+
+.schedule-wrap{overflow-x:auto;border-radius:18px;box-shadow:var(--shadow-lg);border:1px solid #E2E9F5;}
+.room-list-hint{font-size:12.5px;color:var(--text-mid);margin-bottom:12px;font-weight:600;}
+.room-list{display:flex;flex-direction:column;gap:10px;}
+.room-list-item{
+  display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #E2E9F5;border-radius:14px;
+  padding:12px 14px;cursor:pointer;box-shadow:0 8px 22px -16px rgba(10,25,55,0.3);transition:transform .15s ease,border-color .15s ease;
+}
+.room-list-item:hover{border-color:var(--cyan);transform:translateX(2px);}
+.room-list-item:active{transform:scale(.98);}
+.room-list-thumb{width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;background:linear-gradient(150deg,var(--blue),var(--navy));}
+.room-list-ph{width:44px;height:44px;border-radius:10px;flex-shrink:0;background:linear-gradient(150deg,var(--blue),var(--navy));display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:10px;color:#fff;}
+.room-list-main{flex:1;min-width:0;}
+.room-list-name{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13.5px;color:var(--text-dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.room-list-cap{font-size:11px;color:var(--text-mid);margin-top:2px;}
+.room-list-arrow{font-size:20px;color:var(--text-mid);flex-shrink:0;}
+table.schedule{border-collapse:separate;border-spacing:0;width:100%;min-width:900px;background:#FFFFFF;}
+table.schedule th, table.schedule td{padding:10px;text-align:center;}
+table.schedule thead th{
+  background:var(--navy-3);color:var(--text-light-dim);font-family:'Rajdhani',sans-serif;font-size:12px;
+  font-weight:700;letter-spacing:0.5px;position:sticky;top:0;border-bottom:1px solid #1F3862;
+}
+table.schedule thead th.slot-th{min-width:96px;}
+table.schedule thead th span{display:block;color:var(--cyan);font-size:11px;margin-top:2px;}
+table.schedule tbody th{
+  text-align:left;color:var(--text-light);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;
+  background:var(--navy-2);position:sticky;left:0;border-right:1px solid #1F3862;min-width:190px;padding:10px 16px;
+}
+.room-th{display:flex;align-items:center;gap:10px;cursor:pointer;border-radius:8px;padding:4px;margin:-4px;transition:background .15s ease;}
+.room-th:hover{background:rgba(34,230,200,0.10);}
+.room-th-img{width:30px;height:30px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.15);}
+.room-th-ph{width:30px;height:30px;border-radius:8px;flex-shrink:0;background:linear-gradient(150deg,var(--blue),var(--navy));display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:8px;color:var(--text-light-dim);}
+table.schedule tbody tr:nth-child(odd) td{background:#F7FAFE;}
+table.schedule tbody td{border-bottom:1px solid #EEF3FB;}
+.slot-cell{
+  border:1px solid #E2E9F5;border-radius:10px;padding:8px 6px;font-size:11px;cursor:pointer;
+  font-weight:600;letter-spacing:0.3px;transition:transform .15s ease, filter .15s ease;
+}
+.slot-cell:hover{transform:scale(1.05);filter:brightness(1.06);}
+.slot-cell.empty{background:rgba(47,224,138,0.10);color:#1CAE68;border-color:rgba(47,224,138,0.35);}
+.slot-cell.taken{background:linear-gradient(135deg,var(--blue),#0A2E6B);color:#fff;border-color:transparent;box-shadow:0 0 0 1px rgba(34,230,200,0.25);}
+.slot-cell .kelas{display:block;font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.slot-cell .name{display:block;font-size:10px;font-weight:500;opacity:0.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* ---------- MODAL ---------- */
+.overlay{
+  position:fixed;inset:0;background:rgba(6,12,26,0.6);backdrop-filter:blur(4px);
+  display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;
+}
+.overlay.active{display:flex;}
+.modal{
+  background:#fff;border-radius:22px;max-width:920px;width:100%;max-height:92vh;overflow-y:auto;
+  box-shadow:0 40px 100px -30px rgba(0,0,0,0.5);position:relative;
+}
+@media(max-width:640px){
+  .overlay{padding:8px;}
+  .modal{border-radius:16px;max-height:95vh;}
+}
+.modal-close{
+  position:absolute;top:16px;right:16px;width:34px;height:34px;border-radius:50%;
+  background:#F0F3FA;border:none;font-size:16px;cursor:pointer;color:var(--text-mid);z-index:5;
+}
+.modal-grid{display:grid;grid-template-columns:1fr 1.15fr;}
+@media(max-width:720px){.modal-grid{grid-template-columns:1fr;}}
+.modal-left{
+  background:var(--navy);color:var(--text-light);padding:28px 26px;border-radius:22px 0 0 22px;
+  position:relative;overflow:hidden;
+}
+@media(max-width:720px){.modal-left{border-radius:22px 22px 0 0;}}
+.modal-left::before{content:'';position:absolute;inset:0;background:radial-gradient(400px 160px at 90% 0%, rgba(34,230,200,0.18), transparent 60%);}
+.modal-room-photo{
+  width:100%;height:130px;border-radius:14px;overflow:hidden;position:relative;margin-bottom:14px;
+  background:linear-gradient(150deg,#0D1B36,#081226);border:1px solid rgba(255,255,255,0.10);
+}
+.modal-room-photo img{width:100%;height:100%;object-fit:cover;display:block;}
+.modal-room-photo .ph-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;font-weight:700;color:rgba(255,255,255,0.18);font-size:24px;letter-spacing:2px;}
+.modal-left h3{font-family:'Rajdhani',sans-serif;font-size:20px;margin:0 0 4px;position:relative;}
+.modal-left .cap{font-size:11px;color:var(--cyan);font-weight:600;letter-spacing:0.5px;margin-bottom:12px;position:relative;}
+.modal-left .feats{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;position:relative;}
+.rules-box{background:rgba(255,255,255,0.05);border:1px solid #1F3862;border-radius:12px;padding:10px 12px;position:relative;}
+.rules-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+.rules-toggle h4{margin:0;font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--gold);letter-spacing:0.5px;}
+.rules-arrow{color:var(--gold);font-size:12px;transition:transform .25s ease;flex-shrink:0;}
+.rules-toggle.open .rules-arrow{transform:rotate(180deg);}
+.rules-body{max-height:0;overflow:hidden;transition:max-height .3s ease, margin-top .3s ease;}
+.rules-body.open{max-height:400px;margin-top:8px;}
+.rules-box ol{margin:0;padding-left:14px;font-size:9.5px;line-height:1.4;color:var(--text-light-dim);}
+.rules-box ol li{margin-bottom:4px;}
+
+.modal-right{padding:30px 30px 26px;}
+.modal-right h4{font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:1.5px;color:var(--text-mid);text-transform:uppercase;margin:0 0 18px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.form-row.single{grid-template-columns:1fr;}
+.form-field label{display:block;font-size:12px;font-weight:700;color:var(--text-mid);margin-bottom:6px;letter-spacing:0.3px;}
+.form-field input, .form-field select, .form-field textarea{
+  width:100%;padding:11px 13px;border-radius:11px;border:1.5px solid #E2E9F5;font-family:'Inter',sans-serif;font-size:14px;background:#F8FAFE;color:var(--text-dark);
+}
+.form-field input:focus,.form-field select:focus,.form-field textarea:focus{outline:none;border-color:var(--blue);background:#fff;}
+.form-field textarea{resize:vertical;min-height:64px;}
+.agree-row{display:flex;align-items:flex-start;gap:10px;background:#F4F8FF;border-radius:12px;padding:12px 14px;margin:16px 0;}
+.agree-row input{margin-top:3px;}
+.agree-row label{font-size:12px;color:var(--text-mid);line-height:1.5;}
+.msg{border-radius:12px;padding:11px 14px;font-size:13px;font-weight:600;margin-bottom:14px;display:none;}
+.msg.show{display:block;}
+.msg.error{background:#FFEAEF;color:#C81E4C;}
+.msg.info{background:#E9F2FF;color:#0B5ED7;}
+.submit-btn{
+  width:100%;padding:14px;border:none;border-radius:13px;
+  background:linear-gradient(120deg,var(--blue),#0A47AC);color:#fff;font-family:'Rajdhani',sans-serif;
+  font-weight:700;font-size:15px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;
+}
+.submit-btn:disabled{opacity:0.55;cursor:not-allowed;}
+.submit-btn:not(:disabled):hover{filter:brightness(1.1);}
+
+/* ---------- CONFIRMATION TICKET ---------- */
+.ticket-wrap{padding:26px;}
+#ticket{
+  background:linear-gradient(160deg,var(--navy-2),var(--navy));border-radius:20px;padding:30px;color:var(--text-light);
+  position:relative;overflow:hidden;border:1px solid #1B3155;
+}
+#ticket::before{content:'';position:absolute;inset:0;background:radial-gradient(500px 160px at 100% 0%, rgba(34,230,200,0.18), transparent 60%);}
+.ticket-head{display:flex;justify-content:space-between;align-items:flex-start;position:relative;margin-bottom:22px;}
+.ticket-head .school{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;color:var(--text-light-dim);text-transform:uppercase;}
+.ticket-status{background:rgba(47,224,138,0.15);color:#7BEFB6;font-size:11px;font-weight:700;padding:6px 12px;border-radius:20px;letter-spacing:0.5px;}
+.ticket-room{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:700;margin:0 0 4px;position:relative;}
+.ticket-id{font-size:11px;color:var(--cyan);letter-spacing:0.5px;margin-bottom:20px;position:relative;}
+.ticket-details{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;position:relative;border-top:1px dashed #2A4570;padding-top:18px;}
+.ticket-details .d-label{font-size:10px;letter-spacing:1px;color:var(--text-light-dim);text-transform:uppercase;margin-bottom:4px;}
+.ticket-details .d-val{font-size:14px;font-weight:600;font-family:'Rajdhani',sans-serif;}
+.ticket-foot{margin-top:22px;padding-top:16px;border-top:1px dashed #2A4570;font-size:10.5px;color:var(--text-light-dim);position:relative;}
+.ticket-actions{display:flex;gap:12px;margin-top:20px;}
+.ticket-actions button{flex:1;padding:12px;border-radius:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:0.5px;cursor:pointer;font-size:14px;}
+.dl-btn{background:linear-gradient(120deg,var(--gold),#E0A800);border:none;color:#3A2A00;}
+.close-btn2{background:#EEF2FA;border:none;color:var(--text-mid);}
+
+/* Detail popup (page 2 taken-slot) */
+.detail-card{padding:26px;}
+.detail-card h3{font-family:'Rajdhani',sans-serif;margin-top:0;}
+
+/* Conflict alert popup */
+.alert-card{padding:36px 30px 30px;text-align:center;}
+.alert-icon{
+  width:64px;height:64px;border-radius:50%;margin:0 auto 16px;
+  background:linear-gradient(145deg,var(--danger),#B8123B);
+  display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;
+  box-shadow:0 10px 26px -10px rgba(255,84,112,0.6);
+}
+.alert-card h3{font-family:'Rajdhani',sans-serif;font-size:21px;margin:0 0 10px;color:var(--text-dark);}
+.alert-card p{font-size:14px;color:var(--text-mid);line-height:1.5;margin:0 0 22px;}
+
+/* Weekly view */
+.weekly-head{margin-bottom:18px;}
+#weeklyCard{background:linear-gradient(160deg,var(--navy-2),var(--navy));border-radius:20px;padding:26px;border:1px solid #1B3155;color:var(--text-light);position:relative;overflow:hidden;}
+#weeklyCard::before{content:'';position:absolute;inset:0;background:radial-gradient(500px 160px at 100% 0%, rgba(34,230,200,0.16), transparent 60%);pointer-events:none;}
+.weekly-head, .weekly-scroll{position:relative;}
+.weekly-school{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;color:var(--text-light-dim);text-transform:uppercase;}
+.weekly-title{font-family:'Orbitron',sans-serif;font-size:19px;font-weight:700;margin:4px 0 2px;}
+.weekly-range{font-size:12px;color:var(--cyan);letter-spacing:0.5px;}
+.weekly-note{font-size:10.5px;color:var(--text-light-dim);margin-top:4px;max-width:520px;line-height:1.4;}
+.weekly-scroll{overflow-x:auto;border-radius:14px;-webkit-overflow-scrolling:touch;}
+.weekly-scroll-hint{display:none;font-size:10px;color:var(--text-light-dim);text-align:center;margin-top:6px;}
+@media(max-width:640px){ .weekly-scroll-hint{display:block;} }
+table.weekly-table{border-collapse:separate;border-spacing:0;width:100%;min-width:640px;}
+table.weekly-table th, table.weekly-table td{padding:8px;text-align:center;font-size:11px;}
+@media(max-width:640px){
+  table.weekly-table{min-width:520px;}
+  table.weekly-table th, table.weekly-table td{padding:5px 4px;font-size:9.5px;}
+  table.weekly-table tbody th{min-width:56px;padding-left:6px;}
+}
+table.weekly-table thead th{
+  background:rgba(255,255,255,0.06);color:var(--text-light-dim);font-family:'Rajdhani',sans-serif;font-weight:700;
+  letter-spacing:0.4px;border-bottom:1px solid #1F3862;
+}
+table.weekly-table thead th span{display:block;color:var(--cyan);font-size:10px;margin-top:2px;font-weight:600;}
+table.weekly-table tbody th{
+  text-align:left;font-family:'Rajdhani',sans-serif;font-weight:700;color:var(--text-light-dim);
+  padding-left:10px;min-width:78px;border-right:1px solid #1F3862;
+}
+table.weekly-table tbody td{border-bottom:1px solid rgba(255,255,255,0.06);}
+.wk-cell{border-radius:8px;padding:6px 4px;font-weight:600;}
+.wk-cell.empty{background:rgba(255,255,255,0.03);color:rgba(255,255,255,0.25);}
+.wk-cell.taken{background:linear-gradient(135deg,var(--blue),#0A2E6B);color:#fff;}
+.wk-cell .wk-kelas{display:block;font-size:10.5px;font-weight:700;}
+.wk-cell .wk-nama{display:block;font-size:9.5px;opacity:0.85;}
+.wk-cell{position:relative;}
+.wk-cell.locked-cell{background:repeating-linear-gradient(135deg,#2A2A32,#2A2A32 6px,#1C1C22 6px,#1C1C22 12px);color:#FFC72C;}
+.wk-cell .wk-kelas.locked-label{color:#FFC72C;}
+.slot-cell.locked-cell{background:repeating-linear-gradient(135deg,#2A2A32,#2A2A32 6px,#1C1C22 6px,#1C1C22 12px)!important;color:#FFC72C!important;border-color:#3A3A44!important;}
+
+/* Butang batal (X) admin di atas sel yang ditempah/dikunci */
+.cell-cancel-btn{
+  position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;
+  background:var(--danger);color:#fff;border:2px solid #fff;font-size:10px;line-height:14px;
+  cursor:pointer;z-index:5;display:flex;align-items:center;justify-content:center;font-weight:800;
+}
+.cell-cancel-btn:hover{background:#B8123B;}
+
+/* Panel admin dalam popup mingguan */
+.admin-panel{display:none;margin-top:18px;background:#F4F8FF;border:1px solid #DCE6F7;border-radius:14px;padding:16px 18px;}
+.admin-panel.show{display:block;}
+.admin-panel-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:12px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;color:var(--text-dark);}
+.admin-panel-hint{font-size:11px;font-weight:500;color:var(--text-mid);}
+.lock-toggle-btn{
+  background:var(--navy);color:#fff;border:none;border-radius:10px;padding:9px 16px;
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;cursor:pointer;letter-spacing:0.4px;
+}
+.lock-toggle-btn:hover{filter:brightness(1.2);}
+.lock-form{display:none;margin-top:14px;}
+.lock-form.show{display:block;}
+.lock-slot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;margin-top:4px;}
+.lock-slot-grid label{
+  display:flex;align-items:center;gap:5px;font-size:11px;background:#fff;border:1px solid #D7E1F2;
+  border-radius:8px;padding:6px 8px;cursor:pointer;color:var(--text-dark);
+}
+.edit-admin-btn{
+  flex:1;padding:12px;border-radius:12px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:0.5px;
+  cursor:pointer;font-size:14px;background:var(--navy);color:#fff;border:none;
+}
+.edit-admin-btn:hover{filter:brightness(1.25);}
+
+@media(max-width:640px){
+  .form-row{grid-template-columns:1fr;}
+  .ticket-details{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-badge" id="brandBadge">SMA</div>
+    <div class="brand-text">
+      <h1>SMA (JAIM) Al-Asyraf</h1>
+      <p>Sistem Tempahan Bilik Khas</p>
+    </div>
+  </div>
+  <a class="back-to-home" href="index.html">&larr; Menu Utama</a>
+  <div class="nav-tabs">
+    <button class="nav-tab active" data-page="page1" onclick="switchPage('page1')">Tempahan Slot</button>
+    <button class="nav-tab" data-page="page2" onclick="switchPage('page2')">Jadual Tempahan</button>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- ================= PAGE 1 ================= -->
+  <div class="page active" id="page1">
+    <div class="section-head">
+      <span class="eyebrow">Senarai</span>
+      <h2>Bilik Khas SMA (JAIM) Al-Asyraf</h2>
+    </div>
+    <div class="room-grid" id="roomGrid"></div>
+  </div>
+
+  <!-- ================= PAGE 2 ================= -->
+  <div class="page" id="page2">
+    <div class="section-head">
+      <span class="eyebrow">Jadual</span>
+      <h2>Jadual Tempahan Bilik Khas</h2>
+    </div>
+    <div class="controls">
+      <div class="field">
+        <label>Tarikh (untuk lihat minggu)</label>
+        <input type="date" id="dateSelect">
+      </div>
+      <div class="day-badge" id="dayBadge">—</div>
+      <div class="field" style="margin-left:auto;">
+        <label>&nbsp;</label>
+        <button class="nav-tab" id="reloadBtn" style="background:var(--navy);color:#fff;border-color:transparent;" onclick="loadSchedule()">↻ Muat Semula</button>
+      </div>
+    </div>
+    <div class="status-banner" id="statusBanner"></div>
+    <div class="room-list-hint">Pilih bilik khas untuk lihat jadual minggu tersebut:</div>
+    <div class="room-list" id="roomList"></div>
+  </div>
+
+</div>
+
+<div class="site-footer">
+  <div class="site-footer-inner">
+    <span>© <span id="footerYear"></span> SMA (JAIM) Al-Asyraf — Sistem Tempahan Bilik Khas</span>
+    <span class="site-footer-dim">Dijana secara automatik &bull; AUTO-APPROVED</span>
+  </div>
+</div>
+
+<!-- ============ BOOKING MODAL ============ -->
+<div class="overlay" id="bookingOverlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('bookingOverlay')">✕</button>
+    <div class="modal-grid">
+      <div class="modal-left">
+        <div class="modal-room-photo" id="modalRoomPhoto"></div>
+        <h3 id="modalRoomName">—</h3>
+        <div class="cap" id="modalRoomCap">—</div>
+        <div class="feats" id="modalRoomFeats"></div>
+        <div class="rules-box">
+          <div class="rules-toggle" onclick="toggleRules()" id="rulesToggle">
+            <h4>PERATURAN &amp; SYARAT PENGGUNAAN</h4>
+            <span class="rules-arrow">&#9660;</span>
+          </div>
+          <div class="rules-body" id="rulesBody">
+          <ol>
+            <li>Sebarang perubahan tarikh perlu dimaklumkan dengan segera kepada Admin/Pengurus Bilik.</li>
+            <li>Tempahan boleh dibatalkan tanpa makluman awal kepada penempah sekiranya terdapat penggunaan Bilik Khas ini yang lebih penting/utama pada tarikh yang sama.</li>
+            <li>Jika terdapat PELANGGARAN PERATURAN SEMASA BERADA DI DALAM mana-mana Bilik Khas, permohonan tuan/puan TIDAK AKAN DIPERTIMBANGKAN di masa akan datang. Sila pastikan murid mengikut peraturan setiap Bilik Khas.</li>
+          </ol>
+          </div>
+        </div>
+      </div>
+      <div class="modal-right">
+        <h4>Borang Tempahan Khas</h4>
+        <div class="msg error" id="formError"></div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>Tarikh *</label>
+            <input type="date" id="fTarikh" onchange="onDateChange()">
+          </div>
+          <div class="form-field">
+            <label>Hari</label>
+            <input type="text" id="fHari" disabled placeholder="—">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>Slot 1 *</label>
+            <select id="fSlot1"><option value="">Pilih tarikh dahulu</option></select>
+          </div>
+          <div class="form-field">
+            <label>Slot 2 (Jika Ada)</label>
+            <select id="fSlot2"><option value="">— Tiada —</option></select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>Nama Pemohon (Guru) *</label>
+            <input type="text" id="fNama" placeholder="Cikgu ...">
+          </div>
+          <div class="form-field">
+            <label>Kelas / Tingkatan *</label>
+            <input type="text" id="fKelas" list="kelasList" placeholder="Pilih atau taip kelas" autocomplete="off">
+            <datalist id="kelasList"></datalist>
+          </div>
+        </div>
+
+        <div class="form-row single">
+          <div class="form-field">
+            <label>Tujuan / Program *</label>
+            <textarea id="fTujuan" placeholder="Cth: Kelas ganti / Amali Komputer"></textarea>
+          </div>
+        </div>
+
+        <div class="agree-row">
+          <input type="checkbox" id="fAgree">
+          <label for="fAgree">Saya telah membaca dan bersetuju dengan peraturan &amp; syarat penggunaan bilik khas di atas.</label>
+        </div>
+
+        <button class="submit-btn" id="submitBtn" onclick="submitBooking()">Hantar &amp; Pengesahan Tempahan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CONFIRMATION MODAL ============ -->
+<div class="overlay" id="confirmOverlay">
+  <div class="modal" style="max-width:520px;">
+    <button class="modal-close" onclick="closeModal('confirmOverlay')">✕</button>
+    <div class="ticket-wrap">
+      <div id="ticket">
+        <div class="ticket-head">
+          <div>
+            <div class="school">SMA (JAIM) Al-Asyraf</div>
+          </div>
+          <div class="ticket-status">✓ AUTO-APPROVED</div>
+        </div>
+        <div class="ticket-room" id="tRoom">—</div>
+        <div class="ticket-id" id="tId">—</div>
+        <div class="ticket-details">
+          <div><div class="d-label">Tarikh</div><div class="d-val" id="tTarikh">—</div></div>
+          <div><div class="d-label">Slot Masa</div><div class="d-val" id="tSlot">—</div></div>
+          <div><div class="d-label">Nama Guru</div><div class="d-val" id="tNama">—</div></div>
+          <div><div class="d-label">Kelas/Tingkatan</div><div class="d-val" id="tKelas">—</div></div>
+          <div style="grid-column:1/-1;"><div class="d-label">Tujuan</div><div class="d-val" id="tTujuan">—</div></div>
+        </div>
+        <div class="ticket-foot">Tiket ini adalah pengesahan automatik sistem. Sila rujuk peraturan &amp; syarat penggunaan bilik khas.</div>
+      </div>
+      <div class="ticket-actions">
+        <button class="dl-btn" onclick="downloadTicket()">⬇ Muat Turun (PNG)</button>
+        <button class="close-btn2" onclick="closeModal('confirmOverlay')">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ DETAIL POPUP (page 2, slot taken) ============ -->
+<div class="overlay" id="detailOverlay">
+  <div class="modal" style="max-width:460px;">
+    <button class="modal-close" onclick="closeModal('detailOverlay')">✕</button>
+    <div class="detail-card">
+      <h3 id="dRoom">—</h3>
+      <div class="ticket-details" style="border:none;padding:0;">
+        <div><div class="d-label" style="color:var(--text-mid);">Tarikh</div><div class="d-val" id="dTarikh" style="color:var(--text-dark);">—</div></div>
+        <div><div class="d-label" style="color:var(--text-mid);">Slot Masa</div><div class="d-val" id="dSlot" style="color:var(--text-dark);">—</div></div>
+        <div><div class="d-label" style="color:var(--text-mid);">Nama Guru</div><div class="d-val" id="dNama" style="color:var(--text-dark);">—</div></div>
+        <div><div class="d-label" style="color:var(--text-mid);">Kelas/Tingkatan</div><div class="d-val" id="dKelas" style="color:var(--text-dark);">—</div></div>
+        <div style="grid-column:1/-1;"><div class="d-label" style="color:var(--text-mid);">Tujuan</div><div class="d-val" id="dTujuan" style="color:var(--text-dark);">—</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CONFLICT ALERT POPUP ============ -->
+<div class="overlay" id="conflictOverlay">
+  <div class="modal" style="max-width:420px;">
+    <button class="modal-close" onclick="closeModal('conflictOverlay')">✕</button>
+    <div class="alert-card">
+      <div class="alert-icon">⚠</div>
+      <h3>Bilik Telah Ditempah!</h3>
+      <p id="conflictMsg">Slot yang dipilih telah ditempah oleh guru lain.</p>
+      <button class="submit-btn" style="background:linear-gradient(120deg,var(--danger),#B8123B);" onclick="closeModal('conflictOverlay')">Pilih Slot Lain</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ WEEKLY VIEW (per room) ============ -->
+<div class="overlay" id="weeklyOverlay">
+  <div class="modal" style="max-width:1100px;">
+    <button class="modal-close" onclick="closeModal('weeklyOverlay')">✕</button>
+    <div class="ticket-wrap">
+      <div id="weeklyCard">
+        <div class="weekly-head">
+          <div>
+            <div class="weekly-school">SMA (JAIM) Al-Asyraf</div>
+            <div class="weekly-title" id="weeklyRoomName">—</div>
+            <div class="weekly-range" id="weeklyRange">—</div>
+            <div class="weekly-note">* Waktu di label baris ikut jadual Isnin–Khamis. Jumaat guna waktu berbeza — tuding (hover) pada slot untuk lihat waktu sebenar.</div>
+          </div>
+        </div>
+        <div class="weekly-scroll">
+          <table class="weekly-table" id="weeklyTable"></table>
+        </div>
+        <div class="weekly-scroll-hint">&larr; Leret ke kiri/kanan untuk lihat semua hari &rarr;</div>
+      </div>
+
+      <div class="admin-panel" id="weeklyAdminPanel">
+        <div class="admin-panel-head">
+          <span>🛠 Panel Admin</span>
+          <span class="admin-panel-hint">Klik ✕ pada slot untuk batalkan tempahan / buka kunci.</span>
+        </div>
+        <button class="lock-toggle-btn" onclick="toggleLockForm()">🔒 Kunci Slot Bilik Ini</button>
+        <div class="lock-form" id="lockForm">
+          <div class="form-row">
+            <div class="form-field">
+              <label>Dari Tarikh</label>
+              <input type="date" id="lockFrom">
+            </div>
+            <div class="form-field">
+              <label>Hingga Tarikh</label>
+              <input type="date" id="lockTo">
+            </div>
+          </div>
+          <div class="form-field">
+            <label>Slot Untuk Dikunci</label>
+            <div class="lock-slot-grid" id="lockSlotGrid"></div>
+          </div>
+          <div class="form-field">
+            <label>Sebab Dikunci</label>
+            <input type="text" id="lockReason" placeholder="Cth: Program Sekolah / Mesyuarat Penting">
+          </div>
+          <button class="submit-btn" style="background:linear-gradient(120deg,var(--gold),#E0A800);color:#3A2A00;" onclick="submitLock()">Kunci Slot Sekarang</button>
+        </div>
+      </div>
+
+      <div class="ticket-actions">
+        <button class="dl-btn" onclick="downloadWeekly()">⬇ Muat Turun (PNG)</button>
+        <button class="edit-admin-btn" id="weeklyEditBtn" onclick="handleAdminEditClick()">✎ Edit (Admin)</button>
+        <button class="close-btn2" onclick="closeModal('weeklyOverlay')">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ADMIN PASSWORD PROMPT ============ -->
+<div class="overlay" id="adminAuthOverlay">
+  <div class="modal" style="max-width:380px;">
+    <button class="modal-close" onclick="closeModal('adminAuthOverlay')">✕</button>
+    <div class="alert-card">
+      <div class="alert-icon" style="background:linear-gradient(145deg,var(--blue),#0A47AC);box-shadow:0 10px 26px -10px rgba(11,94,215,0.6);">🔑</div>
+      <h3>Akses Admin</h3>
+      <p>Masukkan kata laluan admin untuk teruskan.</p>
+      <input type="password" id="adminPassInput" placeholder="Kata laluan" style="width:100%;padding:11px 13px;border-radius:11px;border:1.5px solid #E2E9F5;font-size:14px;margin-bottom:10px;text-align:center;">
+      <div class="msg error" id="adminAuthError" style="text-align:left;"></div>
+      <button class="submit-btn" onclick="submitAdminAuth()">Sahkan</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+/* ============================================================
+   KONFIGURASI — tukar GAS_URL kepada URL Web App Google Apps
+   Script anda selepas deploy (lihat Code.gs untuk arahan).
+   ============================================================ */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxByKjjQ9ijouBnX7FbKzvtfNtZzbu0WpXfgwDsDIoDBT2nXXqIaY7gGBjG20xu3EtI/exec";
+
+/* Kata laluan admin — MESTI SAMA dengan ADMIN_PASSWORD dalam Code.gs.
+   Semakan sebenar berlaku di pihak server (Code.gs); nilai di sini hanya
+   untuk pintu masuk cepat di UI. */
+const ADMIN_PASSWORD = "admin@1234";
+let isAdminAuthed = false;
+let adminPassValue = "";
+let pendingAdminAction = null; // fungsi yang dijalankan lepas password sah
+let weeklyAdminMode = false;   // adakah panel admin aktif dalam popup mingguan semasa
+
+/* Letak URL logo sekolah di sini (contoh: "images/logo.png" atau link terus).
+   Jika kosong, badge huruf "SMA" akan digunakan sebagai gantian. */
+const LOGO_URL = "";
+
+/* Letak URL gambar setiap bilik khas di sini (contoh: "images/makmal-ict.jpg").
+   Jika kosong untuk sesuatu bilik, kad akan papar latar gelap kosong sebagai gantian. */
+const ROOM_IMAGES = {
+  ICT: "https://lh3.googleusercontent.com/d/1Ffpq5Wukhu3OnkP3hy-Jx8MQuwHCdPR8",
+  P21: "https://lh3.googleusercontent.com/d/1dQYVaDArTqKTbr4w4B-6gavKbDUmxCgm",
+  TY:  "https://lh3.googleusercontent.com/d/19NqXyf2kNqglM9spG4KfvqR5hGGGbSkQ",
+  PSS: "https://lh3.googleusercontent.com/d/17nnM-6ExFsucgEkmS2-aIGlcFFCklEut",
+  SMT: "https://lh3.googleusercontent.com/d/1G-vf35WhYwlScioSMiJV1pgiCLxTdeRt",
+  AI:  "https://lh3.googleusercontent.com/d/1CMerdvqS_7QFH9z-o4LpmDZ7XC2cSqdG",
+  GK:  "https://lh3.googleusercontent.com/d/1_J9tncjUON8AcDYeX8V6-Gdm4-ZtfrGZ",
+  AP1: "https://lh3.googleusercontent.com/d/1XKn6EaBFyCPoF6zESHUcA-1yZ-jLy_hk",
+  AP2: "https://lh3.googleusercontent.com/d/1ouvciO1bVvH9wyYRP3q6t4edVQGENR9v",
+  DSB: "https://lh3.googleusercontent.com/d/1MsIdMZznq29vtMsIk7gn6SoIRBqzjpS0",
+  STV: "https://lh3.googleusercontent.com/d/1Dhw8uD-2np2s5ChjDnbB39fxc2LMVFze"
+};
+
+const CLASS_LIST = [
+  '1 AR-RAZI','1 IBNU RUSHD','1 AL-FARABI',
+  '2 AR-RAZI','2 IBNU RUSHD','2 AL-FARABI',
+  '3 AR-RAZI','3 IBNU RUSHD','3 AL-FARABI',
+  '4 AR-RAZI','4 IBNU RUSHD','4 AL-FARABI',
+  '5 AR-RAZI','5 IBNU RUSHD','5 AL-FARABI',
+  '6 AL-GHAZALI','6 AL BUKHARI'
+];
+
+/* Palet warna — satu warna tetap bagi setiap kelas dalam CLASS_LIST (ikut
+   tertib supaya konsisten setiap kali dipaparkan). Kelas yang ditaip sendiri
+   (bukan dalam senarai) dapat warna daripada palet yang sama secara hash,
+   supaya tetap konsisten untuk nama yang sama walaupun bukan pra-senarai. */
+const CLASS_PALETTE = [
+  '#FF6B6B','#FF9F43','#E9C46A','#6BCB77','#17A398','#22B8CF','#4D96FF',
+  '#6C5CE7','#A66DD4','#FF6FB5','#C44536','#2F9C95','#E07A5F','#577590',
+  '#F4A261','#90BE6D','#3D5A80'
+];
+const CLASS_COLOR_MAP = {};
+CLASS_LIST.forEach((c,i)=>{ CLASS_COLOR_MAP[c] = CLASS_PALETTE[i % CLASS_PALETTE.length]; });
+
+function hashStr_(str){
+  let h = 0;
+  for(let i=0;i<str.length;i++){ h = (h*31 + str.charCodeAt(i)) >>> 0; }
+  return h;
+}
+function isLockRow_(b){
+  return !!b && (b.NAMA_GURU === 'ADMIN (LOCK)' || b.KELAS === 'LOCKED');
+}
+
+function colorForClass(kelas){
+  if(!kelas) return '#3A4A6B';
+  const key = String(kelas).trim().toUpperCase();
+  if(CLASS_COLOR_MAP[key]) return CLASS_COLOR_MAP[key];
+  return CLASS_PALETTE[hashStr_(key) % CLASS_PALETTE.length];
+}
+function textColorForBg_(hex){
+  const c = hex.replace('#','');
+  const r=parseInt(c.substr(0,2),16)/255, g=parseInt(c.substr(2,2),16)/255, b=parseInt(c.substr(4,2),16)/255;
+  const lin = v => v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055,2.4);
+  const L = 0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b);
+  return L > 0.5 ? '#0A1930' : '#FFFFFF';
+}
+
+const ROOMS = [
+  {code:'ICT', name:'MAKMAL ICT', cap:'40 Murid + 1 Guru', feats:['Aircond','Komputer','Projektor']},
+  {code:'P21', name:'BILIK PAK21', cap:'40 Murid + 1 Guru', feats:['Aircond','Meja Modular','Skrin']},
+  {code:'TY',  name:'BILIK TAYANG', cap:'40 Murid + 1 Guru', feats:['Aircond','LCD Projector','Skrin Wayang']},
+  {code:'PSS', name:'PUSAT SUMBER SEKOLAH (PSS)', cap:'40 Murid + 1 Guru', feats:['Rak Buku','Meja Bacaan','TV']},
+  {code:'SMT', name:'SM@RT ROOM SMASRA', cap:'40 Murid + 1 Guru', feats:['Peralatan ICT','Papan Putih Pintar']},
+  {code:'AI',  name:'ANJUNG ILMU', cap:'40 Murid + 1 Guru', feats:['Ruang Terbuka','Meja Bulat']},
+  {code:'GK',  name:'BILIK GERAKAN', cap:'40 Murid + 1 Guru', feats:['Papan Strategik','Meja Mesyuarat']},
+  {code:'AP1', name:'BILIK APUNG 1', cap:'40 Murid + 1 Guru', feats:['Aircond','Projektor']},
+  {code:'AP2', name:'BILIK APUNG 2', cap:'40 Murid + 1 Guru', feats:['Aircond','Projektor']},
+  {code:'DSB', name:'DEWAN SAIDINA ABU BAKAR', cap:'200 Murid', feats:['PA System','Pentas','Kerusi']},
+  {code:'STV', name:'STUDIO TV PSS SMASRA', cap:'10 Murid + 1 Guru', feats:['Kamera','Lampu Studio','Green Screen']}
+];
+
+const SLOTS_WEEKDAY = ['7.30 - 8.10','8.10 - 8.50','8.50 - 9.30','9.30 - 10.10','10.10 - 10.50','10.50 - 11.10','11.10 - 11.50','11.50 - 12.30','12.30 - 13.10','13.10 - 13.50','13.50 - 14.30','15.10 - 15.50','15.50 - 16.30','16.30 - 17.10'];
+const SLOTS_FRIDAY  = ['7.30 - 7.45','7.45 - 8.25','8.25 - 9.05','9.05 - 9.45','9.45 - 10.05','10.05 - 10.45','10.45 - 11.25','11.25 - 12.05'];
+const DAY_NAMES = ['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'];
+
+let bookings = [];
+let activeRoom = null;
+let prefillSlot = null;
+
+/* ---------------- Hex badge SVG ---------------- */
+function hexSvg(code, size){
+  size = size || 56;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 56 56">
+    <polygon points="28,2 52,15 52,41 28,54 4,41 4,15" fill="url(#g)" stroke="#22E6C8" stroke-width="1.5"/>
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22E6C8"/><stop offset="100%" stop-color="#0B5ED7"/>
+    </linearGradient></defs>
+  </svg><span>${code}</span>`;
+}
+
+/* ---------------- Render Page 1 ---------------- */
+function renderRoomGrid(){
+  const grid = document.getElementById('roomGrid');
+  grid.innerHTML = ROOMS.map(r => {
+    const img = ROOM_IMAGES[r.code];
+    const photoInner = img
+      ? `<img src="${img}" alt="${r.name}">`
+      : `<div class="ph-fallback">${r.code}</div>`;
+    return `
+    <div class="room-card" onclick="openBooking('${r.code}')">
+      <div class="room-photo">
+        ${photoInner}
+        <span class="cap-tag">👥 ${r.cap}</span>
+      </div>
+      <div class="room-body">
+        <h3>${r.name}</h3>
+        <div class="room-feats">${r.feats.map(f=>`<span class="feat-chip">${f}</span>`).join('')}</div>
+        <button class="book-btn">+ Tempah Bilik Ini</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function applyLogo(){
+  if(LOGO_URL){
+    document.getElementById('brandBadge').innerHTML = `<img src="${LOGO_URL}" alt="Logo Sekolah">`;
+  }
+}
+
+function switchPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelector(`.nav-tab[data-page="${id}"]`).classList.add('active');
+  if(id==='page2') loadSchedule();
+}
+
+/* ---------------- API helpers ---------------- */
+function showStatus(type, text){
+  const el = document.getElementById('statusBanner');
+  el.className = 'status-banner show ' + type;
+  el.textContent = text;
+}
+function hideStatus(){
+  document.getElementById('statusBanner').classList.remove('show');
+}
+
+/* Cari nilai dalam objek row berdasarkan corak dalam nama kunci — toleran
+   kepada pematah baris (\n), spasi berlebihan, dan huruf besar/kecil.
+   Ini elak masalah "medan tak keluar" jika tajuk lajur sheet sebenar
+   sedikit berbeza daripada teks yang dijangka (cth "Kelas/\nTingkatan"). */
+function findByPattern_(obj, patterns){
+  for(const k in obj){
+    const norm = String(k).replace(/\s+/g,' ').trim().toLowerCase();
+    for(const p of patterns){
+      if(norm.indexOf(p) > -1) return obj[k];
+    }
+  }
+  return undefined;
+}
+
+/* Terima data GET dalam MANA-MANA satu format (kunci normal SLOT1/SLOT2/...
+   atau kunci lama ikut teks tajuk sheet "MASA PERTAMA" dsb) — supaya jadual
+   tak "patah" walaupun Apps Script belum sempat di-deploy semula, atau
+   tajuk lajur sheet sedikit berbeza (spasi/pematah baris). */
+function normalizeRow_(r){
+  return {
+    rowId: r.rowId,
+    BILIK: r.BILIK !== undefined ? r.BILIK : findByPattern_(r, ['bilik']),
+    NAMA_GURU: r.NAMA_GURU !== undefined ? r.NAMA_GURU : (r['Nama Guru'] !== undefined ? r['Nama Guru'] : findByPattern_(r, ['nama guru','guru'])),
+    TARIKH: r.TARIKH !== undefined ? r.TARIKH : findByPattern_(r, ['tarikh']),
+    SLOT1: r.SLOT1 !== undefined ? r.SLOT1 : (r['MASA PERTAMA'] !== undefined ? r['MASA PERTAMA'] : findByPattern_(r, ['masa pertama'])),
+    SLOT2: r.SLOT2 !== undefined ? r.SLOT2 : (r['MASA KEDUA (Jika Ada)'] !== undefined ? r['MASA KEDUA (Jika Ada)'] : findByPattern_(r, ['masa kedua'])),
+    KELAS: r.KELAS !== undefined ? r.KELAS : (r['Kelas/Tingkatan'] !== undefined ? r['Kelas/Tingkatan'] : findByPattern_(r, ['kelas','tingkatan'])),
+    TUJUAN: r.TUJUAN !== undefined ? r.TUJUAN : (r['Tujuan Tempahan'] !== undefined ? r['Tujuan Tempahan'] : findByPattern_(r, ['tujuan']))
+  };
+}
+
+async function fetchBookings(){
+  if(GAS_URL.includes('PASTE_URL')){
+    showStatus('warn', '⚠ Mod demo aktif — GAS_URL belum ditetapkan, jadual ini TIDAK disambungkan ke Google Sheet. Tempahan hanya tersimpan sementara dalam pelayar ini.');
+    return bookings;
+  }
+  try{
+    const res = await fetch(GAS_URL + '?action=list');
+    if(!res.ok){
+      showStatus('err', '✕ Ralat sambungan (HTTP ' + res.status + '). Semak deployment Apps Script anda (Who has access: Anyone).');
+      return bookings;
+    }
+    const text = await res.text();
+    let json;
+    try{ json = JSON.parse(text); }
+    catch(parseErr){
+      showStatus('err', '✕ Respons bukan JSON — kemungkinan URL Apps Script tersalah, atau akses deployment bukan "Anyone".');
+      return bookings;
+    }
+    if(json.status !== 'success'){
+      showStatus('err', '✕ ' + (json.message || 'Ralat tidak diketahui daripada Apps Script.'));
+      return bookings;
+    }
+    bookings = (json.data || []).map(normalizeRow_);
+    showStatus('ok', '✓ Berjaya dimuat — ' + bookings.length + ' rekod tempahan ditemui dalam Sheet.');
+  }catch(err){
+    console.error('Gagal mendapatkan data tempahan', err);
+    showStatus('err', '✕ Gagal sambung ke Google Sheet (CORS/rangkaian). Jika fail ini dibuka terus dari komputer (file://), sila host/embed ia pada laman web dahulu — jangan buka terus dari fail.');
+  }
+  return bookings;
+}
+
+async function postBooking(payload){
+  if(GAS_URL.includes('PASTE_URL')){
+    // MOD DEMO: tiada Apps Script disambungkan lagi, simpan sementara dalam memori
+    const conflict = bookings.some(b => b.BILIK===payload.bilik && b.TARIKH===payload.tarikh &&
+      ([b.SLOT1, b.SLOT2].includes(payload.slot1) ||
+       (payload.slot2 && [b.SLOT1, b.SLOT2].includes(payload.slot2))));
+    if(conflict) return {status:'conflict', message:'Bilik ini telah ditempah untuk slot tersebut pada tarikh ini.'};
+    const rec = {BILIK:payload.bilik, NAMA_GURU:payload.namaGuru, TARIKH:payload.tarikh, SLOT1:payload.slot1, SLOT2:payload.slot2||'', KELAS:payload.kelas, TUJUAN:payload.tujuan};
+    bookings.push(rec);
+    return {status:'success', booking:{id:'DEMO-'+Date.now(), timestamp:new Date().toLocaleString('ms-MY'), bilik:payload.bilik, namaGuru:payload.namaGuru, tarikh:payload.tarikh, slot1:payload.slot1, slot2:payload.slot2||'', kelas:payload.kelas, tujuan:payload.tujuan}};
+  }
+  const res = await fetch(GAS_URL, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload)});
+  return await res.json();
+}
+
+/* ---------------- Booking modal ---------------- */
+function openBooking(code, dateStr, slotId){
+  activeRoom = ROOMS.find(r=>r.code===code);
+  prefillSlot = slotId || null;
+  const mImg = ROOM_IMAGES[activeRoom.code];
+  document.getElementById('modalRoomPhoto').innerHTML = mImg
+    ? `<img src="${mImg}" alt="${activeRoom.name}">`
+    : `<div class="ph-fallback">${activeRoom.code}</div>`;
+  document.getElementById('modalRoomName').textContent = activeRoom.name;
+  document.getElementById('modalRoomCap').textContent = '👥 ' + activeRoom.cap;
+  document.getElementById('modalRoomFeats').innerHTML = activeRoom.feats.map(f=>`<span class="feat-chip">${f}</span>`).join('');
+  document.getElementById('fTarikh').value = dateStr || '';
+  document.getElementById('fNama').value = '';
+  document.getElementById('fKelas').value = '';
+  document.getElementById('fTujuan').value = '';
+  document.getElementById('fAgree').checked = false;
+  document.getElementById('formError').classList.remove('show');
+  document.getElementById('rulesToggle').classList.remove('open');
+  document.getElementById('rulesBody').classList.remove('open');
+  if(dateStr){ onDateChange(); } else { document.getElementById('fHari').value=''; document.getElementById('fSlot1').innerHTML='<option value="">Pilih tarikh dahulu</option>'; document.getElementById('fSlot2').innerHTML='<option value="">— Tiada —</option>'; }
+  document.getElementById('bookingOverlay').classList.add('active');
+}
+
+function slotsForDate(dateStr){
+  if(!dateStr) return null;
+  const d = new Date(dateStr + 'T00:00:00');
+  const day = d.getDay();
+  if(day>=1 && day<=4) return {name:DAY_NAMES[day], slots:SLOTS_WEEKDAY};
+  if(day===5) return {name:DAY_NAMES[day], slots:SLOTS_FRIDAY};
+  return {name:DAY_NAMES[day], slots:[]};
+}
+
+/* Kunci storan & padanan ialah NOMBOR SLOT ("SLOT 1", "SLOT 2", ...) — bukan
+   teks masa. Ini jauh lebih senang & konsisten untuk dipadankan di jadual,
+   tanpa risau format teks masa tersasar sikit pun (spacing, tanda sempang, dll). */
+function slotIdFor(index){ return 'SLOT ' + (index + 1); }
+
+function slotDisplay(dateStr, slotId){
+  if(!slotId) return '';
+  const info = slotsForDate(dateStr);
+  const num = parseInt(String(slotId).replace(/[^0-9]/g,''), 10);
+  if(!info || !num || !info.slots[num-1]) return slotId;
+  return slotId + ' (' + info.slots[num-1] + ')';
+}
+
+function onDateChange(){
+  const dateStr = document.getElementById('fTarikh').value;
+  const info = slotsForDate(dateStr);
+  const s1 = document.getElementById('fSlot1');
+  const s2 = document.getElementById('fSlot2');
+  document.getElementById('fHari').value = info ? info.name : '';
+  if(!info || info.slots.length===0){
+    s1.innerHTML = '<option value="">Bukan hari persekolahan</option>';
+    s2.innerHTML = '<option value="">— Tiada —</option>';
+    return;
+  }
+  const opts = info.slots.map((s,i)=>{
+    const id = slotIdFor(i);
+    return `<option value="${id}" ${id===prefillSlot?'selected':''}>${id} (${s})</option>`;
+  }).join('');
+  s1.innerHTML = '<option value="">Pilih Slot 1</option>' + opts;
+  s2.innerHTML = '<option value="">— Tiada —</option>' + opts;
+}
+
+async function submitBooking(){
+  const tarikh = document.getElementById('fTarikh').value;
+  const slot1 = document.getElementById('fSlot1').value;
+  const slot2 = document.getElementById('fSlot2').value;
+  const nama = document.getElementById('fNama').value.trim();
+  const kelas = document.getElementById('fKelas').value.trim();
+  const tujuan = document.getElementById('fTujuan').value.trim();
+  const agree = document.getElementById('fAgree').checked;
+  const errBox = document.getElementById('formError');
+
+  if(!tarikh || !slot1 || !nama || !kelas || !tujuan){
+    errBox.textContent = 'Sila lengkapkan semua maklumat wajib (*) termasuk Slot 1.';
+    errBox.classList.add('show');
+    return;
+  }
+  if(slot2 && slot2===slot1){
+    errBox.textContent = 'Slot 2 tidak boleh sama dengan Slot 1.';
+    errBox.classList.add('show');
+    return;
+  }
+  if(!agree){
+    errBox.textContent = 'Sila bersetuju dengan peraturan & syarat penggunaan sebelum menghantar.';
+    errBox.classList.add('show');
+    return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = 'Menghantar...';
+  errBox.classList.remove('show');
+
+  const payload = {bilik:activeRoom.name, namaGuru:nama, tarikh, slot1, slot2, kelas, tujuan};
+  const result = await postBooking(payload);
+
+  btn.disabled = false; btn.textContent = 'Hantar & Pengesahan Tempahan';
+
+  if(result.status === 'conflict'){
+    document.getElementById('conflictMsg').textContent = result.message || (activeRoom.name + ' telah ditempah untuk slot dan tarikh yang dipilih. Sila pilih slot atau tarikh lain.');
+    document.getElementById('conflictOverlay').classList.add('active');
+    return;
+  }
+  if(result.status !== 'success'){
+    errBox.textContent = 'Ralat sistem. Sila cuba semula.';
+    errBox.classList.add('show');
+    return;
+  }
+
+  closeModal('bookingOverlay');
+  showConfirmation(result.booking);
+}
+
+/* ---------------- Confirmation ticket ---------------- */
+function showConfirmation(b){
+  document.getElementById('tRoom').textContent = b.bilik;
+  document.getElementById('tId').textContent = 'ID: ' + b.id + '  •  ' + b.timestamp;
+  document.getElementById('tTarikh').textContent = b.tarikh;
+  const s1txt = slotDisplay(b.tarikh, b.slot1);
+  const s2txt = b.slot2 ? slotDisplay(b.tarikh, b.slot2) : '';
+  document.getElementById('tSlot').textContent = s2txt ? (s1txt + '  &  ' + s2txt) : s1txt;
+  document.getElementById('tNama').textContent = b.namaGuru;
+  document.getElementById('tKelas').textContent = b.kelas;
+  document.getElementById('tTujuan').textContent = b.tujuan;
+  document.getElementById('confirmOverlay').classList.add('active');
+}
+
+function downloadTicket(){
+  html2canvas(document.getElementById('ticket'), {backgroundColor:null, scale:2}).then(canvas=>{
+    const link = document.createElement('a');
+    link.download = 'Tiket-Tempahan-' + Date.now() + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+}
+
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+
+function toggleRules(){
+  document.getElementById('rulesToggle').classList.toggle('open');
+  document.getElementById('rulesBody').classList.toggle('open');
+}
+
+/* ---------------- Page 2: schedule ---------------- */
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+async function loadSchedule(){
+  const btn = document.getElementById('reloadBtn');
+  const originalText = btn.textContent;
+  btn.disabled = true; btn.textContent = '↻ Memuat...';
+  await fetchBookings();
+  renderRoomList();
+  btn.disabled = false; btn.textContent = originalText;
+}
+
+function renderRoomList(){
+  let dateStr = document.getElementById('dateSelect').value;
+  if(!dateStr) dateStr = todayStr();
+  document.getElementById('dateSelect').value = dateStr;
+
+  const info = slotsForDate(dateStr);
+  document.getElementById('dayBadge').textContent = info.name.toUpperCase();
+
+  const list = document.getElementById('roomList');
+  list.innerHTML = ROOMS.map(r => {
+    const img = ROOM_IMAGES[r.code];
+    const thumb = img
+      ? `<img class="room-list-thumb" src="${img}" alt="${r.name}">`
+      : `<span class="room-list-ph">${r.code}</span>`;
+    return `<div class="room-list-item" onclick="openWeekly('${r.code}')">
+      ${thumb}
+      <div class="room-list-main">
+        <div class="room-list-name">${r.name}</div>
+        <div class="room-list-cap">👥 ${r.cap}</div>
+      </div>
+      <span class="room-list-arrow">&rsaquo;</span>
+    </div>`;
+  }).join('');
+}
+
+function openDetail(data){
+  document.getElementById('dRoom').textContent = data.room;
+  document.getElementById('dTarikh').textContent = data.tarikh;
+  document.getElementById('dSlot').textContent = slotDisplay(data.tarikh, data.slot);
+  if(data.isLock){
+    document.getElementById('dNama').textContent = '🔒 Dikunci oleh Admin';
+    document.getElementById('dKelas').innerHTML = '—';
+  } else {
+    document.getElementById('dNama').textContent = data.nama;
+    const swatch = colorForClass(data.kelas);
+    document.getElementById('dKelas').innerHTML = `<span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${swatch};margin-right:7px;vertical-align:middle;"></span>${data.kelas||'—'}`;
+  }
+  document.getElementById('dTujuan').textContent = data.tujuan;
+  document.getElementById('detailOverlay').classList.add('active');
+}
+
+/* ---------------- Weekly view (per room, Isnin—Jumaat) ---------------- */
+function fmtDate_(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function fmtDateShort_(d){ return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'); }
+
+function getWeekDates_(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  const day = d.getDay();
+  const mondayOffset = day===0 ? -6 : (1-day);
+  const monday = new Date(d); monday.setDate(d.getDate()+mondayOffset);
+  const dates = [];
+  for(let i=0;i<5;i++){ const dt = new Date(monday); dt.setDate(monday.getDate()+i); dates.push(dt); }
+  return dates; // Isnin .. Jumaat
+}
+
+let weeklyCurrentRoomCode = null;
+let weeklyBaseDate = null;
+
+function openWeekly(code){
+  weeklyCurrentRoomCode = code;
+  weeklyBaseDate = document.getElementById('dateSelect').value || todayStr();
+  weeklyAdminMode = false;
+  document.getElementById('weeklyAdminPanel').classList.remove('show');
+  document.getElementById('lockForm').classList.remove('show');
+  document.getElementById('weeklyEditBtn').textContent = '✎ Edit (Admin)';
+  renderWeeklyTable();
+  document.getElementById('weeklyOverlay').classList.add('active');
+}
+
+function renderWeeklyTable(){
+  const room = ROOMS.find(r=>r.code===weeklyCurrentRoomCode);
+  if(!room) return;
+  const weekDates = getWeekDates_(weeklyBaseDate);
+  const weekDayNames = ['ISNIN','SELASA','RABU','KHAMIS','JUMAAT'];
+
+  document.getElementById('weeklyRoomName').textContent = room.name;
+  document.getElementById('weeklyRange').textContent = fmtDateShort_(weekDates[0]) + ' — ' + fmtDateShort_(weekDates[4]);
+
+  const thead = '<thead><tr><th>Slot</th>' + weekDates.map((d,i)=>`<th>${weekDayNames[i]}<span>${fmtDateShort_(d)}</span></th>`).join('') + '</tr></thead>';
+
+  const tbody = '<tbody>' + SLOTS_WEEKDAY.map((s,i) => {
+    const id = slotIdFor(i);
+    const cells = weekDates.map(d => {
+      const dStr = fmtDate_(d);
+      const dayInfo = slotsForDate(dStr);
+      if(!dayInfo || !dayInfo.slots[i]){
+        return `<td><div class="wk-cell empty">—</div></td>`;
+      }
+      const actualTime = dayInfo.slots[i]; // masa sebenar bagi TARIKH ini (Jumaat berbeza daripada Isnin-Khamis)
+      const found = bookings.find(b => b.BILIK===room.name && b.TARIKH===dStr && (b.SLOT1===id || b.SLOT2===id));
+      if(found){
+        const cancelBtn = weeklyAdminMode ? `<span class="cell-cancel-btn" onclick="event.stopPropagation();deleteBookingRow('${found.rowId}')" title="Batal/Buka Kunci">✕</span>` : '';
+        if(isLockRow_(found)){
+          return `<td><div class="wk-cell taken locked-cell" title="${actualTime}">${cancelBtn}<span class="wk-kelas locked-label">🔒 KUNCI</span><span class="wk-nama">${(found.TUJUAN||'Admin')}</span></div></td>`;
+        }
+        const bgW = colorForClass(found.KELAS);
+        const fgW = textColorForBg_(bgW);
+        return `<td><div class="wk-cell taken" style="background:${bgW};color:${fgW};" title="${actualTime}">${cancelBtn}<span class="wk-kelas">${found.KELAS||'—'}</span><span class="wk-nama">${found.NAMA_GURU||''}</span></div></td>`;
+      }
+      return `<td><div class="wk-cell empty" title="${actualTime}">Kosong</div></td>`;
+    }).join('');
+    return `<tr><th>${id}<span style="display:block;font-size:9px;color:var(--text-light-dim);font-weight:500;">${s}</span></th>${cells}</tr>`;
+  }).join('') + '</tbody>';
+
+  document.getElementById('weeklyTable').innerHTML = thead + tbody;
+}
+
+function downloadWeekly(){
+  html2canvas(document.getElementById('weeklyCard'), {backgroundColor:'#081226', scale:2}).then(canvas=>{
+    const link = document.createElement('a');
+    link.download = 'Jadual-Mingguan-' + Date.now() + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+}
+
+/* ---------------- Admin: auth, cancel booking, lock slots ---------------- */
+function handleAdminEditClick(){
+  if(isAdminAuthed){
+    weeklyAdminMode = !weeklyAdminMode;
+    document.getElementById('weeklyAdminPanel').classList.toggle('show', weeklyAdminMode);
+    document.getElementById('weeklyEditBtn').textContent = weeklyAdminMode ? '✓ Selesai Edit' : '✎ Edit (Admin)';
+    renderWeeklyTable();
+  } else {
+    pendingAdminAction = function(){
+      weeklyAdminMode = true;
+      document.getElementById('weeklyAdminPanel').classList.add('show');
+      document.getElementById('weeklyEditBtn').textContent = '✓ Selesai Edit';
+      renderWeeklyTable();
+    };
+    document.getElementById('adminPassInput').value = '';
+    document.getElementById('adminAuthError').classList.remove('show');
+    document.getElementById('adminAuthOverlay').classList.add('active');
+    setTimeout(()=>document.getElementById('adminPassInput').focus(), 100);
+  }
+}
+
+function submitAdminAuth(){
+  const val = document.getElementById('adminPassInput').value;
+  if(val === ADMIN_PASSWORD){
+    isAdminAuthed = true;
+    adminPassValue = val;
+    closeModal('adminAuthOverlay');
+    if(pendingAdminAction){ pendingAdminAction(); pendingAdminAction = null; }
+  } else {
+    const err = document.getElementById('adminAuthError');
+    err.textContent = 'Kata laluan salah. Sila cuba lagi.';
+    err.classList.add('show');
+  }
+}
+
+async function postAdmin(action, payload){
+  const body = Object.assign({action:action, adminPass:adminPassValue}, payload);
+  if(GAS_URL.includes('PASTE_URL')){
+    // MOD DEMO — emulasi tempatan tanpa Google Sheet
+    if(action === 'delete'){
+      bookings = bookings.filter(b => String(b.rowId) !== String(body.rowId));
+      return {status:'success'};
+    }
+    if(action === 'lock'){
+      let locked = 0, skipped = 0, d = body.dateFrom, guard = 0;
+      while(d <= body.dateTo && guard < 400){
+        guard++;
+        const info = slotsForDate(d);
+        if(info && info.slots.length){
+          body.slots.forEach(slotId=>{
+            const num = parseInt(String(slotId).replace(/[^0-9]/g,''),10);
+            if(num && num <= info.slots.length){
+              const exists = bookings.some(b => b.BILIK===body.bilik && b.TARIKH===d && (b.SLOT1===slotId || b.SLOT2===slotId));
+              if(exists){ skipped++; }
+              else {
+                bookings.push({rowId:'DEMO-'+Date.now()+'-'+Math.random(), BILIK:body.bilik, NAMA_GURU:'ADMIN (LOCK)', TARIKH:d, SLOT1:slotId, SLOT2:'', KELAS:'LOCKED', TUJUAN:body.reason||'Dikunci oleh Admin'});
+                locked++;
+              }
+            }
+          });
+        }
+        const dt = new Date(d+'T00:00:00'); dt.setDate(dt.getDate()+1);
+        d = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+      }
+      return {status:'success', locked:locked, skipped:skipped};
+    }
+  }
+  const res = await fetch(GAS_URL, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(body)});
+  return await res.json();
+}
+
+async function deleteBookingRow(rowId){
+  if(!confirm('Padam/batalkan rekod ini? Tindakan ini tidak boleh diundur.')) return;
+  const result = await postAdmin('delete', {rowId:rowId});
+  if(result.status !== 'success'){ alert(result.message || 'Gagal memadam rekod.'); return; }
+  await fetchBookings();
+  renderWeeklyTable();
+  renderRoomList();
+}
+
+function toggleLockForm(){
+  const grid = document.getElementById('lockSlotGrid');
+  if(!grid.dataset.built){
+    grid.innerHTML = SLOTS_WEEKDAY.map((s,i)=>`<label><input type="checkbox" value="${slotIdFor(i)}"> ${slotIdFor(i)}</label>`).join('');
+    grid.dataset.built = '1';
+  }
+  const form = document.getElementById('lockForm');
+  form.classList.toggle('show');
+  if(form.classList.contains('show') && !document.getElementById('lockFrom').value){
+    const t = todayStr();
+    document.getElementById('lockFrom').value = t;
+    document.getElementById('lockTo').value = t;
+  }
+}
+
+async function submitLock(){
+  const dateFrom = document.getElementById('lockFrom').value;
+  const dateTo = document.getElementById('lockTo').value;
+  const reason = document.getElementById('lockReason').value.trim();
+  const checked = Array.from(document.querySelectorAll('#lockSlotGrid input[type=checkbox]:checked')).map(cb=>cb.value);
+
+  if(!dateFrom || !dateTo || checked.length===0){
+    alert('Sila lengkapkan tarikh (Dari/Hingga) dan pilih sekurang-kurangnya satu slot.');
+    return;
+  }
+  if(dateTo < dateFrom){
+    alert('Tarikh "Hingga" mesti sama atau selepas tarikh "Dari".');
+    return;
+  }
+  const room = ROOMS.find(r=>r.code===weeklyCurrentRoomCode);
+  const result = await postAdmin('lock', {bilik:room.name, dateFrom:dateFrom, dateTo:dateTo, slots:checked, reason:reason});
+  if(result.status !== 'success'){ alert(result.message || 'Gagal mengunci slot.'); return; }
+  alert('Berjaya dikunci: ' + result.locked + ' slot.' + (result.skipped ? ' (' + result.skipped + ' slot dilangkau kerana sudah ditempah/dikunci)' : ''));
+  await fetchBookings();
+  renderWeeklyTable();
+  renderRoomList();
+  document.getElementById('lockForm').classList.remove('show');
+}
+
+/* ---------------- init ---------------- */
+document.getElementById('dateSelect').addEventListener('change', renderRoomList);
+document.querySelectorAll('.overlay').forEach(o=>{
+  o.addEventListener('click', e=>{ if(e.target===o) o.classList.remove('active'); });
+});
+
+function populateKelasList(){
+  document.getElementById('kelasList').innerHTML = CLASS_LIST.map(c=>`<option value="${c}">`).join('');
+}
+
+renderRoomGrid();
+populateKelasList();
+applyLogo();
+document.getElementById('dateSelect').value = todayStr();
+document.getElementById('footerYear').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>
