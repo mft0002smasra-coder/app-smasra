@@ -4,7 +4,7 @@
    ============================================================ */
 
 // GANTI dengan URL Web App selepas Code.gs Kaunseling disambung
-const KN_API_URL = "PASTE_URL_APPS_SCRIPT_KAUNSELING_ANDA_DI_SINI";
+const KN_API_URL = "https://script.google.com/macros/s/AKfycbxCGgouv0KNJ06guf9QuSC2vhOB1WWrnX5GmkYfg640fcrFBcZKDVvuwN175Uqd3yut/exec";
 function knApiConfigured() { return KN_API_URL && KN_API_URL.indexOf("PASTE_") !== 0; }
 
 const KN_JAWATAN_KAUNSELOR = "PPP (KAUNSELOR SEPENUH MASA)";
