@@ -42,6 +42,12 @@ function jsonOut(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
+function ensureTimezone() {
+  try {
+    SpreadsheetApp.openById(SHEET_ID).setSpreadsheetTimeZone("Asia/Kuala_Lumpur");
+  } catch (err) { /* abaikan kalau gagal */ }
+}
+
 /**
  * body: { kelas, tarikh ("dd/mm/yyyy"), hadir, tidakHadir, namaTidakHadir, direkodOleh }
  * Cari baris sedia ada (tarikh+kelas sama) -> overwrite; kalau tiada -> baris baru.
@@ -50,6 +56,7 @@ function saveKehadiran(body) {
   if (!body.kelas || !body.tarikh) {
     return jsonOut({ success: false, message: "Kelas dan tarikh diperlukan." });
   }
+  ensureTimezone();
 
   var parts = String(body.tarikh).split("/");
   if (parts.length !== 3) {

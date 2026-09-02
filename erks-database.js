@@ -4,7 +4,7 @@
    berlanggar dengan skrip rks-analysis (ma-/rks- sudah dipakai di muka sama).
    ============================================================ */
 
-const DB_API_URL = "https://script.google.com/macros/s/AKfycbzpMRGdwOUp9h6WagE04JMsZHajgIqd08BSL-9_oQdLOKk1FLC9PpsWyzCU1Irqbv9o/exec";
+const DB_API_URL = "PASTE_URL_APPS_SCRIPT_DATABASE_ANDA_DI_SINI";
 function dbApiConfigured() { return DB_API_URL && DB_API_URL.indexOf("PASTE_") !== 0; }
 
 const DB_SHEET_ID_READ = "1gCC26pdp5dqMwEYg6gzuGaiXhq6iA1M3gruLkkIzO5s";
@@ -150,6 +150,7 @@ async function dbSubmitKehadiran() {
     const data = await res.json();
     if (data.success) {
       dbCloseKehadiranForm();
+      dbClearSheetCache("Kehadiran");
       alert("Kehadiran berjaya direkodkan!");
     } else {
       errEl.textContent = data.message || "Gagal hantar rekod.";
@@ -242,6 +243,7 @@ async function dbSubmitKeberadaan() {
     const data = await res.json();
     if (data.success) {
       dbCloseKeberadaanForm();
+      dbClearSheetCache("Rekod");
       alert("Keberadaan berjaya direkodkan!");
     } else {
       errEl.textContent = data.message || "Gagal hantar rekod.";
@@ -267,12 +269,33 @@ let dbBookPageIdx = 0;
 let dbBookFlipping = false;
 let dbTouchStartX = null;
 
+const DB_CACHE_TTL_MS = 3 * 60 * 1000; // 3 minit — cukup untuk elak fetch berulang bila navigasi antara page/tab
+
+function dbClearSheetCache(sheetName) {
+  try { sessionStorage.removeItem(`db_cache_${DB_SHEET_ID_READ}_${sheetName}`); } catch (e) {}
+}
+
 async function dbFetchSheet(sheetName) {
+  const cacheKey = `db_cache_${DB_SHEET_ID_READ}_${sheetName}`;
+  try {
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Date.now() - parsed.ts < DB_CACHE_TTL_MS) return parsed.rows;
+    }
+  } catch (e) { /* storan tak boleh diakses — teruskan fetch biasa */ }
+
   const url = `https://docs.google.com/spreadsheets/d/${DB_SHEET_ID_READ}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&_ts=${Date.now()}`;
   const res = await fetch(url, { cache: "no-store" });
   const text = await res.text();
   const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
-  return JSON.parse(jsonStr).table.rows;
+  const rows = JSON.parse(jsonStr).table.rows;
+
+  try {
+    sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), rows }));
+  } catch (e) { /* storan penuh — tak kritikal, cuma hilang faedah cache kali ni */ }
+
+  return rows;
 }
 function dbParseGDate(cellValue) {
   if (!cellValue) return null;

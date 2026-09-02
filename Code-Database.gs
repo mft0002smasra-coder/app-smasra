@@ -84,10 +84,21 @@ function getStaffByEmail(email) {
  * body: { email, noKP, nama, jawatan, tujuan("MASA MASUK"/"MASA KELUAR"), latLong }
  * Tab "Kehadiran": A=ID, B=TimeStamp, C=No.KP, D=Nama, E=Jawatan, F=Tujuan, G=LatLong
  */
+/**
+ * Paksa zon waktu Spreadsheet ke Malaysia (GMT+8) setiap kali tulis, supaya
+ * new Date() ditafsir/dipaparkan betul walaupun tetapan Spreadsheet tersilap.
+ */
+function dbEnsureTimezone() {
+  try {
+    SpreadsheetApp.openById(DB_SHEET_ID).setSpreadsheetTimeZone("Asia/Kuala_Lumpur");
+  } catch (err) { /* abaikan kalau gagal — appendRow tetap teruskan */ }
+}
+
 function addKehadiran(body) {
   if (!body.noKP || !body.nama || !body.tujuan) {
     return dbJson({ success: false, message: "Maklumat staf/tujuan tidak lengkap." });
   }
+  dbEnsureTimezone();
   var sheet = dbSheet("Kehadiran");
   if (!sheet) return dbJson({ success: false, message: 'Tab "Kehadiran" tidak dijumpai.' });
 
@@ -129,6 +140,7 @@ function addKeberadaan(body) {
   if (!body.noKP || !body.nama || !body.tujuan || !body.mula || !body.tamat) {
     return dbJson({ success: false, message: "Sila lengkapkan tujuan, tarikh mula, dan tarikh tamat." });
   }
+  dbEnsureTimezone();
   var sheet = dbSheet("Rekod");
   if (!sheet) return dbJson({ success: false, message: 'Tab "Rekod" tidak dijumpai.' });
 

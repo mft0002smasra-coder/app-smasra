@@ -57,6 +57,16 @@ function jsonResponse(obj) {
   );
 }
 
+/**
+ * Paksa zon waktu Spreadsheet ke Malaysia (GMT+8) setiap kali tulis, supaya
+ * new Date() ditafsir/dipaparkan betul walaupun tetapan Spreadsheet tersilap.
+ */
+function ensureTimezone() {
+  try {
+    SpreadsheetApp.openById(SPREADSHEET_ID).setSpreadsheetTimeZone("Asia/Kuala_Lumpur");
+  } catch (err) { /* abaikan kalau gagal — appendRow tetap teruskan */ }
+}
+
 /* ---------------- USER / LOGIN ---------------- */
 
 function findUserByEmail(email) {
@@ -191,6 +201,7 @@ function addEvent(body) {
   if (!body.unit || !body.tarikhDari || !body.tajuk) {
     return jsonResponse({ success: false, message: "Sila lengkapkan unit, tarikh dan tajuk." });
   }
+  ensureTimezone();
   var sheet = getSheet("Event");
   sheet.appendRow([
     body.unit,
@@ -299,6 +310,7 @@ function addLaporanPentadbir(body) {
   if (!body.tarikh || !body.blokKelas || !body.namaPentadbir) {
     return jsonResponse({ success: false, message: "Sila lengkapkan nama pentadbir, tarikh, dan blok/kelas." });
   }
+  ensureTimezone();
   var sheet = getSheet("LaporanPentadbirBertugas");
   if (!sheet) {
     return jsonResponse({ success: false, message: 'Tab "LaporanPentadbirBertugas" tidak dijumpai dalam Sheet.' });
