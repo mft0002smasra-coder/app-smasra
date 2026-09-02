@@ -4,10 +4,20 @@
    ============================================================ */
 
 // GANTI dengan URL Web App selepas Code.gs Kaunseling disambung
-const KN_API_URL = "https://script.google.com/macros/s/AKfycbxCGgouv0KNJ06guf9QuSC2vhOB1WWrnX5GmkYfg640fcrFBcZKDVvuwN175Uqd3yut/exec";
+const KN_API_URL = "PASTE_URL_APPS_SCRIPT_KAUNSELING_ANDA_DI_SINI";
 function knApiConfigured() { return KN_API_URL && KN_API_URL.indexOf("PASTE_") !== 0; }
 
 const KN_JAWATAN_KAUNSELOR = "PPP (KAUNSELOR SEPENUH MASA)";
+
+const KN_IMG_SESI = "https://lh3.googleusercontent.com/d/1_vF-aLzeBzph7E1u2u8j1h1hQtSxN6Kv";
+const KN_IMG_PROGRAM = "https://lh3.googleusercontent.com/d/1D3tAzHfsOcMlPlT-Kk7eV2ffz3cUGXiO";
+
+function knInitImages() {
+  const photoSesi = document.getElementById("kn-photo-sesi");
+  const photoProgram = document.getElementById("kn-photo-program");
+  if (photoSesi) photoSesi.innerHTML = `<img src="${KN_IMG_SESI}" alt="Sesi Kaunseling" onerror="this.parentElement.innerHTML='<div class=&quot;kn-ph-fallback&quot;>Sesi Kaunseling</div>'">`;
+  if (photoProgram) photoProgram.innerHTML = `<img src="${KN_IMG_PROGRAM}" alt="Program Kaunseling" onerror="this.parentElement.innerHTML='<div class=&quot;kn-ph-fallback&quot;>Program Kaunseling</div>'">`;
+}
 
 const KN_CLASS_LIST = [
   "1 AR-RAZI","1 IBNU RUSHD","1 AL-FARABI",
@@ -111,7 +121,10 @@ async function knFetchBookings() {
 function knOpenForm(jenis) {
   knCurrentJenis = jenis;
   const isSesi = jenis === "Sesi Kaunseling";
-  document.getElementById("kn-modal-title").textContent = "BORANG " + jenis.toUpperCase();
+  const img = isSesi ? KN_IMG_SESI : KN_IMG_PROGRAM;
+  document.getElementById("kn-modal-photo").innerHTML = `<img src="${img}" alt="${jenis}" onerror="this.parentElement.innerHTML='<div class=&quot;kn-ph-fallback&quot;>${jenis}</div>'">`;
+  document.getElementById("kn-modal-jenis-pill").textContent = jenis;
+  document.getElementById("kn-modal-title").textContent = "Borang " + jenis;
   document.getElementById("kn-modal-desc").textContent = isSesi
     ? "Tempahan sesi kaunseling individu bersama seorang murid."
     : "Tempahan program/aktiviti kaunseling — boleh melibatkan lebih daripada seorang murid dan merentasi beberapa hari.";
@@ -133,7 +146,9 @@ function knOpenForm(jenis) {
   }
 
   knFetchStaff();
-  document.getElementById("kn-booking-overlay").classList.remove("hidden");
+  const overlay = document.getElementById("kn-booking-overlay");
+  overlay.classList.remove("hidden");
+  overlay.classList.add("show");
 }
 
 function knOnFormDateChange() {
@@ -211,7 +226,11 @@ async function knSubmitBooking() {
   knFetchBookings();
 }
 
-function knCloseModal(id) { document.getElementById(id).classList.add("hidden"); }
+function knCloseModal(id) {
+  const el = document.getElementById(id);
+  el.classList.remove("show");
+  el.classList.add("hidden");
+}
 
 /* ---------------- Page 2: Jadual (ditranspose: Slot/Masa kiri, Hari atas) ---------------- */
 function knUpdateWeekBadge() {
@@ -357,4 +376,5 @@ function knInit(user) {
   }
 
   knUpdateWeekBadge();
+  knInitImages();
 }
