@@ -899,13 +899,13 @@ table.db-book-table tbody tr:nth-child(odd) td{ background:rgba(255,255,255,.02)
 /* ============================================================
    TEMPAHAN SESI & PROGRAM KAUNSELING
    ============================================================ */
-.kn-choice-grid{ display:flex;flex-direction:column;gap:18px; }
+.kn-choice-grid{ display:flex;flex-direction:column;gap:12px; }
 .kn-choice-card{
   background:linear-gradient(160deg, rgba(37,39,43,0.78), rgba(20,21,24,0.92));
   backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);
-  border-radius:20px;border:1px solid rgba(255,255,255,0.10);
+  border-radius:16px;border:1px solid rgba(255,255,255,0.10);
   position:relative;overflow:hidden;cursor:pointer;
-  box-shadow:0 18px 40px -22px rgba(10,10,12,0.55);
+  box-shadow:0 14px 30px -18px rgba(10,10,12,0.55);
   transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
 }
 .kn-choice-card:active{ transform:scale(.98); }
@@ -916,19 +916,19 @@ table.db-book-table tbody tr:nth-child(odd) td{ background:rgba(255,255,255,.02)
 }
 .kn-choice-card:hover::after{ opacity:1; }
 .kn-choice-card:hover{ border-color:rgba(255,199,44,0.4); }
-.kn-choice-photo{ position:relative;height:150px;width:100%;overflow:hidden;background:linear-gradient(150deg,#3A3D43,#1C1D20); }
+.kn-choice-photo{ position:relative;height:88px;width:100%;overflow:hidden;background:linear-gradient(150deg,#3A3D43,#1C1D20); }
 .kn-choice-photo img{ width:100%;height:100%;object-fit:cover;display:block; }
 .kn-ph-fallback{
   width:100%;height:100%;display:flex;align-items:center;justify-content:center;
-  color:rgba(255,255,255,0.28);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:16px;text-align:center;padding:10px;
+  color:rgba(255,255,255,0.28);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12.5px;text-align:center;padding:8px;
 }
-.kn-choice-body{ padding:18px 20px 20px;position:relative;z-index:1; }
-.kn-choice-body h3{ font-family:'Rajdhani',sans-serif;font-size:18px;color:#F1F2F4;margin:0 0 8px;font-weight:700; }
-.kn-choice-body p{ font-size:12px;color:#B7BBC2;line-height:1.5;margin:0 0 16px; }
+.kn-choice-body{ padding:12px 14px 14px;position:relative;z-index:1; }
+.kn-choice-body h3{ font-family:'Rajdhani',sans-serif;font-size:14px;color:#F1F2F4;margin:0 0 5px;font-weight:700; }
+.kn-choice-body p{ font-size:10.5px;color:#B7BBC2;line-height:1.4;margin:0 0 11px; }
 .kn-choice-btn{
-  width:100%;padding:12px;border-radius:11px;border:none;
+  width:100%;padding:9px;border-radius:9px;border:none;
   background:linear-gradient(120deg,#D9A62E,#C78E1E);color:#1C1D20;
-  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:.6px;
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:.4px;
   cursor:pointer;text-transform:uppercase;transition:filter .2s;
 }
 .kn-choice-btn:hover{ filter:brightness(1.12); }
