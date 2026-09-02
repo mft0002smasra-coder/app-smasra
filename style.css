@@ -895,3 +895,75 @@ table.db-book-table tbody tr:nth-child(odd) td{ background:rgba(255,255,255,.02)
   .db-book-bil, .db-book-masa-cell{ font-size:11px; }
   .db-badge{ font-size:9px; }
 }
+
+/* ============================================================
+   TEMPAHAN SESI & PROGRAM KAUNSELING
+   ============================================================ */
+.kn-choice-grid{ display:flex;flex-direction:column;gap:14px; }
+.kn-choice-card{
+  display:flex;align-items:center;gap:14px;background:var(--panel-a);border:1px solid var(--line);
+  border-radius:14px;padding:16px 18px;cursor:pointer;transition:transform .15s ease,border-color .15s ease;
+}
+.kn-choice-card:active{ transform:scale(.98); }
+.kn-choice-icon{
+  width:46px;height:46px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(43,232,208,.12);color:var(--cyan);
+}
+.kn-choice-icon .icon{ width:24px;height:24px; }
+.kn-choice-card.kn-program .kn-choice-icon{ background:rgba(255,111,181,.12);color:var(--pink); }
+.kn-choice-main{ flex:1;min-width:0; }
+.kn-choice-title{ font-family:'Orbitron',sans-serif;font-size:13px;color:var(--text);font-weight:700; }
+.kn-choice-sub{ font-size:11.5px;color:var(--text-dim);margin-top:3px;line-height:1.4; }
+.kn-choice-arrow{ font-size:22px;color:var(--text-dim);flex-shrink:0; }
+
+/* ---------- Kawalan jadual ---------- */
+.kn-week-nav{ display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px; }
+.kn-week-btn{
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;color:var(--text);
+  background:var(--panel-a);border:1px solid var(--line);border-radius:8px;padding:8px 10px;cursor:pointer;flex-shrink:0;
+}
+.kn-week-badge{ font-family:'Orbitron',sans-serif;font-size:11px;color:var(--cyan);font-weight:700;text-align:center;flex:1; }
+.kn-jump-field{ margin-bottom:14px; }
+.kn-jump-field label{ font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:.8px;color:var(--text-dim);text-transform:uppercase;display:block;margin-bottom:4px; }
+.kn-jump-field input{
+  width:100%;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:13.5px;color:var(--text);
+  background:var(--panel-a);border:1px solid var(--line);border-radius:9px;padding:9px 10px;outline:none;color-scheme:dark;
+}
+
+/* ---------- Jadual (ditranspose: Slot/Masa kiri, Hari atas) ---------- */
+.kn-tt-title{
+  font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:.5px;color:var(--text);font-weight:700;
+  margin:18px 0 10px;display:flex;align-items:center;gap:8px;
+}
+.kn-tt-title .bar{ width:4px;height:14px;border-radius:3px;background:linear-gradient(var(--cyan),var(--mint));flex-shrink:0; }
+.kn-tt-wrap{ overflow-x:auto;border-radius:12px;border:1px solid var(--line);-webkit-overflow-scrolling:touch; }
+table.kn-tt{ border-collapse:separate;border-spacing:0;width:100%;min-width:560px;background:var(--panel-b); }
+table.kn-tt th, table.kn-tt td{ padding:5px 4px;text-align:center;font-size:9.5px; }
+table.kn-tt thead th{
+  background:rgba(43,232,208,.08);color:var(--cyan);font-family:'Orbitron',sans-serif;font-weight:700;
+  letter-spacing:.3px;position:sticky;top:0;border-bottom:1px solid var(--line);font-size:8.5px;text-transform:uppercase;
+}
+table.kn-tt thead th span{ display:block;color:var(--text-dim);font-size:8px;margin-top:2px;font-weight:600;text-transform:none; }
+table.kn-tt tbody th{
+  text-align:left;color:var(--text);font-family:'Orbitron',sans-serif;font-weight:700;font-size:8.5px;
+  background:rgba(255,255,255,.03);position:sticky;left:0;border-right:1px solid var(--line);min-width:56px;padding:6px 6px;
+}
+table.kn-tt tbody th span{ display:block;font-size:7.5px;color:var(--text-dim);font-weight:500;margin-top:2px; }
+table.kn-tt tbody tr:nth-child(odd) td{ background:rgba(255,255,255,.015); }
+table.kn-tt tbody td{ border-bottom:1px solid var(--line); }
+.kn-tt-cell{ border-radius:7px;padding:5px 3px;min-height:30px;font-weight:600; }
+.kn-tt-cell.empty{ background:rgba(57,255,176,.08);color:rgba(57,255,176,.55); }
+.kn-tt-cell.busy{ cursor:pointer; }
+.kn-tt-cell .kn-tt-line{ display:block;font-size:8.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.kn-tt-cell .kn-tt-line.kn-b{ font-weight:700; }
+.kn-tt-empty-note{ padding:24px;text-align:center;color:var(--text-dim);font-family:'Rajdhani',sans-serif;font-size:12.5px; }
+
+/* ---------- Detail popup ---------- */
+.kn-d-label{ font-size:9.5px;letter-spacing:.6px;color:var(--text-dim);text-transform:uppercase;margin-bottom:3px;margin-top:12px; }
+.kn-d-label:first-child{ margin-top:0; }
+.kn-d-val{ font-size:14px;font-weight:600;font-family:'Rajdhani',sans-serif;color:var(--text); }
+
+@media (min-width:700px){
+  table.kn-tt{ min-width:100%; }
+  table.kn-tt th, table.kn-tt td{ font-size:11px;padding:8px 6px; }
+}
