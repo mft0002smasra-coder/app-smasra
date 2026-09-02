@@ -116,13 +116,21 @@ function getPengumuman() {
   var sheet = getSheet("Pengumuman");
   var data = sheet.getDataRange().getValues();
   var list = [];
-  // Lajur: A = link gambar (pilihan), B = teks pengumuman
+  var todayKey = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || "GMT+8", "yyyy-MM-dd");
+  // Lajur: A = link gambar (pilihan), B = teks pengumuman, C = tarikh tamat (pilihan)
   for (var i = 1; i < data.length; i++) {
     var gambar = data[i][0];
     var teks = data[i][1];
-    if (teks) {
-      list.push({ gambar: gambar || "", teks: teks });
+    var tarikhTamatRaw = data[i][2];
+    if (!teks) continue;
+
+    var tarikhTamatKey = "";
+    if (tarikhTamatRaw) {
+      tarikhTamatKey = Utilities.formatDate(new Date(tarikhTamatRaw), Session.getScriptTimeZone() || "GMT+8", "yyyy-MM-dd");
+      if (tarikhTamatKey < todayKey) continue; // dah tamat — langkau
     }
+
+    list.push({ gambar: gambar || "", teks: teks, tarikhTamat: tarikhTamatKey });
   }
   list.reverse(); // pengumuman terbaru dahulu
   return jsonResponse(list);
@@ -155,8 +163,12 @@ function addPengumuman(body) {
   if (!body.teks || !String(body.teks).trim()) {
     return jsonResponse({ success: false, message: "Teks pengumuman tidak boleh kosong." });
   }
+  if (!body.tarikhTamat) {
+    return jsonResponse({ success: false, message: "Sila tetapkan tarikh tamat hebahan." });
+  }
+  ensureTimezone();
   var sheet = getSheet("Pengumuman");
-  sheet.appendRow([body.gambar || "", body.teks]);
+  sheet.appendRow([body.gambar || "", body.teks, new Date(body.tarikhTamat)]);
   return jsonResponse({ success: true });
 }
 

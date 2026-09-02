@@ -96,6 +96,9 @@
       <input class="field-input" type="url" id="pengumuman-gambar" placeholder="https://lh3.googleusercontent.com/d/...">
       <label class="field-label" for="pengumuman-teks" style="margin-top:14px">Teks Hebahan</label>
       <textarea class="field-input" id="pengumuman-teks" placeholder="Tulis pengumuman di sini..." required></textarea>
+      <label class="field-label" for="pengumuman-tarikh-tamat" style="margin-top:14px">Tarikh Tamat Hebahan</label>
+      <input class="field-input" type="date" id="pengumuman-tarikh-tamat" required>
+      <div class="sub-dim" style="margin-bottom:0;margin-top:4px">Hebahan akan hilang automatik dari senarai selepas tarikh ni.</div>
       <div class="error-text hidden" id="pengumuman-error"></div>
       <div class="modal-actions">
         <button type="button" class="btn-ghost" onclick="closeModal()">Batal</button>
@@ -117,7 +120,12 @@
     loadPengumumanList("pengumuman-list");
   }
 
-  function openModal() { document.getElementById("modal-overlay").classList.remove("hidden"); }
+  function openModal() {
+    document.getElementById("modal-overlay").classList.remove("hidden");
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    document.getElementById("pengumuman-tarikh-tamat").value = d.toISOString().slice(0, 10);
+  }
   function closeModal() {
     document.getElementById("modal-overlay").classList.add("hidden");
     document.getElementById("pengumuman-form").reset();
@@ -128,10 +136,16 @@
     e.preventDefault();
     const teks = document.getElementById("pengumuman-teks").value.trim();
     const gambar = document.getElementById("pengumuman-gambar").value.trim();
+    const tarikhTamat = document.getElementById("pengumuman-tarikh-tamat").value;
     const errEl = document.getElementById("pengumuman-error");
     errEl.classList.add("hidden");
     if (!teks) {
       errEl.textContent = "Sila isi teks pengumuman.";
+      errEl.classList.remove("hidden");
+      return;
+    }
+    if (!tarikhTamat) {
+      errEl.textContent = "Sila tetapkan tarikh tamat hebahan.";
       errEl.classList.remove("hidden");
       return;
     }
@@ -141,7 +155,7 @@
     try {
       const res = await fetch(API_URL, {
         method: "POST",
-        body: JSON.stringify({ action: "addPengumuman", email: currentUser.email, teks: teks, gambar: gambar }),
+        body: JSON.stringify({ action: "addPengumuman", email: currentUser.email, teks: teks, gambar: gambar, tarikhTamat: tarikhTamat }),
       });
       const data = await res.json();
       if (data.success) {

@@ -60,6 +60,15 @@ Google Apps Script **tak auto-update** URL Web App yang sedia ada bila awak edit
 
 Kalau tak buat step ni, URL `.../exec` awak akan terus guna kod LAMA walaupun fail Code.gs dah ditukar — ini punca biasa "fungsi baru tak jalan" atau "banner tak keluar macam patut".
 
+## Menyediakan Hebahan (Tarikh Tamat)
+
+Tab **"Pengumuman"** kini perlukan **lajur C** untuk Tarikh Tamat:
+`A: Link Gambar (pilihan) | B: Teks | C: Tarikh Tamat`
+
+Hebahan lama (yang belum ada nilai di lajur C) akan **terus dipaparkan selama-lamanya** — tak jadi masalah, cuma hebahan BAHARU sahaja akan ada tarikh luput. Bila tarikh tamat dah lepas, hebahan automatik hilang dari senarai (tak dipadam, cuma disembunyikan — data tetap ada dalam Sheet).
+
+**Redeploy Apps Script (Code.gs)** lepas kemas kini ni.
+
 ## Menyediakan modul Event
 
 **1. Tambah lajur "Role2" di DatabaseSTAFF**
