@@ -4,7 +4,7 @@
    ============================================================ */
 
 // GANTI dengan URL Web App selepas Code.gs Kaunseling disambung
-const KN_API_URL = "https://script.google.com/macros/s/AKfycbyZuruVgM_cKNdeHltzRIFbTXWOTnemNNFT9SaUZ0DvgFCgl9ursgFO2z7NbfI_73mc/exec";
+const KN_API_URL = "PASTE_URL_APPS_SCRIPT_KAUNSELING_ANDA_DI_SINI";
 function knApiConfigured() { return KN_API_URL && KN_API_URL.indexOf("PASTE_") !== 0; }
 
 const KN_JAWATAN_KAUNSELOR = "PPP (KAUNSELOR SEPENUH MASA)";
@@ -42,12 +42,18 @@ function knSlotsForDate(dateStr) {
 }
 function knSlotIdFor(index) { return "SLOT " + (index + 1); }
 
-const KN_COLOR_PALETTE = ["--cyan", "--blue", "--mint", "--amber", "--pink", "--violet"];
+const KN_COLOR_PALETTE = ['#6B7280','#8B95A5','#4B5563','#9CA3AF','#5B6472','#7C8798','#3F4753','#A0A8B4','#616B7A','#727B89'];
 function knHashStr(str) { let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return h; }
 function knColorForKey(key) {
-  if (!key) return getComputedStyle(document.documentElement).getPropertyValue("--text-dim").trim();
-  const varName = KN_COLOR_PALETTE[knHashStr(String(key).trim().toUpperCase()) % KN_COLOR_PALETTE.length];
-  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  if (!key) return "#9CA3AF";
+  return KN_COLOR_PALETTE[knHashStr(String(key).trim().toUpperCase()) % KN_COLOR_PALETTE.length];
+}
+function knTextColorForBg(hex) {
+  const c = hex.replace("#", "");
+  const r = parseInt(c.substr(0, 2), 16) / 255, g = parseInt(c.substr(2, 2), 16) / 255, b = parseInt(c.substr(4, 2), 16) / 255;
+  const lin = (v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+  const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  return L > 0.5 ? "#22242A" : "#FFFFFF";
 }
 
 function knFmtDate(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
@@ -302,8 +308,9 @@ function knBuildTimetable(sessions, tableElId) {
       });
       if (match) {
         const col = knColorForKey(match.KAUNSELOR);
+        const fg = knTextColorForBg(col);
         const data = JSON.stringify({ tarikh: dStr, jenis: match.JENIS, kaunselor: match.KAUNSELOR, tingkatan: match.TINGKATAN, perkara: match.PERKARA, murid: match.MURID, waktuMula: match.WAKTU_MULA, waktuTamat: match.WAKTU_TAMAT }).replace(/'/g, "&apos;");
-        return `<td><div class="kn-tt-cell busy" style="background:${col}22;border:1px solid ${col};color:${col}" onclick='knOpenDetail(${data})'><span class="kn-tt-line kn-b">${(match.KAUNSELOR || "").split(" ")[0]}</span><span class="kn-tt-line">${match.PERKARA || ""}</span></div></td>`;
+        return `<td><div class="kn-tt-cell busy" style="background:${col};color:${fg}" onclick='knOpenDetail(${data})'><span class="kn-tt-line kn-b">${(match.KAUNSELOR || "").split(" ")[0]}</span><span class="kn-tt-line">${match.PERKARA || ""}</span></div></td>`;
       }
       return `<td><div class="kn-tt-cell empty">Kosong</div></td>`;
     }).join("");

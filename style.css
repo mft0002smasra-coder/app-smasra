@@ -989,7 +989,7 @@ textarea.kn-field{ resize:vertical;min-height:44px;font-family:'Rajdhani',sans-s
 .kn-submit-btn:disabled{ opacity:.55;cursor:not-allowed; }
 .kn-submit-btn:not(:disabled):hover{ filter:brightness(1.15); }
 
-/* ---------- Kawalan jadual ---------- */
+/* ---------- Kawalan jadual (kekal tema app) ---------- */
 .kn-week-nav{ display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px; }
 .kn-week-btn{
   font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;color:var(--text);
@@ -1003,33 +1003,33 @@ textarea.kn-field{ resize:vertical;min-height:44px;font-family:'Rajdhani',sans-s
   background:var(--panel-a);border:1px solid var(--line);border-radius:9px;padding:9px 10px;outline:none;color-scheme:dark;
 }
 
-/* ---------- Jadual (ditranspose: Slot/Masa kiri, Hari atas) ---------- */
+/* ---------- Jadual (tema ASAL kod rujukan — kepala gelap, badan putih, emas) ---------- */
 .kn-tt-title{
   font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:.5px;color:var(--text);font-weight:700;
   margin:18px 0 10px;display:flex;align-items:center;gap:8px;
 }
 .kn-tt-title .bar{ width:4px;height:14px;border-radius:3px;background:linear-gradient(var(--cyan),var(--mint));flex-shrink:0; }
-.kn-tt-wrap{ overflow-x:auto;border-radius:12px;border:1px solid var(--line);-webkit-overflow-scrolling:touch; }
-table.kn-tt{ border-collapse:separate;border-spacing:0;width:100%;min-width:560px;background:var(--panel-b); }
-table.kn-tt th, table.kn-tt td{ padding:5px 4px;text-align:center;font-size:9.5px; }
+.kn-tt-wrap{ overflow-x:auto;border-radius:18px;box-shadow:0 24px 60px -20px rgba(20,20,25,0.30);border:1px solid #E7E9EC; }
+table.kn-tt{ border-collapse:separate;border-spacing:0;width:100%;min-width:560px;background:#FFFFFF; }
+table.kn-tt th, table.kn-tt td{ padding:6px;text-align:center;font-size:10px; }
 table.kn-tt thead th{
-  background:rgba(43,232,208,.08);color:var(--cyan);font-family:'Orbitron',sans-serif;font-weight:700;
-  letter-spacing:.3px;position:sticky;top:0;border-bottom:1px solid var(--line);font-size:8.5px;text-transform:uppercase;
+  background:#3A3D43;color:#B7BBC2;font-family:'Rajdhani',sans-serif;font-weight:700;
+  letter-spacing:.4px;position:sticky;top:0;border-bottom:1px solid #4A4D53;
 }
-table.kn-tt thead th span{ display:block;color:var(--text-dim);font-size:8px;margin-top:2px;font-weight:600;text-transform:none; }
+table.kn-tt thead th span{ display:block;color:#C9CDD3;font-size:8.5px;margin-top:2px;font-weight:600; }
 table.kn-tt tbody th{
-  text-align:left;color:var(--text);font-family:'Orbitron',sans-serif;font-weight:700;font-size:8.5px;
-  background:rgba(255,255,255,.03);position:sticky;left:0;border-right:1px solid var(--line);min-width:56px;padding:6px 6px;
+  text-align:left;color:#F1F2F4;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;
+  background:#2F3237;position:sticky;left:0;border-right:1px solid #4A4D53;min-width:58px;padding:8px 8px;
 }
-table.kn-tt tbody th span{ display:block;font-size:7.5px;color:var(--text-dim);font-weight:500;margin-top:2px; }
-table.kn-tt tbody tr:nth-child(odd) td{ background:rgba(255,255,255,.015); }
-table.kn-tt tbody td{ border-bottom:1px solid var(--line); }
-.kn-tt-cell{ border-radius:7px;padding:5px 3px;min-height:30px;font-weight:600; }
-.kn-tt-cell.empty{ background:rgba(57,255,176,.08);color:rgba(57,255,176,.55); }
+table.kn-tt tbody th span{ display:block;font-size:8.5px;color:#B7BBC2;font-weight:500;margin-top:2px; }
+table.kn-tt tbody tr:nth-child(odd) td{ background:#FAFBFC; }
+table.kn-tt tbody td{ border-bottom:1px solid #F0F1F3; }
+.kn-tt-cell{ border-radius:8px;padding:5px 3px;min-height:32px;font-weight:600; }
+.kn-tt-cell.empty{ background:rgba(47,224,138,0.10);color:rgba(20,120,75,0.55); }
 .kn-tt-cell.busy{ cursor:pointer; }
-.kn-tt-cell .kn-tt-line{ display:block;font-size:8.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.kn-tt-cell .kn-tt-line{ display:block;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
 .kn-tt-cell .kn-tt-line.kn-b{ font-weight:700; }
-.kn-tt-empty-note{ padding:24px;text-align:center;color:var(--text-dim);font-family:'Rajdhani',sans-serif;font-size:12.5px; }
+.kn-tt-empty-note{ padding:26px;text-align:center;color:#5B5F68;font-family:'Rajdhani',sans-serif;font-size:12.5px;background:#fff; }
 
 /* ---------- Detail popup ---------- */
 .kn-d-label{ font-size:9.5px;letter-spacing:.6px;color:var(--text-dim);text-transform:uppercase;margin-bottom:3px;margin-top:12px; }
@@ -1038,5 +1038,5 @@ table.kn-tt tbody td{ border-bottom:1px solid var(--line); }
 
 @media (min-width:700px){
   table.kn-tt{ min-width:100%; }
-  table.kn-tt th, table.kn-tt td{ font-size:11px;padding:8px 6px; }
+  table.kn-tt th, table.kn-tt td{ font-size:11.5px;padding:8px 6px; }
 }
