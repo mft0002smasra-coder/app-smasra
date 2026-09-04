@@ -1032,6 +1032,14 @@ table.kn-tt tbody td{ border-bottom:1px solid #F0F1F3; }
 .kn-tt-cell.busy{ cursor:pointer; }
 .kn-tt-cell .kn-tt-line{ display:block;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
 .kn-tt-cell .kn-tt-line.kn-b{ font-weight:700; }
+/* Bahagian tempahan yang merentasi >1 slot berturutan — sambung visual tanpa rowspan */
+td.kn-tt-td-start{ padding-bottom:0 !important; }
+td.kn-tt-td-mid{ padding-top:0 !important;padding-bottom:0 !important; }
+td.kn-tt-td-end{ padding-top:0 !important; }
+.kn-tt-cell.kn-part-start{ border-radius:8px 8px 0 0;min-height:26px; }
+.kn-tt-cell.kn-part-mid{ border-radius:0;min-height:22px; }
+.kn-tt-cell.kn-part-end{ border-radius:0 0 8px 8px;min-height:22px; }
+table.kn-tt tbody tr td.kn-tt-td-mid, table.kn-tt tbody tr td.kn-tt-td-end{ border-top:none; }
 .kn-tt-empty-note{ padding:26px;text-align:center;color:#5B5F68;font-family:'Rajdhani',sans-serif;font-size:12.5px;background:#fff; }
 
 /* ---------- Detail popup ---------- */

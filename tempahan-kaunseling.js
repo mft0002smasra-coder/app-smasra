@@ -4,7 +4,7 @@
    ============================================================ */
 
 // GANTI dengan URL Web App selepas Code.gs Kaunseling disambung
-const KN_API_URL = "https://script.google.com/macros/s/AKfycbyZuruVgM_cKNdeHltzRIFbTXWOTnemNNFT9SaUZ0DvgFCgl9ursgFO2z7NbfI_73mc/exec";
+const KN_API_URL = "PASTE_URL_APPS_SCRIPT_KAUNSELING_ANDA_DI_SINI";
 function knApiConfigured() { return KN_API_URL && KN_API_URL.indexOf("PASTE_") !== 0; }
 
 const KN_JAWATAN_KAUNSELOR = "PPP (KAUNSELOR SEPENUH MASA)";
@@ -277,12 +277,9 @@ function knNorm(str) { return String(str || "").trim().toUpperCase().replace(/\s
 
 /**
  * Bina "lajur" satu hari: array 14 kedudukan (satu bagi setiap slot).
- * Setiap kedudukan salah satu:
- *   "na"     — slot tu tak wujud pada hari ni (cth Jumaat lepas slot 8)
- *   "empty"  — slot kosong, tiada tempahan
- *   "skip"   — diliputi oleh rowspan tempahan yang bermula di slot atasnya
- *   {booking, span} — permulaan tempahan, merangkumi `span` slot berturutan
- * Sesi Kaunseling diutamakan berbanding Program bila bertindih slot sama.
+ * Setiap kedudukan: {type:"na"} / {type:"empty"} / {type:"busy", booking, part}
+ * dengan part = "solo"|"start"|"mid"|"end" untuk tempahan merentasi >1 slot.
+ * Sesi Kaunseling diutamakan; antara Program, yang TERKINI (rowId besar) menang.
  */
 function knBuildDayColumn(dStr, sessions) {
   const dayInfo = knSlotsForDate(dStr);
@@ -292,8 +289,8 @@ function knBuildDayColumn(dStr, sessions) {
     .filter((b) => knExpandSessionDates(b).indexOf(dStr) !== -1)
     .sort((a, b) => {
       const aSesi = a.JENIS === "Sesi Kaunseling", bSesi = b.JENIS === "Sesi Kaunseling";
-      if (aSesi !== bSesi) return aSesi ? -1 : 1; // Sesi Kaunseling sentiasa diutamakan
-      return (b.rowId || 0) - (a.rowId || 0); // antara Program, yang TERKINI (rowId besar) diutamakan
+      if (aSesi !== bSesi) return aSesi ? -1 : 1;
+      return (b.rowId || 0) - (a.rowId || 0);
     });
 
   matches.forEach((b) => {
@@ -301,29 +298,32 @@ function knBuildDayColumn(dStr, sessions) {
     const numTamat = parseInt(String(b.WAKTU_TAMAT || "").replace(/[^0-9]/g, ""), 10) || numMula;
     const lo = Math.min(numMula, numTamat) - 1, hi = Math.max(numMula, numTamat) - 1;
     for (let i = lo; i <= hi && i < KN_MAX_SLOTS; i++) {
-      if (i >= 0 && claim[i] === null) claim[i] = { booking: b, covered: false };
+      if (i >= 0 && claim[i] === null) claim[i] = b;
     }
   });
 
   const result = new Array(KN_MAX_SLOTS);
   for (let i = 0; i < KN_MAX_SLOTS; i++) {
-    if (!dayInfo.slots[i]) { result[i] = "na"; continue; }
-    if (!claim[i]) { result[i] = "empty"; continue; }
-    if (claim[i].covered) { result[i] = "skip"; continue; }
-    const b = claim[i].booking;
-    let span = 1;
-    for (let j = i + 1; j < KN_MAX_SLOTS; j++) {
-      if (claim[j] && claim[j].booking === b) { claim[j].covered = true; span++; } else break;
-    }
-    result[i] = { booking: b, span };
+    if (!dayInfo.slots[i]) { result[i] = { type: "na" }; continue; }
+    const b = claim[i];
+    if (!b) { result[i] = { type: "empty" }; continue; }
+    const prevSame = i > 0 && claim[i - 1] === b;
+    const nextSame = i < KN_MAX_SLOTS - 1 && claim[i + 1] === b;
+    let part = "solo";
+    if (!prevSame && nextSame) part = "start";
+    else if (prevSame && nextSame) part = "mid";
+    else if (prevSame && !nextSame) part = "end";
+    result[i] = { type: "busy", booking: b, part };
   }
   return result;
 }
 
 /**
  * Bina jadual DITRANSPOSE: setiap BARIS = satu slot, setiap LAJUR = satu
- * hari dalam minggu semasa. Tempahan yang merangkumi beberapa slot
- * berturutan digabung (rowspan) jadi SATU kad, bukan berulang tiap baris.
+ * hari dalam minggu semasa. SETIAP sel SENTIASA di-emit (tiada rowspan/skip)
+ * — elak jadual tersasar. Tempahan merentasi >1 slot berturutan dipaparkan
+ * dengan warna sama tanpa sudut bulat/pemisah antara bahagian (nampak
+ * bercantum) dan label cuma keluar sekali di bahagian permulaan.
  */
 function knBuildTimetable(sessions, tableElId) {
   const weekDates = [];
@@ -340,17 +340,18 @@ function knBuildTimetable(sessions, tableElId) {
     let cells = "";
     for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
       const cell = dayColumns[dayIdx][slotIdx];
-      if (cell === "skip") continue; // diliputi rowspan baris atas — jangan emit <td>
-      if (cell === "na") { cells += `<td><div class="kn-tt-cell empty">—</div></td>`; continue; }
-      if (cell === "empty") { cells += `<td><div class="kn-tt-cell empty">Kosong</div></td>`; continue; }
+      if (cell.type === "na") { cells += `<td><div class="kn-tt-cell empty">—</div></td>`; continue; }
+      if (cell.type === "empty") { cells += `<td><div class="kn-tt-cell empty">Kosong</div></td>`; continue; }
 
       const b = cell.booking;
       const isSesi = b.JENIS === "Sesi Kaunseling";
       const col = isSesi ? KN_COLOR_SESI : KN_COLOR_PROGRAM;
       const fg = knTextColorForBg(col);
+      const partClass = "kn-part-" + cell.part;
+      const showLabel = cell.part === "solo" || cell.part === "start";
+      const label = showLabel ? `<span class="kn-tt-line kn-b">${(b.KAUNSELOR || "").split(" ")[0]}</span><span class="kn-tt-line">${b.PERKARA || ""}</span>` : "";
       const data = JSON.stringify({ rowId: b.rowId, tarikh: dateStrs[dayIdx], jenis: b.JENIS, kaunselor: b.KAUNSELOR, tingkatan: b.TINGKATAN, perkara: b.PERKARA, murid: b.MURID, waktuMula: b.WAKTU_MULA, waktuTamat: b.WAKTU_TAMAT, tarikhMula: b.TARIKH_MULA, tarikhTamat: b.TARIKH_TAMAT }).replace(/'/g, "&apos;");
-      const rowspanAttr = cell.span > 1 ? ` rowspan="${cell.span}"` : "";
-      cells += `<td${rowspanAttr}><div class="kn-tt-cell busy" style="background:${col};color:${fg}" onclick='knOpenDetail(${data})'><span class="kn-tt-line kn-b">${(b.KAUNSELOR || "").split(" ")[0]}</span><span class="kn-tt-line">${b.PERKARA || ""}</span></div></td>`;
+      cells += `<td class="kn-tt-td-${cell.part}"><div class="kn-tt-cell busy ${partClass}" style="background:${col};color:${fg}" onclick='knOpenDetail(${data})'>${label}</div></td>`;
     }
     const slotLabel = knSlotIdFor(slotIdx);
     rows.push(`<tr><th>${slotLabel}<span>${KN_SLOTS_WEEKDAY[slotIdx]}</span></th>${cells}</tr>`);
