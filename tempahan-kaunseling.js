@@ -4,7 +4,7 @@
    ============================================================ */
 
 // GANTI dengan URL Web App selepas Code.gs Kaunseling disambung
-const KN_API_URL = "https://script.google.com/macros/s/AKfycbyZuruVgM_cKNdeHltzRIFbTXWOTnemNNFT9SaUZ0DvgFCgl9ursgFO2z7NbfI_73mc/exec";
+const KN_API_URL = "PASTE_URL_APPS_SCRIPT_KAUNSELING_ANDA_DI_SINI";
 function knApiConfigured() { return KN_API_URL && KN_API_URL.indexOf("PASTE_") !== 0; }
 
 const KN_JAWATAN_KAUNSELOR = "PPP (KAUNSELOR SEPENUH MASA)";
@@ -42,12 +42,6 @@ function knSlotsForDate(dateStr) {
 }
 function knSlotIdFor(index) { return "SLOT " + (index + 1); }
 
-const KN_COLOR_PALETTE = ['#6B7280','#8B95A5','#4B5563','#9CA3AF','#5B6472','#7C8798','#3F4753','#A0A8B4','#616B7A','#727B89'];
-function knHashStr(str) { let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return h; }
-function knColorForKey(key) {
-  if (!key) return "#9CA3AF";
-  return KN_COLOR_PALETTE[knHashStr(String(key).trim().toUpperCase()) % KN_COLOR_PALETTE.length];
-}
 function knTextColorForBg(hex) {
   const c = hex.replace("#", "");
   const r = parseInt(c.substr(0, 2), 16) / 255, g = parseInt(c.substr(2, 2), 16) / 255, b = parseInt(c.substr(4, 2), 16) / 255;
@@ -277,14 +271,61 @@ function knExpandSessionDates(b) {
   return dates;
 }
 
+const KN_COLOR_SESI = "#3B7DD8";
+const KN_COLOR_PROGRAM = "#D9A62E";
+function knNorm(str) { return String(str || "").trim().toUpperCase().replace(/\s+/g, " "); }
+
 /**
- * Bina jadual DITRANSPOSE: setiap BARIS = satu slot (+ masa hari biasa di
- * bawah label), setiap LAJUR = satu hari dalam minggu semasa. Jumaat ada
- * bilangan slot lebih sikit (8) — sel lebih daripada tu ditandakan "—".
+ * Bina "lajur" satu hari: array 14 kedudukan (satu bagi setiap slot).
+ * Setiap kedudukan salah satu:
+ *   "na"     — slot tu tak wujud pada hari ni (cth Jumaat lepas slot 8)
+ *   "empty"  — slot kosong, tiada tempahan
+ *   "skip"   — diliputi oleh rowspan tempahan yang bermula di slot atasnya
+ *   {booking, span} — permulaan tempahan, merangkumi `span` slot berturutan
+ * Sesi Kaunseling diutamakan berbanding Program bila bertindih slot sama.
+ */
+function knBuildDayColumn(dStr, sessions) {
+  const dayInfo = knSlotsForDate(dStr);
+  const claim = new Array(KN_MAX_SLOTS).fill(null);
+
+  const matches = sessions
+    .filter((b) => knExpandSessionDates(b).indexOf(dStr) !== -1)
+    .sort((a, b) => (a.JENIS === "Sesi Kaunseling" ? -1 : 1) - (b.JENIS === "Sesi Kaunseling" ? -1 : 1));
+
+  matches.forEach((b) => {
+    const numMula = parseInt(String(b.WAKTU_MULA || "").replace(/[^0-9]/g, ""), 10);
+    const numTamat = parseInt(String(b.WAKTU_TAMAT || "").replace(/[^0-9]/g, ""), 10) || numMula;
+    const lo = Math.min(numMula, numTamat) - 1, hi = Math.max(numMula, numTamat) - 1;
+    for (let i = lo; i <= hi && i < KN_MAX_SLOTS; i++) {
+      if (i >= 0 && claim[i] === null) claim[i] = { booking: b, covered: false };
+    }
+  });
+
+  const result = new Array(KN_MAX_SLOTS);
+  for (let i = 0; i < KN_MAX_SLOTS; i++) {
+    if (!dayInfo.slots[i]) { result[i] = "na"; continue; }
+    if (!claim[i]) { result[i] = "empty"; continue; }
+    if (claim[i].covered) { result[i] = "skip"; continue; }
+    const b = claim[i].booking;
+    let span = 1;
+    for (let j = i + 1; j < KN_MAX_SLOTS; j++) {
+      if (claim[j] && claim[j].booking === b) { claim[j].covered = true; span++; } else break;
+    }
+    result[i] = { booking: b, span };
+  }
+  return result;
+}
+
+/**
+ * Bina jadual DITRANSPOSE: setiap BARIS = satu slot, setiap LAJUR = satu
+ * hari dalam minggu semasa. Tempahan yang merangkumi beberapa slot
+ * berturutan digabung (rowspan) jadi SATU kad, bukan berulang tiap baris.
  */
 function knBuildTimetable(sessions, tableElId) {
   const weekDates = [];
   for (let i = 0; i < 7; i++) weekDates.push(knAddDays(knWeekMonday, i));
+  const dateStrs = weekDates.map(knFmtDate);
+  const dayColumns = dateStrs.map((dStr) => knBuildDayColumn(dStr, sessions));
 
   const thead = "<thead><tr><th>Slot / Masa</th>" +
     weekDates.map((d, i) => `<th>${KN_WEEK_COLS[i]}<span>${knFmtDateShort(d)}</span></th>`).join("") +
@@ -292,28 +333,22 @@ function knBuildTimetable(sessions, tableElId) {
 
   const rows = [];
   for (let slotIdx = 0; slotIdx < KN_MAX_SLOTS; slotIdx++) {
-    const slotLabel = knSlotIdFor(slotIdx);
-    const cells = weekDates.map((d) => {
-      const dStr = knFmtDate(d);
-      const dayInfo = knSlotsForDate(dStr);
-      if (!dayInfo.slots[slotIdx]) return `<td><div class="kn-tt-cell empty">—</div></td>`;
+    let cells = "";
+    for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+      const cell = dayColumns[dayIdx][slotIdx];
+      if (cell === "skip") continue; // diliputi rowspan baris atas — jangan emit <td>
+      if (cell === "na") { cells += `<td><div class="kn-tt-cell empty">—</div></td>`; continue; }
+      if (cell === "empty") { cells += `<td><div class="kn-tt-cell empty">Kosong</div></td>`; continue; }
 
-      const match = sessions.find((b) => {
-        const dates = knExpandSessionDates(b);
-        if (dates.indexOf(dStr) === -1) return false;
-        const numMula = parseInt(String(b.WAKTU_MULA || "").replace(/[^0-9]/g, ""), 10);
-        const numTamat = parseInt(String(b.WAKTU_TAMAT || "").replace(/[^0-9]/g, ""), 10) || numMula;
-        const lo = Math.min(numMula, numTamat), hi = Math.max(numMula, numTamat);
-        return (slotIdx + 1) >= lo && (slotIdx + 1) <= hi;
-      });
-      if (match) {
-        const col = knColorForKey(match.KAUNSELOR);
-        const fg = knTextColorForBg(col);
-        const data = JSON.stringify({ tarikh: dStr, jenis: match.JENIS, kaunselor: match.KAUNSELOR, tingkatan: match.TINGKATAN, perkara: match.PERKARA, murid: match.MURID, waktuMula: match.WAKTU_MULA, waktuTamat: match.WAKTU_TAMAT }).replace(/'/g, "&apos;");
-        return `<td><div class="kn-tt-cell busy" style="background:${col};color:${fg}" onclick='knOpenDetail(${data})'><span class="kn-tt-line kn-b">${(match.KAUNSELOR || "").split(" ")[0]}</span><span class="kn-tt-line">${match.PERKARA || ""}</span></div></td>`;
-      }
-      return `<td><div class="kn-tt-cell empty">Kosong</div></td>`;
-    }).join("");
+      const b = cell.booking;
+      const isSesi = b.JENIS === "Sesi Kaunseling";
+      const col = isSesi ? KN_COLOR_SESI : KN_COLOR_PROGRAM;
+      const fg = knTextColorForBg(col);
+      const data = JSON.stringify({ tarikh: dateStrs[dayIdx], jenis: b.JENIS, kaunselor: b.KAUNSELOR, tingkatan: b.TINGKATAN, perkara: b.PERKARA, murid: b.MURID, waktuMula: b.WAKTU_MULA, waktuTamat: b.WAKTU_TAMAT }).replace(/'/g, "&apos;");
+      const rowspanAttr = cell.span > 1 ? ` rowspan="${cell.span}"` : "";
+      cells += `<td${rowspanAttr}><div class="kn-tt-cell busy" style="background:${col};color:${fg}" onclick='knOpenDetail(${data})'><span class="kn-tt-line kn-b">${(b.KAUNSELOR || "").split(" ")[0]}</span><span class="kn-tt-line">${b.PERKARA || ""}</span></div></td>`;
+    }
+    const slotLabel = knSlotIdFor(slotIdx);
     rows.push(`<tr><th>${slotLabel}<span>${KN_SLOTS_WEEKDAY[slotIdx]}</span></th>${cells}</tr>`);
   }
 
@@ -321,39 +356,31 @@ function knBuildTimetable(sessions, tableElId) {
 }
 
 function knRenderAllTimetables() {
-  const sesiAll = knBookings.filter((b) => b.JENIS === "Sesi Kaunseling");
-  knBuildTimetable(sesiAll, "kn-tt-all");
+  // Jadual utama kini gabungkan KEDUA-DUA jenis (Sesi + Program), diwarnakan ikut jenis.
+  knBuildTimetable(knBookings, "kn-tt-all");
 
-  // Auto-appear jadual peribadi kaunselor (tiada dropdown filter) — hanya
-  // jika staf log masuk sendiri seorang Kaunselor Sepenuh Masa DAN ada data.
+  // Auto-appear jadual peribadi kaunselor (SATU jadual gabungan, tiada dropdown filter)
+  // — hanya jika staf log masuk sendiri seorang Kaunselor Sepenuh Masa DAN ada data.
   const sesiWrap = document.getElementById("kn-my-sesi-wrap");
-  const programWrap = document.getElementById("kn-my-program-wrap");
   const jawatanUpper = String(knCurrentUser && knCurrentUser.jawatan || "").toUpperCase();
   const myName = knCurrentUser && knCurrentUser.nama || "";
 
   if (jawatanUpper.indexOf("KAUNSELOR SEPENUH MASA") === -1 || !myName) {
     sesiWrap.classList.add("hidden");
-    programWrap.classList.add("hidden");
     return;
   }
 
-  const sesiMine = sesiAll.filter((b) => b.KAUNSELOR === myName);
-  const programMine = knBookings.filter((b) => b.JENIS === "Program Kaunseling" && b.KAUNSELOR === myName);
+  // Padanan nama fleksibel (trim + huruf besar) — elak terlepas sebab spasi/case beza
+  // antara nama dalam borang (senarai staf) dengan nama log masuk (Database utama).
+  const myNameNorm = knNorm(myName);
+  const mine = knBookings.filter((b) => knNorm(b.KAUNSELOR) === myNameNorm);
 
-  if (sesiMine.length) {
-    document.getElementById("kn-my-sesi-title").textContent = "Jadual Sesi Kaunseling Saya — " + myName;
-    knBuildTimetable(sesiMine, "kn-tt-my-sesi");
+  if (mine.length) {
+    document.getElementById("kn-my-sesi-title").textContent = "Jadual Kaunseling Saya — " + myName;
+    knBuildTimetable(mine, "kn-tt-my-sesi");
     sesiWrap.classList.remove("hidden");
   } else {
     sesiWrap.classList.add("hidden");
-  }
-
-  if (programMine.length) {
-    document.getElementById("kn-my-program-title").textContent = "Jadual Program Kaunseling Saya — " + myName;
-    knBuildTimetable(programMine, "kn-tt-my-program");
-    programWrap.classList.remove("hidden");
-  } else {
-    programWrap.classList.add("hidden");
   }
 }
 

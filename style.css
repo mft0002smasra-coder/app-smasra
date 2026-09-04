@@ -1009,6 +1009,9 @@ textarea.kn-field{ resize:vertical;min-height:44px;font-family:'Rajdhani',sans-s
   margin:18px 0 10px;display:flex;align-items:center;gap:8px;
 }
 .kn-tt-title .bar{ width:4px;height:14px;border-radius:3px;background:linear-gradient(var(--cyan),var(--mint));flex-shrink:0; }
+.kn-tt-legend{ display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap; }
+.kn-tt-legend span{ display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--text-dim);font-family:'Rajdhani',sans-serif;font-weight:600; }
+.kn-tt-legend i{ width:10px;height:10px;border-radius:3px;display:inline-block; }
 .kn-tt-wrap{ overflow-x:auto;border-radius:18px;box-shadow:0 24px 60px -20px rgba(20,20,25,0.30);border:1px solid #E7E9EC; }
 table.kn-tt{ border-collapse:separate;border-spacing:0;width:100%;min-width:560px;background:#FFFFFF; }
 table.kn-tt th, table.kn-tt td{ padding:6px;text-align:center;font-size:10px; }
