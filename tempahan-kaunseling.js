@@ -4,7 +4,7 @@
    ============================================================ */
 
 // GANTI dengan URL Web App selepas Code.gs Kaunseling disambung
-const KN_API_URL = "https://script.google.com/macros/s/AKfycbyZuruVgM_cKNdeHltzRIFbTXWOTnemNNFT9SaUZ0DvgFCgl9ursgFO2z7NbfI_73mc/exec";
+const KN_API_URL = "PASTE_URL_APPS_SCRIPT_KAUNSELING_ANDA_DI_SINI";
 function knApiConfigured() { return KN_API_URL && KN_API_URL.indexOf("PASTE_") !== 0; }
 
 const KN_JAWATAN_KAUNSELOR = "PPP (KAUNSELOR SEPENUH MASA)";
@@ -277,11 +277,10 @@ function knNorm(str) { return String(str || "").trim().toUpperCase().replace(/\s
 
 /**
  * Bina "lajur" satu hari: array 14 kedudukan (satu bagi setiap slot).
- * Setiap kedudukan: {type:"na"} / {type:"empty"} / {type:"busy", booking, part}
- * dengan part = "solo"|"start"|"mid"|"end" untuk tempahan merentasi >1 slot.
+ * Setiap kedudukan: {type:"na"} / {type:"empty"} / {type:"busy", booking}.
  * Sesi Kaunseling diutamakan; antara Program, yang TERKINI (rowId besar) menang.
- * PENTING: setiap slot SENTIASA dapat kedudukan (tiada slot tercicir/kosong
- * tanpa sebab) — keutamaan reliability berbanding sambungan visual sempurna.
+ * Setiap slot INDEPENDEN — tempahan yang merentasi >1 slot papar kad PENUH
+ * (warna + teks) di SETIAP slot yang ditempah, bukan cuma slot pertama.
  */
 function knBuildDayColumn(dStr, sessions) {
   const dayInfo = knSlotsForDate(dStr);
@@ -307,15 +306,7 @@ function knBuildDayColumn(dStr, sessions) {
   const result = new Array(KN_MAX_SLOTS);
   for (let i = 0; i < KN_MAX_SLOTS; i++) {
     if (!dayInfo.slots[i]) { result[i] = { type: "na" }; continue; }
-    const b = claim[i];
-    if (!b) { result[i] = { type: "empty" }; continue; }
-    const prevSame = i > 0 && claim[i - 1] === b;
-    const nextSame = i < KN_MAX_SLOTS - 1 && claim[i + 1] === b;
-    let part = "solo";
-    if (!prevSame && nextSame) part = "start";
-    else if (prevSame && nextSame) part = "mid";
-    else if (prevSame && !nextSame) part = "end";
-    result[i] = { type: "busy", booking: b, part };
+    result[i] = claim[i] ? { type: "busy", booking: claim[i] } : { type: "empty" };
   }
   return result;
 }
@@ -348,11 +339,9 @@ function knBuildTimetable(sessions, tableElId) {
       const isSesi = b.JENIS === "Sesi Kaunseling";
       const col = isSesi ? KN_COLOR_SESI : KN_COLOR_PROGRAM;
       const fg = knTextColorForBg(col);
-      const partClass = "kn-part-" + cell.part;
-      const showLabel = cell.part === "solo" || cell.part === "start";
-      const label = showLabel ? `<span class="kn-tt-line kn-b">${(b.KAUNSELOR || "").split(" ")[0]}</span><span class="kn-tt-line">${b.PERKARA || ""}</span>` : "";
+      const label = `<span class="kn-tt-line kn-b">${(b.KAUNSELOR || "").split(" ")[0]}</span><span class="kn-tt-line">${b.PERKARA || ""}</span>`;
       const data = JSON.stringify({ rowId: b.rowId, tarikh: dateStrs[dayIdx], jenis: b.JENIS, kaunselor: b.KAUNSELOR, tingkatan: b.TINGKATAN, perkara: b.PERKARA, murid: b.MURID, waktuMula: b.WAKTU_MULA, waktuTamat: b.WAKTU_TAMAT, tarikhMula: b.TARIKH_MULA, tarikhTamat: b.TARIKH_TAMAT }).replace(/'/g, "&apos;");
-      cells += `<td class="kn-tt-td-${cell.part}"><div class="kn-tt-cell busy ${partClass}" style="background:${col};color:${fg}" onclick='knOpenDetail(${data})'>${label}</div></td>`;
+      cells += `<td><div class="kn-tt-cell busy" style="background:${col};color:${fg}" onclick='knOpenDetail(${data})'>${label}</div></td>`;
     }
     const slotLabel = knSlotIdFor(slotIdx);
     rows.push(`<tr><th>${slotLabel}<span>${KN_SLOTS_WEEKDAY[slotIdx]}</span></th>${cells}</tr>`);
