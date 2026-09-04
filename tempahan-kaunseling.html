@@ -102,10 +102,7 @@
         </div>
         <div class="kn-tt-wrap"><table class="kn-tt" id="kn-tt-all"></table></div>
 
-        <div id="kn-my-sesi-wrap" class="hidden">
-          <div class="kn-tt-title"><div class="bar"></div><span id="kn-my-sesi-title">Jadual Kaunseling Saya</span></div>
-          <div class="kn-tt-wrap"><table class="kn-tt" id="kn-tt-my-sesi"></table></div>
-        </div>
+        <div id="kn-individual-wrap"></div>
       </div>
     </div>
 
@@ -212,13 +209,42 @@
   <div class="modal-overlay-center hidden" id="kn-detail-overlay">
     <div class="glass modal-sheet">
       <div class="modal-title" id="kn-d-jenis">-</div>
-      <div class="kn-d-label">Tarikh</div><div class="kn-d-val" id="kn-d-tarikh">-</div>
-      <div class="kn-d-label">Waktu/Masa</div><div class="kn-d-val" id="kn-d-waktu">-</div>
-      <div class="kn-d-label">Kaunselor</div><div class="kn-d-val" id="kn-d-kaunselor">-</div>
-      <div class="kn-d-label">Tingkatan</div><div class="kn-d-val" id="kn-d-tingkatan">-</div>
-      <div class="kn-d-label">Perkara/Tajuk</div><div class="kn-d-val" id="kn-d-perkara">-</div>
-      <div class="kn-d-label">Nama Murid</div><div class="kn-d-val" id="kn-d-murid" style="white-space:pre-line">-</div>
-      <button class="btn-ghost" style="margin-top:16px" onclick="knCloseModal('kn-detail-overlay')">Tutup</button>
+
+      <label class="field-label" for="kn-d-kaunselor-view">Nama Kaunselor</label>
+      <select class="field-input" id="kn-d-kaunselor-view"></select>
+
+      <label class="field-label" style="margin-top:12px" for="kn-d-tingkatan-view">Tingkatan Murid</label>
+      <input class="field-input" type="text" id="kn-d-tingkatan-view" list="kn-d-tingkatan-list" autocomplete="off">
+      <datalist id="kn-d-tingkatan-list"></datalist>
+
+      <label class="field-label" style="margin-top:12px" for="kn-d-tarikh-mula-view">Tarikh Mula</label>
+      <input class="field-input" type="date" id="kn-d-tarikh-mula-view">
+
+      <label class="field-label" style="margin-top:12px" for="kn-d-tarikh-tamat-view">Tarikh Tamat (pilihan)</label>
+      <input class="field-input" type="date" id="kn-d-tarikh-tamat-view">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+        <div>
+          <label class="field-label">Waktu Mula</label>
+          <select class="field-input" id="kn-d-waktu-mula-view"></select>
+        </div>
+        <div>
+          <label class="field-label">Waktu Tamat</label>
+          <select class="field-input" id="kn-d-waktu-tamat-view"></select>
+        </div>
+      </div>
+
+      <label class="field-label" style="margin-top:12px" for="kn-d-perkara-view">Perkara/Tajuk</label>
+      <input class="field-input" type="text" id="kn-d-perkara-view">
+
+      <label class="field-label" style="margin-top:12px" for="kn-d-murid-view">Nama Murid</label>
+      <textarea class="field-input" id="kn-d-murid-view"></textarea>
+
+      <div class="error-text hidden" id="kn-d-error"></div>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="knCloseModal('kn-detail-overlay')">Tutup</button>
+        <button class="btn-primary" id="kn-d-save-btn" onclick="knSaveDetailEdit()" style="margin-top:0">Simpan Perubahan</button>
+      </div>
     </div>
   </div>
 

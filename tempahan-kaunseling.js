@@ -4,7 +4,7 @@
    ============================================================ */
 
 // GANTI dengan URL Web App selepas Code.gs Kaunseling disambung
-const KN_API_URL = "https://script.google.com/macros/s/AKfycbyZuruVgM_cKNdeHltzRIFbTXWOTnemNNFT9SaUZ0DvgFCgl9ursgFO2z7NbfI_73mc/exec";
+const KN_API_URL = "PASTE_URL_APPS_SCRIPT_KAUNSELING_ANDA_DI_SINI";
 function knApiConfigured() { return KN_API_URL && KN_API_URL.indexOf("PASTE_") !== 0; }
 
 const KN_JAWATAN_KAUNSELOR = "PPP (KAUNSELOR SEPENUH MASA)";
@@ -290,7 +290,11 @@ function knBuildDayColumn(dStr, sessions) {
 
   const matches = sessions
     .filter((b) => knExpandSessionDates(b).indexOf(dStr) !== -1)
-    .sort((a, b) => (a.JENIS === "Sesi Kaunseling" ? -1 : 1) - (b.JENIS === "Sesi Kaunseling" ? -1 : 1));
+    .sort((a, b) => {
+      const aSesi = a.JENIS === "Sesi Kaunseling", bSesi = b.JENIS === "Sesi Kaunseling";
+      if (aSesi !== bSesi) return aSesi ? -1 : 1; // Sesi Kaunseling sentiasa diutamakan
+      return (b.rowId || 0) - (a.rowId || 0); // antara Program, yang TERKINI (rowId besar) diutamakan
+    });
 
   matches.forEach((b) => {
     const numMula = parseInt(String(b.WAKTU_MULA || "").replace(/[^0-9]/g, ""), 10);
@@ -344,7 +348,7 @@ function knBuildTimetable(sessions, tableElId) {
       const isSesi = b.JENIS === "Sesi Kaunseling";
       const col = isSesi ? KN_COLOR_SESI : KN_COLOR_PROGRAM;
       const fg = knTextColorForBg(col);
-      const data = JSON.stringify({ tarikh: dateStrs[dayIdx], jenis: b.JENIS, kaunselor: b.KAUNSELOR, tingkatan: b.TINGKATAN, perkara: b.PERKARA, murid: b.MURID, waktuMula: b.WAKTU_MULA, waktuTamat: b.WAKTU_TAMAT }).replace(/'/g, "&apos;");
+      const data = JSON.stringify({ rowId: b.rowId, tarikh: dateStrs[dayIdx], jenis: b.JENIS, kaunselor: b.KAUNSELOR, tingkatan: b.TINGKATAN, perkara: b.PERKARA, murid: b.MURID, waktuMula: b.WAKTU_MULA, waktuTamat: b.WAKTU_TAMAT, tarikhMula: b.TARIKH_MULA, tarikhTamat: b.TARIKH_TAMAT }).replace(/'/g, "&apos;");
       const rowspanAttr = cell.span > 1 ? ` rowspan="${cell.span}"` : "";
       cells += `<td${rowspanAttr}><div class="kn-tt-cell busy" style="background:${col};color:${fg}" onclick='knOpenDetail(${data})'><span class="kn-tt-line kn-b">${(b.KAUNSELOR || "").split(" ")[0]}</span><span class="kn-tt-line">${b.PERKARA || ""}</span></div></td>`;
     }
@@ -355,44 +359,138 @@ function knBuildTimetable(sessions, tableElId) {
   document.getElementById(tableElId).innerHTML = thead + "<tbody>" + rows.join("") + "</tbody>";
 }
 
+/**
+ * Jadual UTAMA: Sesi Kaunseling Murid SAHAJA (bukan gabungan Sesi+Program).
+ * Bawahnya: jadual INDIVIDU dinamik — satu jadual per kaunselor yang ADA DATA
+ * (Sesi + Program digabung sekali dalam jadual individu masing-masing).
+ * Keutamaan bila bertindih: Sesi > Program (rekod terkini diutamakan).
+ */
 function knRenderAllTimetables() {
-  // Jadual utama kini gabungkan KEDUA-DUA jenis (Sesi + Program), diwarnakan ikut jenis.
-  knBuildTimetable(knBookings, "kn-tt-all");
+  const sesiOnly = knBookings.filter((b) => b.JENIS === "Sesi Kaunseling");
+  knBuildTimetable(sesiOnly, "kn-tt-all");
 
-  // Auto-appear jadual peribadi kaunselor (SATU jadual gabungan, tiada dropdown filter)
-  // — hanya jika staf log masuk sendiri seorang Kaunselor Sepenuh Masa DAN ada data.
-  const sesiWrap = document.getElementById("kn-my-sesi-wrap");
-  const jawatanUpper = String(knCurrentUser && knCurrentUser.jawatan || "").toUpperCase();
-  const myName = knCurrentUser && knCurrentUser.nama || "";
+  const namaSet = new Set();
+  knBookings.forEach((b) => { if (b.KAUNSELOR) namaSet.add(knNorm(b.KAUNSELOR)); });
+  // Simpan versi paparan (bentuk asal, bukan ternormal) bagi setiap kaunselor unik
+  const namaDisplay = {};
+  knBookings.forEach((b) => { const n = knNorm(b.KAUNSELOR); if (b.KAUNSELOR && !namaDisplay[n]) namaDisplay[n] = b.KAUNSELOR; });
 
-  if (jawatanUpper.indexOf("KAUNSELOR SEPENUH MASA") === -1 || !myName) {
-    sesiWrap.classList.add("hidden");
+  const container = document.getElementById("kn-individual-wrap");
+  const names = Array.from(namaSet).sort((a, b) => namaDisplay[a].localeCompare(namaDisplay[b]));
+
+  if (!names.length) {
+    container.innerHTML = "";
     return;
   }
 
-  // Padanan nama fleksibel (trim + huruf besar) — elak terlepas sebab spasi/case beza
-  // antara nama dalam borang (senarai staf) dengan nama log masuk (Database utama).
-  const myNameNorm = knNorm(myName);
-  const mine = knBookings.filter((b) => knNorm(b.KAUNSELOR) === myNameNorm);
+  container.innerHTML = names.map((normName, idx) => {
+    const display = namaDisplay[normName];
+    const tblId = `kn-tt-individual-${idx}`;
+    return `<div class="kn-tt-title"><div class="bar"></div>Jadual Kaunseling — ${knEscape(display)}</div>
+      <div class="kn-tt-wrap"><table class="kn-tt" id="${tblId}"></table></div>`;
+  }).join("");
 
-  if (mine.length) {
-    document.getElementById("kn-my-sesi-title").textContent = "Jadual Kaunseling Saya — " + myName;
-    knBuildTimetable(mine, "kn-tt-my-sesi");
-    sesiWrap.classList.remove("hidden");
-  } else {
-    sesiWrap.classList.add("hidden");
-  }
+  names.forEach((normName, idx) => {
+    const mine = knBookings.filter((b) => knNorm(b.KAUNSELOR) === normName);
+    knBuildTimetable(mine, `kn-tt-individual-${idx}`);
+  });
 }
+function knEscape(str) { return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+/* ---------------- Popup butiran + EDIT terus ---------------- */
+let knEditingRowId = null;
 
 function knOpenDetail(data) {
+  knEditingRowId = data.rowId || null;
   document.getElementById("kn-d-jenis").textContent = data.jenis;
-  document.getElementById("kn-d-tarikh").textContent = data.tarikh;
-  document.getElementById("kn-d-waktu").textContent = data.waktuMula + (data.waktuTamat && data.waktuTamat !== data.waktuMula ? " → " + data.waktuTamat : "");
-  document.getElementById("kn-d-kaunselor").textContent = data.kaunselor;
-  document.getElementById("kn-d-tingkatan").textContent = data.tingkatan;
-  document.getElementById("kn-d-perkara").textContent = data.perkara;
-  document.getElementById("kn-d-murid").textContent = data.murid;
+
+  document.getElementById("kn-d-kaunselor-view").value = data.kaunselor;
+  document.getElementById("kn-d-tingkatan-view").value = data.tingkatan;
+  document.getElementById("kn-d-tarikh-mula-view").value = data.tarikhMula || data.tarikh;
+  document.getElementById("kn-d-tarikh-tamat-view").value = data.tarikhTamat || "";
+
+  const info = knSlotsForDate(data.tarikhMula || data.tarikh);
+  const opts = info.slots.map((s, i) => { const id = knSlotIdFor(i); return `<option value="${id}">${id} (${s})</option>`; }).join("");
+  document.getElementById("kn-d-waktu-mula-view").innerHTML = opts;
+  document.getElementById("kn-d-waktu-tamat-view").innerHTML = opts;
+  document.getElementById("kn-d-waktu-mula-view").value = data.waktuMula;
+  document.getElementById("kn-d-waktu-tamat-view").value = data.waktuTamat;
+
+  document.getElementById("kn-d-perkara-view").value = data.perkara;
+  document.getElementById("kn-d-murid-view").value = data.murid;
+  document.getElementById("kn-d-error").classList.add("hidden");
+
+  const tingkatanList = document.getElementById("kn-d-tingkatan-list");
+  if (!tingkatanList.dataset.built) {
+    tingkatanList.innerHTML = KN_CLASS_LIST.map((c) => `<option value="${c}">`).join("");
+    tingkatanList.dataset.built = "1";
+  }
+
+  knFetchStaff().then(() => {
+    const sel = document.getElementById("kn-d-kaunselor-view");
+    sel.innerHTML = knCounselors.map((c) => `<option value="${c.name}">${c.name}</option>`).join("");
+    sel.value = data.kaunselor;
+  });
+
   document.getElementById("kn-detail-overlay").classList.remove("hidden");
+}
+
+async function knSaveDetailEdit() {
+  const errBox = document.getElementById("kn-d-error");
+  errBox.classList.add("hidden");
+
+  const payload = {
+    action: "edit",
+    rowId: knEditingRowId,
+    jenis: document.getElementById("kn-d-jenis").textContent,
+    kaunselor: document.getElementById("kn-d-kaunselor-view").value,
+    tingkatan: document.getElementById("kn-d-tingkatan-view").value.trim(),
+    tarikhMula: document.getElementById("kn-d-tarikh-mula-view").value,
+    tarikhTamat: document.getElementById("kn-d-tarikh-tamat-view").value,
+    waktuMula: document.getElementById("kn-d-waktu-mula-view").value,
+    waktuTamat: document.getElementById("kn-d-waktu-tamat-view").value,
+    perkara: document.getElementById("kn-d-perkara-view").value.trim(),
+    murid: document.getElementById("kn-d-murid-view").value.trim(),
+  };
+
+  if (!payload.kaunselor || !payload.tingkatan || !payload.tarikhMula || !payload.waktuMula || !payload.waktuTamat || !payload.perkara || !payload.murid) {
+    errBox.textContent = "Sila lengkapkan semua maklumat wajib.";
+    errBox.classList.remove("hidden");
+    return;
+  }
+  if (!knEditingRowId) {
+    errBox.textContent = "Rekod ini tiada rowId — tak boleh dikemaskini (data lama).";
+    errBox.classList.remove("hidden");
+    return;
+  }
+  if (!knApiConfigured()) {
+    errBox.textContent = "API Kaunseling belum disambungkan.";
+    errBox.classList.remove("hidden");
+    return;
+  }
+
+  const btn = document.getElementById("kn-d-save-btn");
+  btn.disabled = true; btn.textContent = "Menyimpan...";
+  let result;
+  try {
+    const res = await fetch(KN_API_URL, { method: "POST", body: JSON.stringify(payload) });
+    const rawText = await res.text();
+    try { result = JSON.parse(rawText); }
+    catch (parseErr) { result = { status: "error", message: "Respons tak sah: " + rawText.slice(0, 200) }; }
+  } catch (err) {
+    result = { status: "error", message: "Gagal sambung ke server (" + err.message + ")." };
+  }
+  btn.disabled = false; btn.textContent = "Simpan Perubahan";
+
+  if (result.status !== "success") {
+    errBox.textContent = result.message || "Gagal kemaskini rekod.";
+    errBox.classList.remove("hidden");
+    return;
+  }
+
+  knCloseModal("kn-detail-overlay");
+  await knFetchBookings();
+  knRenderAllTimetables();
 }
 
 document.addEventListener("DOMContentLoaded", () => {

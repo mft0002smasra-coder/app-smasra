@@ -116,7 +116,11 @@ function doPost(e) {
   } catch (err) {
     return jsonOut_({ status: 'error', message: 'Data tidak sah.' });
   }
+  if (params.action === 'edit') return editBooking_(params);
+  return addBooking_(params);
+}
 
+function addBooking_(params) {
   ensureTimezone_();
   var sheet = getBookingSheet_();
   var values = sheet.getDataRange().getValues();
@@ -153,6 +157,42 @@ function doPost(e) {
   sheet.getRange(newRow, COL.TARIKH_MULA + 1).setNumberFormat('@').setValue(params.tarikhMula);
   if (params.tarikhTamat) {
     sheet.getRange(newRow, COL.TARIKH_TAMAT + 1).setNumberFormat('@').setValue(params.tarikhTamat);
+  }
+
+  return jsonOut_({ status: 'success' });
+}
+
+/**
+ * Kemaskini rekod SEDIA ADA (guna rowId) — untuk fungsi "klik kad, edit terus"
+ * pada jadual. rowId datang dari medan `rowId` yang dipulangkan getBookings_().
+ */
+function editBooking_(params) {
+  var rowId = parseInt(params.rowId, 10);
+  if (!rowId) {
+    return jsonOut_({ status: 'error', message: 'rowId diperlukan untuk kemaskini.' });
+  }
+  ensureTimezone_();
+  var sheet = getBookingSheet_();
+  if (rowId < 2 || rowId > sheet.getLastRow()) {
+    return jsonOut_({ status: 'error', message: 'Rekod tidak dijumpai (mungkin dah dipadam/berubah).' });
+  }
+
+  sheet.getRange(rowId, COL.TARIKH_MULA + 1, 1, 9).setValues([[
+    params.tarikhMula,
+    params.tarikhTamat || '',
+    params.waktuMula,
+    params.waktuTamat,
+    params.jenis,
+    params.perkara,
+    params.murid,
+    params.tingkatan,
+    params.kaunselor
+  ]]);
+  sheet.getRange(rowId, COL.TARIKH_MULA + 1).setNumberFormat('@').setValue(params.tarikhMula);
+  if (params.tarikhTamat) {
+    sheet.getRange(rowId, COL.TARIKH_TAMAT + 1).setNumberFormat('@').setValue(params.tarikhTamat);
+  } else {
+    sheet.getRange(rowId, COL.TARIKH_TAMAT + 1).setValue('');
   }
 
   return jsonOut_({ status: 'success' });
