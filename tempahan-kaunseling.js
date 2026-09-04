@@ -4,7 +4,7 @@
    ============================================================ */
 
 // GANTI dengan URL Web App selepas Code.gs Kaunseling disambung
-const KN_API_URL = "https://script.google.com/macros/s/AKfycbyZuruVgM_cKNdeHltzRIFbTXWOTnemNNFT9SaUZ0DvgFCgl9ursgFO2z7NbfI_73mc/exec";
+const KN_API_URL = "PASTE_URL_APPS_SCRIPT_KAUNSELING_ANDA_DI_SINI";
 function knApiConfigured() { return KN_API_URL && KN_API_URL.indexOf("PASTE_") !== 0; }
 
 const KN_JAWATAN_KAUNSELOR = "PPP (KAUNSELOR SEPENUH MASA)";
@@ -102,7 +102,7 @@ async function knFetchStaff() {
     knCounselors = (json.data || []).filter((c) => c.isKaunselor);
     sel.innerHTML = '<option value="">Pilih nama kaunselor</option>' + knCounselors.map((c) => `<option value="${c.name}">${c.name}</option>`).join("");
   } catch (err) {
-    sel.innerHTML = '<option value="">Gagal muat senarai — cuba lagi</option>';
+    sel.innerHTML = `<option value="">Gagal muat senarai (${err.message})</option>`;
   }
 }
 
@@ -201,9 +201,16 @@ async function knSubmitBooking() {
   let result;
   try {
     const res = await fetch(KN_API_URL, { method: "POST", body: JSON.stringify(payload) });
-    result = await res.json();
+    const rawText = await res.text();
+    try {
+      result = JSON.parse(rawText);
+    } catch (parseErr) {
+      // Respons bukan JSON — biasanya skrip GS sendiri error (bukan masalah rangkaian).
+      // Tunjuk cebisan mesej sebenar supaya senang disiasat.
+      result = { status: "error", message: "Skrip GS pulangkan respons tak sah: " + rawText.slice(0, 200) };
+    }
   } catch (err) {
-    result = { status: "error", message: "Ralat sambungan ke server." };
+    result = { status: "error", message: "Gagal sambung ke KN_API_URL (" + err.message + "). Semak URL/deployment Apps Script." };
   }
   btn.disabled = false; btn.textContent = "Hantar Tempahan";
 
