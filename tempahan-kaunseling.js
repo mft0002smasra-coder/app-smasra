@@ -4,7 +4,7 @@
    ============================================================ */
 
 // GANTI dengan URL Web App selepas Code.gs Kaunseling disambung
-const KN_API_URL = "https://script.google.com/macros/s/AKfycbxCGgouv0KNJ06guf9QuSC2vhOB1WWrnX5GmkYfg640fcrFBcZKDVvuwN175Uqd3yut/exec";
+const KN_API_URL = "PASTE_URL_APPS_SCRIPT_KAUNSELING_ANDA_DI_SINI";
 function knApiConfigured() { return KN_API_URL && KN_API_URL.indexOf("PASTE_") !== 0; }
 
 const KN_JAWATAN_KAUNSELOR = "PPP (KAUNSELOR SEPENUH MASA)";
@@ -137,7 +137,7 @@ function knOpenForm(jenis) {
   document.getElementById("kn-f-murid").value = "";
   document.getElementById("kn-f-waktu-mula").innerHTML = '<option value="">Pilih tarikh dahulu</option>';
   document.getElementById("kn-f-waktu-tamat").innerHTML = '<option value="">Pilih tarikh dahulu</option>';
-  document.getElementById("kn-form-error").classList.add("hidden");
+  document.getElementById("kn-form-error").classList.remove("show");
 
   const tingkatanList = document.getElementById("kn-tingkatan-list");
   if (!tingkatanList.dataset.built) {
@@ -176,21 +176,21 @@ async function knSubmitBooking() {
   const perkara = document.getElementById("kn-f-perkara").value.trim();
   const murid = document.getElementById("kn-f-murid").value.trim();
   const errBox = document.getElementById("kn-form-error");
-  errBox.classList.add("hidden");
+  errBox.classList.remove("show");
 
   if (!kaunselor || !tingkatan || !tarikhMula || !waktuMula || !waktuTamat || !perkara || !murid) {
     errBox.textContent = "Sila lengkapkan semua maklumat wajib (*).";
-    errBox.classList.remove("hidden");
+    errBox.classList.add("show");
     return;
   }
   if (tarikhTamat && tarikhTamat < tarikhMula) {
     errBox.textContent = "Tarikh Tamat mesti sama atau selepas Tarikh Mula.";
-    errBox.classList.remove("hidden");
+    errBox.classList.add("show");
     return;
   }
   if (!knApiConfigured()) {
     errBox.textContent = "API Kaunseling belum disambungkan (KN_API_URL belum diisi).";
-    errBox.classList.remove("hidden");
+    errBox.classList.add("show");
     return;
   }
 
@@ -209,12 +209,12 @@ async function knSubmitBooking() {
 
   if (result.status === "conflict") {
     errBox.textContent = result.message || "Kaunselor ini sudah mempunyai rekod pada tarikh & waktu yang sama.";
-    errBox.classList.remove("hidden");
+    errBox.classList.add("show");
     return;
   }
   if (result.status !== "success") {
     errBox.textContent = result.message || "Ralat sistem. Sila cuba semula.";
-    errBox.classList.remove("hidden");
+    errBox.classList.add("show");
     return;
   }
 
