@@ -8,10 +8,10 @@ const SCHOOL_LOGO_URL = "https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRi
 const APPSHEET_ERKS_URL = "https://www.appsheet.com/start/210829a8-31c7-4ade-ba58-fcd8cf73c305";
 
 // GANTI dengan URL Web App selepas awak deploy Code.gs (Deploy > New deployment > Web app)
-const API_URL = "https://script.google.com/macros/s/AKfycbxNMX-PHWy4t8PdQhj-jekw9T8V7b1lN2M8sQ9d8jybfeSLvKS9jB8XuKbjjYRwshcz/exec";
+const API_URL = "PASTE_URL_APPS_SCRIPT_ANDA_DI_SINI";
 
 // GANTI dengan OAuth Client ID dari Google Cloud Console untuk aktifkan "Sign in with Google"
-const GOOGLE_CLIENT_ID = "702368440468-u7uoc6396frmum2j0mllbc3llqi4tgbn.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "PASTE_GOOGLE_CLIENT_ID_ANDA_DI_SINI.apps.googleusercontent.com";
 
 const USER_KEY = "smasra_user";
 
@@ -167,6 +167,38 @@ function renderHeader(user) {
  * Dipanggil oleh setiap halaman untuk semak login & papar skrin yang betul.
  * onReady(user) dipanggil sekali user sah log masuk.
  */
+/* ---------------- Splash Screen (sekali setiap sesi, index.html sahaja) ---------------- */
+function initSplashScreen() {
+  const splash = document.getElementById("splash-screen");
+  if (!splash) return;
+
+  if (sessionStorage.getItem("smasra_splash_shown")) {
+    splash.remove();
+    return;
+  }
+  sessionStorage.setItem("smasra_splash_shown", "1");
+
+  const dustBox = document.getElementById("splash-dust");
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight / 2 - 30;
+  for (let i = 0; i < 42; i++) {
+    const span = document.createElement("span");
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 50 + Math.random() * 150;
+    span.style.left = cx + "px";
+    span.style.top = cy + "px";
+    span.style.setProperty("--dx", Math.cos(angle) * dist + "px");
+    span.style.setProperty("--dy", Math.sin(angle) * dist + "px");
+    span.style.animationDelay = (0.25 + Math.random() * 1.6) + "s";
+    dustBox.appendChild(span);
+  }
+
+  setTimeout(() => {
+    splash.classList.add("hide");
+    setTimeout(() => splash.remove(), 750);
+  }, 3300);
+}
+
 function initApp(onReady) {
   renderIcons();
   document.querySelectorAll(".school-logo-img").forEach((img) => { img.src = SCHOOL_LOGO_URL; });

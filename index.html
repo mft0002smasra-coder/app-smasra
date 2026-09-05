@@ -14,6 +14,12 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+<div class="splash-screen" id="splash-screen">
+  <div class="splash-dust" id="splash-dust"></div>
+  <img class="splash-logo school-logo-img" alt="Logo Sekolah">
+  <div class="splash-title">SM ARAB (JAIM) AL-ASYRAF</div>
+</div>
+
 <div class="bg-fx"></div>
 
 <div class="wrap">
@@ -140,6 +146,7 @@
     setTimeout(dbSizeHomeAnalysisCard, 400);
     setTimeout(dbSizeHomeAnalysisCard, 1000);
   }
+  initSplashScreen();
   initApp(renderHome);
 </script>
 </body>
