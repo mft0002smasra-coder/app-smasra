@@ -4,7 +4,7 @@
    ============================================================ */
 
 // GANTI dengan URL Web App selepas Code.gs Kaunseling disambung
-const KN_API_URL = "https://script.google.com/macros/s/AKfycbyZuruVgM_cKNdeHltzRIFbTXWOTnemNNFT9SaUZ0DvgFCgl9ursgFO2z7NbfI_73mc/exec";
+const KN_API_URL = "PASTE_URL_APPS_SCRIPT_KAUNSELING_ANDA_DI_SINI";
 function knApiConfigured() { return KN_API_URL && KN_API_URL.indexOf("PASTE_") !== 0; }
 
 const KN_JAWATAN_KAUNSELOR = "PPP (KAUNSELOR SEPENUH MASA)";
@@ -272,7 +272,12 @@ function knExpandSessionDates(b) {
 }
 
 const KN_COLOR_SESI = "#3B7DD8";
-const KN_COLOR_PROGRAM = "#D9A62E";
+const KN_PROGRAM_PALETTE = ["#D9A62E", "#7C3AED", "#DB2777", "#059669", "#EA580C", "#0891B2", "#B91C1C", "#4F46E5"];
+function knHashStr(str) { let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return h; }
+function knColorForProgram(perkara) {
+  if (!perkara) return KN_PROGRAM_PALETTE[0];
+  return KN_PROGRAM_PALETTE[knHashStr(String(perkara).trim().toUpperCase()) % KN_PROGRAM_PALETTE.length];
+}
 function knNorm(str) { return String(str || "").trim().toUpperCase().replace(/\s+/g, " "); }
 
 /**
@@ -337,9 +342,11 @@ function knBuildTimetable(sessions, tableElId) {
 
       const b = cell.booking;
       const isSesi = b.JENIS === "Sesi Kaunseling";
-      const col = isSesi ? KN_COLOR_SESI : KN_COLOR_PROGRAM;
+      const col = isSesi ? KN_COLOR_SESI : knColorForProgram(b.PERKARA);
       const fg = knTextColorForBg(col);
-      const label = `<span class="kn-tt-line kn-b">${(b.KAUNSELOR || "").split(" ")[0]}</span><span class="kn-tt-line">${b.PERKARA || ""}</span>`;
+      const label = isSesi
+        ? `<span class="kn-tt-line kn-b">${(b.MURID || "").split("\n")[0]}</span><span class="kn-tt-line">${b.TINGKATAN || ""}</span>`
+        : `<span class="kn-tt-line kn-b">${(b.KAUNSELOR || "").split(" ")[0]}</span><span class="kn-tt-line">${b.PERKARA || ""}</span>`;
       const data = JSON.stringify({ rowId: b.rowId, tarikh: dateStrs[dayIdx], jenis: b.JENIS, kaunselor: b.KAUNSELOR, tingkatan: b.TINGKATAN, perkara: b.PERKARA, murid: b.MURID, waktuMula: b.WAKTU_MULA, waktuTamat: b.WAKTU_TAMAT, tarikhMula: b.TARIKH_MULA, tarikhTamat: b.TARIKH_TAMAT }).replace(/'/g, "&apos;");
       cells += `<td><div class="kn-tt-cell busy" style="background:${col};color:${fg}" onclick='knOpenDetail(${data})'>${label}</div></td>`;
     }
