@@ -8,10 +8,10 @@ const SCHOOL_LOGO_URL = "https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRi
 const APPSHEET_ERKS_URL = "https://www.appsheet.com/start/210829a8-31c7-4ade-ba58-fcd8cf73c305";
 
 // GANTI dengan URL Web App selepas awak deploy Code.gs (Deploy > New deployment > Web app)
-const API_URL = "https://script.google.com/macros/s/AKfycbxNMX-PHWy4t8PdQhj-jekw9T8V7b1lN2M8sQ9d8jybfeSLvKS9jB8XuKbjjYRwshcz/exec";
+const API_URL = "PASTE_URL_APPS_SCRIPT_ANDA_DI_SINI";
 
 // GANTI dengan OAuth Client ID dari Google Cloud Console untuk aktifkan "Sign in with Google"
-const GOOGLE_CLIENT_ID = "702368440468-u7uoc6396frmum2j0mllbc3llqi4tgbn.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "PASTE_GOOGLE_CLIENT_ID_ANDA_DI_SINI.apps.googleusercontent.com";
 
 const USER_KEY = "smasra_user";
 
@@ -30,6 +30,7 @@ const ICONS = {
   clipboard: '<path d="M9 4.5h6a1 1 0 0 1 1 1V6h-8v-.5a1 1 0 0 1 1-1z"/><rect x="5" y="6" width="14" height="15" rx="2"/><path d="M8.5 11.5h7M8.5 15h7M8.5 18h4.5"/>',
   door: '<rect x="5" y="3" width="14" height="18" rx="1.5"/><circle cx="14" cy="12" r="1.1" fill="currentColor" stroke="none"/><path d="M3 21h18"/>',
   heart: '<path d="M12 20s-7-4.5-9.5-9C.8 7.5 2.5 4 6 4c2 0 3.5 1.2 4 2.5.5-1.3 2-2.5 4-2.5 3.5 0 5.2 3.5 3.5 7-2.5 4.5-9.5 9-9.5 9z"/>',
+  trophy: '<path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 5H4a3 3 0 0 0 3 4"/><path d="M17 5h3a3 3 0 0 1-3 4"/><path d="M12 13v3"/><path d="M8 20h8"/><path d="M9 20a3 3 0 0 1 6 0"/>',
   back: '<path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>',
   power: '<path d="M12 3.5v8"/><path d="M6.7 6.7a8 8 0 1 0 10.6 0"/>',
   menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
@@ -199,6 +200,104 @@ function initSplashScreen() {
   }, 3300);
 }
 
+/* ============================================================
+   STRUKTUR MENU BERPUSAT — 5 Parent Menu (Pengurusan/Kurikulum/
+   Pengurusan T6/HEM/KOKU), dipakai bersama oleh sidebar (semua muka)
+   dan Menu Utama Home (drill-down).
+   ============================================================ */
+const MENU_STRUCTURE = [
+  {
+    key: "pengurusan", label: "Pengurusan", icon: "folder",
+    children: [
+      { href: "pengumuman.html", icon: "announce", label: "Hebahan" },
+      { href: "laporan-pentadbir.html", icon: "clipboard", label: "Laporan Pentadbir" },
+      { href: null, icon: "folder", label: "Laporan Guru Bertugas", soon: true },
+      { href: "kehadiran-staf.html", icon: "calendar", label: "Kehadiran Staf" },
+      { href: "event.html", icon: "event", label: "Event" },
+    ],
+  },
+  {
+    key: "kurikulum", label: "Kurikulum", icon: "graduate",
+    children: [
+      { href: "tempahan-bilik.html", icon: "door", label: "Tempahan Bilik Khas" },
+    ],
+  },
+  {
+    key: "t6", label: "Pengurusan T6", icon: "chart",
+    children: [
+      { href: null, icon: "chart", label: "Akan Datang", soon: true },
+    ],
+  },
+  {
+    key: "hem", label: "HEM", icon: "heart",
+    children: [
+      { href: "kehadiran-murid.html", icon: "graduate", label: "Kehadiran Murid" },
+      { href: "tempahan-kaunseling.html", icon: "heart", label: "Tempahan Kaunseling" },
+    ],
+  },
+  {
+    key: "koku", label: "KOKU", icon: "trophy",
+    children: [
+      { href: null, icon: "trophy", label: "Akan Datang", soon: true },
+    ],
+  },
+];
+
+/* ---------------- Sidebar (drawer) — accordion 5 Parent Menu ---------------- */
+function renderDrawerMenu() {
+  const box = document.getElementById("drawer-menu-body");
+  if (!box) return;
+  const currentPage = location.pathname.split("/").pop();
+
+  box.innerHTML = MENU_STRUCTURE.map((group) => {
+    const hasActive = group.children.some((c) => c.href === currentPage);
+    const childrenHtml = group.children.map((c) => {
+      if (!c.href || c.soon) {
+        return `<div class="drawer-item drawer-sub soon"><span data-icon="${c.icon}"></span><span class="drawer-label">${c.label}</span></div>`;
+      }
+      const active = c.href === currentPage ? " active" : "";
+      return `<a class="drawer-item drawer-sub${active}" href="${c.href}"><span data-icon="${c.icon}"></span><span class="drawer-label">${c.label}</span></a>`;
+    }).join("");
+    return `<div class="drawer-group">
+      <button class="drawer-parent${hasActive ? " active" : ""}" onclick="toggleDrawerGroup('${group.key}')">
+        <span data-icon="${group.icon}"></span><span class="drawer-label">${group.label}</span>
+        <span class="drawer-chevron">&#9662;</span>
+      </button>
+      <div class="drawer-children${hasActive ? " open" : ""}" id="drawer-group-${group.key}">${childrenHtml}</div>
+    </div>`;
+  }).join("");
+
+  renderIcons();
+}
+function toggleDrawerGroup(key) {
+  const el = document.getElementById(`drawer-group-${key}`);
+  const btn = el.previousElementSibling;
+  const isOpen = el.classList.contains("open");
+  document.querySelectorAll(".drawer-children").forEach((d) => d.classList.remove("open"));
+  document.querySelectorAll(".drawer-parent").forEach((b) => b.classList.remove("expanded"));
+  if (!isOpen) { el.classList.add("open"); btn.classList.add("expanded"); }
+}
+
+/* ---------------- Home: Menu Utama drill-down ---------------- */
+function renderHomeMenu(groupKey) {
+  const grid = document.getElementById("home-module-grid");
+  if (!grid) return;
+
+  if (!groupKey) {
+    grid.innerHTML = MENU_STRUCTURE.map((g) =>
+      `<div class="module-tile" onclick="renderHomeMenu('${g.key}')"><span data-icon="${g.icon}"></span><span class="module-tile-label">${g.label}</span></div>`
+    ).join("") + `<a class="module-tile" href="kehadiran-staf.html"><span data-icon="calendar"></span><span class="module-tile-label">Kehadiran Staf</span></a>`;
+  } else {
+    const group = MENU_STRUCTURE.find((g) => g.key === groupKey);
+    const childrenHtml = group.children.map((c) => {
+      if (!c.href || c.soon) return `<div class="module-tile soon"><span data-icon="${c.icon}"></span><span class="module-tile-label">${c.label}</span></div>`;
+      return `<a class="module-tile" href="${c.href}"><span data-icon="${c.icon}"></span><span class="module-tile-label">${c.label}</span></a>`;
+    }).join("");
+    grid.innerHTML = `<div class="module-tile module-back" onclick="renderHomeMenu(null)"><span data-icon="back"></span><span class="module-tile-label">Kembali</span></div>${childrenHtml}`;
+  }
+  renderIcons();
+}
+
 function initApp(onReady) {
   renderIcons();
   document.querySelectorAll(".school-logo-img").forEach((img) => { img.src = SCHOOL_LOGO_URL; });
@@ -223,6 +322,7 @@ function initApp(onReady) {
     loginScreen.classList.add("hidden");
     appContent.classList.remove("hidden");
     renderHeader(user);
+    renderDrawerMenu();
     if (typeof onReady === "function") onReady(user);
   }
 }
