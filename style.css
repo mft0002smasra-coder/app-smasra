@@ -916,6 +916,8 @@ table.db-book-table tbody tr:nth-child(odd) td{ background:rgba(255,255,255,.02)
 }
 .kn-choice-card:hover::after{ opacity:1; }
 .kn-choice-card:hover{ border-color:rgba(255,199,44,0.4); }
+.kn-choice-card.kn-disabled{ opacity:.5;filter:grayscale(.6); }
+.kn-choice-card.kn-disabled:hover{ border-color:rgba(255,255,255,0.10); }
 .kn-choice-photo{ position:relative;height:150px;width:100%;overflow:hidden;background:linear-gradient(150deg,#3A3D43,#1C1D20); }
 .kn-choice-photo img{ width:100%;height:100%;object-fit:cover;display:block; }
 .kn-ph-fallback{

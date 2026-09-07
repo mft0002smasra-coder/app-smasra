@@ -4,7 +4,7 @@
    ============================================================ */
 
 // GANTI dengan URL Web App selepas Code.gs Kaunseling disambung
-const KN_API_URL = "https://script.google.com/macros/s/AKfycbyZuruVgM_cKNdeHltzRIFbTXWOTnemNNFT9SaUZ0DvgFCgl9ursgFO2z7NbfI_73mc/exec";
+const KN_API_URL = "PASTE_URL_APPS_SCRIPT_KAUNSELING_ANDA_DI_SINI";
 function knApiConfigured() { return KN_API_URL && KN_API_URL.indexOf("PASTE_") !== 0; }
 
 const KN_JAWATAN_KAUNSELOR = "PPP (KAUNSELOR SEPENUH MASA)";
@@ -68,6 +68,7 @@ let knBookings = [];
 let knCurrentJenis = "";
 let knWeekMonday = knGetMonday(knTodayStr());
 let knCurrentUser = null;
+let knCanEdit = false;
 
 /* ---------------- Akses ---------------- */
 function knCheckAccess(user) {
@@ -430,6 +431,10 @@ function knOpenDetail(data) {
     sel.value = data.kaunselor;
   });
 
+  const editableFields = ["kn-d-kaunselor-view", "kn-d-tingkatan-view", "kn-d-tarikh-mula-view", "kn-d-tarikh-tamat-view", "kn-d-waktu-mula-view", "kn-d-waktu-tamat-view", "kn-d-perkara-view", "kn-d-murid-view"];
+  editableFields.forEach((id) => { document.getElementById(id).disabled = !knCanEdit; });
+  document.getElementById("kn-d-save-btn").classList.toggle("hidden", !knCanEdit);
+
   document.getElementById("kn-detail-overlay").classList.remove("hidden");
 }
 
@@ -505,13 +510,22 @@ document.addEventListener("DOMContentLoaded", () => {
 /* ---------------- Init ---------------- */
 function knInit(user) {
   knCurrentUser = user;
+  knCanEdit = knCheckAccess(user);
 
-  if (!knCheckAccess(user)) {
-    document.getElementById("kn-access-denied-overlay").classList.remove("hidden");
-    document.getElementById("kn-main-content").classList.add("hidden");
-    return;
+  if (!knCanEdit) {
+    document.querySelectorAll(".kn-choice-card").forEach((card) => {
+      card.classList.add("kn-disabled");
+      card.setAttribute("onclick", "knShowNoPermission()");
+    });
   }
 
   knUpdateWeekBadge();
   knInitImages();
+}
+
+function knShowNoPermission() {
+  document.getElementById("kn-result-icon").textContent = "🔒";
+  document.getElementById("kn-result-title").textContent = "Tiada Kebenaran";
+  document.getElementById("kn-result-msg").textContent = "Isi/edit tempahan hanya untuk Kaunselor Sepenuh Masa, Admin, atau Pentadbir. Awak masih boleh lihat jadual.";
+  document.getElementById("kn-result-overlay").classList.remove("hidden");
 }

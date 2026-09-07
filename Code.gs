@@ -122,7 +122,7 @@ function getPengumuman() {
     var gambar = data[i][0];
     var teks = data[i][1];
     var tarikhTamatRaw = data[i][2];
-    if (!teks) continue;
+    if (!gambar && !teks) continue;
 
     var tarikhTamatKey = "";
     if (tarikhTamatRaw) {
@@ -155,20 +155,50 @@ function getBanner() {
   }
 }
 
+// Folder Drive khas untuk gambar Hebahan
+var PENGUMUMAN_DRIVE_FOLDER_ID = "1_QMB1OajrN1F9aylGCY20rWX70iMUq6i";
+
+function pengumumanSaveImageToDrive(base64DataUrl, filenamePrefix) {
+  if (!base64DataUrl || base64DataUrl.indexOf("base64,") === -1) return "";
+  var parts = base64DataUrl.split("base64,");
+  var meta = parts[0];
+  var mimeMatch = meta.match(/data:(image\/[a-zA-Z0-9.+-]+);/);
+  var mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
+  var bytes = Utilities.base64Decode(parts[1]);
+  var blob = Utilities.newBlob(bytes, mimeType, filenamePrefix + "." + (mimeType.split("/")[1] || "jpg"));
+  var file = DriveApp.getFolderById(PENGUMUMAN_DRIVE_FOLDER_ID).createFile(blob);
+  try {
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch (shareErr) { /* fail dah wujud dalam folder — teruskan walau setSharing gagal */ }
+  return "https://lh3.googleusercontent.com/d/" + file.getId();
+}
+
 function addPengumuman(body) {
   var user = findUserByEmail(body.email);
   if (!user || user.role !== "Admin") {
     return jsonResponse({ success: false, message: "Hanya Admin boleh tambah pengumuman." });
   }
-  if (!body.teks || !String(body.teks).trim()) {
-    return jsonResponse({ success: false, message: "Teks pengumuman tidak boleh kosong." });
+  var teks = body.teks ? String(body.teks).trim() : "";
+  var hasImage = body.gambarBase64 && body.gambarBase64.indexOf("base64,") !== -1;
+  if (!teks && !hasImage) {
+    return jsonResponse({ success: false, message: "Sila isi teks ATAU muat naik gambar (sekurang-kurangnya satu)." });
   }
   if (!body.tarikhTamat) {
     return jsonResponse({ success: false, message: "Sila tetapkan tarikh tamat hebahan." });
   }
   ensureTimezone();
+
+  var gambarUrl = "";
+  if (hasImage) {
+    try {
+      gambarUrl = pengumumanSaveImageToDrive(body.gambarBase64, "hebahan_" + new Date().getTime());
+    } catch (imgErr) {
+      return jsonResponse({ success: false, message: "Gagal muat naik gambar ke Drive (" + imgErr.message + ")." });
+    }
+  }
+
   var sheet = getSheet("Pengumuman");
-  sheet.appendRow([body.gambar || "", body.teks, new Date(body.tarikhTamat)]);
+  sheet.appendRow([gambarUrl, teks, new Date(body.tarikhTamat)]);
   return jsonResponse({ success: true });
 }
 

@@ -6,6 +6,8 @@
 <title>Tempahan Bilik Khas — SMA (JAIM) Al-Asyraf</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root{
@@ -428,20 +430,41 @@ table.weekly-table tbody td{border-bottom:1px solid rgba(255,255,255,0.06);}
 </style>
 </head>
 <body>
+<div class="bg-fx"></div>
 
-<div class="topbar">
-  <div class="brand">
-    <div class="brand-badge" id="brandBadge">SMA</div>
-    <div class="brand-text">
-      <h1>SMA (JAIM) Al-Asyraf</h1>
-      <p>Sistem Tempahan Bilik Khas</p>
+<div id="login-screen" class="hidden">
+  <img class="logo-plain school-logo-img" alt="Logo Sekolah">
+  <div class="brand-title">SM ARAB (JAIM) AL-ASYRAF</div>
+  <div class="brand-sub">Sistem Pengurusan Sekolah</div>
+  <div class="glass">
+    <div class="gsi-wrap" id="google-btn-container"></div>
+    <div class="divider">Atau</div>
+    <form id="login-form">
+      <label class="field-label" for="login-email">Emel Rasmi</label>
+      <input class="field-input" type="email" id="login-email" placeholder="nama@moe-dl.edu.my" autocomplete="email" required>
+      <button class="btn-primary" type="submit" id="login-btn">Log Masuk</button>
+      <div class="error-text hidden" id="login-error"></div>
+    </form>
+  </div>
+</div>
+
+<div id="app-content" class="hidden">
+
+<div class="site-header-wrap">
+  <header class="site-header">
+    <div class="site-header-row1">
+      <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu"><span data-icon="menu"></span></button>
+      <img class="header-logo school-logo-img" alt="Logo Sekolah">
+      <div class="header-title-block">
+        <div class="header-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
+        <div class="header-school-sub">Sistem Tempahan Bilik Khas</div>
+      </div>
     </div>
-  </div>
-  <a class="back-to-home" href="index.html">&larr; Menu Utama</a>
-  <div class="nav-tabs">
-    <button class="nav-tab active" data-page="page1" onclick="switchPage('page1')">Tempahan Slot</button>
-    <button class="nav-tab" data-page="page2" onclick="switchPage('page2')">Jadual Tempahan</button>
-  </div>
+    <div class="site-header-row2">
+      <span class="header-greet">Selamat Datang, <span id="header-greet-name">-</span></span>
+      <span class="header-status"><span class="status-dot"></span>Sistem Aktif <span id="live-clock">--:--:-- --</span></span>
+    </div>
+  </header>
 </div>
 
 <div class="app">
@@ -479,11 +502,30 @@ table.weekly-table tbody td{border-bottom:1px solid rgba(255,255,255,0.06);}
 
 </div>
 
-<div class="site-footer">
-  <div class="site-footer-inner">
-    <span>© <span id="footerYear"></span> SMA (JAIM) Al-Asyraf — Sistem Tempahan Bilik Khas</span>
-    <span class="site-footer-dim">Dijana secara automatik &bull; AUTO-APPROVED</span>
-  </div>
+</div>
+
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<nav class="drawer" id="drawer">
+  <div class="drawer-logo-row"><img class="school-logo-img" alt=""><span>SMASRA</span></div>
+  <a class="drawer-item" href="index.html"><span data-icon="home"></span><span class="drawer-label">Laman Utama</span></a>
+  <a class="drawer-item" href="pengumuman.html"><span data-icon="announce"></span><span class="drawer-label">Hebahan</span></a>
+  <a class="drawer-item" href="laporan-pentadbir.html"><span data-icon="clipboard"></span><span class="drawer-label">Laporan Pentadbir</span></a>
+  <div class="drawer-item soon"><span data-icon="folder"></span><span class="drawer-label">Laporan Guru Bertugas</span></div>
+  <a class="drawer-item" href="kehadiran-staf.html"><span data-icon="calendar"></span><span class="drawer-label">Kehadiran Staf</span></a>
+  <a class="drawer-item" href="kehadiran-murid.html"><span data-icon="graduate"></span><span class="drawer-label">Kehadiran Murid</span></a>
+  <a class="drawer-item active" href="tempahan-bilik.html"><span data-icon="door"></span><span class="drawer-label">Tempahan Bilik Khas</span></a>
+  <a class="drawer-item" href="tempahan-kaunseling.html"><span data-icon="heart"></span><span class="drawer-label">Tempahan Kaunseling</span></a>
+  <a class="drawer-item" href="event.html"><span data-icon="event"></span><span class="drawer-label">Event</span></a>
+  <div class="drawer-spacer"></div>
+  <a class="drawer-item drawer-logout" href="#" onclick="logout();return false;"><span data-icon="power"></span><span class="drawer-label">Log Keluar</span></a>
+</nav>
+
+<div class="bottom-nav-wrap">
+  <nav class="bottom-nav lp-bottom-nav" style="grid-template-columns:1fr 1fr 1fr">
+    <button class="bn-item active" id="tb-nav-slot" onclick="switchPage('page1')" aria-label="Tempahan Slot"><span data-icon="clipboard"></span><span class="bn-label">Tempahan Slot</span></button>
+    <button class="bn-item" id="tb-nav-jadual" onclick="switchPage('page2')" aria-label="Jadual"><span data-icon="calendar"></span><span class="bn-label">Jadual</span></button>
+    <a class="bn-item" href="index.html" aria-label="Home"><span data-icon="home"></span></a>
+  </nav>
 </div>
 
 <!-- ============ BOOKING MODAL ============ -->
@@ -701,6 +743,7 @@ table.weekly-table tbody td{border-bottom:1px solid rgba(255,255,255,0.06);}
 </div>
 
 
+<script src="app.js"></script>
 <script>
 /* ============================================================
    KONFIGURASI — tukar GAS_URL kepada URL Web App Google Apps
@@ -845,9 +888,9 @@ function applyLogo(){
 
 function switchPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  document.querySelector(`.nav-tab[data-page="${id}"]`).classList.add('active');
+  document.getElementById('tb-nav-slot').classList.toggle('active', id === 'page1');
+  document.getElementById('tb-nav-jadual').classList.toggle('active', id === 'page2');
   if(id==='page2') loadSchedule();
 }
 
@@ -1342,11 +1385,12 @@ function populateKelasList(){
   document.getElementById('kelasList').innerHTML = CLASS_LIST.map(c=>`<option value="${c}">`).join('');
 }
 
-renderRoomGrid();
-populateKelasList();
-applyLogo();
-document.getElementById('dateSelect').value = todayStr();
-document.getElementById('footerYear').textContent = new Date().getFullYear();
+function renderTempahanBilik(user) {
+  renderRoomGrid();
+  populateKelasList();
+  document.getElementById('dateSelect').value = todayStr();
+}
+initApp(renderTempahanBilik);
 </script>
 </body>
 </html>

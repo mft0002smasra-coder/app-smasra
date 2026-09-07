@@ -93,10 +93,16 @@
   <div class="glass modal-sheet">
     <div class="modal-title">TAMBAH HEBAHAN</div>
     <form id="pengumuman-form">
-      <label class="field-label" for="pengumuman-gambar">Link Gambar (pilihan)</label>
-      <input class="field-input" type="url" id="pengumuman-gambar" placeholder="https://lh3.googleusercontent.com/d/...">
-      <label class="field-label" for="pengumuman-teks" style="margin-top:14px">Teks Hebahan</label>
-      <textarea class="field-input" id="pengumuman-teks" placeholder="Tulis pengumuman di sini..." required></textarea>
+      <label class="field-label">Gambar (pilihan)</label>
+      <div class="lp-img-slot" style="aspect-ratio:16/9" onclick="document.getElementById('pengumuman-gambar-file').click()">
+        <img class="hidden" id="pengumuman-gambar-preview" alt="Pratonton gambar">
+        <div class="lp-img-empty" id="pengumuman-gambar-empty">📷<br>Ketik untuk pilih gambar</div>
+        <div class="lp-img-remove hidden" id="pengumuman-gambar-remove" onclick="event.stopPropagation();pengumumanRemoveImage()">✕</div>
+        <input type="file" id="pengumuman-gambar-file" accept="image/*" class="hidden" onchange="pengumumanHandleImagePick(this)">
+      </div>
+      <label class="field-label" for="pengumuman-teks" style="margin-top:14px">Teks Hebahan (pilihan)</label>
+      <textarea class="field-input" id="pengumuman-teks" placeholder="Tulis pengumuman di sini..."></textarea>
+      <div class="sub-dim" style="margin-bottom:0;margin-top:4px">Isi sekurang-kurangnya SATU — gambar sahaja, teks sahaja, atau kedua-duanya.</div>
       <label class="field-label" for="pengumuman-tarikh-tamat" style="margin-top:14px">Tarikh Tamat Hebahan</label>
       <input class="field-input" type="date" id="pengumuman-tarikh-tamat" required>
       <div class="sub-dim" style="margin-bottom:0;margin-top:4px">Hebahan akan hilang automatik dari senarai selepas tarikh ni.</div>
@@ -131,17 +137,51 @@
     document.getElementById("modal-overlay").classList.add("hidden");
     document.getElementById("pengumuman-form").reset();
     document.getElementById("pengumuman-error").classList.add("hidden");
+    pengumumanRemoveImage();
+  }
+
+  let pengumumanImageData = null;
+  function pengumumanHandleImagePick(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxW = 1000;
+        const scale = Math.min(1, maxW / img.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        pengumumanImageData = canvas.toDataURL("image/jpeg", 0.75);
+        const preview = document.getElementById("pengumuman-gambar-preview");
+        preview.src = pengumumanImageData;
+        preview.classList.remove("hidden");
+        document.getElementById("pengumuman-gambar-empty").classList.add("hidden");
+        document.getElementById("pengumuman-gambar-remove").classList.remove("hidden");
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+  function pengumumanRemoveImage() {
+    pengumumanImageData = null;
+    document.getElementById("pengumuman-gambar-file").value = "";
+    document.getElementById("pengumuman-gambar-preview").classList.add("hidden");
+    document.getElementById("pengumuman-gambar-empty").classList.remove("hidden");
+    document.getElementById("pengumuman-gambar-remove").classList.add("hidden");
   }
 
   document.getElementById("pengumuman-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const teks = document.getElementById("pengumuman-teks").value.trim();
-    const gambar = document.getElementById("pengumuman-gambar").value.trim();
     const tarikhTamat = document.getElementById("pengumuman-tarikh-tamat").value;
     const errEl = document.getElementById("pengumuman-error");
     errEl.classList.add("hidden");
-    if (!teks) {
-      errEl.textContent = "Sila isi teks pengumuman.";
+    if (!teks && !pengumumanImageData) {
+      errEl.textContent = "Sila isi teks ATAU muat naik gambar (sekurang-kurangnya satu).";
       errEl.classList.remove("hidden");
       return;
     }
@@ -156,7 +196,7 @@
     try {
       const res = await fetch(API_URL, {
         method: "POST",
-        body: JSON.stringify({ action: "addPengumuman", email: currentUser.email, teks: teks, gambar: gambar, tarikhTamat: tarikhTamat }),
+        body: JSON.stringify({ action: "addPengumuman", email: currentUser.email, teks: teks, gambarBase64: pengumumanImageData || "", tarikhTamat: tarikhTamat }),
       });
       const data = await res.json();
       if (data.success) {
