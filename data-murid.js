@@ -178,32 +178,115 @@ async function dmEnsureXlsxLib() {
 }
 
 const DM_HEADER_MAP = {
-  NAMA: "nama", "NAMA MURID": "nama",
-  "NO KP": "noKP", "NO. KP": "noKP", NOKP: "noKP", "NO KAD PENGENALAN": "noKP",
-  KELAS: "kelas", TINGKATAN: "kelas",
+  NAMA: "nama",
+  "NO PENGENALAN": "noKP", "NOMBOR PENGENALAN": "noKP", "NO KP": "noKP", NOKP: "noKP", "NO KAD PENGENALAN": "noKP",
+  KELAS: "kelas", "NAMA KELAS": "kelasNama",
+  TINGKATAN: "tingkatan", "TAHUN TINGKATAN": "tingkatan",
   JAN: "jantina", JANTINA: "jantina",
-  ASRAMA: "asrama",
+  ASRAMA: "asrama", "STATUS ASRAMA": "statusAsrama",
   CATATAN: "catatan",
 };
+const DM_TINGKATAN_WORD = {
+  SATU: "1", DUA: "2", TIGA: "3", EMPAT: "4", LIMA: "5", ENAM: "6", STAM: "6",
+};
+
+// Buang tanda baca/simbol, tinggal huruf+nombor+spasi sahaja — untuk padanan
+// header/kelas yang fleksibel (elak masalah "AL FARABI" vs "AL-FARABI" dsb.)
+function dmNormHeader(h) {
+  return String(h || "").trim().toUpperCase().replace(/[^A-Z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function dmFindHeaderRowIndex(aoa) {
+  for (let i = 0; i < Math.min(aoa.length, 20); i++) {
+    const row = aoa[i] || [];
+    const normalized = row.map((c) => dmNormHeader(c));
+    const hasNama = normalized.indexOf("NAMA") !== -1;
+    const hasNoKp = normalized.some((h) => h.indexOf("PENGENALAN") !== -1 || h === "NO KP" || h === "NOKP");
+    if (hasNama && hasNoKp) return i;
+  }
+  return 0; // fallback — andaian baris pertama ialah header
+}
+
+function dmExtractTingkatanDigit(raw) {
+  const s = dmNormHeader(raw);
+  for (const word in DM_TINGKATAN_WORD) {
+    if (s.indexOf(word) !== -1) return DM_TINGKATAN_WORD[word];
+  }
+  const m = s.match(/(\d)/);
+  return m ? m[1] : "";
+}
+
+function dmNormJantina(raw) {
+  const s = dmNormHeader(raw);
+  if (s === "LELAKI" || s === "L") return "L";
+  if (s === "PEREMPUAN" || s === "P") return "P";
+  return s.charAt(0) || "";
+}
+
+// Padankan "nama kelas" mentah (cth "AL FARABI") + digit tingkatan (cth "1")
+// dengan entri DM_CLASS_LIST yang betul (cth "1 Al-Farabi") — abaikan sengkang/spasi.
+function dmResolveKelas(tingkatanDigit, kelasNamaRaw) {
+  const namaNorm = dmNormHeader(kelasNamaRaw);
+  const found = DM_CLASS_LIST.find((k) => {
+    const kDigit = dmTingkatanOf(k);
+    const kNameNorm = dmNormHeader(k.replace(/^\d+\s*/, ""));
+    return kDigit === tingkatanDigit && kNameNorm === namaNorm;
+  });
+  return found || `${tingkatanDigit} ${kelasNamaRaw}`.trim();
+}
+
+// LA = Lelaki Asrama, PA = Perempuan Asrama, T = Tanpa Asrama.
+// Terima terus kod (LA/PA/T) ATAU "STATUS ASRAMA" (YA/kosong) + Jantina.
+function dmDeriveAsrama(directRaw, statusAsramaRaw, jantinaNorm) {
+  if (directRaw) {
+    const s = dmNormHeader(directRaw);
+    if (s === "LA" || s === "PA" || s === "T") return s;
+  }
+  if (statusAsramaRaw !== undefined) {
+    const s = dmNormHeader(statusAsramaRaw);
+    const inAsrama = s === "YA" || s === "Y" || s === "YES";
+    if (!inAsrama) return "T";
+    if (jantinaNorm === "L") return "LA";
+    if (jantinaNorm === "P") return "PA";
+  }
+  return "";
+}
 
 function dmRowsFromAoa(aoa) {
   if (!aoa.length) return [];
-  const header = aoa[0].map((h) => dmNorm(h));
+  const headerIdx = dmFindHeaderRowIndex(aoa);
+  const header = (aoa[headerIdx] || []).map((h) => dmNormHeader(h));
   const colIdx = {};
-  header.forEach((h, i) => { if (DM_HEADER_MAP[h]) colIdx[DM_HEADER_MAP[h]] = i; });
+  header.forEach((h, i) => { if (DM_HEADER_MAP[h] && colIdx[DM_HEADER_MAP[h]] === undefined) colIdx[DM_HEADER_MAP[h]] = i; });
 
   const rows = [];
-  for (let i = 1; i < aoa.length; i++) {
+  for (let i = headerIdx + 1; i < aoa.length; i++) {
     const r = aoa[i];
     if (!r || !r.length) continue;
     const nama = colIdx.nama !== undefined ? String(r[colIdx.nama] || "").trim() : "";
     if (!nama) continue;
+
+    const jantina = colIdx.jantina !== undefined ? dmNormJantina(r[colIdx.jantina]) : "";
+
+    let kelas = "";
+    if (colIdx.kelas !== undefined) {
+      kelas = String(r[colIdx.kelas] || "").trim();
+    } else if (colIdx.kelasNama !== undefined) {
+      const tingkatanDigit = colIdx.tingkatan !== undefined ? dmExtractTingkatanDigit(r[colIdx.tingkatan]) : "";
+      kelas = dmResolveKelas(tingkatanDigit, r[colIdx.kelasNama]);
+    }
+
+    let asrama = "";
+    const directAsramaRaw = colIdx.asrama !== undefined ? r[colIdx.asrama] : null;
+    const statusAsramaRaw = colIdx.statusAsrama !== undefined ? r[colIdx.statusAsrama] : undefined;
+    asrama = dmDeriveAsrama(directAsramaRaw, statusAsramaRaw, jantina);
+
     rows.push({
       nama,
       noKP: colIdx.noKP !== undefined ? String(r[colIdx.noKP] || "").trim() : "",
-      kelas: colIdx.kelas !== undefined ? String(r[colIdx.kelas] || "").trim() : "",
-      jantina: colIdx.jantina !== undefined ? String(r[colIdx.jantina] || "").trim() : "",
-      asrama: colIdx.asrama !== undefined ? String(r[colIdx.asrama] || "").trim() : "",
+      kelas,
+      jantina,
+      asrama,
       catatan: colIdx.catatan !== undefined ? String(r[colIdx.catatan] || "").trim() : "",
     });
   }
