@@ -1,7 +1,9 @@
 /* ============================================================
    DATA MURID — Enrolmen, Senarai Murid, Analisis (upload CSV/XLSX)
    Pengecam awalan "dm" (Data Murid).
+   [Versi: 61-lajur-KPM + auto-detect header row + smart-read-by-header]
    ============================================================ */
+console.log("[Data Murid] data-murid.js dimuat — versi 61-lajur-KPM");
 
 const DM_SPREADSHEET_ID = "1EohV_hfuS6SDgiqDn--QQiM_y92_K4jvGyh87nA3HOo";
 
@@ -438,7 +440,7 @@ async function dmHandleFilePick(input) {
   const file = input.files && input.files[0];
   if (!file) return;
   const statusEl = document.getElementById("dm-upload-status");
-  statusEl.textContent = "Membaca fail...";
+  statusEl.textContent = `Membaca fail "${file.name}" (${(file.size / 1024).toFixed(0)} KB)...`;
   statusEl.classList.remove("hidden");
 
   const isXlsx = /\.xlsx?$/i.test(file.name);
@@ -446,7 +448,7 @@ async function dmHandleFilePick(input) {
     let aoa;
     if (isXlsx) {
       await dmEnsureXlsxLib();
-      if (typeof XLSX === "undefined") throw new Error("Gagal muatkan pustaka XLSX. Cuba lagi bila ada internet.");
+      if (typeof XLSX === "undefined") throw new Error("Gagal muatkan pustaka XLSX (semak sambungan internet / cuba fail CSV sebagai alternatif).");
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array" });
       const ws = wb.Sheets[wb.SheetNames[0]];
@@ -455,9 +457,14 @@ async function dmHandleFilePick(input) {
       const text = await file.text();
       aoa = dmParseCsvText(text);
     }
+    if (!aoa.length) throw new Error("Fail kosong atau format tak dikenali.");
+    const headerIdx = dmFindHeaderRowIndex(aoa);
+    console.log("[Data Murid] Baris dibaca:", aoa.length, "| Baris header dikesan pada indeks:", headerIdx, "| Kandungan header:", aoa[headerIdx]);
     dmParsedRows = dmRowsFromAoa(aoa);
+    console.log("[Data Murid] Rekod berjaya diproses:", dmParsedRows.length);
     dmRenderPreview();
   } catch (err) {
+    console.error("[Data Murid] Ralat baca fail:", err);
     statusEl.textContent = "Gagal baca fail: " + err.message;
   }
 }
