@@ -942,6 +942,7 @@ table.db-book-table tbody tr:nth-child(odd) td{ background:rgba(255,255,255,.02)
 .kn-choice-card:hover{ border-color:rgba(255,199,44,0.4); }
 .kn-choice-card.kn-disabled{ opacity:.5;filter:grayscale(.6); }
 .kn-choice-card.kn-disabled:hover{ border-color:rgba(255,255,255,0.10); }
+.bn-item.kn-disabled{ opacity:.4; }
 .kn-choice-photo{ position:relative;height:150px;width:100%;overflow:hidden;background:linear-gradient(150deg,#3A3D43,#1C1D20); }
 .kn-choice-photo img{ width:100%;height:100%;object-fit:cover;display:block; }
 .kn-ph-fallback{
@@ -1121,3 +1122,92 @@ table.kn-tt tbody td{ border-bottom:1px solid #F0F1F3;padding:6px; }
   18%{ opacity:1; }
   100%{ opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.1); }
 }
+
+/* ============================================================
+   DATA MURID — tema Skeuomorphism (kandungan sahaja; header/nav kekal tema app)
+   ============================================================ */
+.dm-scope{
+  --dm-cream:#F3E7D3; --dm-cream-dark:#E5D3B3; --dm-paper:#FBF3E4;
+  --dm-brown:#6B4A2E; --dm-brown-dark:#4A3320; --dm-leather:#8B5E3C;
+  --dm-green:#5A8A5A; --dm-red:#B85450; --dm-gold:#C79A3E;
+  background:var(--dm-cream);
+  border-radius:20px 20px 0 0;margin:0 -16px;padding:20px 16px 100px;
+  font-family:'Fredoka','Rajdhani',sans-serif;color:var(--dm-brown-dark);
+  min-height:calc(100vh - 92px);
+  box-shadow:inset 0 3px 10px rgba(107,74,46,0.15);
+}
+.dm-page-title{
+  text-align:center;font-weight:700;font-size:15px;letter-spacing:.6px;color:var(--dm-brown-dark);
+  margin-bottom:14px;text-shadow:0 1px 0 rgba(255,255,255,0.6);
+}
+.dm-card{
+  background:linear-gradient(160deg,var(--dm-paper),var(--dm-cream-dark));
+  border-radius:18px;padding:16px 14px;margin-bottom:16px;
+  box-shadow:0 8px 0 -2px rgba(107,74,46,0.15), 0 10px 20px -8px rgba(107,74,46,0.35),
+             inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -1px 0 rgba(107,74,46,0.1);
+  border:1px solid rgba(107,74,46,0.15);
+}
+.dm-summary-card{ padding:14px; }
+.dm-table-wrap{ overflow-x:auto;border-radius:12px; }
+table.dm-table{ border-collapse:separate;border-spacing:0;width:100%;min-width:480px; }
+table.dm-table th, table.dm-table td{ padding:7px 6px;text-align:center;font-size:10.5px; }
+table.dm-table thead th{
+  background:linear-gradient(160deg,var(--dm-leather),var(--dm-brown));color:#F8ECD8;
+  font-weight:700;letter-spacing:.3px;border:1px solid rgba(74,51,32,0.3);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.15);
+}
+table.dm-table tbody td{ border:1px solid rgba(107,74,46,0.18);background:rgba(255,255,255,0.5); }
+table.dm-table tbody tr:nth-child(odd) td{ background:rgba(255,255,255,0.25); }
+.dm-kelas-cell{ text-align:left !important;font-weight:600; }
+.dm-b{ font-weight:700;color:var(--dm-brown-dark); }
+tr.dm-subtotal td{ background:rgba(199,154,62,0.25) !important;font-weight:700; }
+tr.dm-grandtotal td{ background:var(--dm-brown) !important;color:#F8ECD8;font-weight:700; }
+.dm-total-note{ margin-top:10px;font-size:11px;color:var(--dm-brown);text-align:center;font-style:italic; }
+
+.dm-summary-row{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:9px 4px;
+  border-bottom:1px solid rgba(107,74,46,0.15);font-size:12px;align-items:center;
+}
+.dm-summary-row:last-child{ border-bottom:none; }
+.dm-summary-head{ font-weight:700;color:var(--dm-brown);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px; }
+.dm-summary-row span:first-child{ font-weight:600;text-align:left; }
+.dm-summary-row span:not(:first-child){ text-align:center;font-weight:700; }
+.dm-summary-total{ background:rgba(199,154,62,0.2);border-radius:10px;margin-top:4px; }
+
+.dm-field-label{ display:block;font-size:10.5px;font-weight:700;color:var(--dm-brown);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px; }
+.dm-select{
+  width:100%;padding:11px 12px;border-radius:12px;border:1px solid rgba(107,74,46,0.25);
+  background:linear-gradient(160deg,#fff,var(--dm-cream-dark));font-family:inherit;font-weight:600;font-size:13px;
+  color:var(--dm-brown-dark);box-shadow:inset 0 2px 4px rgba(107,74,46,0.1);margin-bottom:14px;
+}
+.dm-senarai-header{ display:flex;justify-content:space-between;align-items:center;margin-bottom:10px; }
+.dm-senarai-header span:first-child{ font-weight:700;font-size:12.5px;color:var(--dm-brown-dark); }
+.dm-count-pill{
+  background:var(--dm-leather);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;
+}
+.dm-nama-cell{ text-align:left !important;font-weight:600; }
+.dm-empty-row{ padding:20px !important;color:var(--dm-brown);font-style:italic; }
+
+.dm-upload-icon{ text-align:center;font-size:38px;margin-bottom:10px; }
+.dm-upload-desc{ text-align:center;font-size:12.5px;color:var(--dm-brown);margin-bottom:8px;line-height:1.5; }
+.dm-upload-hint{
+  text-align:center;font-size:10.5px;color:var(--dm-brown);background:rgba(199,154,62,0.15);
+  border-radius:10px;padding:8px 10px;margin-bottom:16px;
+}
+.dm-file-btn{
+  display:block;text-align:center;padding:13px;border-radius:14px;cursor:pointer;
+  background:linear-gradient(160deg,var(--dm-leather),var(--dm-brown));color:#F8ECD8;
+  font-weight:700;font-size:13px;box-shadow:0 5px 0 -1px rgba(74,51,32,0.5), 0 8px 14px -6px rgba(74,51,32,0.5);
+  transition:transform .1s;
+}
+.dm-file-btn:active{ transform:translateY(2px);box-shadow:0 3px 0 -1px rgba(74,51,32,0.5); }
+.dm-upload-status{ margin-top:14px;font-size:12px;color:var(--dm-brown-dark);text-align:center;font-weight:600; }
+.dm-preview-box{ margin-top:16px; }
+.dm-preview-title{ font-weight:700;font-size:11.5px;color:var(--dm-brown);margin-bottom:8px;text-transform:uppercase; }
+.dm-preview-more{ text-align:center;font-size:10.5px;color:var(--dm-brown);margin-top:6px;font-style:italic; }
+.dm-confirm-btn{
+  display:block;width:100%;margin-top:16px;padding:13px;border:none;border-radius:14px;cursor:pointer;
+  background:linear-gradient(160deg,var(--dm-green),#3F6B3F);color:#fff;font-weight:700;font-size:13px;
+  box-shadow:0 5px 0 -1px rgba(50,80,50,0.5), 0 8px 14px -6px rgba(50,80,50,0.5);
+}
+.dm-confirm-btn:disabled{ opacity:.6; }

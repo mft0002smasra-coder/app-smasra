@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Data Murid — SM Arab (Jaim) Al-Asyraf</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#030b12">
+<link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+<div class="bg-fx"></div>
+
+<div id="login-screen" class="hidden">
+  <img class="logo-plain school-logo-img" alt="Logo Sekolah">
+  <div class="brand-title">SM ARAB (JAIM) AL-ASYRAF</div>
+  <div class="brand-sub">Sistem Pengurusan Sekolah</div>
+  <div class="glass">
+    <div class="gsi-wrap" id="google-btn-container"></div>
+    <div class="divider">Atau</div>
+    <form id="login-form">
+      <label class="field-label" for="login-email">Emel Rasmi</label>
+      <input class="field-input" type="email" id="login-email" placeholder="nama@moe-dl.edu.my" autocomplete="email" required>
+      <button class="btn-primary" type="submit" id="login-btn">Log Masuk</button>
+      <div class="error-text hidden" id="login-error"></div>
+    </form>
+  </div>
+</div>
+
+<div id="app-content" class="hidden">
+
+  <div class="site-header-wrap">
+    <header class="site-header">
+      <div class="site-header-row1">
+        <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu"><span data-icon="menu"></span></button>
+        <img class="header-logo school-logo-img" alt="Logo Sekolah">
+        <div class="header-title-block">
+          <div class="header-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
+          <div class="header-school-sub">Data Murid</div>
+        </div>
+      </div>
+      <div class="site-header-row2">
+        <span class="header-greet">Selamat Datang, <span id="header-greet-name">-</span></span>
+        <span class="header-status"><span class="status-dot"></span>Sistem Aktif <span id="live-clock">--:--:-- --</span></span>
+      </div>
+    </header>
+  </div>
+
+  <div id="dm-content" class="dm-scope">
+
+    <!-- ============ Tab 1: Enrolmen Murid ============ -->
+    <div id="dm-panel-enrolmen">
+      <div class="dm-page-title">ENROLMEN PELAJAR</div>
+      <div class="dm-card">
+        <div class="dm-table-wrap">
+          <table class="dm-table">
+            <thead>
+              <tr>
+                <th rowspan="2">Bil</th><th rowspan="2">Kelas</th>
+                <th colspan="3">Keseluruhan</th><th colspan="3">Asrama</th>
+              </tr>
+              <tr>
+                <th>L</th><th>P</th><th>Jumlah</th>
+                <th>L</th><th>P</th><th>Jumlah</th>
+              </tr>
+            </thead>
+            <tbody id="dm-enrolment-table-body"></tbody>
+          </table>
+        </div>
+        <div class="dm-total-note" id="dm-total-note">Memuatkan...</div>
+      </div>
+
+      <div class="dm-card dm-summary-card">
+        <div class="dm-summary-row dm-summary-head">
+          <span></span><span>Keseluruhan</span><span>Asrama</span>
+        </div>
+        <div class="dm-summary-row"><span>Lelaki</span><span id="dm-summary-lelaki">-</span></div>
+        <div class="dm-summary-row"><span>Perempuan</span><span id="dm-summary-perempuan">-</span></div>
+        <div class="dm-summary-row dm-summary-total"><span>Jumlah</span><span id="dm-summary-jumlah">-</span></div>
+      </div>
+    </div>
+
+    <!-- ============ Tab 2: Senarai Murid ============ -->
+    <div id="dm-panel-senarai" class="hidden">
+      <div class="dm-page-title">SENARAI NAMA PELAJAR</div>
+      <div class="dm-card">
+        <label class="dm-field-label">Pilih Kelas</label>
+        <select class="dm-select" id="dm-class-select"></select>
+        <div class="dm-senarai-header">
+          <span id="dm-senarai-title">Tingkatan: -</span>
+          <span id="dm-senarai-count" class="dm-count-pill">0 murid</span>
+        </div>
+        <div class="dm-table-wrap">
+          <table class="dm-table dm-table-senarai">
+            <thead><tr><th>Bil</th><th>Nama</th><th>No KP</th><th>Jan</th><th>Asrama</th><th>Catatan</th></tr></thead>
+            <tbody id="dm-senarai-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ Tab 3: Analisis Data Murid (upload) ============ -->
+    <div id="dm-panel-analisis" class="hidden">
+      <div class="dm-page-title">ANALISIS DATA MURID</div>
+      <div class="dm-card">
+        <div class="dm-upload-icon">📊</div>
+        <div class="dm-upload-desc">Muat naik fail CSV atau Excel (.xlsx) untuk kemaskini pangkalan data murid secara pukal.</div>
+        <div class="dm-upload-hint">Lajur diperlukan: <b>Nama</b>, No KP, Kelas, Jantina (L/P), Asrama, Catatan</div>
+
+        <label class="dm-file-btn" for="dm-file-input">📂 Pilih Fail (.csv / .xlsx)</label>
+        <input type="file" id="dm-file-input" accept=".csv,.xlsx,.xls" class="hidden" onchange="dmHandleFilePick(this)">
+
+        <div class="dm-upload-status hidden" id="dm-upload-status"></div>
+
+        <div class="dm-preview-box hidden" id="dm-preview-box">
+          <div class="dm-preview-title">Pratonton</div>
+          <div class="dm-table-wrap">
+            <table class="dm-table dm-table-preview">
+              <thead><tr><th>Nama</th><th>No KP</th><th>Kelas</th><th>Jan</th><th>Asrama</th></tr></thead>
+              <tbody id="dm-preview-body"></tbody>
+            </table>
+          </div>
+          <div class="dm-preview-more" id="dm-preview-more"></div>
+        </div>
+
+        <button class="dm-confirm-btn hidden" id="dm-confirm-upload-btn" onclick="dmConfirmUpload()">Sahkan &amp; Simpan ke Sheet</button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<nav class="drawer" id="drawer">
+  <div class="drawer-logo-row"><img class="school-logo-img" alt=""><span>SMASRA</span></div>
+  <a class="drawer-item" href="index.html"><span data-icon="home"></span><span class="drawer-label">Laman Utama</span></a>
+  <div id="drawer-menu-body"></div>
+  <div class="drawer-spacer"></div>
+  <a class="drawer-item drawer-logout" href="#" onclick="logout();return false;"><span data-icon="power"></span><span class="drawer-label">Log Keluar</span></a>
+</nav>
+
+<div class="bottom-nav-wrap">
+  <nav class="bottom-nav lp-bottom-nav" style="grid-template-columns:1fr 1fr 1fr 1fr">
+    <button class="bn-item active" id="dm-nav-enrolmen" onclick="dmSwitchTab('enrolmen')" aria-label="Enrolmen"><span data-icon="chart"></span><span class="bn-label">Enrolmen</span></button>
+    <button class="bn-item" id="dm-nav-senarai" onclick="dmSwitchTab('senarai')" aria-label="Senarai"><span data-icon="graduate"></span><span class="bn-label">Senarai</span></button>
+    <button class="bn-item" id="dm-nav-analisis" onclick="dmSwitchTab('analisis')" aria-label="Analisis"><span data-icon="clipboard"></span><span class="bn-label">Analisis</span></button>
+    <a class="bn-item" href="index.html" aria-label="Home"><span data-icon="home"></span></a>
+  </nav>
+</div>
+
+<script src="app.js"></script>
+<script src="data-murid.js"></script>
+<script>
+  initApp(dmInit);
+</script>
+</body>
+</html>

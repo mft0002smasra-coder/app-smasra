@@ -30,6 +30,7 @@ function doGet(e) {
   if (action === "getBanner") return getBanner();
   if (action === "getEvents") return getEvents();
   if (action === "getLaporanPentadbir") return getLaporanPentadbir();
+  if (action === "getDataMurid") return getDataMurid();
   return jsonResponse({ error: "Unknown action: " + action });
 }
 
@@ -44,6 +45,7 @@ function doPost(e) {
   if (body.action === "addEvent") return addEvent(body);
   if (body.action === "addLaporanPentadbir") return addLaporanPentadbir(body);
   if (body.action === "deleteLaporanPentadbir") return deleteLaporanPentadbir(body);
+  if (body.action === "uploadDataMurid") return uploadDataMurid(body);
   return jsonResponse({ success: false, message: "Unknown action: " + body.action });
 }
 
@@ -415,4 +417,85 @@ function deleteLaporanPentadbir(body) {
     sheet.deleteRow(rowsToDelete[j]);
   }
   return jsonResponse({ success: true, deleted: rowsToDelete.length });
+}
+
+/* ---------------- DATA MURID ---------------- */
+// Tab "DatabaseMurid" (baris 1 = header, data bermula baris 2):
+// A=Nama, B=NoKP, C=Kelas, D=Jantina(L/P), E=Asrama, F=Catatan
+
+function getDataMurid() {
+  var sheet = getSheet("DatabaseMurid");
+  if (!sheet) return jsonResponse([]);
+  var data = sheet.getDataRange().getValues();
+  var list = [];
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (!row[0] || !row[2]) continue; // perlu nama + kelas
+    list.push({
+      nama: row[0],
+      noKP: String(row[1] || ""),
+      kelas: row[2],
+      jantina: row[3] || "",
+      asrama: row[4] || "",
+      catatan: row[5] || "",
+    });
+  }
+  return jsonResponse(list);
+}
+
+/**
+ * body: { email, murid: [{nama,noKP,kelas,jantina,asrama,catatan}, ...] }
+ * Upsert ikut No.KP (kunci unik) — kalau dah wujud, KEMASKINI baris; kalau
+ * tiada, TAMBAH baris baharu. Dihadkan kepada jawatan "PPP (GURU DATA MURID)"
+ * atau Role "Admin".
+ */
+function uploadDataMurid(body) {
+  var user = findUserByEmail(body.email);
+  var jawatanUpper = user ? String(user.jawatan || "").trim().toUpperCase() : "";
+  var isDataMuridGuru = jawatanUpper === "PPP (GURU DATA MURID)";
+  var isAdmin = user && String(user.role || "").trim().toLowerCase() === "admin";
+  if (!user || (!isDataMuridGuru && !isAdmin)) {
+    return jsonResponse({ success: false, message: "Hanya Guru Data Murid atau Admin boleh muat naik data murid." });
+  }
+  if (!body.murid || !body.murid.length) {
+    return jsonResponse({ success: false, message: "Tiada rekod murid dihantar." });
+  }
+
+  ensureTimezone();
+  var sheet = getSheet("DatabaseMurid");
+  if (!sheet) {
+    sheet = SpreadsheetApp.openById(SPREADSHEET_ID).insertSheet("DatabaseMurid");
+    sheet.appendRow(["Nama", "NoKP", "Kelas", "Jantina", "Asrama", "Catatan"]);
+  }
+
+  var data = sheet.getDataRange().getValues();
+  var noKpToRow = {}; // No.KP -> nombor baris (1-indexed sebenar dalam Sheet)
+  for (var i = 1; i < data.length; i++) {
+    var kp = String(data[i][1] || "").trim();
+    if (kp) noKpToRow[kp] = i + 1;
+  }
+
+  var added = 0, updated = 0, skipped = 0;
+  body.murid.forEach(function (m) {
+    var noKP = String(m.noKP || "").trim();
+    var nama = String(m.nama || "").trim();
+    var kelas = String(m.kelas || "").trim();
+    if (!nama || !kelas) { skipped++; return; }
+
+    var rowValues = [nama, noKP, kelas, m.jantina || "", m.asrama || "", m.catatan || ""];
+    if (noKP && noKpToRow[noKP]) {
+      sheet.getRange(noKpToRow[noKP], 1, 1, rowValues.length).setValues([rowValues]);
+      updated++;
+    } else {
+      sheet.appendRow(rowValues);
+      if (noKP) noKpToRow[noKP] = sheet.getLastRow();
+      added++;
+    }
+  });
+
+  // Paksa lajur NoKP (B) jadi teks supaya nombor panjang tak jadi notasi saintifik
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) sheet.getRange(2, 2, lastRow - 1, 1).setNumberFormat("@");
+
+  return jsonResponse({ success: true, added: added, updated: updated, skipped: skipped });
 }

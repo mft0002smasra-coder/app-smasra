@@ -9,6 +9,7 @@ const CORE_ASSETS = [
   "laporan-pentadbir.html",
   "tempahan-bilik.html",
   "tempahan-kaunseling.html",
+  "data-murid.html",
   "style.css",
   "app.js",
   "kehadiran-murid-borang.js",
@@ -17,6 +18,7 @@ const CORE_ASSETS = [
   "laporan-pentadbir.js",
   "erks-database.js",
   "tempahan-kaunseling.js",
+  "data-murid.js",
   "manifest.json",
 ];
 
