@@ -94,6 +94,47 @@ function dmEscape(str) { return String(str).replace(/&/g, "&amp;").replace(/</g,
 let dmCurrentUser = null;
 let dmCanUpload = false;
 let dmStudents = [];
+let dmH2cReady = false;
+
+function dmLoadScriptTag(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src; s.onload = resolve; s.onerror = () => reject(new Error("gagal " + src));
+    document.head.appendChild(s);
+  });
+}
+async function dmEnsureHtml2Canvas() {
+  if (dmH2cReady || typeof html2canvas !== "undefined") { dmH2cReady = true; return; }
+  const cdns = [
+    "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
+    "https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js",
+  ];
+  for (const url of cdns) {
+    try { await dmLoadScriptTag(url); if (typeof html2canvas !== "undefined") { dmH2cReady = true; return; } } catch (e) {}
+  }
+}
+async function dmDownloadPng(elId, filenamePrefix, btn) {
+  const originalText = btn.textContent;
+  btn.disabled = true; btn.textContent = "Menyediakan...";
+  await dmEnsureHtml2Canvas();
+  if (typeof html2canvas === "undefined") {
+    alert("Gagal muatkan pustaka export. Cuba lagi bila ada sambungan internet.");
+    btn.disabled = false; btn.textContent = originalText;
+    return;
+  }
+  try {
+    const el = document.getElementById(elId);
+    const canvas = await html2canvas(el, { backgroundColor: "#F3E7D3", scale: 2, useCORS: true });
+    const link = document.createElement("a");
+    link.download = `${filenamePrefix}_${new Date().toISOString().slice(0, 10)}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  } catch (err) {
+    alert("Gagal jana PNG: " + err.message);
+  }
+  btn.disabled = false; btn.textContent = originalText;
+}
 
 /* ---------------- Akses (Analisis/Upload) ---------------- */
 function dmCheckUploadAccess(user) {

@@ -66,7 +66,7 @@ body{
 }
 .hidden{display:none !important}
 .icon{ width:20px;height:20px;display:block;flex-shrink:0; }
-#app-content{ padding-top:92px; }
+#app-content{ padding-top:92px;min-width:0; }
 
 /* ---------- Plain logo / gambar (tiada shape khas) ---------- */
 .logo-plain{ height:64px;width:auto;max-width:100%;object-fit:contain;display:block;margin:0 auto; }
@@ -1148,21 +1148,38 @@ table.kn-tt tbody td{ border-bottom:1px solid #F0F1F3;padding:6px; }
   border:1px solid rgba(107,74,46,0.15);
 }
 .dm-summary-card{ padding:14px; }
-.dm-table-wrap{ overflow-x:auto;border-radius:12px; }
-table.dm-table{ border-collapse:separate;border-spacing:0;width:100%;min-width:480px; }
-table.dm-table th, table.dm-table td{ padding:7px 6px;text-align:center;font-size:10.5px; }
+.dm-table-wrap{ width:100%; }
+table.dm-table{ border-collapse:separate;border-spacing:0;width:100%;table-layout:fixed; }
+table.dm-table th, table.dm-table td{ padding:5px 2px;text-align:center;font-size:8.5px;word-break:break-word;overflow-wrap:break-word; }
 table.dm-table thead th{
   background:linear-gradient(160deg,var(--dm-leather),var(--dm-brown));color:#F8ECD8;
-  font-weight:700;letter-spacing:.3px;border:1px solid rgba(74,51,32,0.3);
+  font-weight:700;letter-spacing:.2px;border:1px solid rgba(74,51,32,0.3);
   box-shadow:inset 0 1px 0 rgba(255,255,255,0.15);
 }
 table.dm-table tbody td{ border:1px solid rgba(107,74,46,0.18);background:rgba(255,255,255,0.5); }
 table.dm-table tbody tr:nth-child(odd) td{ background:rgba(255,255,255,0.25); }
+/* Jadual Enrolmen: Bil, Kelas, 3x Keseluruhan, 3x Asrama = 8 lajur */
+#dm-panel-enrolmen table.dm-table th:nth-child(1), #dm-panel-enrolmen table.dm-table td:nth-child(1){ width:9%; }
+#dm-panel-enrolmen table.dm-table th:nth-child(2), #dm-panel-enrolmen table.dm-table td:nth-child(2){ width:23%; }
+#dm-panel-enrolmen table.dm-table th:nth-child(n+3), #dm-panel-enrolmen table.dm-table td:nth-child(n+3){ width:11.33%; }
+/* Jadual Senarai: Bil, Nama, No KP, Jan, Asrama, Catatan = 6 lajur */
+.dm-table-senarai th:nth-child(1), .dm-table-senarai td:nth-child(1){ width:7%; }
+.dm-table-senarai th:nth-child(2), .dm-table-senarai td:nth-child(2){ width:30%; }
+.dm-table-senarai th:nth-child(3), .dm-table-senarai td:nth-child(3){ width:23%;font-size:7.5px; }
+.dm-table-senarai th:nth-child(4), .dm-table-senarai td:nth-child(4){ width:8%; }
+.dm-table-senarai th:nth-child(5), .dm-table-senarai td:nth-child(5){ width:12%; }
+.dm-table-senarai th:nth-child(6), .dm-table-senarai td:nth-child(6){ width:20%; }
 .dm-kelas-cell{ text-align:left !important;font-weight:600; }
 .dm-b{ font-weight:700;color:var(--dm-brown-dark); }
 tr.dm-subtotal td{ background:rgba(199,154,62,0.25) !important;font-weight:700; }
 tr.dm-grandtotal td{ background:var(--dm-brown) !important;color:#F8ECD8;font-weight:700; }
 .dm-total-note{ margin-top:10px;font-size:11px;color:var(--dm-brown);text-align:center;font-style:italic; }
+.dm-download-btn{
+  display:block;width:100%;margin:0 0 16px;padding:11px;border:none;border-radius:12px;cursor:pointer;
+  background:linear-gradient(160deg,var(--dm-leather),var(--dm-brown));color:#F8ECD8;
+  font-weight:700;font-size:12px;box-shadow:0 4px 0 -1px rgba(74,51,32,0.5), 0 7px 12px -6px rgba(74,51,32,0.5);
+}
+.dm-download-btn:active{ transform:translateY(2px);box-shadow:0 2px 0 -1px rgba(74,51,32,0.5); }
 
 .dm-summary-row{
   display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:9px 4px;

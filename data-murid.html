@@ -56,7 +56,7 @@
     <!-- ============ Tab 1: Enrolmen Murid ============ -->
     <div id="dm-panel-enrolmen">
       <div class="dm-page-title">ENROLMEN PELAJAR</div>
-      <div class="dm-card">
+      <div class="dm-card" id="dm-enrolment-capture">
         <div class="dm-table-wrap">
           <table class="dm-table">
             <thead>
@@ -74,6 +74,7 @@
         </div>
         <div class="dm-total-note" id="dm-total-note">Memuatkan...</div>
       </div>
+      <button class="dm-download-btn" onclick="dmDownloadPng('dm-enrolment-capture','Enrolmen-Murid',this)">⬇ Muat Turun PNG</button>
 
       <div class="dm-card dm-summary-card">
         <div class="dm-summary-row dm-summary-head">
@@ -88,7 +89,7 @@
     <!-- ============ Tab 2: Senarai Murid ============ -->
     <div id="dm-panel-senarai" class="hidden">
       <div class="dm-page-title">SENARAI NAMA PELAJAR</div>
-      <div class="dm-card">
+      <div class="dm-card" id="dm-senarai-capture">
         <label class="dm-field-label">Pilih Kelas</label>
         <select class="dm-select" id="dm-class-select"></select>
         <div class="dm-senarai-header">
@@ -102,6 +103,7 @@
           </table>
         </div>
       </div>
+      <button class="dm-download-btn" onclick="dmDownloadPng('dm-senarai-capture','Senarai-Murid',this)">⬇ Muat Turun PNG</button>
     </div>
 
     <!-- ============ Tab 3: Analisis Data Murid (upload) ============ -->
