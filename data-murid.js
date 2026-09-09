@@ -5,6 +5,80 @@
 
 const DM_SPREADSHEET_ID = "1EohV_hfuS6SDgiqDn--QQiM_y92_K4jvGyh87nA3HOo";
 
+/**
+ * SEMUA lajur data murid — 61 lajur ikut eksport KPM/APDM sepenuhnya, +3
+ * lajur terbitan (Kelas Gabungan/Asrama Kod/Catatan) yang dikira automatik
+ * untuk memudahkan app papar (Enrolmen/Senarai). Disimpan SEMUA dalam Sheet
+ * untuk kegunaan projek akan datang, walaupun app buat masa ini cuma
+ * memaparkan sebahagian.
+ */
+const DM_CANONICAL_FIELDS = [
+  { key: "idMurid", header: "ID MURID" },
+  { key: "nama", header: "NAMA" },
+  { key: "noPengenalan", header: "NO. PENGENALAN" },
+  { key: "jenisPengenalan", header: "JENIS PENGENALAN" },
+  { key: "tarikhLahir", header: "TARIKH LAHIR" },
+  { key: "statusPengajian", header: "STATUS PENGAJIAN" },
+  { key: "tarikhMasukSekolah", header: "TARIKH MASUK SEKOLAH" },
+  { key: "tarikhMasukKelas", header: "TARIKH MASUK KELAS" },
+  { key: "tahunTingkatan", header: "TAHUN / TINGKATAN" },
+  { key: "namaKelas", header: "NAMA KELAS" },
+  { key: "statusDlp", header: "STATUS DLP" },
+  { key: "jenisKelas", header: "JENIS KELAS" },
+  { key: "keteranganAliran", header: "KETERANGAN ALIRAN" },
+  { key: "keteranganBidang", header: "KETERANGAN BIDANG" },
+  { key: "namaGuruKelas", header: "NAMA GURU KELAS" },
+  { key: "jantina", header: "JANTINA" },
+  { key: "kaum", header: "KAUM" },
+  { key: "agama", header: "AGAMA" },
+  { key: "warganegara", header: "WARGANEGARA" },
+  { key: "negaraAsal", header: "NEGARA ASAL" },
+  { key: "statusAsrama", header: "STATUS ASRAMA" },
+  { key: "namaAsrama", header: "NAMA ASRAMA" },
+  { key: "statusOku", header: "STATUS OKU" },
+  { key: "tarikhSahOku", header: "TARIKH SAH OKU" },
+  { key: "noPendaftaranOku", header: "NO. PENDAFTARAN OKU" },
+  { key: "tarikhDaftarOku", header: "TARIKH DAFTAR OKU" },
+  { key: "tarikhKadOku", header: "TARIKH KAD OKU" },
+  { key: "kategoriKetidakupayaan", header: "KATEGORI KETIDAKUPAYAAN" },
+  { key: "subkategoriKetidakupayaan", header: "SUBKATEGORI KETIDAKUPAYAAN" },
+  { key: "statusYatim", header: "STATUS YATIM" },
+  { key: "noAkaunBank", header: "NO. AKAUN BANK" },
+  { key: "namaBank", header: "NAMA BANK" },
+  { key: "penjaga1", header: "PENJAGA 1" },
+  { key: "noPengenalanPenjaga1", header: "NO. PENGENALAN PENJAGA 1" },
+  { key: "jnsPengenalanPenjaga1", header: "JNS. PENGENALAN PENJAGA 1" },
+  { key: "hubunganPenjaga1", header: "HUBUNGAN PENJAGA 1" },
+  { key: "pekerjaanPenjaga1", header: "PEKERJAAN PENJAGA 1" },
+  { key: "statusKerjaPenjaga1", header: "STATUS KERJA PENJAGA 1" },
+  { key: "namaMajikanPenjaga1", header: "NAMA MAJIKAN PENJAGA 1" },
+  { key: "pendapatanPenjaga1", header: "PENDAPATAN PENJAGA 1" },
+  { key: "noTelPejabatPenjaga1", header: "NO. TEL. PEJABAT PENJAGA 1" },
+  { key: "noTelBimbitPenjaga1", header: "NO. TEL. BIMBIT PENJAGA 1" },
+  { key: "tanggungan", header: "TANGGUNGAN" },
+  { key: "penjaga2", header: "PENJAGA 2" },
+  { key: "noPengenalanPenjaga2", header: "NO. PENGENALAN PENJAGA 2" },
+  { key: "jnsPengenalanPenjaga2", header: "JNS. PENGENALAN PENJAGA 2" },
+  { key: "hubunganPenjaga2", header: "HUBUNGAN PENJAGA 2" },
+  { key: "pekerjaanPenjaga2", header: "PEKERJAAN PENJAGA 2" },
+  { key: "statusKerjaPenjaga2", header: "STATUS KERJA PENJAGA 2" },
+  { key: "namaMajikanPenjaga2", header: "NAMA MAJIKAN PENJAGA 2" },
+  { key: "pendapatanPenjaga2", header: "PENDAPATAN PENJAGA 2" },
+  { key: "noTelPejabatPenjaga2", header: "NO. TEL. PEJABAT PENJAGA 2" },
+  { key: "noTelBimbitPenjaga2", header: "NO. TEL. BIMBIT PENJAGA 2" },
+  { key: "alamat1", header: "ALAMAT 1" },
+  { key: "alamat2", header: "ALAMAT 2" },
+  { key: "alamat3", header: "ALAMAT 3" },
+  { key: "poskod", header: "POSKOD" },
+  { key: "bandar", header: "BANDAR" },
+  { key: "daerah", header: "DAERAH" },
+  { key: "negeri", header: "NEGERI" },
+  // Medan TERBITAN — dikira automatik, memudahkan paparan app
+  { key: "kelas", header: "KELAS (GABUNGAN)" },
+  { key: "asramaKod", header: "ASRAMA (KOD)" },
+  { key: "catatan", header: "CATATAN" },
+];
+
 const DM_CLASS_LIST = [
   "1 Ar-Razi", "1 Ibnu Rushd", "1 Al-Farabi",
   "2 Ar-Razi", "2 Ibnu Rushd", "2 Al-Farabi",
@@ -32,21 +106,30 @@ function dmCheckUploadAccess(user) {
 /* ---------------- Fetch data murid (gviz, baca awam) ---------------- */
 async function dmFetchStudents() {
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${DM_SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent("DatabaseMurid")}&_ts=${Date.now()}`;
+    const url = `https://docs.google.com/spreadsheets/d/${DM_SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent("DatabaseMurid")}&headers=1&_ts=${Date.now()}`;
     const res = await fetch(url, { cache: "no-store" });
     const text = await res.text();
     const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
-    const rows = JSON.parse(jsonStr).table.rows;
-    dmStudents = rows.map((r) => {
+    const table = JSON.parse(jsonStr).table;
+
+    // "Kod bijak" — detect setiap lajur ikut NAMA header (bukan kedudukan tetap),
+    // supaya susunan lajur dalam Sheet boleh berubah tanpa pecahkan paparan app.
+    const cols = table.cols || [];
+    const colKeyByIndex = {};
+    cols.forEach((col, i) => {
+      const label = dmNormHeader(col.label || "");
+      if (DM_HEADER_TO_KEY[label]) colKeyByIndex[i] = DM_HEADER_TO_KEY[label];
+    });
+
+    dmStudents = (table.rows || []).map((r) => {
       const c = r.c || [];
-      return {
-        nama: (c[0] && c[0].v) || "",
-        noKP: String((c[1] && c[1].v) || ""),
-        kelas: (c[2] && c[2].v) || "",
-        jantina: (c[3] && c[3].v) || "",
-        asrama: (c[4] && c[4].v) || "",
-        catatan: (c[5] && c[5].v) || "",
-      };
+      const rec = {};
+      Object.keys(colKeyByIndex).forEach((i) => {
+        const key = colKeyByIndex[i];
+        const cell = c[i];
+        rec[key] = cell && cell.v != null ? String(cell.v) : "";
+      });
+      return rec;
     }).filter((s) => s.nama && s.kelas);
   } catch (e) {
     dmStudents = [];
@@ -66,7 +149,7 @@ function dmComputeEnrolment() {
     const isL = String(s.jantina).trim().toUpperCase() === "L";
     // LA = Lelaki Asrama, PA = Perempuan Asrama (kedua-dua bermaksud DALAM asrama)
     // T = Tanpa Asrama / Luar Asrama (BUKAN asrama)
-    const asramaCode = dmNorm(s.asrama);
+    const asramaCode = dmNorm(s.asramaKod);
     const isAsrama = asramaCode === "LA" || asramaCode === "PA";
     const bucket = byClass[match];
     if (isL) bucket.L++; else bucket.P++;
@@ -146,9 +229,9 @@ function dmRenderSenarai() {
     ? list.map((s, i) => `<tr>
         <td>${i + 1}</td>
         <td class="dm-nama-cell">${dmEscape(s.nama)}</td>
-        <td>${dmEscape(s.noKP)}</td>
+        <td>${dmEscape(s.noPengenalan)}</td>
         <td>${dmEscape(s.jantina)}</td>
-        <td>${dmEscape(s.asrama)}</td>
+        <td>${dmEscape(s.asramaKod)}</td>
         <td>${dmEscape(s.catatan)}</td>
       </tr>`).join("")
     : `<tr><td colspan="6" class="dm-empty-row">Tiada murid direkodkan untuk kelas ini.</td></tr>`;
@@ -177,24 +260,27 @@ async function dmEnsureXlsxLib() {
   }
 }
 
-const DM_HEADER_MAP = {
-  NAMA: "nama",
-  "NO PENGENALAN": "noKP", "NOMBOR PENGENALAN": "noKP", "NO KP": "noKP", NOKP: "noKP", "NO KAD PENGENALAN": "noKP",
-  KELAS: "kelas", "NAMA KELAS": "kelasNama",
-  TINGKATAN: "tingkatan", "TAHUN TINGKATAN": "tingkatan",
-  JAN: "jantina", JANTINA: "jantina",
-  ASRAMA: "asrama", "STATUS ASRAMA": "statusAsrama",
-  CATATAN: "catatan",
-};
-const DM_TINGKATAN_WORD = {
-  SATU: "1", DUA: "2", TIGA: "3", EMPAT: "4", LIMA: "5", ENAM: "6", STAM: "6",
-};
-
 // Buang tanda baca/simbol, tinggal huruf+nombor+spasi sahaja — untuk padanan
 // header/kelas yang fleksibel (elak masalah "AL FARABI" vs "AL-FARABI" dsb.)
 function dmNormHeader(h) {
   return String(h || "").trim().toUpperCase().replace(/[^A-Z0-9]+/g, " ").replace(/\s+/g, " ").trim();
 }
+
+// Peta terbalik: header ternormal -> kunci kanonikal (auto dari senarai atas)
+const DM_HEADER_TO_KEY = {};
+DM_CANONICAL_FIELDS.forEach((f) => { DM_HEADER_TO_KEY[dmNormHeader(f.header)] = f.key; });
+// Alias tambahan — format ringkas sendiri (bukan eksport KPM terus)
+DM_HEADER_TO_KEY[dmNormHeader("NO KP")] = "noPengenalan";
+DM_HEADER_TO_KEY[dmNormHeader("NOKP")] = "noPengenalan";
+DM_HEADER_TO_KEY[dmNormHeader("NO KAD PENGENALAN")] = "noPengenalan";
+DM_HEADER_TO_KEY[dmNormHeader("KELAS")] = "kelas";
+DM_HEADER_TO_KEY[dmNormHeader("TINGKATAN")] = "tahunTingkatan";
+DM_HEADER_TO_KEY[dmNormHeader("JAN")] = "jantina";
+DM_HEADER_TO_KEY[dmNormHeader("ASRAMA")] = "asramaKod";
+
+const DM_TINGKATAN_WORD = {
+  SATU: "1", DUA: "2", TIGA: "3", EMPAT: "4", LIMA: "5", ENAM: "6", STAM: "6",
+};
 
 function dmFindHeaderRowIndex(aoa) {
   for (let i = 0; i < Math.min(aoa.length, 20); i++) {
@@ -236,7 +322,6 @@ function dmResolveKelas(tingkatanDigit, kelasNamaRaw) {
 }
 
 // LA = Lelaki Asrama, PA = Perempuan Asrama, T = Tanpa Asrama.
-// Terima terus kod (LA/PA/T) ATAU "STATUS ASRAMA" (YA/kosong) + Jantina.
 function dmDeriveAsrama(directRaw, statusAsramaRaw, jantinaNorm) {
   if (directRaw) {
     const s = dmNormHeader(directRaw);
@@ -252,43 +337,50 @@ function dmDeriveAsrama(directRaw, statusAsramaRaw, jantinaNorm) {
   return "";
 }
 
+/**
+ * Baca SEMUA lajur yang dikenali dari fail (ikut nama header, fleksibel),
+ * bukan hanya 6 medan asas — supaya SEMUA data KPM tersimpan untuk
+ * kegunaan projek akan datang.
+ */
 function dmRowsFromAoa(aoa) {
   if (!aoa.length) return [];
   const headerIdx = dmFindHeaderRowIndex(aoa);
-  const header = (aoa[headerIdx] || []).map((h) => dmNormHeader(h));
+  const rawHeader = aoa[headerIdx] || [];
+  const normHeader = rawHeader.map((h) => dmNormHeader(h));
+
+  // colIdx: kunci kanonikal -> indeks lajur dalam fail dimuat naik
   const colIdx = {};
-  header.forEach((h, i) => { if (DM_HEADER_MAP[h] && colIdx[DM_HEADER_MAP[h]] === undefined) colIdx[DM_HEADER_MAP[h]] = i; });
+  normHeader.forEach((h, i) => { if (DM_HEADER_TO_KEY[h] && colIdx[DM_HEADER_TO_KEY[h]] === undefined) colIdx[DM_HEADER_TO_KEY[h]] = i; });
 
   const rows = [];
   for (let i = headerIdx + 1; i < aoa.length; i++) {
     const r = aoa[i];
     if (!r || !r.length) continue;
-    const nama = colIdx.nama !== undefined ? String(r[colIdx.nama] || "").trim() : "";
-    if (!nama) continue;
+    const namaRaw = colIdx.nama !== undefined ? String(r[colIdx.nama] || "").trim() : "";
+    if (!namaRaw) continue;
 
-    const jantina = colIdx.jantina !== undefined ? dmNormJantina(r[colIdx.jantina]) : "";
+    const rec = {};
+    DM_CANONICAL_FIELDS.forEach((f) => {
+      if (colIdx[f.key] !== undefined) rec[f.key] = String(r[colIdx[f.key]] == null ? "" : r[colIdx[f.key]]).trim();
+    });
 
-    let kelas = "";
-    if (colIdx.kelas !== undefined) {
-      kelas = String(r[colIdx.kelas] || "").trim();
-    } else if (colIdx.kelasNama !== undefined) {
-      const tingkatanDigit = colIdx.tingkatan !== undefined ? dmExtractTingkatanDigit(r[colIdx.tingkatan]) : "";
-      kelas = dmResolveKelas(tingkatanDigit, r[colIdx.kelasNama]);
+    // Normalisasi jantina ke L/P (walaupun asal LELAKI/PEREMPUAN atau L/P terus)
+    if (rec.jantina) rec.jantina = dmNormJantina(rec.jantina);
+
+    // Terbitkan "kelas" (gabungan) kalau tak diberi terus tapi ada bahan mentah
+    if (!rec.kelas && rec.namaKelas) {
+      const tingkatanDigit = rec.tahunTingkatan ? dmExtractTingkatanDigit(rec.tahunTingkatan) : "";
+      rec.kelas = dmResolveKelas(tingkatanDigit, rec.namaKelas);
     }
 
-    let asrama = "";
-    const directAsramaRaw = colIdx.asrama !== undefined ? r[colIdx.asrama] : null;
-    const statusAsramaRaw = colIdx.statusAsrama !== undefined ? r[colIdx.statusAsrama] : undefined;
-    asrama = dmDeriveAsrama(directAsramaRaw, statusAsramaRaw, jantina);
+    // Terbitkan kod Asrama (LA/PA/T) kalau tak diberi kod terus
+    if (!rec.asramaKod || !["LA", "PA", "T"].includes(dmNormHeader(rec.asramaKod))) {
+      rec.asramaKod = dmDeriveAsrama(rec.asramaKod, rec.statusAsrama, rec.jantina);
+    } else {
+      rec.asramaKod = dmNormHeader(rec.asramaKod);
+    }
 
-    rows.push({
-      nama,
-      noKP: colIdx.noKP !== undefined ? String(r[colIdx.noKP] || "").trim() : "",
-      kelas,
-      jantina,
-      asrama,
-      catatan: colIdx.catatan !== undefined ? String(r[colIdx.catatan] || "").trim() : "",
-    });
+    rows.push(rec);
   }
   return rows;
 }
@@ -341,8 +433,8 @@ function dmRenderPreview() {
   statusEl.textContent = `Jumpa ${dmParsedRows.length} rekod murid. Semak pratonton di bawah sebelum simpan.`;
   const previewRows = dmParsedRows.slice(0, 8);
   document.getElementById("dm-preview-body").innerHTML = previewRows.map((r) => `<tr>
-      <td class="dm-nama-cell">${dmEscape(r.nama)}</td><td>${dmEscape(r.noKP)}</td>
-      <td>${dmEscape(r.kelas)}</td><td>${dmEscape(r.jantina)}</td><td>${dmEscape(r.asrama)}</td>
+      <td class="dm-nama-cell">${dmEscape(r.nama)}</td><td>${dmEscape(r.noPengenalan)}</td>
+      <td>${dmEscape(r.kelas)}</td><td>${dmEscape(r.jantina)}</td><td>${dmEscape(r.asramaKod)}</td>
     </tr>`).join("");
   document.getElementById("dm-preview-more").textContent = dmParsedRows.length > 8 ? `...dan ${dmParsedRows.length - 8} lagi` : "";
   previewBox.classList.remove("hidden");
