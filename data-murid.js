@@ -270,7 +270,7 @@ function dmRenderEnrolment() {
   document.getElementById("dm-summary-jumlah-a").textContent = grand.asramaJumlah;
   document.getElementById("dm-total-note").textContent = dmStudents.length
     ? `Jumlah rekod murid dalam pangkalan data: ${dmStudents.length}`
-    : "Tiada data murid lagi — sila muat naik data di tab Analisis.";
+    : "Tiada data murid lagi — sila muat naik data di tab Data.";
 }
 
 /* ================= Tab 2: Senarai Murid ================= */
