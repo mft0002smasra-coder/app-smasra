@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Keberadaan Murid — SM Arab (Jaim) Al-Asyraf</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#030b12">
+<link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+<div class="bg-fx"></div>
+
+<div id="login-screen" class="hidden">
+  <img class="logo-plain school-logo-img" alt="Logo Sekolah">
+  <div class="brand-title">SM ARAB (JAIM) AL-ASYRAF</div>
+  <div class="brand-sub">Sistem Pengurusan Sekolah</div>
+  <div class="glass">
+    <div class="gsi-wrap" id="google-btn-container"></div>
+    <div class="divider">Atau</div>
+    <form id="login-form">
+      <label class="field-label" for="login-email">Emel Rasmi</label>
+      <input class="field-input" type="email" id="login-email" placeholder="nama@moe-dl.edu.my" autocomplete="email" required>
+      <button class="btn-primary" type="submit" id="login-btn">Log Masuk</button>
+      <div class="error-text hidden" id="login-error"></div>
+    </form>
+  </div>
+</div>
+
+<div id="app-content" class="hidden">
+
+  <div class="site-header-wrap">
+    <header class="site-header">
+      <div class="site-header-row1">
+        <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu"><span data-icon="menu"></span></button>
+        <img class="header-logo school-logo-img" alt="Logo Sekolah">
+        <div class="header-title-block">
+          <div class="header-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
+          <div class="header-school-sub">Keberadaan Murid</div>
+        </div>
+      </div>
+      <div class="site-header-row2">
+        <span class="header-greet">Selamat Datang, <span id="header-greet-name">-</span></span>
+        <span class="header-status"><span class="status-dot"></span>Sistem Aktif <span id="live-clock">--:--:-- --</span></span>
+      </div>
+    </header>
+  </div>
+
+  <div id="kb-content" class="kb-scope">
+
+    <!-- ============ Tab: Senarai Keberadaan Murid ============ -->
+    <div id="kb-panel-senarai">
+      <div class="kb-page-title">SENARAI KEBERADAAN MURID</div>
+
+      <div class="kb-card kb-filter-card">
+        <div class="kb-filter-row">
+          <div class="kb-filter-field">
+            <label>Tahun</label>
+            <select class="kb-field" id="kb-filter-year"></select>
+          </div>
+          <div class="kb-filter-field">
+            <label>Tarikh</label>
+            <input class="kb-field" type="date" id="kb-filter-date">
+          </div>
+        </div>
+      </div>
+
+      <div id="kb-senarai-list"><div class="kb-empty">Memuatkan...</div></div>
+    </div>
+
+    <!-- ============ Tab: Borang Keberadaan ============ -->
+    <div id="kb-panel-borang" class="hidden">
+      <div class="kb-page-title">BORANG KEBERADAAN</div>
+
+      <div class="kb-card">
+        <label class="kb-label">Kategori</label>
+        <select class="kb-field" id="kb-f-kategori" onchange="kbUpdateAddStudentBtn()">
+          <option value="">Pilih kategori</option>
+          <option value="Program">Program</option>
+          <option value="Kesihatan">Kesihatan</option>
+          <option value="Peperiksaan">Peperiksaan</option>
+          <option value="Lain-Lain">Lain-Lain</option>
+        </select>
+
+        <label class="kb-label">Tarikh</label>
+        <input class="kb-field" type="date" id="kb-f-tarikh">
+
+        <label class="kb-label">Tempat</label>
+        <input class="kb-field" type="text" id="kb-f-tempat" placeholder="Cth: Klinik Kesihatan / Dewan Sekolah">
+
+        <label class="kb-label">Murid</label>
+        <div id="kb-student-rows"></div>
+        <button type="button" class="kb-add-student-btn hidden" id="kb-add-student-btn" onclick="kbAddStudentRow()">+ Tambah Murid</button>
+
+        <div class="kb-error hidden" id="kb-form-error"></div>
+        <button class="kb-submit-btn" id="kb-submit-btn" onclick="kbSubmitBorang()">Hantar Rekod</button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<nav class="drawer" id="drawer">
+  <div class="drawer-logo-row"><img class="school-logo-img" alt=""><span>SMASRA</span></div>
+  <a class="drawer-item" href="index.html"><span data-icon="home"></span><span class="drawer-label">Laman Utama</span></a>
+  <div id="drawer-menu-body"></div>
+  <div class="drawer-spacer"></div>
+  <a class="drawer-item drawer-logout" href="#" onclick="logout();return false;"><span data-icon="power"></span><span class="drawer-label">Log Keluar</span></a>
+</nav>
+
+<div class="bottom-nav-wrap">
+  <nav class="bottom-nav lp-bottom-nav" style="grid-template-columns:1fr 1fr 1fr">
+    <button class="bn-item active" id="kb-nav-senarai" onclick="kbSwitchTab('senarai')" aria-label="Senarai"><span data-icon="clipboard"></span><span class="bn-label">Senarai</span></button>
+    <button class="bn-item" id="kb-nav-borang" onclick="kbSwitchTab('borang')" aria-label="Borang"><span data-icon="heart"></span><span class="bn-label">Borang</span></button>
+    <a class="bn-item" href="index.html" aria-label="Home"><span data-icon="home"></span></a>
+  </nav>
+</div>
+
+<script src="app.js"></script>
+<script src="keberadaan-murid.js"></script>
+<script>
+  initApp(kbInit);
+</script>
+</body>
+</html>

@@ -1,0 +1,286 @@
+/* ============================================================
+   KEBERADAAN MURID — Senarai & Borang
+   Pengecam awalan "kb" (Keberadaan).
+   ============================================================ */
+
+const KB_SPREADSHEET_ID = "1EohV_hfuS6SDgiqDn--QQiM_y92_K4jvGyh87nA3HOo";
+const KB_KATEGORI_LIST = ["Program", "Kesihatan", "Peperiksaan", "Lain-Lain"];
+
+let kbCurrentUser = null;
+let kbAllStudents = [];   // dari tab DatabaseMurid — untuk pilihan Tingkatan/Nama
+let kbRecords = [];       // dari tab KeberadaanMurid
+let kbTingkatanList = []; // senarai unik Tingkatan/Kelas dari DatabaseMurid
+
+function kbEscape(str) { return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+function kbNorm(str) { return String(str || "").trim().toUpperCase().replace(/\s+/g, " "); }
+
+/* ---------------- Fetch data murid (untuk borang) ---------------- */
+async function kbFetchStudents() {
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${KB_SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent("DatabaseMurid")}&headers=1&_ts=${Date.now()}`;
+    const res = await fetch(url, { cache: "no-store" });
+    const text = await res.text();
+    const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
+    const table = JSON.parse(jsonStr).table;
+    const cols = table.cols || [];
+    let namaIdx = -1, kelasIdx = -1;
+    cols.forEach((c, i) => {
+      const label = kbNorm(c.label || "");
+      if (label === "NAMA") namaIdx = i;
+      if (label === "KELAS") kelasIdx = i;
+    });
+    kbAllStudents = (table.rows || []).map((r) => {
+      const c = r.c || [];
+      return {
+        nama: namaIdx !== -1 && c[namaIdx] ? String(c[namaIdx].v || "") : "",
+        kelas: kelasIdx !== -1 && c[kelasIdx] ? String(c[kelasIdx].v || "") : "",
+      };
+    }).filter((s) => s.nama && s.kelas);
+
+    const tingkatanSet = new Set(kbAllStudents.map((s) => s.kelas));
+    kbTingkatanList = Array.from(tingkatanSet).sort();
+  } catch (e) {
+    kbAllStudents = [];
+    kbTingkatanList = [];
+  }
+}
+
+/* ---------------- Fetch rekod keberadaan (untuk senarai) ---------------- */
+async function kbFetchRecords() {
+  if (!apiConfigured()) return;
+  try {
+    const res = await fetch(`${API_URL}?action=getKeberadaanMurid`);
+    kbRecords = await res.json();
+  } catch (e) {
+    kbRecords = [];
+  }
+}
+
+/* ================= Navigasi tab ================= */
+function kbSwitchTab(name) {
+  document.getElementById("kb-panel-senarai").classList.toggle("hidden", name !== "senarai");
+  document.getElementById("kb-panel-borang").classList.toggle("hidden", name !== "borang");
+  document.getElementById("kb-nav-senarai").classList.toggle("active", name === "senarai");
+  document.getElementById("kb-nav-borang").classList.toggle("active", name === "borang");
+  if (name === "senarai") kbLoadSenarai();
+}
+
+/* ================= Senarai Keberadaan Murid ================= */
+function kbInitSenariaFilters() {
+  const yearSel = document.getElementById("kb-filter-year");
+  if (yearSel.dataset.built) return;
+  const today = new Date();
+  const yearsInData = new Set(kbRecords.map((r) => (r.tarikh || "").slice(0, 4)).filter(Boolean));
+  yearsInData.add(String(today.getFullYear()));
+  const years = Array.from(yearsInData).sort((a, b) => b - a);
+  yearSel.innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join("");
+  yearSel.value = String(today.getFullYear());
+  yearSel.dataset.built = "1";
+
+  document.getElementById("kb-filter-date").value = today.toISOString().slice(0, 10);
+
+  yearSel.addEventListener("change", kbRenderSenarai);
+  document.getElementById("kb-filter-date").addEventListener("change", kbRenderSenarai);
+}
+
+async function kbLoadSenarai() {
+  document.getElementById("kb-senarai-list").innerHTML = `<div class="kb-empty">Memuatkan...</div>`;
+  await kbFetchRecords();
+  kbInitSenariaFilters();
+  kbRenderSenarai();
+}
+
+function kbRenderSenarai() {
+  const dateStr = document.getElementById("kb-filter-date").value;
+  if (!dateStr) return;
+  const filtered = kbRecords.filter((r) => r.tarikh === dateStr);
+
+  const groups = {};
+  KB_KATEGORI_LIST.forEach((k) => { groups[k] = []; });
+  filtered.forEach((r) => {
+    if (!groups[r.kategori]) groups[r.kategori] = [];
+    groups[r.kategori].push(r);
+  });
+
+  const box = document.getElementById("kb-senarai-list");
+  const nonEmpty = Object.keys(groups).filter((k) => groups[k].length);
+  if (!nonEmpty.length) {
+    box.innerHTML = `<div class="kb-empty">Tiada rekod keberadaan murid untuk tarikh ini.</div>`;
+    return;
+  }
+
+  box.innerHTML = nonEmpty.map((kategori) => {
+    const rows = groups[kategori].map((r) => `
+      <div class="kb-row">
+        <div class="kb-row-main">
+          <div class="kb-row-nama">${kbEscape(r.nama)}</div>
+          <div class="kb-row-kelas">${kbEscape(r.tingkatan)}</div>
+        </div>
+        <div class="kb-row-tempat">📍 ${kbEscape(r.tempat || "-")}</div>
+        <div class="kb-catatan-row">
+          <input type="text" class="kb-catatan-input" id="kb-catatan-${r.rowId}" value="${kbEscape(r.catatan || "")}" placeholder="Catatan / kemaskini...">
+          <button class="kb-save-btn" onclick="kbSaveCatatan(${r.rowId})">Simpan</button>
+        </div>
+      </div>`).join("");
+    return `<div class="kb-kategori-card">
+      <div class="kb-kategori-title">${kbEscape(kategori)} <span class="kb-kategori-count">${groups[kategori].length}</span></div>
+      ${rows}
+    </div>`;
+  }).join("");
+}
+
+async function kbSaveCatatan(rowId) {
+  const input = document.getElementById(`kb-catatan-${rowId}`);
+  const catatan = input.value.trim();
+  if (!apiConfigured()) { alert("API belum disambungkan."); return; }
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "editKeberadaanCatatan", rowId, catatan }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      const rec = kbRecords.find((r) => r.rowId === rowId);
+      if (rec) rec.catatan = catatan;
+      kbShowToast("✓ Catatan disimpan");
+    } else {
+      alert(data.message || "Gagal simpan catatan.");
+    }
+  } catch (err) {
+    alert("Ralat sambungan ke server.");
+  }
+}
+
+function kbShowToast(msg) {
+  let toast = document.getElementById("kb-toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "kb-toast";
+    toast.className = "kb-toast";
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.classList.add("show");
+  clearTimeout(kbShowToast._t);
+  kbShowToast._t = setTimeout(() => toast.classList.remove("show"), 2200);
+}
+
+/* ================= Borang Keberadaan ================= */
+let kbStudentRowCount = 0;
+
+function kbInitBorang() {
+  document.getElementById("kb-f-tarikh").value = new Date().toISOString().slice(0, 10);
+  document.getElementById("kb-f-tempat").value = "";
+  document.getElementById("kb-f-kategori").value = "";
+  document.getElementById("kb-student-rows").innerHTML = "";
+  document.getElementById("kb-form-error").classList.add("hidden");
+  kbStudentRowCount = 0;
+  kbAddStudentRow();
+  kbUpdateAddStudentBtn();
+}
+
+function kbUpdateAddStudentBtn() {
+  const isProgram = document.getElementById("kb-f-kategori").value === "Program";
+  document.getElementById("kb-add-student-btn").classList.toggle("hidden", !isProgram);
+  // Kalau bukan Program, kekalkan cuma 1 baris murid
+  if (!isProgram) {
+    const rows = document.querySelectorAll(".kb-student-row");
+    rows.forEach((r, i) => { if (i > 0) r.remove(); });
+  }
+}
+
+function kbAddStudentRow() {
+  kbStudentRowCount++;
+  const id = kbStudentRowCount;
+  const wrap = document.getElementById("kb-student-rows");
+  const div = document.createElement("div");
+  div.className = "kb-student-row";
+  div.id = `kb-student-row-${id}`;
+  div.innerHTML = `
+    <div class="kb-student-row-head">
+      <span>Murid ${id}</span>
+      <button type="button" class="kb-remove-student-btn" onclick="kbRemoveStudentRow(${id})">✕</button>
+    </div>
+    <select class="kb-field kb-student-tingkatan" onchange="kbPopulateStudentNames(${id})">
+      <option value="">Pilih Tingkatan</option>
+      ${kbTingkatanList.map((t) => `<option value="${t}">${t}</option>`).join("")}
+    </select>
+    <select class="kb-field kb-student-nama"><option value="">Pilih Tingkatan dahulu</option></select>
+  `;
+  wrap.appendChild(div);
+  kbUpdateRemoveButtons();
+}
+function kbRemoveStudentRow(id) {
+  const el = document.getElementById(`kb-student-row-${id}`);
+  if (el) el.remove();
+  kbUpdateRemoveButtons();
+}
+function kbUpdateRemoveButtons() {
+  const rows = document.querySelectorAll(".kb-student-row");
+  rows.forEach((r) => {
+    const btn = r.querySelector(".kb-remove-student-btn");
+    if (btn) btn.classList.toggle("hidden", rows.length <= 1);
+  });
+}
+function kbPopulateStudentNames(id) {
+  const row = document.getElementById(`kb-student-row-${id}`);
+  const tingkatan = row.querySelector(".kb-student-tingkatan").value;
+  const namaSel = row.querySelector(".kb-student-nama");
+  if (!tingkatan) { namaSel.innerHTML = `<option value="">Pilih Tingkatan dahulu</option>`; return; }
+  const names = kbAllStudents.filter((s) => s.kelas === tingkatan).map((s) => s.nama).sort();
+  namaSel.innerHTML = `<option value="">Pilih Murid</option>` + names.map((n) => `<option value="${n}">${n}</option>`).join("");
+}
+
+async function kbSubmitBorang() {
+  const errBox = document.getElementById("kb-form-error");
+  errBox.classList.add("hidden");
+
+  const kategori = document.getElementById("kb-f-kategori").value;
+  const tarikh = document.getElementById("kb-f-tarikh").value;
+  const tempat = document.getElementById("kb-f-tempat").value.trim();
+
+  const muridRows = Array.from(document.querySelectorAll(".kb-student-row")).map((row) => ({
+    tingkatan: row.querySelector(".kb-student-tingkatan").value,
+    nama: row.querySelector(".kb-student-nama").value,
+  })).filter((m) => m.nama);
+
+  if (!kategori || !tarikh || !muridRows.length) {
+    errBox.textContent = "Sila lengkapkan kategori, tarikh, dan sekurang-kurangnya seorang murid.";
+    errBox.classList.remove("hidden");
+    return;
+  }
+  if (!apiConfigured()) {
+    errBox.textContent = "API belum disambungkan.";
+    errBox.classList.remove("hidden");
+    return;
+  }
+
+  const btn = document.getElementById("kb-submit-btn");
+  btn.disabled = true; btn.textContent = "Menghantar...";
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "addKeberadaanMurid", email: kbCurrentUser.email, kategori, tarikh, tempat, murid: muridRows }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      kbShowToast(`✓ ${data.count} rekod disimpan`);
+      kbInitBorang();
+    } else {
+      errBox.textContent = data.message || "Gagal hantar rekod.";
+      errBox.classList.remove("hidden");
+    }
+  } catch (err) {
+    errBox.textContent = "Ralat sambungan ke server (" + err.message + ").";
+    errBox.classList.remove("hidden");
+  }
+  btn.disabled = false; btn.textContent = "Hantar Rekod";
+}
+
+/* ================= Init ================= */
+async function kbInit(user) {
+  kbCurrentUser = user;
+  await kbFetchStudents();
+  kbInitBorang();
+  kbLoadSenarai();
+}

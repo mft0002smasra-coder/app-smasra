@@ -31,6 +31,7 @@ function doGet(e) {
   if (action === "getEvents") return getEvents();
   if (action === "getLaporanPentadbir") return getLaporanPentadbir();
   if (action === "getDataMurid") return getDataMurid();
+  if (action === "getKeberadaanMurid") return getKeberadaanMurid();
   return jsonResponse({ error: "Unknown action: " + action });
 }
 
@@ -46,6 +47,8 @@ function doPost(e) {
   if (body.action === "addLaporanPentadbir") return addLaporanPentadbir(body);
   if (body.action === "deleteLaporanPentadbir") return deleteLaporanPentadbir(body);
   if (body.action === "uploadDataMurid") return uploadDataMurid(body);
+  if (body.action === "addKeberadaanMurid") return addKeberadaanMurid(body);
+  if (body.action === "editKeberadaanCatatan") return editKeberadaanCatatan(body);
   return jsonResponse({ success: false, message: "Unknown action: " + body.action });
 }
 
@@ -459,9 +462,13 @@ var DM_CANONICAL_FIELDS = [
   { key: "alamat2", header: "ALAMAT 2" }, { key: "alamat3", header: "ALAMAT 3" },
   { key: "poskod", header: "POSKOD" }, { key: "bandar", header: "BANDAR" },
   { key: "daerah", header: "DAERAH" }, { key: "negeri", header: "NEGERI" },
-  { key: "kelas", header: "KELAS (GABUNGAN)" }, { key: "asramaKod", header: "ASRAMA (KOD)" },
-  { key: "catatan", header: "CATATAN" },
+  { key: "kelas", header: "Kelas" }, { key: "asramaKod", header: "Asrama" },
+  { key: "catatan", header: "Catatan" },
 ];
+
+function dmNormHeader_(h) {
+  return String(h || "").trim().toUpperCase().replace(/[^A-Z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+}
 
 function getDataMurid() {
   var sheet = getSheet("DatabaseMurid");
@@ -469,11 +476,12 @@ function getDataMurid() {
   var data = sheet.getDataRange().getValues();
   if (data.length < 2) return jsonResponse([]);
 
-  // Padankan header sebenar dalam Sheet dengan DM_CANONICAL_FIELDS (ikut nama, bukan kedudukan)
-  var headerRow = data[0];
+  // Padankan header sebenar dalam Sheet dengan DM_CANONICAL_FIELDS ikut NAMA
+  // (fleksibel — abaikan besar/kecil huruf & tanda baca, bukan kedudukan tetap)
+  var headerRow = data[0].map(dmNormHeader_);
   var colIdxByKey = {};
   DM_CANONICAL_FIELDS.forEach(function (f) {
-    var idx = headerRow.indexOf(f.header);
+    var idx = headerRow.indexOf(dmNormHeader_(f.header));
     if (idx !== -1) colIdxByKey[f.key] = idx;
   });
 
@@ -551,4 +559,82 @@ function uploadDataMurid(body) {
   if (lastRow > 1) sheet.getRange(2, noPengenalanColIdx + 1, lastRow - 1, 1).setNumberFormat("@");
 
   return jsonResponse({ success: true, added: added, updated: updated, skipped: skipped });
+}
+
+/* ---------------- KEBERADAAN MURID ---------------- */
+// Tab "KeberadaanMurid" (baris 1 = header, data bermula baris 2):
+// A=ID, B=TimeStamp, C=Tarikh, D=Kategori, E=Tingkatan, F=NamaMurid, G=Tempat, H=Catatan, I=DicatatOleh
+
+function kbGenId() {
+  return Utilities.getUuid().slice(0, 8);
+}
+function kbFmtDateISO(d) {
+  return Utilities.formatDate(new Date(d), Session.getScriptTimeZone() || "GMT+8", "yyyy-MM-dd");
+}
+
+function getKeberadaanMurid() {
+  var sheet = getSheet("KeberadaanMurid");
+  if (!sheet) return jsonResponse([]);
+  var data = sheet.getDataRange().getValues();
+  var list = [];
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (!row[2] || !row[5]) continue; // perlu tarikh + nama murid
+    list.push({
+      rowId: i + 1,
+      tarikh: row[2] instanceof Date ? kbFmtDateISO(row[2]) : row[2],
+      kategori: row[3] || "",
+      tingkatan: row[4] || "",
+      nama: row[5] || "",
+      tempat: row[6] || "",
+      catatan: row[7] || "",
+      dicatatOleh: row[8] || "",
+    });
+  }
+  return jsonResponse(list);
+}
+
+/**
+ * body: { email, kategori, tarikh, tempat, murid: [{tingkatan, nama}, ...] }
+ * Satu BARIS per murid (walaupun dihantar sekali sebagai kumpulan Program).
+ */
+function addKeberadaanMurid(body) {
+  var user = findUserByEmail(body.email);
+  if (!body.kategori || !body.tarikh || !body.murid || !body.murid.length) {
+    return jsonResponse({ success: false, message: "Sila lengkapkan kategori, tarikh, dan sekurang-kurangnya seorang murid." });
+  }
+  ensureTimezone();
+  var sheet = getSheet("KeberadaanMurid");
+  if (!sheet) {
+    sheet = SpreadsheetApp.openById(SPREADSHEET_ID).insertSheet("KeberadaanMurid");
+    sheet.appendRow(["ID", "TimeStamp", "Tarikh", "Kategori", "Tingkatan", "NamaMurid", "Tempat", "Catatan", "DicatatOleh"]);
+  }
+
+  var dicatatOleh = (user && user.nama) || body.email || "";
+  var tarikhDate = new Date(body.tarikh);
+  body.murid.forEach(function (m) {
+    if (!m.nama) return;
+    sheet.appendRow([
+      kbGenId(), new Date(), tarikhDate, body.kategori, m.tingkatan || "", m.nama, body.tempat || "", "", dicatatOleh,
+    ]);
+  });
+
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) sheet.getRange(2, 3, lastRow - 1, 1).setNumberFormat("dd/mm/yyyy");
+
+  return jsonResponse({ success: true, count: body.murid.length });
+}
+
+/**
+ * body: { rowId, catatan } — kemaskini medan Catatan sahaja pada baris sedia ada.
+ */
+function editKeberadaanCatatan(body) {
+  var rowId = parseInt(body.rowId, 10);
+  if (!rowId) return jsonResponse({ success: false, message: "rowId diperlukan." });
+  var sheet = getSheet("KeberadaanMurid");
+  if (!sheet || rowId < 2 || rowId > sheet.getLastRow()) {
+    return jsonResponse({ success: false, message: "Rekod tidak dijumpai." });
+  }
+  sheet.getRange(rowId, 8).setValue(body.catatan || "");
+  return jsonResponse({ success: true });
 }

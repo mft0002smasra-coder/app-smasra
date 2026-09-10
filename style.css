@@ -1245,3 +1245,123 @@ tr.dm-grandtotal td{ background:var(--dm-brown) !important;color:#F8ECD8;font-we
   box-shadow:0 5px 0 -1px rgba(50,80,50,0.5), 0 8px 14px -6px rgba(50,80,50,0.5);
 }
 .dm-confirm-btn:disabled{ opacity:.6; }
+
+/* ============================================================
+   KEBERADAAN MURID — tema Neumorphism (kandungan sahaja; header/nav kekal tema app)
+   ============================================================ */
+.kb-scope{
+  --kb-bg:#E6E9EF; --kb-text:#3A4150; --kb-text-dim:#8A93A6;
+  --kb-shadow-dark:#c3c9d4; --kb-shadow-light:#ffffff;
+  --kb-blue:#5B7FDE; --kb-green:#5CBE8A; --kb-amber:#E0A458;
+  background:var(--kb-bg);
+  border-radius:20px 20px 0 0;padding:20px 16px 100px;
+  font-family:'Nunito','Rajdhani',sans-serif;color:var(--kb-text);
+  min-height:calc(100vh - 92px);
+  box-sizing:border-box;
+  width:calc(100% + 32px);
+  margin-left:-16px;
+  margin-right:-16px;
+  overflow-x:hidden;
+}
+.kb-scope *{ box-sizing:border-box;min-width:0; }
+.kb-page-title{
+  text-align:center;font-weight:800;font-size:15px;letter-spacing:.4px;color:var(--kb-text);
+  margin-bottom:16px;
+}
+.kb-card{
+  background:var(--kb-bg);border-radius:18px;padding:18px 16px;margin-bottom:14px;
+  box-shadow:7px 7px 14px var(--kb-shadow-dark), -7px -7px 14px var(--kb-shadow-light);
+}
+.kb-filter-card{ padding:14px 16px; }
+.kb-filter-row{ display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+.kb-filter-field label{ display:block;font-size:10px;font-weight:700;color:var(--kb-text-dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px; }
+.kb-label{ display:block;font-size:11px;font-weight:700;color:var(--kb-text-dim);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.3px; }
+.kb-label:first-child{ margin-top:0; }
+.kb-field{
+  width:100%;padding:11px 13px;border-radius:12px;border:none;
+  background:var(--kb-bg);color:var(--kb-text);font-family:inherit;font-weight:600;font-size:13px;
+  box-shadow:inset 4px 4px 8px var(--kb-shadow-dark), inset -4px -4px 8px var(--kb-shadow-light);
+  outline:none;color-scheme:light;
+}
+.kb-empty{
+  text-align:center;padding:30px 16px;color:var(--kb-text-dim);font-size:13px;font-weight:600;
+  background:var(--kb-bg);border-radius:16px;
+  box-shadow:inset 4px 4px 8px var(--kb-shadow-dark), inset -4px -4px 8px var(--kb-shadow-light);
+}
+
+/* ---------- Kad Kategori & baris murid (Senarai) ---------- */
+.kb-kategori-card{
+  background:var(--kb-bg);border-radius:18px;padding:16px;margin-bottom:14px;
+  box-shadow:7px 7px 14px var(--kb-shadow-dark), -7px -7px 14px var(--kb-shadow-light);
+}
+.kb-kategori-title{
+  font-weight:800;font-size:13px;color:var(--kb-blue);margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.kb-kategori-count{
+  background:var(--kb-bg);color:var(--kb-blue);font-size:10px;font-weight:800;
+  padding:3px 9px;border-radius:20px;
+  box-shadow:inset 2px 2px 4px var(--kb-shadow-dark), inset -2px -2px 4px var(--kb-shadow-light);
+}
+.kb-row{ padding:12px 0;border-bottom:1px solid rgba(0,0,0,0.05); }
+.kb-row:last-child{ border-bottom:none;padding-bottom:0; }
+.kb-row-main{ display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px; }
+.kb-row-nama{ font-weight:700;font-size:13px;color:var(--kb-text); }
+.kb-row-kelas{ font-size:10.5px;color:var(--kb-text-dim);font-weight:600;flex-shrink:0; }
+.kb-row-tempat{ font-size:11px;color:var(--kb-text-dim);margin-bottom:8px; }
+.kb-catatan-row{ display:flex;gap:8px; }
+.kb-catatan-input{
+  flex:1;padding:8px 11px;border-radius:10px;border:none;
+  background:var(--kb-bg);color:var(--kb-text);font-family:inherit;font-size:11.5px;
+  box-shadow:inset 3px 3px 6px var(--kb-shadow-dark), inset -3px -3px 6px var(--kb-shadow-light);
+  outline:none;
+}
+.kb-save-btn{
+  flex-shrink:0;padding:8px 14px;border-radius:10px;border:none;cursor:pointer;
+  background:var(--kb-blue);color:#fff;font-family:inherit;font-weight:700;font-size:11px;
+  box-shadow:3px 3px 7px var(--kb-shadow-dark), -2px -2px 5px var(--kb-shadow-light);
+}
+.kb-save-btn:active{ box-shadow:inset 2px 2px 4px rgba(0,0,0,0.3); }
+
+/* ---------- Borang: baris murid dinamik ---------- */
+.kb-student-row{
+  background:var(--kb-bg);border-radius:14px;padding:12px;margin-bottom:10px;
+  box-shadow:inset 3px 3px 7px var(--kb-shadow-dark), inset -3px -3px 7px var(--kb-shadow-light);
+}
+.kb-student-row-head{ display:flex;justify-content:space-between;align-items:center;margin-bottom:9px; }
+.kb-student-row-head span{ font-size:11px;font-weight:700;color:var(--kb-text-dim);text-transform:uppercase;letter-spacing:.3px; }
+.kb-remove-student-btn{
+  width:22px;height:22px;border-radius:50%;border:none;cursor:pointer;
+  background:var(--kb-bg);color:#C05B5B;font-size:11px;font-weight:700;
+  box-shadow:2px 2px 5px var(--kb-shadow-dark), -2px -2px 5px var(--kb-shadow-light);
+}
+.kb-student-row select.kb-field{ margin-bottom:8px; }
+.kb-student-row select.kb-field:last-child{ margin-bottom:0; }
+.kb-add-student-btn{
+  width:100%;padding:11px;border-radius:12px;border:none;cursor:pointer;margin-top:4px;
+  background:var(--kb-bg);color:var(--kb-blue);font-family:inherit;font-weight:700;font-size:12.5px;
+  box-shadow:4px 4px 9px var(--kb-shadow-dark), -4px -4px 9px var(--kb-shadow-light);
+}
+.kb-add-student-btn:active{ box-shadow:inset 2px 2px 5px var(--kb-shadow-dark); }
+
+.kb-error{
+  margin-top:14px;padding:10px 13px;border-radius:12px;font-size:11.5px;font-weight:600;color:#B54545;
+  background:var(--kb-bg);box-shadow:inset 3px 3px 6px var(--kb-shadow-dark), inset -3px -3px 6px var(--kb-shadow-light);
+}
+.kb-submit-btn{
+  width:100%;margin-top:16px;padding:13px;border-radius:14px;border:none;cursor:pointer;
+  background:linear-gradient(160deg,var(--kb-blue),#4A6BC4);color:#fff;
+  font-family:inherit;font-weight:800;font-size:13px;letter-spacing:.3px;
+  box-shadow:5px 5px 12px var(--kb-shadow-dark), -3px -3px 10px var(--kb-shadow-light);
+}
+.kb-submit-btn:active{ box-shadow:inset 3px 3px 6px rgba(0,0,0,0.3); }
+.kb-submit-btn:disabled{ opacity:.6; }
+
+.kb-toast{
+  position:fixed;left:50%;bottom:88px;transform:translateX(-50%) translateY(20px);z-index:2000;
+  background:var(--kb-text,#3A4150);color:#fff;padding:11px 18px;border-radius:12px;
+  font-family:'Nunito',sans-serif;font-weight:700;font-size:12.5px;
+  box-shadow:0 10px 24px -8px rgba(0,0,0,0.3);opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
+  max-width:88vw;text-align:center;
+}
+.kb-toast.show{ opacity:1;transform:translateX(-50%) translateY(0); }
