@@ -1135,7 +1135,9 @@ table.kn-tt tbody td{ border-bottom:1px solid #F0F1F3;padding:6px; }
   font-family:'Fredoka','Rajdhani',sans-serif;color:var(--dm-brown-dark);
   min-height:calc(100vh - 92px);
   box-shadow:inset 0 3px 10px rgba(107,74,46,0.15);
+  width:auto;max-width:100vw;overflow-x:hidden;box-sizing:border-box;
 }
+.dm-scope *{ box-sizing:border-box; min-width:0; }
 .dm-page-title{
   text-align:center;font-weight:700;font-size:15px;letter-spacing:.6px;color:var(--dm-brown-dark);
   margin-bottom:14px;text-shadow:0 1px 0 rgba(255,255,255,0.6);
@@ -1159,9 +1161,9 @@ table.dm-table thead th{
 table.dm-table tbody td{ border:1px solid rgba(107,74,46,0.18);background:rgba(255,255,255,0.5); }
 table.dm-table tbody tr:nth-child(odd) td{ background:rgba(255,255,255,0.25); }
 /* Jadual Enrolmen: Bil, Kelas, 3x Keseluruhan, 3x Asrama = 8 lajur */
-#dm-panel-enrolmen table.dm-table th:nth-child(1), #dm-panel-enrolmen table.dm-table td:nth-child(1){ width:9%; }
-#dm-panel-enrolmen table.dm-table th:nth-child(2), #dm-panel-enrolmen table.dm-table td:nth-child(2){ width:23%; }
-#dm-panel-enrolmen table.dm-table th:nth-child(n+3), #dm-panel-enrolmen table.dm-table td:nth-child(n+3){ width:11.33%; }
+#dm-panel-enrolmen table.dm-table th:nth-child(1), #dm-panel-enrolmen table.dm-table td:nth-child(1){ width:6%; }
+#dm-panel-enrolmen table.dm-table th:nth-child(2), #dm-panel-enrolmen table.dm-table td:nth-child(2){ width:16%; }
+#dm-panel-enrolmen table.dm-table th:nth-child(n+3), #dm-panel-enrolmen table.dm-table td:nth-child(n+3){ width:13%; }
 /* Jadual Senarai: Bil, Nama, No KP, Jan, Asrama, Catatan = 6 lajur */
 .dm-table-senarai th:nth-child(1), .dm-table-senarai td:nth-child(1){ width:7%; }
 .dm-table-senarai th:nth-child(2), .dm-table-senarai td:nth-child(2){ width:30%; }
@@ -1180,6 +1182,14 @@ tr.dm-grandtotal td{ background:var(--dm-brown) !important;color:#F8ECD8;font-we
   font-weight:700;font-size:12px;box-shadow:0 4px 0 -1px rgba(74,51,32,0.5), 0 7px 12px -6px rgba(74,51,32,0.5);
 }
 .dm-download-btn:active{ transform:translateY(2px);box-shadow:0 2px 0 -1px rgba(74,51,32,0.5); }
+.dm-toast{
+  position:fixed;left:50%;bottom:88px;transform:translateX(-50%) translateY(20px);z-index:2000;
+  background:var(--dm-brown-dark,#4A3320);color:#F8ECD8;padding:11px 18px;border-radius:12px;
+  font-family:'Fredoka','Rajdhani',sans-serif;font-weight:600;font-size:12.5px;
+  box-shadow:0 10px 24px -8px rgba(0,0,0,0.4);opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
+  max-width:88vw;text-align:center;
+}
+.dm-toast.show{ opacity:1;transform:translateX(-50%) translateY(0); }
 
 .dm-summary-row{
   display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:9px 4px;

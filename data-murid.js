@@ -76,9 +76,9 @@ const DM_CANONICAL_FIELDS = [
   { key: "daerah", header: "DAERAH" },
   { key: "negeri", header: "NEGERI" },
   // Medan TERBITAN — dikira automatik, memudahkan paparan app
-  { key: "kelas", header: "KELAS (GABUNGAN)" },
-  { key: "asramaKod", header: "ASRAMA (KOD)" },
-  { key: "catatan", header: "CATATAN" },
+  { key: "kelas", header: "Kelas" },
+  { key: "asramaKod", header: "Asrama" },
+  { key: "catatan", header: "Catatan" },
 ];
 
 const DM_CLASS_LIST = [
@@ -128,14 +128,30 @@ async function dmDownloadPng(elId, filenamePrefix, btn) {
   try {
     const el = document.getElementById(elId);
     const canvas = await html2canvas(el, { backgroundColor: "#F3E7D3", scale: 2, useCORS: true });
+    const filename = `${filenamePrefix}_${new Date().toISOString().slice(0, 10)}.png`;
     const link = document.createElement("a");
-    link.download = `${filenamePrefix}_${new Date().toISOString().slice(0, 10)}.png`;
+    link.download = filename;
     link.href = canvas.toDataURL("image/png");
     link.click();
+    dmShowToast(`✓ Berjaya dimuat turun: ${filename}`);
   } catch (err) {
     alert("Gagal jana PNG: " + err.message);
   }
   btn.disabled = false; btn.textContent = originalText;
+}
+
+function dmShowToast(msg) {
+  let toast = document.getElementById("dm-toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "dm-toast";
+    toast.className = "dm-toast";
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.classList.add("show");
+  clearTimeout(dmShowToast._t);
+  dmShowToast._t = setTimeout(() => toast.classList.remove("show"), 2800);
 }
 
 /* ---------------- Akses (Analisis/Upload) ---------------- */
@@ -246,9 +262,12 @@ function dmRenderEnrolment() {
   </tr>`;
 
   document.getElementById("dm-enrolment-table-body").innerHTML = rowsHtml;
-  document.getElementById("dm-summary-lelaki").textContent = `${grand.L} / ${grand.asramaL}`;
-  document.getElementById("dm-summary-perempuan").textContent = `${grand.P} / ${grand.asramaP}`;
-  document.getElementById("dm-summary-jumlah").textContent = `${grand.jumlah} / ${grand.asramaJumlah}`;
+  document.getElementById("dm-summary-lelaki-k").textContent = grand.L;
+  document.getElementById("dm-summary-lelaki-a").textContent = grand.asramaL;
+  document.getElementById("dm-summary-perempuan-k").textContent = grand.P;
+  document.getElementById("dm-summary-perempuan-a").textContent = grand.asramaP;
+  document.getElementById("dm-summary-jumlah-k").textContent = grand.jumlah;
+  document.getElementById("dm-summary-jumlah-a").textContent = grand.asramaJumlah;
   document.getElementById("dm-total-note").textContent = dmStudents.length
     ? `Jumlah rekod murid dalam pangkalan data: ${dmStudents.length}`
     : "Tiada data murid lagi — sila muat naik data di tab Analisis.";
