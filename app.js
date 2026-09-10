@@ -4,6 +4,9 @@
 
 const SCHOOL_LOGO_URL = "https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN";
 
+// Link app AppSheet eRKS (perlukan sign-in staf sendiri — dibuka dalam tab baru)
+const APPSHEET_ERKS_URL = "https://www.appsheet.com/start/210829a8-31c7-4ade-ba58-fcd8cf73c305";
+
 // GANTI dengan URL Web App selepas awak deploy Code.gs (Deploy > New deployment > Web app)
 const API_URL = "https://script.google.com/macros/s/AKfycbxNMX-PHWy4t8PdQhj-jekw9T8V7b1lN2M8sQ9d8jybfeSLvKS9jB8XuKbjjYRwshcz/exec";
 
