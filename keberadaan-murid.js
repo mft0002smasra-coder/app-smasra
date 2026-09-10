@@ -110,18 +110,23 @@ function kbRenderSenarai() {
   }
 
   box.innerHTML = nonEmpty.map((kategori) => {
-    const rows = groups[kategori].map((r) => `
+    const rows = groups[kategori].map((r) => {
+      const catatan = r.catatan || "";
+      const displayText = catatan ? kbEscape(catatan) : "Tiada catatan";
+      const emptyClass = catatan ? "" : " kb-catatan-empty";
+      return `
       <div class="kb-row">
         <div class="kb-row-main">
           <div class="kb-row-nama">${kbEscape(r.nama)}</div>
           <div class="kb-row-kelas">${kbEscape(r.tingkatan)}</div>
         </div>
         <div class="kb-row-tempat">📍 ${kbEscape(r.tempat || "-")}</div>
-        <div class="kb-catatan-row">
-          <input type="text" class="kb-catatan-input" id="kb-catatan-${r.rowId}" value="${kbEscape(r.catatan || "")}" placeholder="Catatan / kemaskini...">
-          <button class="kb-save-btn" onclick="kbSaveCatatan(${r.rowId})">Simpan</button>
+        <div class="kb-catatan-row" id="kb-catatan-row-${r.rowId}">
+          <div class="kb-catatan-display${emptyClass}" id="kb-catatan-display-${r.rowId}">${displayText}</div>
+          <button class="kb-update-btn" onclick="kbToggleEdit(${r.rowId})">Kemaskini</button>
         </div>
-      </div>`).join("");
+      </div>`;
+    }).join("");
     return `<div class="kb-kategori-card">
       <div class="kb-kategori-title">${kbEscape(kategori)} <span class="kb-kategori-count">${groups[kategori].length}</span></div>
       ${rows}
@@ -129,10 +134,23 @@ function kbRenderSenarai() {
   }).join("");
 }
 
+function kbToggleEdit(rowId) {
+  const wrap = document.getElementById(`kb-catatan-row-${rowId}`);
+  const rec = kbRecords.find((r) => r.rowId === rowId);
+  const currentVal = rec ? (rec.catatan || "") : "";
+  wrap.innerHTML = `
+    <input type="text" class="kb-catatan-input" id="kb-catatan-input-${rowId}" value="${kbEscape(currentVal)}" placeholder="Catatan / kemaskini...">
+    <button class="kb-save-btn" onclick="kbSaveCatatan(${rowId})">Simpan</button>
+  `;
+  document.getElementById(`kb-catatan-input-${rowId}`).focus();
+}
+
 async function kbSaveCatatan(rowId) {
-  const input = document.getElementById(`kb-catatan-${rowId}`);
+  const input = document.getElementById(`kb-catatan-input-${rowId}`);
   const catatan = input.value.trim();
   if (!apiConfigured()) { alert("API belum disambungkan."); return; }
+  const btn = input.nextElementSibling;
+  btn.disabled = true; btn.textContent = "Menyimpan...";
   try {
     const res = await fetch(API_URL, {
       method: "POST",
@@ -142,13 +160,26 @@ async function kbSaveCatatan(rowId) {
     if (data.success) {
       const rec = kbRecords.find((r) => r.rowId === rowId);
       if (rec) rec.catatan = catatan;
+      kbRevertToDisplay(rowId, catatan);
       kbShowToast("✓ Catatan disimpan");
     } else {
       alert(data.message || "Gagal simpan catatan.");
+      btn.disabled = false; btn.textContent = "Simpan";
     }
   } catch (err) {
     alert("Ralat sambungan ke server.");
+    btn.disabled = false; btn.textContent = "Simpan";
   }
+}
+
+function kbRevertToDisplay(rowId, catatan) {
+  const wrap = document.getElementById(`kb-catatan-row-${rowId}`);
+  const displayText = catatan ? kbEscape(catatan) : "Tiada catatan";
+  const emptyClass = catatan ? "" : " kb-catatan-empty";
+  wrap.innerHTML = `
+    <div class="kb-catatan-display${emptyClass}" id="kb-catatan-display-${rowId}">${displayText}</div>
+    <button class="kb-update-btn" onclick="kbToggleEdit(${rowId})">Kemaskini</button>
+  `;
 }
 
 function kbShowToast(msg) {
