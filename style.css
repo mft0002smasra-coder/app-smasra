@@ -942,13 +942,13 @@ table.db-book-table tbody tr:nth-child(odd) td{ background:rgba(255,255,255,.02)
 .db-my-masa-range{ color:var(--text-dim);font-size:8.5px; }
 
 .jg-home-row{
-  display:grid;grid-template-columns:34px 1.1fr 1.4fr;gap:8px;align-items:center;
+  display:grid;grid-template-columns:52px 1fr 1.3fr;gap:8px;align-items:center;
   padding:9px 0;border-bottom:1px solid var(--line);font-size:12.5px;
 }
 .jg-home-row:last-child{ border-bottom:none; }
 .jg-home-waktu{
-  font-family:'Orbitron',sans-serif;color:var(--cyan);font-size:13px;font-weight:700;
-  text-align:center;
+  font-family:'Orbitron',sans-serif;color:var(--cyan);font-size:10.5px;font-weight:700;
+  text-align:center;line-height:1.3;
 }
 .jg-home-masa{ font-family:'Orbitron',sans-serif;color:var(--text);font-size:11.5px;font-weight:600; }
 .jg-home-subj{ color:var(--text);font-size:12.5px;font-weight:600;min-width:0; }

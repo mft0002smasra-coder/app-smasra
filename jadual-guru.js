@@ -521,7 +521,7 @@ async function jgRenderHomeCard(user) {
 
   listEl.innerHTML = mine.map((r) => `
     <div class="jg-home-row">
-      <span class="jg-home-waktu">${r.slot}</span>
+      <span class="jg-home-waktu">Waktu ${r.slot}</span>
       <span class="jg-home-masa">${jgFmtWaktu(r.waktuMula)}&ndash;${jgFmtWaktu(r.waktuTamat)}</span>
       <span class="jg-home-subj">${jgEscape(r.subjek)}${r.kelas ? " (" + jgEscape(r.kelas) + ")" : ""}</span>
     </div>`).join("");
