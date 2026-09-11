@@ -131,6 +131,33 @@ function jgRenderIndividual(guruName, tableElId, titleElId) {
   document.getElementById(tableElId).innerHTML = jgBuildWeeklyTable(guruName);
 }
 
+/* ---------------- Jadual Kelas: guru+subjek per slot untuk satu kelas ---------------- */
+function jgBuildClassWeeklyTable(kelasName) {
+  const nameNorm = jgNorm(kelasName);
+  const mine = jgRecords.filter((r) => jgNorm(r.kelas) === nameNorm);
+
+  const bySlotDay = {};
+  mine.forEach((r) => { bySlotDay[`${r.slot}-${r.hari}`] = r; });
+
+  const thead = `<thead><tr><th>Waktu</th>${JG_HARI_LIST.map((h) => `<th>${h}</th>`).join("")}</tr></thead>`;
+  const rows = [];
+  for (let slot = 1; slot <= JG_MAX_SLOTS; slot++) {
+    const cells = JG_HARI_LIST.map((hari) => {
+      const rec = bySlotDay[`${slot}-${hari}`];
+      if (!rec || !rec.subjek) return `<td></td>`;
+      const col = jgColorForSubjek(rec.subjek);
+      return `<td><div class="jg-cell" style="background:${col.bg};color:${col.text}"><span class="jg-cell-time" style="color:${col.text};opacity:.75">${jgFmtWaktu(rec.waktuMula)}-${jgFmtWaktu(rec.waktuTamat)}</span><span class="jg-cell-subj" style="color:${col.text}">${jgEscape(rec.subjek)}</span><span class="jg-cell-kelas" style="color:${col.text}">${jgEscape(rec.guru)}</span></div></td>`;
+    }).join("");
+    rows.push(`<tr><td class="jg-slot-cell">${slot}</td>${cells}</tr>`);
+  }
+  return thead + "<tbody>" + rows.join("") + "</tbody>";
+}
+
+function jgOnClassSelect() {
+  const sel = document.getElementById("jg-class-select");
+  document.getElementById("jg-kelas-table").innerHTML = jgBuildClassWeeklyTable(sel.value);
+}
+
 /* ================= Analisis Jadual Guru ================= */
 function jgComputeAnalysis() {
   // Kumpul ikut Guru -> (Subjek|Kelas) -> kiraan waktu, elak kira slot sama berulang
@@ -173,7 +200,7 @@ function jgRenderAnalysis() {
 
 /* ================= Navigasi tab (dinamik ikut kebenaran) ================= */
 function jgSwitchTab(name) {
-  ["saya", "semua", "analisis", "update"].forEach((n) => {
+  ["saya", "semua", "kelas", "analisis", "update"].forEach((n) => {
     const panel = document.getElementById(`jg-panel-${n}`);
     const nav = document.getElementById(`jg-nav-${n}`);
     if (panel) panel.classList.toggle("hidden", n !== name);
@@ -535,6 +562,13 @@ async function jgInit(user) {
 
   // "Jadual Saya" — asas untuk SEMUA user, tak kira kebenaran lain
   jgRenderIndividual(user.nama, "jg-individual-table", "jg-individual-title");
+
+  // "Jadual Kelas" — terbuka untuk SEMUA user juga
+  const kelasSet = new Set(jgRecords.map((r) => r.kelas).filter(Boolean));
+  const kelasList = Array.from(kelasSet).sort();
+  const classSel = document.getElementById("jg-class-select");
+  classSel.innerHTML = kelasList.map((k) => `<option value="${k}">${k}</option>`).join("");
+  if (kelasList.length) document.getElementById("jg-kelas-table").innerHTML = jgBuildClassWeeklyTable(kelasList[0]);
 
   document.getElementById("jg-nav-semua").classList.toggle("hidden", !jgIsPentadbir);
   document.getElementById("jg-nav-analisis").classList.toggle("hidden", !jgIsPentadbir);

@@ -68,6 +68,14 @@
       <div class="jg-table-wrap"><table class="jg-table" id="jg-semua-table"></table></div>
     </div>
 
+    <!-- ============ Tab: Jadual Kelas (semua user) ============ -->
+    <div id="jg-panel-kelas" class="hidden">
+      <div class="jg-page-title">JADUAL KELAS</div>
+      <label class="jg-field-label">Pilih Kelas</label>
+      <select class="jg-select" id="jg-class-select" onchange="jgOnClassSelect()"></select>
+      <div class="jg-table-wrap"><table class="jg-table" id="jg-kelas-table"></table></div>
+    </div>
+
     <!-- ============ Tab: Analisis Jadual Guru (Pentadbir) ============ -->
     <div id="jg-panel-analisis" class="hidden">
       <div class="jg-page-title">ANALISIS JADUAL GURU</div>
@@ -104,9 +112,10 @@
 </nav>
 
 <div class="bottom-nav-wrap">
-  <nav class="bottom-nav lp-bottom-nav" style="grid-template-columns:repeat(5,1fr)">
+  <nav class="bottom-nav lp-bottom-nav" style="grid-template-columns:repeat(6,1fr)">
     <button class="bn-item active" id="jg-nav-saya" onclick="jgSwitchTab('saya')" aria-label="Jadual Saya"><span data-icon="calendar"></span><span class="bn-label">Saya</span></button>
-    <button class="bn-item hidden" id="jg-nav-semua" onclick="jgSwitchTab('semua')" aria-label="Semua Guru"><span data-icon="graduate"></span><span class="bn-label">Semua</span></button>
+    <button class="bn-item" id="jg-nav-kelas" onclick="jgSwitchTab('kelas')" aria-label="Jadual Kelas"><span data-icon="graduate"></span><span class="bn-label">Kelas</span></button>
+    <button class="bn-item hidden" id="jg-nav-semua" onclick="jgSwitchTab('semua')" aria-label="Semua Guru"><span data-icon="folder"></span><span class="bn-label">Semua</span></button>
     <button class="bn-item hidden" id="jg-nav-analisis" onclick="jgSwitchTab('analisis')" aria-label="Analisis"><span data-icon="chart"></span><span class="bn-label">Analisis</span></button>
     <button class="bn-item hidden" id="jg-nav-update" onclick="jgSwitchTab('update')" aria-label="Update"><span data-icon="clipboard"></span><span class="bn-label">Update</span></button>
     <a class="bn-item" href="index.html" aria-label="Home"><span data-icon="home"></span></a>
