@@ -213,7 +213,6 @@ const MENU_STRUCTURE = [
       { href: "laporan-pentadbir.html", icon: "clipboard", label: "Laporan Pentadbir" },
       { href: null, icon: "folder", label: "Laporan Guru Bertugas", soon: true },
       { href: "kehadiran-staf.html", icon: "calendar", label: "Kehadiran Staf" },
-      { href: "jadual-guru.html", icon: "clipboard", label: "Jadual Guru" },
       { href: "event.html", icon: "event", label: "Event" },
     ],
   },
@@ -221,6 +220,7 @@ const MENU_STRUCTURE = [
     key: "kurikulum", label: "Kurikulum", icon: "graduate",
     children: [
       { href: "tempahan-bilik.html", icon: "door", label: "Tempahan Bilik Khas" },
+      { href: "jadual-guru.html", icon: "clipboard", label: "Jadual Guru" },
     ],
   },
   {
@@ -299,6 +299,49 @@ function renderHomeMenu(groupKey) {
     grid.innerHTML = `<div class="module-tile module-back" onclick="renderHomeMenu(null)"><span data-icon="back"></span><span class="module-tile-label">Kembali</span></div>${childrenHtml}`;
   }
   renderIcons();
+}
+
+/* ---------------- Home: swipe antara kad (Rekod Kehadiran <-> Jadual Waktu) ---------------- */
+let homeSwipeIndex = 0;
+let homeSwipeStartX = 0;
+let homeSwipeDeltaX = 0;
+let homeSwipeDragging = false;
+
+function homeSwipeGoTo(idx) {
+  homeSwipeIndex = idx;
+  const track = document.getElementById("home-swipe-track");
+  if (track) track.style.transform = `translateX(-${idx * 50}%)`;
+  document.querySelectorAll(".home-swipe-dot").forEach((d, i) => d.classList.toggle("active", i === idx));
+}
+
+function initHomeSwipe() {
+  const track = document.getElementById("home-swipe-track");
+  if (!track || track.dataset.swipeBound) return;
+  track.dataset.swipeBound = "1";
+
+  track.addEventListener("touchstart", (e) => {
+    homeSwipeStartX = e.touches[0].clientX;
+    homeSwipeDragging = true;
+    track.style.transition = "none";
+  }, { passive: true });
+
+  track.addEventListener("touchmove", (e) => {
+    if (!homeSwipeDragging) return;
+    homeSwipeDeltaX = e.touches[0].clientX - homeSwipeStartX;
+    const basePercent = -homeSwipeIndex * 50;
+    const dragPercent = (homeSwipeDeltaX / track.offsetWidth) * 100;
+    track.style.transform = `translateX(${basePercent + dragPercent}%)`;
+  }, { passive: true });
+
+  track.addEventListener("touchend", () => {
+    homeSwipeDragging = false;
+    track.style.transition = "";
+    const threshold = 50;
+    if (homeSwipeDeltaX < -threshold && homeSwipeIndex < 1) homeSwipeIndex++;
+    else if (homeSwipeDeltaX > threshold && homeSwipeIndex > 0) homeSwipeIndex--;
+    homeSwipeDeltaX = 0;
+    homeSwipeGoTo(homeSwipeIndex);
+  });
 }
 
 function initApp(onReady) {

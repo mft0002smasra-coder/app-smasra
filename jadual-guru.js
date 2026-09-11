@@ -271,6 +271,46 @@ async function jgConfirmUpload() {
   btn.disabled = false; btn.textContent = "Sahkan & Simpan ke Sheet";
 }
 
+/* ================= Kad Home: Jadual Waktu Saya (hari semasa) ================= */
+const JG_DAY_BY_GETDAY = [null, "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", null]; // 0=Ahad,6=Sabtu
+
+async function jgRenderHomeCard(user) {
+  const listEl = document.getElementById("jg-home-list");
+  const dateEl = document.getElementById("jg-home-date");
+  if (!listEl) return;
+
+  const today = new Date();
+  const hariNames = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
+  const dateLabel = `${hariNames[today.getDay()]}, ${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
+  if (dateEl) dateEl.textContent = dateLabel;
+
+  const hariIni = JG_DAY_BY_GETDAY[today.getDay()];
+  if (!hariIni) {
+    listEl.innerHTML = `<div class="empty-state" style="padding:14px 2px;font-size:11px">Hujung minggu — tiada jadual waktu.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = `<div class="empty-state" style="padding:14px 2px;font-size:11px">Memuatkan...</div>`;
+  if (!jgRecords.length) await jgFetchRecords();
+
+  const nameNorm = jgNorm(user.nama);
+  const mine = jgRecords
+    .filter((r) => jgNorm(r.guru) === nameNorm && r.hari === hariIni && r.subjek)
+    .sort((a, b) => a.slot - b.slot);
+
+  if (!mine.length) {
+    listEl.innerHTML = `<div class="empty-state" style="padding:14px 2px;font-size:11px">Tiada jadual waktu untuk hari ini.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = mine.map((r) => `
+    <div class="db-my-kh-row">
+      <span class="db-my-kh-date">Waktu ${r.slot}</span>
+      <span class="db-my-kh-masa">${jgFmtWaktu(r.waktuMula)}&ndash;${jgFmtWaktu(r.waktuTamat)}</span>
+      <span class="db-my-kh-catatan">${jgEscape(r.subjek)}${r.kelas ? " (" + jgEscape(r.kelas) + ")" : ""}</span>
+    </div>`).join("");
+}
+
 /* ================= Init ================= */
 async function jgInit(user) {
   jgCurrentUser = user;

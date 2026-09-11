@@ -454,7 +454,8 @@ let dbHomeDataReady = false;
 async function dbLoadHomeAnalysis(user) {
   const wrap = document.getElementById("db-home-analysis-wrap");
   if (!wrap) return;
-  wrap.classList.remove("hidden");
+  const swipeWrap = document.getElementById("home-swipe-wrap");
+  if (swipeWrap) swipeWrap.classList.remove("hidden");
   document.getElementById("db-my-kehadiran-list").innerHTML = `<div class="empty-state" style="padding:14px 2px;font-size:11px">Memuatkan...</div>`;
 
   const today = new Date();
@@ -695,11 +696,15 @@ async function dbBootBook() {
 /* ---------------- Tinggi kad Analisis Kehadiran Saya (Home) ---------------- */
 function dbSizeHomeAnalysisCard() {
   const card = document.getElementById("db-home-analysis-wrap");
-  if (!card || card.classList.contains("hidden")) return;
+  const card2 = document.getElementById("jg-home-wrap");
+  const outerWrap = document.getElementById("home-swipe-wrap");
+  if (!card || !outerWrap || outerWrap.classList.contains("hidden")) return;
   const bottomNav = document.querySelector(".bottom-nav-wrap");
   const navHeight = bottomNav ? bottomNav.offsetHeight : 60;
   const cardTop = card.getBoundingClientRect().top;
   const available = window.innerHeight - cardTop - navHeight - 16;
-  card.style.height = Math.max(180, available) + "px";
+  const finalHeight = Math.max(180, available) + "px";
+  card.style.height = finalHeight;
+  if (card2) card2.style.height = finalHeight;
 }
 window.addEventListener("resize", dbSizeHomeAnalysisCard);

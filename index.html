@@ -77,17 +77,41 @@
     <div class="section-label">Menu Utama</div>
     <div class="module-grid" id="home-module-grid"></div>
 
-    <div class="glass card-pad hidden" id="db-home-analysis-wrap" style="margin-top:var(--gap)">
-      <div class="db-my-header">
-        <div class="db-my-title">REKOD KEHADIRAN SAYA</div>
-        <div class="db-my-month-nav">
-          <button class="db-my-arrow" onclick="dbChangeHomeMonth(-1)" aria-label="Bulan sebelum">&lsaquo;</button>
-          <span class="db-my-subtitle" id="db-my-month-label">-</span>
-          <button class="db-my-arrow" onclick="dbChangeHomeMonth(1)" aria-label="Bulan seterusnya">&rsaquo;</button>
+    <div class="home-swipe-wrap hidden" id="home-swipe-wrap" style="margin-top:var(--gap)">
+      <div class="home-swipe-track" id="home-swipe-track">
+
+        <div class="home-swipe-page">
+          <div class="glass card-pad" id="db-home-analysis-wrap">
+            <div class="db-my-header">
+              <div class="db-my-title">REKOD KEHADIRAN SAYA</div>
+              <div class="db-my-month-nav">
+                <button class="db-my-arrow" onclick="dbChangeHomeMonth(-1)" aria-label="Bulan sebelum">&lsaquo;</button>
+                <span class="db-my-subtitle" id="db-my-month-label">-</span>
+                <button class="db-my-arrow" onclick="dbChangeHomeMonth(1)" aria-label="Bulan seterusnya">&rsaquo;</button>
+              </div>
+            </div>
+            <div class="db-my-scroll">
+              <div id="db-my-kehadiran-list"></div>
+            </div>
+          </div>
         </div>
+
+        <div class="home-swipe-page">
+          <div class="glass card-pad" id="jg-home-wrap">
+            <div class="db-my-header">
+              <div class="db-my-title">JADUAL WAKTU SAYA</div>
+              <span class="db-my-subtitle" id="jg-home-date">-</span>
+            </div>
+            <div class="db-my-scroll">
+              <div id="jg-home-list"></div>
+            </div>
+          </div>
+        </div>
+
       </div>
-      <div class="db-my-scroll">
-        <div id="db-my-kehadiran-list"></div>
+      <div class="home-swipe-dots">
+        <span class="home-swipe-dot active" onclick="homeSwipeGoTo(0)"></span>
+        <span class="home-swipe-dot" onclick="homeSwipeGoTo(1)"></span>
       </div>
     </div>
 
@@ -125,12 +149,15 @@
 <script src="app.js"></script>
 <script src="event.js"></script>
 <script src="erks-database.js"></script>
+<script src="jadual-guru.js"></script>
 <script>
   function renderHome(user) {
     renderHomeMenu(null);
     loadBanner();
     evRenderHomeTicker();
     dbLoadHomeAnalysis(user);
+    jgRenderHomeCard(user);
+    setTimeout(initHomeSwipe, 300);
     setTimeout(dbSizeHomeAnalysisCard, 400);
     setTimeout(dbSizeHomeAnalysisCard, 1000);
   }
