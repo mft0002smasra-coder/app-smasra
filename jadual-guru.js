@@ -43,12 +43,16 @@ function jgCheckAccess(user) {
   jgCanUpload = isJadualGuru || isAdmin;
 }
 
+const JG_SPREADSHEET_ID = "1EohV_hfuS6SDgiqDn--QQiM_y92_K4jvGyh87nA3HOo";
 const JG_CACHE_KEY = "jg_cache_jadualGuru";
 const JG_CACHE_TTL_MS = 3 * 60 * 1000;
 
-/* ---------------- Fetch data jadual guru (dengan cache 3 minit) ---------------- */
+/**
+ * Fetch data jadual guru — guna gviz TERUS (bukan lalui Apps Script) untuk
+ * kelajuan maksimum (elak "cold start"/overhead pelaksanaan skrip untuk
+ * bacaan besar ~800 baris). lastUpdate diambil berasingan (tak tahan render).
+ */
 async function jgFetchRecords(forceRefresh) {
-  if (!apiConfigured()) return;
   if (!forceRefresh) {
     try {
       const cached = sessionStorage.getItem(JG_CACHE_KEY);
@@ -56,25 +60,48 @@ async function jgFetchRecords(forceRefresh) {
         const parsed = JSON.parse(cached);
         if (Date.now() - parsed.ts < JG_CACHE_TTL_MS) {
           jgRecords = parsed.data;
-          jgLastUpdate = parsed.lastUpdate;
+          jgLastUpdate = parsed.lastUpdate || "";
           jgTeacherNames = Array.from(new Set(jgRecords.map((r) => r.guru))).sort();
+          jgFetchLastUpdateBackground();
           return;
         }
       }
     } catch (e) { /* storan tak boleh diakses — teruskan fetch biasa */ }
   }
   try {
-    const res = await fetch(`${API_URL}?action=getJadualGuru`);
-    const json = await res.json();
-    jgRecords = json.data || [];
-    jgLastUpdate = json.lastUpdate || "";
+    const url = `https://docs.google.com/spreadsheets/d/${JG_SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent("JadualGuru")}&headers=1&_ts=${Date.now()}`;
+    const res = await fetch(url, { cache: "no-store" });
+    const text = await res.text();
+    const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
+    const table = JSON.parse(jsonStr).table;
+    const cols = (table.cols || []).map((c) => jgNorm(c.label || ""));
+    const idx = { hari: cols.indexOf("HARI"), guru: cols.indexOf("NAMAGURU"), slot: cols.indexOf("SLOT"), waktuMula: cols.indexOf("WAKTUMULA"), waktuTamat: cols.indexOf("WAKTUTAMAT"), subjek: cols.indexOf("SUBJEK"), kelas: cols.indexOf("KELAS") };
+
+    jgRecords = (table.rows || []).map((r) => {
+      const c = r.c || [];
+      const get = (i) => (i !== -1 && c[i] && c[i].v != null ? c[i].v : "");
+      return { hari: get(idx.hari), guru: get(idx.guru), slot: get(idx.slot), waktuMula: get(idx.waktuMula), waktuTamat: get(idx.waktuTamat), subjek: get(idx.subjek), kelas: get(idx.kelas) };
+    }).filter((r) => r.hari && r.guru);
+
     const names = new Set(jgRecords.map((r) => r.guru));
     jgTeacherNames = Array.from(names).sort();
     try { sessionStorage.setItem(JG_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: jgRecords, lastUpdate: jgLastUpdate })); } catch (e) {}
   } catch (e) {
     jgRecords = [];
-    jgLastUpdate = "";
   }
+  jgFetchLastUpdateBackground();
+}
+
+/* Ambil "Terakhir dikemaskini" berasingan (tak halang render jadual utama) */
+async function jgFetchLastUpdateBackground() {
+  if (!apiConfigured()) return;
+  try {
+    const res = await fetch(`${API_URL}?action=getJadualGuru`);
+    const json = await res.json();
+    jgLastUpdate = json.lastUpdate || "";
+    const el = document.getElementById("jg-last-update");
+    if (el) el.textContent = jgLastUpdate || "Belum pernah dikemaskini";
+  } catch (e) { /* tak kritikal */ }
 }
 
 /* ================= Bina jadual mingguan (transposed: Waktu baris, Hari lajur) ================= */
