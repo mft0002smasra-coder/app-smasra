@@ -1410,8 +1410,14 @@ tr.dm-grandtotal td{ background:var(--dm-brown) !important;color:#F8ECD8;font-we
    JADUAL GURU — tema Minimalism, teks berkaler (kandungan sahaja)
    ============================================================ */
 .jg-scope{
-  --jg-page-bg:#FAFAFA; --jg-bg:#FFFFFF; --jg-text:#111827; --jg-text-dim:#5B6472;
-  --jg-line:#C7CBD1; --jg-blue:#1D4ED8; --jg-green:#047857; --jg-amber:#B45309;
+  /* --- Palet Warna --- */
+  --jg-page-bg:#F4F6FA; --jg-bg:#FFFFFF;
+  --jg-primary:#1E2A4A; --jg-primary-dark:#141B33;
+  --jg-accent:#2563EB; --jg-accent-2:#0891B2;
+  --jg-gold:#D97706;
+  --jg-text:#0F172A; --jg-text-dim:#4B5566;
+  --jg-line:#D8DDE6;
+  --jg-blue:#1D4ED8; --jg-green:#047857; --jg-amber:#B45309;
   --jg-red:#DC2626; --jg-purple:#6D28D9; --jg-pink:#BE185D; --jg-teal:#0F766E;
   background:var(--jg-page-bg);
   border-radius:20px 20px 0 0;padding:22px 16px 100px;
@@ -1425,23 +1431,27 @@ tr.dm-grandtotal td{ background:var(--dm-brown) !important;color:#F8ECD8;font-we
 }
 .jg-scope *{ box-sizing:border-box;min-width:0; }
 .jg-page-title{
-  text-align:center;font-weight:700;font-size:14px;letter-spacing:1.2px;color:var(--jg-text-dim);
+  text-align:center;font-weight:800;font-size:15px;letter-spacing:1.4px;color:var(--jg-primary);
   margin-bottom:4px;text-transform:uppercase;
 }
-.jg-teacher-name{ text-align:center;font-weight:700;font-size:17px;color:var(--jg-blue);margin-bottom:18px; }
+.jg-teacher-name{ text-align:center;font-weight:800;font-size:18px;color:var(--jg-accent);margin-bottom:18px; }
 
-.jg-field-label{ display:block;font-size:10.5px;font-weight:700;color:var(--jg-text-dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px; }
+.jg-field-label{ display:block;font-size:10.5px;font-weight:800;color:var(--jg-primary);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px; }
 .jg-select{
-  width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--jg-line);
-  background:var(--jg-bg);color:var(--jg-text);font-family:inherit;font-weight:600;font-size:13px;
+  width:100%;padding:11px 13px;border-radius:10px;border:1.5px solid var(--jg-line);
+  background:var(--jg-bg);color:var(--jg-text);font-family:inherit;font-weight:700;font-size:13px;
   margin-bottom:18px;outline:none;
 }
+.jg-select:focus{ border-color:var(--jg-accent); }
 
-.jg-table-wrap{ width:100%;border-radius:12px;overflow:hidden;border:1px solid var(--jg-line); }
+.jg-table-wrap{ width:100%;border-radius:12px;overflow:hidden;box-shadow:0 4px 14px -6px rgba(30,42,74,0.18); }
 table.jg-table{ border-collapse:collapse;width:100%;table-layout:fixed;background:var(--jg-bg); }
-table.jg-table th, table.jg-table td{ padding:8px 4px;text-align:center;font-size:10px;border:1px solid var(--jg-line);vertical-align:middle; }
-table.jg-table thead th{ background:#F9FAFB;color:var(--jg-text-dim);font-weight:700;font-size:9.5px;text-transform:uppercase;letter-spacing:.3px; }
-.jg-slot-cell{ font-weight:700;color:var(--jg-text-dim);background:#F3F4F6; }
+table.jg-table th, table.jg-table td{ padding:9px 4px;text-align:center;font-size:10px;border:1px solid var(--jg-line);vertical-align:middle; }
+table.jg-table thead th{
+  background:linear-gradient(165deg,var(--jg-primary),var(--jg-primary-dark));color:#fff;
+  font-weight:800;font-size:10px;text-transform:uppercase;letter-spacing:.4px;border-color:var(--jg-primary-dark);
+}
+.jg-slot-cell{ font-weight:800;color:var(--jg-primary);background:#EEF1F8;font-size:11px; }
 .jg-cell{ display:flex;flex-direction:column;gap:1px;padding:4px 3px;border-radius:7px;margin:2px; }
 .jg-cell-time{ font-size:7.5px;font-weight:700; }
 .jg-cell-subj{ font-size:10.5px;font-weight:800; }
@@ -1452,18 +1462,20 @@ table.jg-table thead th{ background:#F9FAFB;color:var(--jg-text-dim);font-weight
 .jg-empty-row{ padding:24px !important;color:var(--jg-text-dim);font-style:italic; }
 
 .jg-update-note{
-  background:#EFF6FF;border:1px solid #DBEAFE;border-radius:12px;padding:12px 14px;
-  font-size:12px;color:var(--jg-text);margin-bottom:14px;
+  background:#EEF1F8;border:1.5px solid var(--jg-primary);border-radius:12px;padding:13px 14px;
+  font-size:12.5px;color:var(--jg-text);margin-bottom:14px;font-weight:600;
 }
-.jg-update-note b{ color:var(--jg-blue); }
+.jg-update-note b{ color:var(--jg-accent);font-weight:800; }
 .jg-upload-hint{ font-size:11px;color:var(--jg-text-dim);margin-bottom:16px;line-height:1.5; }
 .jg-file-btn{
   display:block;text-align:center;padding:13px;border-radius:12px;cursor:pointer;
-  background:var(--jg-blue);color:#fff;font-weight:700;font-size:13px;
+  background:linear-gradient(165deg,var(--jg-accent),#1D4ED8);color:#fff;font-weight:800;font-size:13px;
+  box-shadow:0 6px 14px -6px rgba(37,99,235,0.5);
 }
-.jg-upload-status{ margin-top:14px;font-size:12px;color:var(--jg-text);text-align:center;font-weight:600; }
+.jg-upload-status{ margin-top:14px;font-size:12px;color:var(--jg-text);text-align:center;font-weight:700; }
 .jg-confirm-btn{
   display:block;width:100%;margin-top:16px;padding:13px;border:none;border-radius:12px;cursor:pointer;
-  background:var(--jg-green);color:#fff;font-weight:700;font-size:13px;
+  background:linear-gradient(165deg,var(--jg-green),#065F46);color:#fff;font-weight:800;font-size:13px;
+  box-shadow:0 6px 14px -6px rgba(4,120,87,0.5);
 }
 .jg-confirm-btn:disabled{ opacity:.6; }
