@@ -1250,10 +1250,11 @@ tr.dm-grandtotal td{ background:var(--dm-brown) !important;color:#F8ECD8;font-we
    KEBERADAAN MURID — tema Neumorphism (kandungan sahaja; header/nav kekal tema app)
    ============================================================ */
 .kb-scope{
-  --kb-bg:#F7E3D2; --kb-text:#5A4130; --kb-text-dim:#A6876E;
-  --kb-shadow-dark:#dcc0a3; --kb-shadow-light:#ffffff;
+  --kb-page-bg:#F7E3D2;
+  --kb-bg:#E6E9EF; --kb-text:#3A4150; --kb-text-dim:#8A93A6;
+  --kb-shadow-dark:#c3c9d4; --kb-shadow-light:#ffffff;
   --kb-blue:#5B7FDE; --kb-green:#5CBE8A; --kb-amber:#E0A458;
-  background:var(--kb-bg);
+  background:var(--kb-page-bg);
   border-radius:20px 20px 0 0;padding:20px 16px 100px;
   font-family:'Nunito','Rajdhani',sans-serif;color:var(--kb-text);
   min-height:calc(100vh - 92px);
