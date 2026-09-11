@@ -1410,9 +1410,9 @@ tr.dm-grandtotal td{ background:var(--dm-brown) !important;color:#F8ECD8;font-we
    JADUAL GURU — tema Minimalism, teks berkaler (kandungan sahaja)
    ============================================================ */
 .jg-scope{
-  --jg-page-bg:#FAFAFA; --jg-bg:#FFFFFF; --jg-text:#1F2937; --jg-text-dim:#9CA3AF;
-  --jg-line:#EDEDED; --jg-blue:#2563EB; --jg-green:#059669; --jg-amber:#D97706;
-  --jg-red:#DC2626; --jg-purple:#7C3AED; --jg-pink:#DB2777; --jg-teal:#0D9488;
+  --jg-page-bg:#FAFAFA; --jg-bg:#FFFFFF; --jg-text:#111827; --jg-text-dim:#5B6472;
+  --jg-line:#C7CBD1; --jg-blue:#1D4ED8; --jg-green:#047857; --jg-amber:#B45309;
+  --jg-red:#DC2626; --jg-purple:#6D28D9; --jg-pink:#BE185D; --jg-teal:#0F766E;
   background:var(--jg-page-bg);
   border-radius:20px 20px 0 0;padding:22px 16px 100px;
   font-family:'Inter',sans-serif;color:var(--jg-text);
@@ -1441,16 +1441,11 @@ tr.dm-grandtotal td{ background:var(--dm-brown) !important;color:#F8ECD8;font-we
 table.jg-table{ border-collapse:collapse;width:100%;table-layout:fixed;background:var(--jg-bg); }
 table.jg-table th, table.jg-table td{ padding:8px 4px;text-align:center;font-size:10px;border:1px solid var(--jg-line);vertical-align:middle; }
 table.jg-table thead th{ background:#F9FAFB;color:var(--jg-text-dim);font-weight:700;font-size:9.5px;text-transform:uppercase;letter-spacing:.3px; }
-.jg-slot-cell{ font-weight:700;color:var(--jg-text-dim);background:#FAFAFB; }
-.jg-cell{ display:flex;flex-direction:column;gap:1px;padding:2px; }
-.jg-cell-time{ font-size:7.5px;color:var(--jg-text-dim);font-weight:600; }
-.jg-cell-subj{ font-size:10.5px;font-weight:700;color:var(--jg-blue); }
-.jg-cell-kelas{ font-size:9px;font-weight:600;color:var(--jg-green); }
-
-/* Warna berbeza ikut kumpulan subjek — variasi visual (kitaran hash sikit) */
-table.jg-table tr:nth-child(3n+1) .jg-cell-subj{ color:var(--jg-blue); }
-table.jg-table tr:nth-child(3n+2) .jg-cell-subj{ color:var(--jg-purple); }
-table.jg-table tr:nth-child(3n) .jg-cell-subj{ color:var(--jg-teal); }
+.jg-slot-cell{ font-weight:700;color:var(--jg-text-dim);background:#F3F4F6; }
+.jg-cell{ display:flex;flex-direction:column;gap:1px;padding:4px 3px;border-radius:7px;margin:2px; }
+.jg-cell-time{ font-size:7.5px;font-weight:700; }
+.jg-cell-subj{ font-size:10.5px;font-weight:800; }
+.jg-cell-kelas{ font-size:9px;font-weight:700; }
 
 .jg-guru-cell{ text-align:left !important;font-weight:700;color:var(--jg-text); }
 .jg-jumlah-cell{ font-weight:800;color:var(--jg-amber);font-size:12px; }

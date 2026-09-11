@@ -16,6 +16,14 @@ let jgTeacherNames = [];
 function jgEscape(str) { return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 function jgNorm(str) { return String(str || "").trim().toUpperCase().replace(/\s+/g, " "); }
 
+const JG_SUBJ_PALETTE = ["#DBEAFE", "#DCFCE7", "#FEF3C7", "#FCE7F3", "#EDE9FE", "#CCFBF1", "#FEE2E2", "#E0E7FF"];
+const JG_SUBJ_TEXT_PALETTE = ["#1D4ED8", "#047857", "#B45309", "#BE185D", "#6D28D9", "#0F766E", "#DC2626", "#4338CA"];
+function jgHashStr(str) { let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return h; }
+function jgColorForSubjek(subjek) {
+  const idx = jgHashStr(jgNorm(subjek)) % JG_SUBJ_PALETTE.length;
+  return { bg: JG_SUBJ_PALETTE[idx], text: JG_SUBJ_TEXT_PALETTE[idx] };
+}
+
 /* ---------------- Tukar format masa "7.3"/"12.3" -> "7:30"/"12:30" ---------------- */
 function jgFmtWaktu(val) {
   if (val === null || val === undefined || val === "") return "";
@@ -35,9 +43,26 @@ function jgCheckAccess(user) {
   jgCanUpload = isJadualGuru || isAdmin;
 }
 
-/* ---------------- Fetch data jadual guru ---------------- */
-async function jgFetchRecords() {
+const JG_CACHE_KEY = "jg_cache_jadualGuru";
+const JG_CACHE_TTL_MS = 3 * 60 * 1000;
+
+/* ---------------- Fetch data jadual guru (dengan cache 3 minit) ---------------- */
+async function jgFetchRecords(forceRefresh) {
   if (!apiConfigured()) return;
+  if (!forceRefresh) {
+    try {
+      const cached = sessionStorage.getItem(JG_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Date.now() - parsed.ts < JG_CACHE_TTL_MS) {
+          jgRecords = parsed.data;
+          jgLastUpdate = parsed.lastUpdate;
+          jgTeacherNames = Array.from(new Set(jgRecords.map((r) => r.guru))).sort();
+          return;
+        }
+      }
+    } catch (e) { /* storan tak boleh diakses — teruskan fetch biasa */ }
+  }
   try {
     const res = await fetch(`${API_URL}?action=getJadualGuru`);
     const json = await res.json();
@@ -45,6 +70,7 @@ async function jgFetchRecords() {
     jgLastUpdate = json.lastUpdate || "";
     const names = new Set(jgRecords.map((r) => r.guru));
     jgTeacherNames = Array.from(names).sort();
+    try { sessionStorage.setItem(JG_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: jgRecords, lastUpdate: jgLastUpdate })); } catch (e) {}
   } catch (e) {
     jgRecords = [];
     jgLastUpdate = "";
@@ -65,7 +91,8 @@ function jgBuildWeeklyTable(guruName) {
     const cells = JG_HARI_LIST.map((hari) => {
       const rec = bySlotDay[`${slot}-${hari}`];
       if (!rec || !rec.subjek) return `<td></td>`;
-      return `<td><div class="jg-cell"><span class="jg-cell-time">${jgFmtWaktu(rec.waktuMula)}-${jgFmtWaktu(rec.waktuTamat)}</span><span class="jg-cell-subj">${jgEscape(rec.subjek)}</span><span class="jg-cell-kelas">${jgEscape(rec.kelas)}</span></div></td>`;
+      const col = jgColorForSubjek(rec.subjek);
+      return `<td><div class="jg-cell" style="background:${col.bg};color:${col.text}"><span class="jg-cell-time" style="color:${col.text};opacity:.75">${jgFmtWaktu(rec.waktuMula)}-${jgFmtWaktu(rec.waktuTamat)}</span><span class="jg-cell-subj" style="color:${col.text}">${jgEscape(rec.subjek)}</span><span class="jg-cell-kelas" style="color:${col.text}">${jgEscape(rec.kelas)}</span></div></td>`;
     }).join("");
     rows.push(`<tr><td class="jg-slot-cell">${slot}</td>${cells}</tr>`);
   }
@@ -261,12 +288,23 @@ async function jgConfirmUpload() {
       document.getElementById("jg-file-input").value = "";
       jgLastUpdate = result.lastUpdate;
       document.getElementById("jg-last-update").textContent = jgLastUpdate || "-";
-      await jgFetchRecords();
+      await jgFetchRecords(true);
     } else {
       statusEl.textContent = result.message || "Gagal simpan jadual.";
     }
   } catch (err) {
-    statusEl.textContent = "Ralat sambungan ke server (" + err.message + ").";
+    statusEl.textContent = "Respons lambat/terputus — menyemak jika data sebenarnya tersimpan...";
+    await new Promise((r) => setTimeout(r, 2500));
+    const before = jgLastUpdate;
+    await jgFetchRecords(true);
+    if (jgLastUpdate && jgLastUpdate !== before) {
+      statusEl.textContent = `✓ Disahkan — data BERJAYA disimpan (${jgRecords.length} rekod). Sambungan cuma lambat balas.`;
+      document.getElementById("jg-last-update").textContent = jgLastUpdate;
+      btn.classList.add("hidden");
+      document.getElementById("jg-file-input").value = "";
+    } else {
+      statusEl.textContent = "Ralat sambungan ke server (" + err.message + "). Sila cuba lagi.";
+    }
   }
   btn.disabled = false; btn.textContent = "Sahkan & Simpan ke Sheet";
 }
