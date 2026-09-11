@@ -370,7 +370,31 @@ function initApp(onReady) {
     renderHeader(user);
     renderDrawerMenu();
     if (typeof onReady === "function") onReady(user);
+    refreshUserInBackground(user);
   }
+}
+
+/**
+ * Selepas render pantas guna data cache (localStorage), semak SEMULA di
+ * latar belakang terhadap Sheet sebenar — kalau jawatan/role/role2/nama
+ * berubah (cth. Admin kemaskini terus dalam DatabaseSTAFF), reload sekali
+ * supaya semua kebenaran & paparan betul, tanpa perlu log keluar manual.
+ */
+async function refreshUserInBackground(cachedUser) {
+  if (!apiConfigured()) return;
+  try {
+    const res = await fetch(`${API_URL}?action=getUser&email=${encodeURIComponent(cachedUser.email)}`);
+    const data = await res.json();
+    if (!data || !data.found) return;
+    const changed = data.jawatan !== cachedUser.jawatan || data.role !== cachedUser.role || data.role2 !== cachedUser.role2 || data.nama !== cachedUser.nama;
+    if (changed) {
+      saveUser({
+        email: cachedUser.email, nama: data.nama, jawatan: data.jawatan, gambar: data.gambar,
+        role: data.role || "", role2: data.role2 || "", telefon: data.telefon, emel1: data.emel1, emel2: data.emel2,
+      });
+      location.reload();
+    }
+  } catch (e) { /* tak kritikal — cuba lagi bila page seterusnya dimuat */ }
 }
 
 /* ---------------- Pengumuman (dikongsi index.html & pengumuman.html) ---------------- */
