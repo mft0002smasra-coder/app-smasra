@@ -461,7 +461,7 @@ function closeImageLightbox() {
 }
 
 async function fetchPengumumanItems() {
-  const { cols, rows } = await gvizFetch(SPREADSHEET_ID, "Pengumuman");
+  const { rows } = await gvizFetch(SPREADSHEET_ID, "Pengumuman");
   const todayKey = new Date().toISOString().slice(0, 10);
   const gvizDateToIso = (v) => {
     if (!v) return "";
@@ -469,10 +469,12 @@ async function fetchPengumumanItems() {
     if (!m) return String(v).slice(0, 10);
     return new Date(parseInt(m[1]), parseInt(m[2]), parseInt(m[3])).toISOString().slice(0, 10);
   };
+  // Lajur ikut KEDUDUKAN tetap (sama macam Code.gs asal): A=Gambar, B=Teks, C=TarikhTamat
   let items = rows.map((r) => {
-    const gambar = gvizCell(r, cols, "Gambar");
-    const teks = gvizCell(r, cols, "Teks");
-    const tarikhTamat = gvizDateToIso(gvizCell(r, cols, "TarikhTamat"));
+    const c = r.c || [];
+    const gambar = (c[0] && c[0].v) || "";
+    const teks = (c[1] && c[1].v) || "";
+    const tarikhTamat = gvizDateToIso((c[2] && c[2].v) || "");
     return { gambar, teks, tarikhTamat };
   }).filter((it) => (it.gambar || it.teks) && (!it.tarikhTamat || it.tarikhTamat >= todayKey));
   items.reverse(); // terbaru dahulu
