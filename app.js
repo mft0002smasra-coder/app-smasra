@@ -9,6 +9,30 @@ const APPSHEET_ERKS_URL = "https://www.appsheet.com/start/210829a8-31c7-4ade-ba5
 
 // GANTI dengan URL Web App selepas awak deploy Code.gs (Deploy > New deployment > Web app)
 const API_URL = "https://script.google.com/macros/s/AKfycbxNMX-PHWy4t8PdQhj-jekw9T8V7b1lN2M8sQ9d8jybfeSLvKS9jB8XuKbjjYRwshcz/exec";
+const SPREADSHEET_ID = "1EohV_hfuS6SDgiqDn--QQiM_y92_K4jvGyh87nA3HOo";
+
+/**
+ * Fungsi berpusat untuk baca Sheet TERUS guna gviz (BUKAN lalui Apps Script)
+ * — jauh lebih laju, elak "cold start"/overhead pelaksanaan skrip. Guna ni
+ * untuk SEMUA bacaan data (bukan tulis) merentasi seluruh app.
+ * Pulangkan: { cols: [nama lajur ternormal...], rows: [{c:[...]}...] }
+ */
+async function gvizFetch(spreadsheetId, sheetName) {
+  const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&headers=1&_ts=${Date.now()}`;
+  const res = await fetch(url, { cache: "no-store" });
+  const text = await res.text();
+  const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
+  const table = JSON.parse(jsonStr).table;
+  const cols = (table.cols || []).map((c) => String(c.label || "").trim().toUpperCase());
+  return { cols, rows: table.rows || [] };
+}
+/** Ambil nilai sel ikut nama lajur (bukan kedudukan) dari satu baris gviz */
+function gvizCell(row, cols, colName) {
+  const idx = cols.indexOf(colName.toUpperCase());
+  if (idx === -1) return "";
+  const c = (row.c || [])[idx];
+  return c && c.v != null ? c.v : "";
+}
 
 // GANTI dengan OAuth Client ID dari Google Cloud Console untuk aktifkan "Sign in with Google"
 const GOOGLE_CLIENT_ID = "702368440468-u7uoc6396frmum2j0mllbc3llqi4tgbn.apps.googleusercontent.com";
@@ -307,17 +331,23 @@ let homeSwipeStartX = 0;
 let homeSwipeDeltaX = 0;
 let homeSwipeDragging = false;
 
-function homeSwipeGoTo(idx) {
-  homeSwipeIndex = idx;
+function homeSwipePageCount() {
   const track = document.getElementById("home-swipe-track");
-  if (track) track.style.transform = `translateX(-${idx * 50}%)`;
-  document.querySelectorAll(".home-swipe-dot").forEach((d, i) => d.classList.toggle("active", i === idx));
+  return track ? track.children.length : 1;
+}
+function homeSwipeGoTo(idx) {
+  const count = homeSwipePageCount();
+  homeSwipeIndex = Math.max(0, Math.min(idx, count - 1));
+  const track = document.getElementById("home-swipe-track");
+  if (track) track.style.transform = `translateX(-${homeSwipeIndex * (100 / count)}%)`;
+  document.querySelectorAll(".home-swipe-dot").forEach((d, i) => d.classList.toggle("active", i === homeSwipeIndex));
 }
 
 function initHomeSwipe() {
   const track = document.getElementById("home-swipe-track");
   if (!track || track.dataset.swipeBound) return;
   track.dataset.swipeBound = "1";
+  const count = homeSwipePageCount();
 
   track.addEventListener("touchstart", (e) => {
     homeSwipeStartX = e.touches[0].clientX;
@@ -328,8 +358,8 @@ function initHomeSwipe() {
   track.addEventListener("touchmove", (e) => {
     if (!homeSwipeDragging) return;
     homeSwipeDeltaX = e.touches[0].clientX - homeSwipeStartX;
-    const basePercent = -homeSwipeIndex * 50;
-    const dragPercent = (homeSwipeDeltaX / track.offsetWidth) * 100;
+    const basePercent = -homeSwipeIndex * (100 / count);
+    const dragPercent = (homeSwipeDeltaX / track.offsetWidth) * (100 / count);
     track.style.transform = `translateX(${basePercent + dragPercent}%)`;
   }, { passive: true });
 
@@ -337,7 +367,7 @@ function initHomeSwipe() {
     homeSwipeDragging = false;
     track.style.transition = "";
     const threshold = 50;
-    if (homeSwipeDeltaX < -threshold && homeSwipeIndex < 1) homeSwipeIndex++;
+    if (homeSwipeDeltaX < -threshold && homeSwipeIndex < count - 1) homeSwipeIndex++;
     else if (homeSwipeDeltaX > threshold && homeSwipeIndex > 0) homeSwipeIndex--;
     homeSwipeDeltaX = 0;
     homeSwipeGoTo(homeSwipeIndex);
@@ -430,23 +460,62 @@ function closeImageLightbox() {
   if (box) box.classList.remove("show");
 }
 
+async function fetchPengumumanItems() {
+  const { cols, rows } = await gvizFetch(SPREADSHEET_ID, "Pengumuman");
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const gvizDateToIso = (v) => {
+    if (!v) return "";
+    const m = String(v).match(/Date\((\d+),(\d+),(\d+)/);
+    if (!m) return String(v).slice(0, 10);
+    return new Date(parseInt(m[1]), parseInt(m[2]), parseInt(m[3])).toISOString().slice(0, 10);
+  };
+  let items = rows.map((r) => {
+    const gambar = gvizCell(r, cols, "Gambar");
+    const teks = gvizCell(r, cols, "Teks");
+    const tarikhTamat = gvizDateToIso(gvizCell(r, cols, "TarikhTamat"));
+    return { gambar, teks, tarikhTamat };
+  }).filter((it) => (it.gambar || it.teks) && (!it.tarikhTamat || it.tarikhTamat >= todayKey));
+  items.reverse(); // terbaru dahulu
+  return items;
+}
+
 async function loadPengumumanList(targetId) {
   const listEl = document.getElementById(targetId);
   if (!listEl) return;
-  if (!apiConfigured()) {
-    listEl.innerHTML = '<div class="empty-state">API belum disambungkan (API_URL belum diisi dalam app.js).</div>';
-    return;
-  }
   try {
-    const res = await fetch(`${API_URL}?action=getPengumuman`);
-    const items = await res.json();
-    if (!items || items.length === 0) {
+    const items = await fetchPengumumanItems();
+    if (!items.length) {
       listEl.innerHTML = '<div class="empty-state">Belum ada pengumuman lagi.</div>';
       return;
     }
     listEl.innerHTML = items.map(renderAnnounceCard).join("");
   } catch (err) {
     listEl.innerHTML = '<div class="empty-state">Gagal muatkan pengumuman. Cuba lagi.</div>';
+  }
+}
+
+/* ---------------- Kad Home: Hebahan Terkini (swipe ke-3) ---------------- */
+async function renderHomeHebahanCard() {
+  const box = document.getElementById("home-hebahan-content");
+  if (!box) return;
+  box.innerHTML = `<div class="empty-state" style="padding:14px 2px;font-size:11px">Memuatkan...</div>`;
+  try {
+    const items = await fetchPengumumanItems();
+    if (!items.length) {
+      box.innerHTML = `<div class="empty-state" style="padding:14px 2px;font-size:11px">Belum ada pengumuman lagi.</div>`;
+      return;
+    }
+    const latest = items[0];
+    let html = "";
+    if (latest.gambar) {
+      html += `<div class="home-hebahan-img-wrap"><img class="home-hebahan-img" src="${escapeAttr(latest.gambar)}" alt="Gambar pengumuman" onerror="this.parentElement.style.display='none'" onclick="openImageLightbox('${escapeAttr(latest.gambar)}')"></div>`;
+    }
+    if (latest.teks) {
+      html += `<div class="home-hebahan-text">${escapeHtml(latest.teks)}</div>`;
+    }
+    box.innerHTML = html;
+  } catch (err) {
+    box.innerHTML = `<div class="empty-state" style="padding:14px 2px;font-size:11px">Gagal muatkan pengumuman.</div>`;
   }
 }
 
@@ -460,13 +529,9 @@ async function loadBanner() {
   const track = document.getElementById("banner-track");
   const dots = document.getElementById("banner-dots");
   if (!track) return;
-  if (!apiConfigured()) {
-    track.innerHTML = '<div class="banner-empty">API belum disambungkan (API_URL belum diisi).</div>';
-    return;
-  }
   try {
-    const res = await fetch(`${API_URL}?action=getBanner`);
-    bannerImages = await res.json();
+    const { rows } = await gvizFetch(SPREADSHEET_ID, "Banner");
+    bannerImages = rows.map((r) => (r.c[0] && r.c[0].v) || "").filter(Boolean);
     if (!bannerImages || bannerImages.length === 0) {
       track.innerHTML = '<div class="banner-empty">Belum ada banner. Tambah link gambar di tab "Banner", lajur A.</div>';
       return;

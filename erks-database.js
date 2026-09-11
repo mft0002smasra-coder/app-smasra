@@ -66,15 +66,19 @@ function dbGetLocation() {
   });
 }
 
-/* ---------------- Muat maklumat staf (auto-detect emel log masuk) ---------------- */
+/* ---------------- Muat maklumat staf (auto-detect emel log masuk) — gviz terus ---------------- */
 async function dbLoadStaff(user) {
   if (dbStaff) return dbStaff;
-  if (!dbApiConfigured()) return null;
   try {
-    const res = await fetch(`${DB_API_URL}?action=getStaffByEmail&email=${encodeURIComponent(user.email)}`);
-    const data = await res.json();
-    if (data.found) {
-      dbStaff = { noKP: data.noKP, nama: data.nama, jawatan: data.jawatan };
+    const { rows } = await gvizFetch(DB_SHEET_ID_READ, "Database");
+    const target = String(user.email || "").trim().toLowerCase();
+    for (const r of rows) {
+      const c = r.c || [];
+      const emel = String((c[5] && c[5].v) || "").trim().toLowerCase();
+      if (emel === target) {
+        dbStaff = { noKP: (c[1] && c[1].v) || "", nama: (c[2] && c[2].v) || "", jawatan: (c[3] && c[3].v) || "" };
+        break;
+      }
     }
   } catch (e) { /* biar null, borang akan papar amaran */ }
   return dbStaff;
@@ -697,6 +701,7 @@ async function dbBootBook() {
 function dbSizeHomeAnalysisCard() {
   const card = document.getElementById("db-home-analysis-wrap");
   const card2 = document.getElementById("jg-home-wrap");
+  const card3 = document.getElementById("home-hebahan-wrap");
   const outerWrap = document.getElementById("home-swipe-wrap");
   if (!card || !outerWrap || outerWrap.classList.contains("hidden")) return;
   const bottomNav = document.querySelector(".bottom-nav-wrap");
@@ -706,5 +711,6 @@ function dbSizeHomeAnalysisCard() {
   const finalHeight = Math.max(180, available) + "px";
   card.style.height = finalHeight;
   if (card2) card2.style.height = finalHeight;
+  if (card3) card3.style.height = finalHeight;
 }
 window.addEventListener("resize", dbSizeHomeAnalysisCard);

@@ -108,10 +108,22 @@
           </div>
         </div>
 
+        <div class="home-swipe-page">
+          <div class="glass card-pad" id="home-hebahan-wrap">
+            <div class="db-my-header">
+              <div class="db-my-title">HEBAHAN TERKINI</div>
+            </div>
+            <div class="db-my-scroll" id="home-hebahan-scroll">
+              <div id="home-hebahan-content"></div>
+            </div>
+          </div>
+        </div>
+
       </div>
       <div class="home-swipe-dots">
         <span class="home-swipe-dot active" onclick="homeSwipeGoTo(0)"></span>
         <span class="home-swipe-dot" onclick="homeSwipeGoTo(1)"></span>
+        <span class="home-swipe-dot" onclick="homeSwipeGoTo(2)"></span>
       </div>
     </div>
 
@@ -180,6 +192,7 @@
     evRenderHomeTicker();
     dbLoadHomeAnalysis(user);
     jgRenderHomeCard(user);
+    renderHomeHebahanCard();
     setTimeout(initHomeSwipe, 300);
     setTimeout(dbSizeHomeAnalysisCard, 400);
     setTimeout(dbSizeHomeAnalysisCard, 1000);

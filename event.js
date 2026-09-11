@@ -29,10 +29,29 @@ function evYmd(y, m, d) { return `${y}-${evPad2(m + 1)}-${evPad2(d)}`; }
 function evEscape(str) { return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
 async function evLoadEvents() {
-  if (!apiConfigured()) return;
   try {
-    const res = await fetch(`${API_URL}?action=getEvents`);
-    evEvents = await res.json();
+    const { rows } = await gvizFetch(SPREADSHEET_ID, "Event");
+    const gvizDateToIso = (v) => {
+      if (!v) return "";
+      const m = String(v).match(/Date\((\d+),(\d+),(\d+)/);
+      if (!m) return String(v).slice(0, 10);
+      return new Date(parseInt(m[1]), parseInt(m[2]), parseInt(m[3])).toISOString().slice(0, 10);
+    };
+    evEvents = rows.map((r) => {
+      const c = r.c || [];
+      const get = (i) => (c[i] && c[i].v != null ? c[i].v : "");
+      const tarikhDari = gvizDateToIso(get(1));
+      if (!tarikhDari || !get(4)) return null; // perlu sekurang-kurangnya tarikh dari + tajuk
+      return {
+        unit: get(0) || "",
+        tarikhDari,
+        tarikhHingga: get(2) ? gvizDateToIso(get(2)) : tarikhDari,
+        masa: get(3) || "",
+        tajuk: get(4) || "",
+        tempat: get(5) || "",
+        dicatatOleh: get(6) || "",
+      };
+    }).filter(Boolean);
   } catch (e) {
     evEvents = [];
   }

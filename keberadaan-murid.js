@@ -45,12 +45,28 @@ async function kbFetchStudents() {
   }
 }
 
-/* ---------------- Fetch rekod keberadaan (untuk senarai) ---------------- */
+/* ---------------- Fetch rekod keberadaan (untuk senarai) — gviz terus ---------------- */
 async function kbFetchRecords() {
-  if (!apiConfigured()) return;
   try {
-    const res = await fetch(`${API_URL}?action=getKeberadaanMurid`);
-    kbRecords = await res.json();
+    const { rows } = await gvizFetch(KB_SPREADSHEET_ID, "KeberadaanMurid");
+    const gvizDateToIso = (v) => {
+      if (!v) return "";
+      const m = String(v).match(/Date\((\d+),(\d+),(\d+)/);
+      if (!m) return String(v).slice(0, 10);
+      return new Date(parseInt(m[1]), parseInt(m[2]), parseInt(m[3])).toISOString().slice(0, 10);
+    };
+    kbRecords = rows.map((r, i) => {
+      const c = r.c || [];
+      const get = (idx) => (c[idx] && c[idx].v != null ? c[idx].v : "");
+      const tarikh = gvizDateToIso(get(2));
+      const nama = get(5);
+      if (!tarikh || !nama) return null; // perlu tarikh + nama murid
+      return {
+        rowId: i + 2, // baris data gviz sepadan terus dgn baris Sheet sebenar (header=baris1)
+        tarikh, kategori: get(3) || "", tingkatan: get(4) || "", nama,
+        tempat: get(6) || "", catatan: get(7) || "", dicatatOleh: get(8) || "",
+      };
+    }).filter(Boolean);
   } catch (e) {
     kbRecords = [];
   }

@@ -2,6 +2,7 @@
    LAPORAN PENTADBIR BERTUGAS
    ============================================================ */
 
+const LP_SPREADSHEET_ID = "1EohV_hfuS6SDgiqDn--QQiM_y92_K4jvGyh87nA3HOo";
 const LP_BLOK_LIST = [
   "BLOK A", "BLOK B", "BLOK C", "KANTIN",
   "1 Ar-Razi", "1 Ibnu Rushd", "1 Al-Farabi",
@@ -133,12 +134,30 @@ async function lpSubmitForm(e) {
   btn.textContent = "Hantar Rekod";
 }
 
-/* ---------------- Senarai laporan (dikumpul ikut Nama + Tarikh) ---------------- */
+/* ---------------- Senarai laporan (dikumpul ikut Nama + Tarikh) — gviz terus ---------------- */
 async function lpLoadRecords() {
-  if (!apiConfigured()) return;
   try {
-    const res = await fetch(`${API_URL}?action=getLaporanPentadbir`);
-    lpRecords = await res.json();
+    const { rows } = await gvizFetch(LP_SPREADSHEET_ID, "LaporanPentadbirBertugas");
+    const gvizDateToIso = (v) => {
+      if (!v) return "";
+      const m = String(v).match(/Date\((\d+),(\d+),(\d+)/);
+      if (!m) return String(v).slice(0, 10);
+      return new Date(parseInt(m[1]), parseInt(m[2]), parseInt(m[3])).toISOString().slice(0, 10);
+    };
+    lpRecords = rows.map((r, i) => {
+      const c = r.c || [];
+      const getRaw = (idx) => (c[idx] && c[idx].v != null ? c[idx].v : "");
+      const getFmt = (idx) => (c[idx] && (c[idx].f != null ? c[idx].f : c[idx].v)) || "";
+      const tarikh = gvizDateToIso(getRaw(0));
+      const blokKelas = getRaw(2);
+      if (!tarikh || !blokKelas) return null; // perlu tarikh + blok/kelas
+      return {
+        rowNum: i + 2,
+        tarikh, masa: getFmt(1) || "", blokKelas,
+        catatan: getRaw(3) || "", gambar1: getRaw(4) || "", gambar2: getRaw(5) || "",
+        namaPentadbir: getRaw(6) || "",
+      };
+    }).filter(Boolean);
   } catch (e) {
     lpRecords = [];
   }
