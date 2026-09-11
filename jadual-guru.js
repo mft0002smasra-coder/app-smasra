@@ -336,10 +336,161 @@ async function jgConfirmUpload() {
   btn.disabled = false; btn.textContent = "Sahkan & Simpan ke Sheet";
 }
 
+/* ================= TO DO LIST (staf sokongan tanpa jadual mengajar) ================= */
+const JG_TODO_JAWATAN = [
+  "PEMBANTU TADBIR (ASRAMA)", "PEMBANTU KHIDMAT AM", "PEMBANTU TADBIR (P/O)", "PEMBANTU MAKMAL",
+];
+let todoCurrentUser = null;
+let todoItems = [];
+
+function todoIsEligible(user) {
+  return JG_TODO_JAWATAN.indexOf(jgNorm(user.jawatan)) !== -1;
+}
+
+async function todoFetchItems(namaUser) {
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${JG_SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent("To Do List")}&headers=1&_ts=${Date.now()}`;
+    const res = await fetch(url, { cache: "no-store" });
+    const text = await res.text();
+    const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
+    const table = JSON.parse(jsonStr).table;
+    const cols = (table.cols || []).map((c) => jgNorm(c.label || ""));
+    const idx = { id: cols.indexOf("ID"), nama: cols.indexOf("NAMA"), tarikhMula: cols.indexOf("TARIKHMULA"), tarikhAkhir: cols.indexOf("TARIKHAKHIR"), perkara: cols.indexOf("PERKARA") };
+    const gvizDateToIso = (v) => {
+      if (!v) return "";
+      const m = String(v).match(/Date\((\d+),(\d+),(\d+)/);
+      if (!m) return String(v).slice(0, 10);
+      const d = new Date(parseInt(m[1]), parseInt(m[2]), parseInt(m[3]));
+      return d.toISOString().slice(0, 10);
+    };
+    const all = (table.rows || []).map((r) => {
+      const c = r.c || [];
+      const get = (i) => (i !== -1 && c[i] ? c[i].v : "");
+      return {
+        id: get(idx.id), nama: get(idx.nama),
+        tarikhMula: gvizDateToIso(get(idx.tarikhMula)), tarikhAkhir: gvizDateToIso(get(idx.tarikhAkhir)),
+        perkara: get(idx.perkara),
+      };
+    }).filter((r) => r.id && r.nama);
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    todoItems = all.filter((r) => jgNorm(r.nama) === jgNorm(namaUser) && r.tarikhAkhir >= todayStr)
+      .sort((a, b) => a.tarikhMula.localeCompare(b.tarikhMula));
+  } catch (e) {
+    todoItems = [];
+  }
+}
+
+function todoRenderCard() {
+  const listEl = document.getElementById("jg-home-list");
+  const dateEl = document.getElementById("jg-home-date");
+  if (dateEl) dateEl.textContent = "Senarai Tugasan";
+  if (!listEl) return;
+
+  if (!todoItems.length) {
+    listEl.innerHTML = `<div class="empty-state" style="padding:14px 2px;font-size:11px">Tiada tugasan buat masa ini.</div>`;
+  } else {
+    listEl.innerHTML = todoItems.map((t) => `
+      <div class="todo-row">
+        <div class="todo-row-main">
+          <div class="todo-perkara">${jgEscape(t.perkara)}</div>
+          <div class="todo-tarikh">${t.tarikhMula} &rarr; ${t.tarikhAkhir}</div>
+        </div>
+        <div class="todo-row-actions">
+          <button class="todo-icon-btn" onclick="todoOpenForm('${t.id}')" aria-label="Edit">✎</button>
+          <button class="todo-icon-btn todo-del" onclick="todoDeleteItem('${t.id}')" aria-label="Padam">🗑</button>
+        </div>
+      </div>`).join("");
+  }
+  listEl.innerHTML += `<button class="todo-add-btn" onclick="todoOpenForm(null)">+ Tambah Tugasan</button>`;
+}
+
+function todoOpenForm(id) {
+  const item = id ? todoItems.find((t) => t.id === id) : null;
+  document.getElementById("todo-form-id").value = id || "";
+  document.getElementById("todo-form-title").textContent = id ? "Kemaskini Tugasan" : "Tambah Tugasan";
+  document.getElementById("todo-f-tarikh-mula").value = item ? item.tarikhMula : new Date().toISOString().slice(0, 10);
+  document.getElementById("todo-f-tarikh-akhir").value = item ? item.tarikhAkhir : "";
+  document.getElementById("todo-f-perkara").value = item ? item.perkara : "";
+  document.getElementById("todo-form-error").classList.add("hidden");
+  document.getElementById("todo-modal-overlay").classList.remove("hidden");
+}
+function todoCloseForm() {
+  document.getElementById("todo-modal-overlay").classList.add("hidden");
+}
+
+async function todoSubmitForm() {
+  const errEl = document.getElementById("todo-form-error");
+  errEl.classList.add("hidden");
+  const id = document.getElementById("todo-form-id").value;
+  const tarikhMula = document.getElementById("todo-f-tarikh-mula").value;
+  const tarikhAkhir = document.getElementById("todo-f-tarikh-akhir").value;
+  const perkara = document.getElementById("todo-f-perkara").value.trim();
+
+  if (!tarikhMula || !tarikhAkhir || !perkara) {
+    errEl.textContent = "Sila lengkapkan semua medan.";
+    errEl.classList.remove("hidden");
+    return;
+  }
+  if (tarikhAkhir < tarikhMula) {
+    errEl.textContent = "Tarikh Akhir mesti sama atau selepas Tarikh Mula.";
+    errEl.classList.remove("hidden");
+    return;
+  }
+  if (!apiConfigured()) { errEl.textContent = "API belum disambungkan."; errEl.classList.remove("hidden"); return; }
+
+  const btn = document.getElementById("todo-submit-btn");
+  btn.disabled = true; btn.textContent = "Menyimpan...";
+  try {
+    const action = id ? "editTodoItem" : "addTodoItem";
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({ action, id, email: todoCurrentUser.email, tarikhMula, tarikhAkhir, perkara }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      todoCloseForm();
+      await todoFetchItems(todoCurrentUser.nama);
+      todoRenderCard();
+    } else {
+      errEl.textContent = data.message || "Gagal simpan tugasan.";
+      errEl.classList.remove("hidden");
+    }
+  } catch (err) {
+    errEl.textContent = "Ralat sambungan ke server.";
+    errEl.classList.remove("hidden");
+  }
+  btn.disabled = false; btn.textContent = "Simpan";
+}
+
+async function todoDeleteItem(id) {
+  if (!confirm("Padam tugasan ini?")) return;
+  if (!apiConfigured()) return;
+  try {
+    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "deleteTodoItem", id }) });
+    const data = await res.json();
+    if (data.success) {
+      await todoFetchItems(todoCurrentUser.nama);
+      todoRenderCard();
+    } else {
+      alert(data.message || "Gagal padam tugasan.");
+    }
+  } catch (err) {
+    alert("Ralat sambungan ke server.");
+  }
+}
+
 /* ================= Kad Home: Jadual Waktu Saya (hari semasa) ================= */
 const JG_DAY_BY_GETDAY = [null, "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", null]; // 0=Ahad,6=Sabtu
 
 async function jgRenderHomeCard(user) {
+  todoCurrentUser = user;
+  if (todoIsEligible(user)) {
+    await todoFetchItems(user.nama);
+    todoRenderCard();
+    return;
+  }
+
   const listEl = document.getElementById("jg-home-list");
   const dateEl = document.getElementById("jg-home-date");
   if (!listEl) return;
@@ -369,10 +520,10 @@ async function jgRenderHomeCard(user) {
   }
 
   listEl.innerHTML = mine.map((r) => `
-    <div class="db-my-kh-row">
-      <span class="db-my-kh-date">Waktu ${r.slot}</span>
-      <span class="db-my-kh-masa">${jgFmtWaktu(r.waktuMula)}&ndash;${jgFmtWaktu(r.waktuTamat)}</span>
-      <span class="db-my-kh-catatan">${jgEscape(r.subjek)}${r.kelas ? " (" + jgEscape(r.kelas) + ")" : ""}</span>
+    <div class="jg-home-row">
+      <span class="jg-home-waktu">${r.slot}</span>
+      <span class="jg-home-masa">${jgFmtWaktu(r.waktuMula)}&ndash;${jgFmtWaktu(r.waktuTamat)}</span>
+      <span class="jg-home-subj">${jgEscape(r.subjek)}${r.kelas ? " (" + jgEscape(r.kelas) + ")" : ""}</span>
     </div>`).join("");
 }
 

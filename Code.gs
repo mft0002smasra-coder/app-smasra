@@ -51,6 +51,9 @@ function doPost(e) {
   if (body.action === "addKeberadaanMurid") return addKeberadaanMurid(body);
   if (body.action === "editKeberadaanCatatan") return editKeberadaanCatatan(body);
   if (body.action === "uploadJadualGuru") return uploadJadualGuru(body);
+  if (body.action === "addTodoItem") return addTodoItem(body);
+  if (body.action === "editTodoItem") return editTodoItem(body);
+  if (body.action === "deleteTodoItem") return deleteTodoItem(body);
   return jsonResponse({ success: false, message: "Unknown action: " + body.action });
 }
 
@@ -700,4 +703,61 @@ function uploadJadualGuru(body) {
   PropertiesService.getScriptProperties().setProperty("jadualGuruLastUpdate", now);
 
   return jsonResponse({ success: true, count: values.length, lastUpdate: now });
+}
+
+/* ---------------- TO DO LIST (staf sokongan tanpa jadual waktu mengajar) ---------------- */
+// Tab "To Do List" (baris 1 = header, data bermula baris 2):
+// A=ID, B=Nama, C=TarikhMula, D=TarikhAkhir, E=Perkara
+
+function todoGenId() {
+  return Utilities.getUuid().slice(0, 8);
+}
+
+function addTodoItem(body) {
+  var user = findUserByEmail(body.email);
+  var nama = (user && user.nama) || body.email || "";
+  if (!body.tarikhMula || !body.tarikhAkhir || !body.perkara) {
+    return jsonResponse({ success: false, message: "Sila lengkapkan tarikh mula, tarikh akhir, dan perkara." });
+  }
+  ensureTimezone();
+  var sheet = getSheet("To Do List");
+  if (!sheet) {
+    sheet = SpreadsheetApp.openById(SPREADSHEET_ID).insertSheet("To Do List");
+    sheet.appendRow(["ID", "Nama", "TarikhMula", "TarikhAkhir", "Perkara"]);
+  }
+  var id = todoGenId();
+  sheet.appendRow([id, nama, new Date(body.tarikhMula), new Date(body.tarikhAkhir), body.perkara]);
+  var lastRow = sheet.getLastRow();
+  sheet.getRange(lastRow, 3, 1, 2).setNumberFormat("yyyy-mm-dd");
+  return jsonResponse({ success: true, id: id });
+}
+
+function editTodoItem(body) {
+  if (!body.id) return jsonResponse({ success: false, message: "id diperlukan." });
+  var sheet = getSheet("To Do List");
+  if (!sheet) return jsonResponse({ success: false, message: "Rekod tidak dijumpai." });
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(body.id)) {
+      if (body.tarikhMula) sheet.getRange(i + 1, 3).setValue(new Date(body.tarikhMula));
+      if (body.tarikhAkhir) sheet.getRange(i + 1, 4).setValue(new Date(body.tarikhAkhir));
+      if (body.perkara) sheet.getRange(i + 1, 5).setValue(body.perkara);
+      return jsonResponse({ success: true });
+    }
+  }
+  return jsonResponse({ success: false, message: "Rekod tidak dijumpai." });
+}
+
+function deleteTodoItem(body) {
+  if (!body.id) return jsonResponse({ success: false, message: "id diperlukan." });
+  var sheet = getSheet("To Do List");
+  if (!sheet) return jsonResponse({ success: false, message: "Rekod tidak dijumpai." });
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(body.id)) {
+      sheet.deleteRow(i + 1);
+      return jsonResponse({ success: true });
+    }
+  }
+  return jsonResponse({ success: false, message: "Rekod tidak dijumpai." });
 }

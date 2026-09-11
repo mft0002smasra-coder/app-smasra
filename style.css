@@ -941,6 +941,37 @@ table.db-book-table tbody tr:nth-child(odd) td{ background:rgba(255,255,255,.02)
 .db-my-kh-catatan{ min-width:0; }
 .db-my-masa-range{ color:var(--text-dim);font-size:8.5px; }
 
+.jg-home-row{
+  display:grid;grid-template-columns:34px 1.1fr 1.4fr;gap:8px;align-items:center;
+  padding:9px 0;border-bottom:1px solid var(--line);font-size:12.5px;
+}
+.jg-home-row:last-child{ border-bottom:none; }
+.jg-home-waktu{
+  font-family:'Orbitron',sans-serif;color:var(--cyan);font-size:13px;font-weight:700;
+  text-align:center;
+}
+.jg-home-masa{ font-family:'Orbitron',sans-serif;color:var(--text);font-size:11.5px;font-weight:600; }
+.jg-home-subj{ color:var(--text);font-size:12.5px;font-weight:600;min-width:0; }
+
+/* ---------- To Do List (kad Jadual Waktu Saya gantian, staf sokongan) ---------- */
+.todo-row{
+  display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);
+}
+.todo-row:last-child{ border-bottom:none; }
+.todo-row-main{ flex:1;min-width:0; }
+.todo-perkara{ font-size:12.5px;font-weight:600;color:var(--text); }
+.todo-tarikh{ font-size:10px;color:var(--text-dim);margin-top:2px;font-family:'Orbitron',sans-serif; }
+.todo-row-actions{ display:flex;gap:4px;flex-shrink:0; }
+.todo-icon-btn{
+  width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--panel-a);
+  color:var(--text-dim);cursor:pointer;font-size:12px;
+}
+.todo-icon-btn.todo-del{ color:var(--danger);border-color:rgba(255,84,112,0.3); }
+.todo-add-btn{
+  width:100%;margin-top:10px;padding:10px;border-radius:10px;border:1px dashed var(--line);
+  background:none;color:var(--cyan);font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;
+}
+
 @media (min-width:700px){
   .db-option-grid{ grid-template-columns:1fr; }
   table.db-book-table thead th, table.db-book-table tbody td{ font-size:12px;padding:6px 8px; }

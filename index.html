@@ -144,6 +144,29 @@
     <img id="lightbox-img" src="" alt="Banner diperbesar">
   </div>
 
+  <!-- ============ POPUP: Borang To Do List (Kad Jadual Waktu Saya gantian) ============ -->
+  <div class="modal-overlay hidden" id="todo-modal-overlay">
+    <div class="glass modal-sheet">
+      <div class="modal-title" id="todo-form-title">Tambah Tugasan</div>
+      <input type="hidden" id="todo-form-id">
+
+      <label class="field-label" for="todo-f-tarikh-mula">Tarikh Mula</label>
+      <input class="field-input" type="date" id="todo-f-tarikh-mula">
+
+      <label class="field-label" style="margin-top:14px" for="todo-f-tarikh-akhir">Tarikh Akhir Paparan</label>
+      <input class="field-input" type="date" id="todo-f-tarikh-akhir">
+
+      <label class="field-label" style="margin-top:14px" for="todo-f-perkara">Perkara</label>
+      <textarea class="field-input" id="todo-f-perkara" placeholder="Cth: Semak stok bekalan asrama"></textarea>
+
+      <div class="error-text hidden" id="todo-form-error"></div>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="todoCloseForm()">Batal</button>
+        <button class="btn-primary" id="todo-submit-btn" onclick="todoSubmitForm()" style="margin-top:0">Simpan</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script src="app.js"></script>
