@@ -125,7 +125,7 @@
     document.getElementById("modal-overlay").classList.remove("hidden");
     const d = new Date();
     d.setDate(d.getDate() + 7);
-    document.getElementById("pengumuman-tarikh-tamat").value = d.toISOString().slice(0, 10);
+    document.getElementById("pengumuman-tarikh-tamat").value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }
   function closeModal() {
     document.getElementById("modal-overlay").classList.add("hidden");

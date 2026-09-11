@@ -34,6 +34,13 @@ function gvizCell(row, cols, colName) {
   return c && c.v != null ? c.v : "";
 }
 
+/** Tarikh HARI INI ikut zon waktu tempatan (BUKAN UTC) — elak bug lama
+ * "new Date().toISOString()" yang boleh tersasar 1 hari hampir tengah malam. */
+function todayIso() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 // GANTI dengan OAuth Client ID dari Google Cloud Console untuk aktifkan "Sign in with Google"
 const GOOGLE_CLIENT_ID = "702368440468-u7uoc6396frmum2j0mllbc3llqi4tgbn.apps.googleusercontent.com";
 
@@ -462,12 +469,13 @@ function closeImageLightbox() {
 
 async function fetchPengumumanItems() {
   const { rows } = await gvizFetch(SPREADSHEET_ID, "Pengumuman");
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = todayIso();
   const gvizDateToIso = (v) => {
     if (!v) return "";
     const m = String(v).match(/Date\((\d+),(\d+),(\d+)/);
     if (!m) return String(v).slice(0, 10);
-    return new Date(parseInt(m[1]), parseInt(m[2]), parseInt(m[3])).toISOString().slice(0, 10);
+    const y = parseInt(m[1]), mo = parseInt(m[2]) + 1, d = parseInt(m[3]);
+    return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
   };
   // Lajur ikut KEDUDUKAN tetap (sama macam Code.gs asal): A=Gambar, B=Teks, C=TarikhTamat
   let items = rows.map((r) => {

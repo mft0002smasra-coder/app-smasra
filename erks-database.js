@@ -180,7 +180,7 @@ async function dbOpenKeberadaanForm() {
   }
   document.getElementById("db-keberadaan-perkara").value = "";
   document.getElementById("db-keberadaan-tempat").value = "";
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
   document.getElementById("db-keberadaan-mula").value = today;
   document.getElementById("db-keberadaan-tamat").value = today;
   document.getElementById("db-keberadaan-masa-mula").value = "";

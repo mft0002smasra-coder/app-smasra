@@ -53,7 +53,10 @@ async function kbFetchRecords() {
       if (!v) return "";
       const m = String(v).match(/Date\((\d+),(\d+),(\d+)/);
       if (!m) return String(v).slice(0, 10);
-      return new Date(parseInt(m[1]), parseInt(m[2]), parseInt(m[3])).toISOString().slice(0, 10);
+      // Bina string TERUS dari komponen y/m/d — JANGAN guna new Date().toISOString()
+      // sebab ia tukar ke UTC dan sebabkan tarikh tersasar 1 hari (GMT+8).
+      const y = parseInt(m[1]), mo = parseInt(m[2]) + 1, d = parseInt(m[3]);
+      return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     };
     kbRecords = rows.map((r, i) => {
       const c = r.c || [];
@@ -93,7 +96,7 @@ function kbInitSenariaFilters() {
   yearSel.value = String(today.getFullYear());
   yearSel.dataset.built = "1";
 
-  document.getElementById("kb-filter-date").value = today.toISOString().slice(0, 10);
+  document.getElementById("kb-filter-date").value = todayIso();
 
   yearSel.addEventListener("change", kbRenderSenarai);
   document.getElementById("kb-filter-date").addEventListener("change", kbRenderSenarai);
@@ -216,7 +219,7 @@ function kbShowToast(msg) {
 let kbStudentRowCount = 0;
 
 function kbInitBorang() {
-  document.getElementById("kb-f-tarikh").value = new Date().toISOString().slice(0, 10);
+  document.getElementById("kb-f-tarikh").value = todayIso();
   document.getElementById("kb-f-tempat").value = "";
   document.getElementById("kb-f-kategori").value = "";
   document.getElementById("kb-student-rows").innerHTML = "";

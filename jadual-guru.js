@@ -387,8 +387,8 @@ async function todoFetchItems(namaUser) {
       if (!v) return "";
       const m = String(v).match(/Date\((\d+),(\d+),(\d+)/);
       if (!m) return String(v).slice(0, 10);
-      const d = new Date(parseInt(m[1]), parseInt(m[2]), parseInt(m[3]));
-      return d.toISOString().slice(0, 10);
+      const y = parseInt(m[1]), mo = parseInt(m[2]) + 1, d = parseInt(m[3]);
+      return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     };
     const all = (table.rows || []).map((r) => {
       const c = r.c || [];
@@ -400,7 +400,7 @@ async function todoFetchItems(namaUser) {
       };
     }).filter((r) => r.id && r.nama);
 
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = todayIso();
     todoItems = all.filter((r) => jgNorm(r.nama) === jgNorm(namaUser) && r.tarikhAkhir >= todayStr)
       .sort((a, b) => a.tarikhMula.localeCompare(b.tarikhMula));
   } catch (e) {
@@ -436,7 +436,7 @@ function todoOpenForm(id) {
   const item = id ? todoItems.find((t) => t.id === id) : null;
   document.getElementById("todo-form-id").value = id || "";
   document.getElementById("todo-form-title").textContent = id ? "Kemaskini Tugasan" : "Tambah Tugasan";
-  document.getElementById("todo-f-tarikh-mula").value = item ? item.tarikhMula : new Date().toISOString().slice(0, 10);
+  document.getElementById("todo-f-tarikh-mula").value = item ? item.tarikhMula : todayIso();
   document.getElementById("todo-f-tarikh-akhir").value = item ? item.tarikhAkhir : "";
   document.getElementById("todo-f-perkara").value = item ? item.perkara : "";
   document.getElementById("todo-form-error").classList.add("hidden");

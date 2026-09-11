@@ -35,7 +35,10 @@ async function evLoadEvents() {
       if (!v) return "";
       const m = String(v).match(/Date\((\d+),(\d+),(\d+)/);
       if (!m) return String(v).slice(0, 10);
-      return new Date(parseInt(m[1]), parseInt(m[2]), parseInt(m[3])).toISOString().slice(0, 10);
+      // Bina string TERUS dari komponen y/m/d — JANGAN guna new Date().toISOString()
+      // sebab ia tukar ke UTC dan sebabkan tarikh tersasar 1 hari (GMT+8).
+      const y = parseInt(m[1]), mo = parseInt(m[2]) + 1, d = parseInt(m[3]);
+      return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     };
     evEvents = rows.map((r) => {
       const c = r.c || [];

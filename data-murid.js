@@ -128,7 +128,7 @@ async function dmDownloadPng(elId, filenamePrefix, btn) {
   try {
     const el = document.getElementById(elId);
     const canvas = await html2canvas(el, { backgroundColor: "#F3E7D3", scale: 2, useCORS: true });
-    const filename = `${filenamePrefix}_${new Date().toISOString().slice(0, 10)}.png`;
+    const filename = `${filenamePrefix}_${todayIso()}.png`;
     const link = document.createElement("a");
     link.download = filename;
     link.href = canvas.toDataURL("image/png");
