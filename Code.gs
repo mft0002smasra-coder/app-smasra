@@ -32,6 +32,7 @@ function doGet(e) {
   if (action === "getLaporanPentadbir") return getLaporanPentadbir();
   if (action === "getDataMurid") return getDataMurid();
   if (action === "getKeberadaanMurid") return getKeberadaanMurid();
+  if (action === "getJadualGuru") return getJadualGuru();
   return jsonResponse({ error: "Unknown action: " + action });
 }
 
@@ -49,6 +50,7 @@ function doPost(e) {
   if (body.action === "uploadDataMurid") return uploadDataMurid(body);
   if (body.action === "addKeberadaanMurid") return addKeberadaanMurid(body);
   if (body.action === "editKeberadaanCatatan") return editKeberadaanCatatan(body);
+  if (body.action === "uploadJadualGuru") return uploadJadualGuru(body);
   return jsonResponse({ success: false, message: "Unknown action: " + body.action });
 }
 
@@ -637,4 +639,65 @@ function editKeberadaanCatatan(body) {
   }
   sheet.getRange(rowId, 8).setValue(body.catatan || "");
   return jsonResponse({ success: true });
+}
+
+/* ---------------- JADUAL GURU ---------------- */
+// Tab "JadualGuru" (baris 1 = header, data bermula baris 2):
+// A=Hari, B=NamaGuru, C=Slot, D=WaktuMula, E=WaktuTamat, F=Subjek, G=Kelas
+
+function getJadualGuru() {
+  var sheet = getSheet("JadualGuru");
+  var meta = PropertiesService.getScriptProperties().getProperty("jadualGuruLastUpdate") || "";
+  if (!sheet) return jsonResponse({ data: [], lastUpdate: meta });
+  var data = sheet.getDataRange().getValues();
+  var list = [];
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (!row[1] || !row[0]) continue; // perlu nama guru + hari
+    list.push({
+      hari: row[0], guru: row[1], slot: row[2], waktuMula: row[3], waktuTamat: row[4],
+      subjek: row[5] || "", kelas: row[6] || "",
+    });
+  }
+  return jsonResponse({ data: list, lastUpdate: meta });
+}
+
+/**
+ * body: { email, rows: [{hari,guru,slot,waktuMula,waktuTamat,subjek,kelas}, ...] }
+ * GANTI SEPENUHNYA data jadual sedia ada (padam semua, tulis baharu) — sebab
+ * jadual induk baharu sepatutnya menggantikan versi lama, bukan gabung.
+ * Dihadkan kepada jawatan "PPP (GURU JADUAL WAKTU)" atau Role "Admin".
+ */
+function uploadJadualGuru(body) {
+  var user = findUserByEmail(body.email);
+  var jawatanUpper = user ? String(user.jawatan || "").trim().toUpperCase() : "";
+  var isJadualGuru = jawatanUpper === "PPP (GURU JADUAL WAKTU)";
+  var isAdmin = user && String(user.role || "").trim().toLowerCase() === "admin";
+  if (!user || (!isJadualGuru && !isAdmin)) {
+    return jsonResponse({ success: false, message: "Hanya Guru Jadual Waktu atau Admin boleh kemaskini jadual guru." });
+  }
+  if (!body.rows || !body.rows.length) {
+    return jsonResponse({ success: false, message: "Tiada data jadual dihantar." });
+  }
+
+  ensureTimezone();
+  var sheet = getSheet("JadualGuru");
+  if (!sheet) {
+    sheet = SpreadsheetApp.openById(SPREADSHEET_ID).insertSheet("JadualGuru");
+  } else {
+    sheet.clear();
+  }
+  sheet.appendRow(["Hari", "NamaGuru", "Slot", "WaktuMula", "WaktuTamat", "Subjek", "Kelas"]);
+
+  var values = body.rows.map(function (r) {
+    return [r.hari || "", r.guru || "", r.slot || "", r.waktuMula || "", r.waktuTamat || "", r.subjek || "", r.kelas || ""];
+  });
+  if (values.length) {
+    sheet.getRange(2, 1, values.length, 7).setValues(values);
+  }
+
+  var now = kbFmtDateISO(new Date()) + " " + Utilities.formatDate(new Date(), "Asia/Kuala_Lumpur", "HH:mm");
+  PropertiesService.getScriptProperties().setProperty("jadualGuruLastUpdate", now);
+
+  return jsonResponse({ success: true, count: values.length, lastUpdate: now });
 }

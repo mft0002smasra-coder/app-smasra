@@ -1391,3 +1391,70 @@ tr.dm-grandtotal td{ background:var(--dm-brown) !important;color:#F8ECD8;font-we
   max-width:88vw;text-align:center;
 }
 .kb-toast.show{ opacity:1;transform:translateX(-50%) translateY(0); }
+
+/* ============================================================
+   JADUAL GURU — tema Minimalism, teks berkaler (kandungan sahaja)
+   ============================================================ */
+.jg-scope{
+  --jg-page-bg:#FAFAFA; --jg-bg:#FFFFFF; --jg-text:#1F2937; --jg-text-dim:#9CA3AF;
+  --jg-line:#EDEDED; --jg-blue:#2563EB; --jg-green:#059669; --jg-amber:#D97706;
+  --jg-red:#DC2626; --jg-purple:#7C3AED; --jg-pink:#DB2777; --jg-teal:#0D9488;
+  background:var(--jg-page-bg);
+  border-radius:20px 20px 0 0;padding:22px 16px 100px;
+  font-family:'Inter',sans-serif;color:var(--jg-text);
+  min-height:calc(100vh - 92px);
+  box-sizing:border-box;
+  width:calc(100% + 32px);
+  margin-left:-16px;
+  margin-right:-16px;
+  overflow-x:hidden;
+}
+.jg-scope *{ box-sizing:border-box;min-width:0; }
+.jg-page-title{
+  text-align:center;font-weight:700;font-size:14px;letter-spacing:1.2px;color:var(--jg-text-dim);
+  margin-bottom:4px;text-transform:uppercase;
+}
+.jg-teacher-name{ text-align:center;font-weight:700;font-size:17px;color:var(--jg-blue);margin-bottom:18px; }
+
+.jg-field-label{ display:block;font-size:10.5px;font-weight:700;color:var(--jg-text-dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px; }
+.jg-select{
+  width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--jg-line);
+  background:var(--jg-bg);color:var(--jg-text);font-family:inherit;font-weight:600;font-size:13px;
+  margin-bottom:18px;outline:none;
+}
+
+.jg-table-wrap{ width:100%;border-radius:12px;overflow:hidden;border:1px solid var(--jg-line); }
+table.jg-table{ border-collapse:collapse;width:100%;table-layout:fixed;background:var(--jg-bg); }
+table.jg-table th, table.jg-table td{ padding:8px 4px;text-align:center;font-size:10px;border:1px solid var(--jg-line);vertical-align:middle; }
+table.jg-table thead th{ background:#F9FAFB;color:var(--jg-text-dim);font-weight:700;font-size:9.5px;text-transform:uppercase;letter-spacing:.3px; }
+.jg-slot-cell{ font-weight:700;color:var(--jg-text-dim);background:#FAFAFB; }
+.jg-cell{ display:flex;flex-direction:column;gap:1px;padding:2px; }
+.jg-cell-time{ font-size:7.5px;color:var(--jg-text-dim);font-weight:600; }
+.jg-cell-subj{ font-size:10.5px;font-weight:700;color:var(--jg-blue); }
+.jg-cell-kelas{ font-size:9px;font-weight:600;color:var(--jg-green); }
+
+/* Warna berbeza ikut kumpulan subjek — variasi visual (kitaran hash sikit) */
+table.jg-table tr:nth-child(3n+1) .jg-cell-subj{ color:var(--jg-blue); }
+table.jg-table tr:nth-child(3n+2) .jg-cell-subj{ color:var(--jg-purple); }
+table.jg-table tr:nth-child(3n) .jg-cell-subj{ color:var(--jg-teal); }
+
+.jg-guru-cell{ text-align:left !important;font-weight:700;color:var(--jg-text); }
+.jg-jumlah-cell{ font-weight:800;color:var(--jg-amber);font-size:12px; }
+.jg-empty-row{ padding:24px !important;color:var(--jg-text-dim);font-style:italic; }
+
+.jg-update-note{
+  background:#EFF6FF;border:1px solid #DBEAFE;border-radius:12px;padding:12px 14px;
+  font-size:12px;color:var(--jg-text);margin-bottom:14px;
+}
+.jg-update-note b{ color:var(--jg-blue); }
+.jg-upload-hint{ font-size:11px;color:var(--jg-text-dim);margin-bottom:16px;line-height:1.5; }
+.jg-file-btn{
+  display:block;text-align:center;padding:13px;border-radius:12px;cursor:pointer;
+  background:var(--jg-blue);color:#fff;font-weight:700;font-size:13px;
+}
+.jg-upload-status{ margin-top:14px;font-size:12px;color:var(--jg-text);text-align:center;font-weight:600; }
+.jg-confirm-btn{
+  display:block;width:100%;margin-top:16px;padding:13px;border:none;border-radius:12px;cursor:pointer;
+  background:var(--jg-green);color:#fff;font-weight:700;font-size:13px;
+}
+.jg-confirm-btn:disabled{ opacity:.6; }
