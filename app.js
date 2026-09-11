@@ -338,9 +338,28 @@ function escapeAttr(str) { return String(str).replace(/"/g, "&quot;"); }
 
 function renderAnnounceCard(item) {
   const img = item.gambar
-    ? `<img class="announce-img" src="${escapeAttr(item.gambar)}" alt="Gambar pengumuman" loading="lazy" onerror="this.style.display='none'">`
+    ? `<img class="announce-img" src="${escapeAttr(item.gambar)}" alt="Gambar pengumuman" loading="lazy" onerror="this.style.display='none'" onclick="openImageLightbox('${escapeAttr(item.gambar)}')">`
     : "";
   return `<div class="glass announce-card">${img}<div class="announce-body"><div class="announce-text">${escapeHtml(item.teks || "")}</div></div></div>`;
+}
+
+/* ---------------- Lightbox gambar (klik untuk lihat penuh) ---------------- */
+function openImageLightbox(url) {
+  let box = document.getElementById("img-lightbox");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "img-lightbox";
+    box.className = "img-lightbox";
+    box.onclick = closeImageLightbox;
+    box.innerHTML = `<img id="img-lightbox-img" alt="Gambar penuh"><button class="img-lightbox-close" onclick="closeImageLightbox()">✕</button>`;
+    document.body.appendChild(box);
+  }
+  document.getElementById("img-lightbox-img").src = url;
+  box.classList.add("show");
+}
+function closeImageLightbox() {
+  const box = document.getElementById("img-lightbox");
+  if (box) box.classList.remove("show");
 }
 
 async function loadPengumumanList(targetId) {
