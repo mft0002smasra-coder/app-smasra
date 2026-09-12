@@ -87,7 +87,7 @@
         <div class="dm-summary-row dm-summary-total"><span>Jumlah</span><span id="dm-summary-jumlah-k">-</span><span id="dm-summary-jumlah-a">-</span></div>
       </div>
 
-      <!-- Butang ringkas — setiap satu buka page berasingan (bukan dalam nav bawah) -->
+      <!-- Butang ringkas — setiap satu buka PAGE BERASINGAN sendiri (bukan dalam nav bawah) -->
       <div class="dm-extra-btn-row">
         <button class="dm-extra-btn" onclick="dmOpenExtraPage('kaum')" id="dm-btn-kaum">📊 Enrolmen Ikut Kaum</button>
         <button class="dm-extra-btn" onclick="dmOpenExtraPage('sosioa')" id="dm-btn-sosioa">📊 Yatim · Miskin Tegar · SES Rendah</button>
@@ -95,26 +95,33 @@
       </div>
     </div>
 
-    <!-- ============ Page berasingan: 3 jadual tambahan (bukan dalam nav bawah, ada butang Kembali) ============ -->
-    <div id="dm-panel-extra" class="hidden">
+    <!-- ============ Page berasingan 1: Enrolmen Ikut Kaum ============ -->
+    <div id="dm-panel-kaum" class="hidden">
       <button class="dm-back-btn" onclick="dmCloseExtraPage()">&larr; Kembali ke Enrolmen Keseluruhan</button>
-
+      <div class="dm-page-title">ENROLMEN IKUT KAUM</div>
       <div class="dm-card" id="dm-kaum-capture">
-        <div class="dm-page-title" style="margin-top:6px">ENROLMEN IKUT KAUM</div>
         <div class="dm-stack-card-title" onclick="dmOpenDrilldown('kaum')">Enrolmen Ikut Kaum <span class="dm-drill-hint">(tap untuk senarai)</span></div>
         <div class="dm-table-wrap" id="dm-kaum-table-wrap"></div>
       </div>
       <button class="dm-download-btn" onclick="dmDownloadPng('dm-kaum-capture','Enrolmen-Kaum',this)">⬇ Muat Turun PNG</button>
+    </div>
 
+    <!-- ============ Page berasingan 2: Yatim · Miskin Tegar · SES Rendah ============ -->
+    <div id="dm-panel-sosioa" class="hidden">
+      <button class="dm-back-btn" onclick="dmCloseExtraPage()">&larr; Kembali ke Enrolmen Keseluruhan</button>
+      <div class="dm-page-title">YATIM &middot; MISKIN TEGAR &middot; SES RENDAH</div>
       <div class="dm-card" id="dm-sosioa-capture">
-        <div class="dm-page-title" style="margin-top:6px">YATIM &middot; MISKIN TEGAR &middot; SES RENDAH</div>
         <div class="dm-stack-card-title" onclick="dmOpenDrilldown('sosioa')">Yatim &middot; Miskin Tegar &middot; SES Rendah <span class="dm-drill-hint">(tap untuk senarai)</span></div>
         <div class="dm-table-wrap" id="dm-sosioa-table-wrap"></div>
       </div>
       <button class="dm-download-btn" onclick="dmDownloadPng('dm-sosioa-capture','Enrolmen-Sosio-A',this)">⬇ Muat Turun PNG</button>
+    </div>
 
+    <!-- ============ Page berasingan 3: B40 · M40 · T20 ============ -->
+    <div id="dm-panel-sosiob" class="hidden">
+      <button class="dm-back-btn" onclick="dmCloseExtraPage()">&larr; Kembali ke Enrolmen Keseluruhan</button>
+      <div class="dm-page-title">B40 &middot; M40 &middot; T20</div>
       <div class="dm-card" id="dm-sosiob-capture">
-        <div class="dm-page-title" style="margin-top:6px">B40 &middot; M40 &middot; T20</div>
         <div class="dm-stack-card-title" onclick="dmOpenDrilldown('sosiob')">B40 &middot; M40 &middot; T20 <span class="dm-drill-hint">(tap untuk senarai)</span></div>
         <div class="dm-table-wrap" id="dm-sosiob-table-wrap"></div>
       </div>

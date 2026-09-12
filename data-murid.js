@@ -243,7 +243,7 @@ function dmComputeKaum() {
 }
 
 /* ---------------- Yatim / Miskin Tegar / SES Rendah (per kelas) ---------------- */
-function dmIsYatim(s) { return dmNormHeader(s.statusYatim) === "YA"; }
+function dmIsYatim(s) { return dmNormHeader(s.statusYatim).indexOf("YA") === 0; }
 function dmIsMiskinTegar(s) { return dmCombinedIncome(s) < 1170; }
 function dmIsSesRendah(s) {
   const tanggungan = parseFloat(s.tanggungan) || 1;
@@ -697,15 +697,15 @@ async function dmConfirmUpload() {
       document.getElementById("dm-file-input").value = "";
       await dmFetchStudents(true);
       dmRenderEnrolment();
-      // Reset status "lazy" — kalau page tambahan tu SEDANG dibuka, kira semula terus;
+      // Reset status "lazy" — kalau mana-mana 3 page tu SEDANG dibuka, kira semula terus;
       // kalau tidak, biar dikira semula bila user buka page tu lain kali.
-      dmExtraPageRendered = false;
-      if (!document.getElementById("dm-panel-extra").classList.contains("hidden")) {
-        dmRenderKaumCard();
-        dmRenderSosioACard();
-        dmRenderSosioBCard();
-        dmExtraPageRendered = true;
-      }
+      ["kaum", "sosioa", "sosiob"].forEach((key) => {
+        delete dmExtraPageRendered[key];
+        if (dmCurrentExtraPage === key) {
+          DM_EXTRA_RENDER_FN[key]();
+          dmExtraPageRendered[key] = true;
+        }
+      });
     } else {
       statusEl.textContent = result.message || "Gagal simpan data murid.";
     }
@@ -812,26 +812,24 @@ function dmCariShowDetail() {
   document.getElementById("dm-cari-capture").classList.add("dm-stack-pop-play");
 }
 
-/* ================= Page berasingan: 3 jadual tambahan — LAZY kira sekali sahaja ================= */
-let dmExtraPageRendered = false;
+/* ================= 3 Page berasingan (Kaum/SosioA/SosioB) — LAZY kira sekali per page ================= */
+const dmExtraPageRendered = {};
+const DM_EXTRA_RENDER_FN = { kaum: dmRenderKaumCard, sosioa: dmRenderSosioACard, sosiob: dmRenderSosioBCard };
+let dmCurrentExtraPage = null;
 
-function dmOpenExtraPage(focusKey) {
+function dmOpenExtraPage(key) {
   document.getElementById("dm-panel-enrolmen").classList.add("hidden");
-  document.getElementById("dm-panel-extra").classList.remove("hidden");
+  document.getElementById(`dm-panel-${key}`).classList.remove("hidden");
+  dmCurrentExtraPage = key;
 
-  if (!dmExtraPageRendered) {
-    dmRenderKaumCard();
-    dmRenderSosioACard();
-    dmRenderSosioBCard();
-    dmExtraPageRendered = true;
-  }
-  if (focusKey) {
-    const target = document.getElementById(`dm-${focusKey}-capture`);
-    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (!dmExtraPageRendered[key]) {
+    DM_EXTRA_RENDER_FN[key]();
+    dmExtraPageRendered[key] = true;
   }
 }
 function dmCloseExtraPage() {
-  document.getElementById("dm-panel-extra").classList.add("hidden");
+  if (dmCurrentExtraPage) document.getElementById(`dm-panel-${dmCurrentExtraPage}`).classList.add("hidden");
+  dmCurrentExtraPage = null;
   document.getElementById("dm-panel-enrolmen").classList.remove("hidden");
 }
 
