@@ -57,84 +57,70 @@
     <div id="dm-panel-enrolmen">
       <div class="dm-page-title">ENROLMEN MURID</div>
 
-      <div class="dm-card dm-anim-in" id="dm-enrolment-capture" style="animation-delay:.05s">
-        <div class="dm-stack-card-title" onclick="dmOpenDrilldown('enrolmen')">Enrolmen Keseluruhan &amp; Asrama <span class="dm-drill-hint">(tap untuk senarai)</span></div>
-        <div class="dm-table-wrap">
-          <table class="dm-table">
-            <thead>
-              <tr>
-                <th rowspan="2">Bil</th><th rowspan="2">Kelas</th>
-                <th colspan="3">Keseluruhan</th><th colspan="3">Asrama</th>
-              </tr>
-              <tr>
-                <th>L</th><th>P</th><th>Jumlah</th>
-                <th>L</th><th>P</th><th>Jumlah</th>
-              </tr>
-            </thead>
-            <tbody id="dm-enrolment-table-body"></tbody>
-          </table>
-        </div>
-        <div class="dm-total-note" id="dm-total-note">Memuatkan...</div>
-      </div>
-      <button class="dm-download-btn" onclick="dmDownloadPng('dm-enrolment-capture','Enrolmen-Keseluruhan',this)">⬇ Muat Turun PNG</button>
+      <div class="dm-pager-outer">
+        <div class="dm-pager-track" id="dm-enrolmen-pager">
 
-      <div class="dm-card dm-anim-in" id="dm-kaum-capture" style="animation-delay:.12s">
-        <div class="dm-stack-card-title" onclick="dmOpenDrilldown('kaum')">Enrolmen Ikut Kaum <span class="dm-drill-hint">(tap untuk senarai)</span></div>
-        <div class="dm-table-wrap">
-          <table class="dm-table">
-            <thead>
-              <tr>
-                <th rowspan="2">Bil</th><th rowspan="2">Kelas</th>
-                <th colspan="3">Melayu</th><th colspan="3">Cina</th><th colspan="3">India Muslim</th><th colspan="3">Lain-Lain</th>
-              </tr>
-              <tr>
-                <th>L</th><th>P</th><th>Jum</th><th>L</th><th>P</th><th>Jum</th>
-                <th>L</th><th>P</th><th>Jum</th><th>L</th><th>P</th><th>Jum</th>
-              </tr>
-            </thead>
-            <tbody id="dm-kaum-table-body"></tbody>
-          </table>
-        </div>
-      </div>
-      <button class="dm-download-btn" onclick="dmDownloadPng('dm-kaum-capture','Enrolmen-Kaum',this)">⬇ Muat Turun PNG</button>
+          <div class="dm-pager-page">
+            <div class="dm-card" id="dm-enrolment-capture">
+              <div class="dm-stack-card-title" onclick="dmOpenDrilldown('enrolmen')">Enrolmen Keseluruhan &amp; Asrama <span class="dm-drill-hint">(tap untuk senarai)</span></div>
+              <div class="dm-table-wrap">
+                <table class="dm-table">
+                  <thead>
+                    <tr>
+                      <th rowspan="2">Bil</th><th rowspan="2">Kelas</th>
+                      <th colspan="3">Keseluruhan</th><th colspan="3">Asrama</th>
+                    </tr>
+                    <tr>
+                      <th>L</th><th>P</th><th>Jumlah</th>
+                      <th>L</th><th>P</th><th>Jumlah</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dm-enrolment-table-body"></tbody>
+                </table>
+              </div>
+              <div class="dm-total-note" id="dm-total-note">Memuatkan...</div>
+            </div>
+            <button class="dm-download-btn" onclick="dmDownloadPng('dm-enrolment-capture','Enrolmen-Keseluruhan',this)">⬇ Muat Turun PNG</button>
+          </div>
 
-      <div class="dm-card dm-anim-in" id="dm-sosioa-capture" style="animation-delay:.19s">
-        <div class="dm-stack-card-title" onclick="dmOpenDrilldown('sosioa')">Yatim &middot; Miskin Tegar &middot; SES Rendah <span class="dm-drill-hint">(tap untuk senarai)</span></div>
-        <div class="dm-table-wrap">
-          <table class="dm-table">
-            <thead>
-              <tr>
-                <th rowspan="2">Bil</th><th rowspan="2">Kelas</th>
-                <th colspan="3">Yatim</th><th colspan="3">Miskin Tegar</th><th colspan="3">SES Rendah</th>
-              </tr>
-              <tr>
-                <th>L</th><th>P</th><th>Jum</th><th>L</th><th>P</th><th>Jum</th><th>L</th><th>P</th><th>Jum</th>
-              </tr>
-            </thead>
-            <tbody id="dm-sosioa-table-body"></tbody>
-          </table>
-        </div>
-      </div>
-      <button class="dm-download-btn" onclick="dmDownloadPng('dm-sosioa-capture','Enrolmen-Sosio-A',this)">⬇ Muat Turun PNG</button>
+          <div class="dm-pager-page">
+            <div class="dm-card" id="dm-kaum-capture">
+              <div class="dm-stack-card-title" onclick="dmOpenDrilldown('kaum')">Enrolmen Ikut Kaum <span class="dm-drill-hint">(tap untuk senarai)</span></div>
+              <div class="dm-table-wrap" id="dm-kaum-table-wrap">
+                <div class="dm-lazy-note">Meluncur ke sini untuk muatkan data...</div>
+              </div>
+            </div>
+            <button class="dm-download-btn" onclick="dmDownloadPng('dm-kaum-capture','Enrolmen-Kaum',this)">⬇ Muat Turun PNG</button>
+          </div>
 
-      <div class="dm-card dm-anim-in" id="dm-sosiob-capture" style="animation-delay:.26s">
-        <div class="dm-stack-card-title" onclick="dmOpenDrilldown('sosiob')">B40 &middot; M40 &middot; T20 <span class="dm-drill-hint">(tap untuk senarai)</span></div>
-        <div class="dm-table-wrap">
-          <table class="dm-table">
-            <thead>
-              <tr>
-                <th rowspan="2">Bil</th><th rowspan="2">Kelas</th>
-                <th colspan="3">B40</th><th colspan="3">M40</th><th colspan="3">T20</th>
-              </tr>
-              <tr>
-                <th>L</th><th>P</th><th>Jum</th><th>L</th><th>P</th><th>Jum</th><th>L</th><th>P</th><th>Jum</th>
-              </tr>
-            </thead>
-            <tbody id="dm-sosiob-table-body"></tbody>
-          </table>
+          <div class="dm-pager-page">
+            <div class="dm-card" id="dm-sosioa-capture">
+              <div class="dm-stack-card-title" onclick="dmOpenDrilldown('sosioa')">Yatim &middot; Miskin Tegar &middot; SES Rendah <span class="dm-drill-hint">(tap untuk senarai)</span></div>
+              <div class="dm-table-wrap" id="dm-sosioa-table-wrap">
+                <div class="dm-lazy-note">Meluncur ke sini untuk muatkan data...</div>
+              </div>
+            </div>
+            <button class="dm-download-btn" onclick="dmDownloadPng('dm-sosioa-capture','Enrolmen-Sosio-A',this)">⬇ Muat Turun PNG</button>
+          </div>
+
+          <div class="dm-pager-page">
+            <div class="dm-card" id="dm-sosiob-capture">
+              <div class="dm-stack-card-title" onclick="dmOpenDrilldown('sosiob')">B40 &middot; M40 &middot; T20 <span class="dm-drill-hint">(tap untuk senarai)</span></div>
+              <div class="dm-table-wrap" id="dm-sosiob-table-wrap">
+                <div class="dm-lazy-note">Meluncur ke sini untuk muatkan data...</div>
+              </div>
+            </div>
+            <button class="dm-download-btn" onclick="dmDownloadPng('dm-sosiob-capture','Enrolmen-B40-M40-T20',this)">⬇ Muat Turun PNG</button>
+          </div>
+
+        </div>
+
+        <div class="dm-pager-nav">
+          <button class="dm-stack-arrow" onclick="dmPagerNav(-1)" aria-label="Sebelum">&lsaquo;</button>
+          <div class="dm-stack-dots" id="dm-pager-dots"></div>
+          <button class="dm-stack-arrow" onclick="dmPagerNav(1)" aria-label="Seterusnya">&rsaquo;</button>
         </div>
       </div>
-      <button class="dm-download-btn" onclick="dmDownloadPng('dm-sosiob-capture','Enrolmen-B40-M40-T20',this)">⬇ Muat Turun PNG</button>
 
       <div class="dm-card dm-summary-card">
         <div class="dm-summary-row dm-summary-head">
