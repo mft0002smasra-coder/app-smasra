@@ -1320,6 +1320,79 @@ tr.dm-grandtotal td{ background:var(--dm-brown) !important;color:#F8ECD8;font-we
 }
 .dm-confirm-btn:disabled{ opacity:.6; }
 
+/* ---------- Timbunan kad (stack) — Enrolmen boleh slide ---------- */
+.dm-stack-outer{ margin-bottom:16px; }
+.dm-stack-container{ display:grid;touch-action:pan-y; }
+.dm-stack-item{
+  grid-area:1/1;transition:transform .35s cubic-bezier(.22,1,.36,1), opacity .35s ease;
+  transform-origin:top center;
+}
+.dm-stack-item .dm-card{ margin-bottom:8px; }
+.dm-stack-item.dm-stack-active{ z-index:5;transform:translateY(0) scale(1);opacity:1;pointer-events:auto; }
+.dm-stack-item.dm-stack-next{ z-index:4;transform:translateY(14px) scale(0.96);opacity:.75;pointer-events:none; }
+.dm-stack-item.dm-stack-next2{ z-index:3;transform:translateY(26px) scale(0.92);opacity:.45;pointer-events:none; }
+.dm-stack-item.dm-stack-prev{ z-index:2;transform:translateY(-10px) scale(0.96);opacity:0;pointer-events:none; }
+.dm-stack-item.dm-stack-far{ z-index:1;transform:translateY(30px) scale(0.9);opacity:0;pointer-events:none; }
+.dm-stack-nav{ display:flex;align-items:center;justify-content:center;gap:16px;margin-top:8px; }
+.dm-stack-arrow{
+  width:34px;height:34px;border-radius:50%;border:1px solid rgba(107,74,46,0.25);
+  background:linear-gradient(160deg,#fff,var(--dm-cream-dark));color:var(--dm-brown-dark);
+  font-size:16px;cursor:pointer;box-shadow:0 3px 8px -4px rgba(107,74,46,0.3);
+}
+.dm-stack-dots{ display:flex;gap:6px; }
+.dm-stack-dot{ width:7px;height:7px;border-radius:50%;background:var(--dm-cream-dark);border:1px solid rgba(107,74,46,0.3);cursor:pointer;transition:all .2s; }
+.dm-stack-dot.active{ background:var(--dm-leather);transform:scale(1.3); }
+.dm-stack-card-title{
+  font-size:11.5px;font-weight:700;color:var(--dm-brown-dark);margin-bottom:10px;cursor:pointer;
+  display:flex;align-items:center;flex-wrap:wrap;gap:6px;
+}
+.dm-drill-hint{ font-size:9px;font-weight:600;color:var(--dm-leather);font-style:italic; }
+
+/* ---------- Popup Drill-down ---------- */
+.dm-drilldown-overlay{
+  position:fixed;inset:0;z-index:3000;background:rgba(74,51,32,.55);
+  display:flex;align-items:flex-end;justify-content:center;
+}
+.dm-drilldown-sheet{
+  width:100%;max-width:520px;max-height:82vh;overflow-y:auto;background:var(--dm-paper);
+  border-radius:20px 20px 0 0;padding:18px 16px 24px;box-shadow:0 -10px 40px rgba(0,0,0,.3);
+}
+.dm-drilldown-header{ display:flex;justify-content:space-between;align-items:center;margin-bottom:12px; }
+.dm-drilldown-title{ font-weight:700;font-size:13px;color:var(--dm-brown-dark); }
+.dm-drilldown-close{
+  width:30px;height:30px;border-radius:50%;border:none;background:rgba(107,74,46,0.12);
+  color:var(--dm-brown-dark);font-size:13px;cursor:pointer;
+}
+.dm-drilldown-filters{ display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px; }
+.dm-chip{
+  padding:7px 13px;border-radius:20px;border:1px solid rgba(107,74,46,0.25);
+  background:#fff;color:var(--dm-brown);font-family:inherit;font-weight:700;font-size:11px;cursor:pointer;
+}
+.dm-chip.active{ background:linear-gradient(160deg,var(--dm-leather),var(--dm-brown));color:#F8ECD8;border-color:transparent; }
+
+/* ---------- Carian Murid: kad butiran ---------- */
+.dm-stack-pop{ transform:scale(.94);opacity:0; }
+.dm-stack-pop.dm-stack-pop-play{ animation:dmStackPopIn .4s cubic-bezier(.22,1,.36,1) forwards; }
+@keyframes dmStackPopIn{ from{ transform:scale(.9) translateY(14px);opacity:0; } to{ transform:scale(1) translateY(0);opacity:1; } }
+.dm-detail-card{ padding:16px 15px; }
+.dm-detail-section{ margin-bottom:16px; }
+.dm-detail-section:last-child{ margin-bottom:0; }
+.dm-detail-section-title{
+  font-weight:700;font-size:11px;color:#fff;background:linear-gradient(160deg,var(--dm-leather),var(--dm-brown));
+  padding:6px 12px;border-radius:8px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px;
+}
+.dm-detail-grid{ display:grid;grid-template-columns:1fr 1fr;gap:8px 12px; }
+.dm-detail-item{ display:flex;flex-direction:column;gap:2px; }
+.dm-detail-label{ font-size:8.5px;font-weight:700;color:var(--dm-brown);text-transform:uppercase;letter-spacing:.3px; }
+.dm-detail-value{ font-size:11.5px;font-weight:600;color:var(--dm-brown-dark);word-break:break-word; }
+.dm-sibling-list{ margin-top:8px; }
+.dm-sibling-row{
+  display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(107,74,46,0.12);
+  font-size:11.5px;font-weight:600;color:var(--dm-brown-dark);
+}
+.dm-sibling-row:last-child{ border-bottom:none; }
+.dm-sibling-kelas{ color:var(--dm-leather);font-weight:700; }
+
 /* ============================================================
    KEBERADAAN MURID — tema Neumorphism (kandungan sahaja; header/nav kekal tema app)
    ============================================================ */

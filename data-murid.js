@@ -197,9 +197,150 @@ async function dmFetchStudents() {
 }
 
 /* ================= Tab 1: Enrolmen Murid ================= */
+/* ---------------- Bantu: tukar pendapatan (teks "RM1,700.00") -> nombor ---------------- */
+function dmParseIncome(raw) {
+  const n = parseFloat(String(raw || "0").replace(/[^0-9.]/g, ""));
+  return isNaN(n) ? 0 : n;
+}
+function dmCombinedIncome(s) {
+  return dmParseIncome(s.pendapatanPenjaga1) + dmParseIncome(s.pendapatanPenjaga2);
+}
+
+/* ---------------- Kaum (per kelas) ---------------- */
+function dmComputeKaum() {
+  const byClass = {};
+  DM_CLASS_LIST.forEach((k) => { byClass[k] = { melayu: { L: 0, P: 0 }, cina: { L: 0, P: 0 }, india: { L: 0, P: 0 }, lain: { L: 0, P: 0 }, jumlah: 0 }; });
+  dmStudents.forEach((s) => {
+    const match = DM_CLASS_LIST.find((k) => dmNorm(k) === dmNorm(s.kelas));
+    if (!match) return;
+    const isL = String(s.jantina).trim().toUpperCase() === "L";
+    const kaumNorm = dmNormHeader(s.kaum);
+    let bucket;
+    if (kaumNorm.indexOf("MELAYU") !== -1) bucket = byClass[match].melayu;
+    else if (kaumNorm.indexOf("CINA") !== -1) bucket = byClass[match].cina;
+    else if (kaumNorm.indexOf("INDIA") !== -1) bucket = byClass[match].india;
+    else bucket = byClass[match].lain;
+    if (isL) bucket.L++; else bucket.P++;
+    byClass[match].jumlah++;
+  });
+  return byClass;
+}
+
+/* ---------------- Yatim / Miskin Tegar / SES Rendah (per kelas) ---------------- */
+function dmIsYatim(s) { return dmNormHeader(s.statusYatim) === "YA"; }
+function dmIsMiskinTegar(s) { return dmCombinedIncome(s) < 1170; }
+function dmIsSesRendah(s) {
+  const tanggungan = parseFloat(s.tanggungan) || 1;
+  return (dmCombinedIncome(s) / Math.max(tanggungan, 1)) < 632;
+}
+function dmComputeSosioA() {
+  const byClass = {};
+  DM_CLASS_LIST.forEach((k) => { byClass[k] = { yatim: { L: 0, P: 0 }, miskin: { L: 0, P: 0 }, ses: { L: 0, P: 0 } }; });
+  dmStudents.forEach((s) => {
+    const match = DM_CLASS_LIST.find((k) => dmNorm(k) === dmNorm(s.kelas));
+    if (!match) return;
+    const isL = String(s.jantina).trim().toUpperCase() === "L";
+    if (dmIsYatim(s)) { if (isL) byClass[match].yatim.L++; else byClass[match].yatim.P++; }
+    if (dmIsMiskinTegar(s)) { if (isL) byClass[match].miskin.L++; else byClass[match].miskin.P++; }
+    if (dmIsSesRendah(s)) { if (isL) byClass[match].ses.L++; else byClass[match].ses.P++; }
+  });
+  return byClass;
+}
+
+/* ---------------- B40 / M40 / T20 (per kelas) ---------------- */
+function dmIncomeGroup(s) {
+  const income = dmCombinedIncome(s);
+  if (income < 4850) return "b40";
+  if (income <= 10970) return "m40";
+  return "t20";
+}
+function dmComputeSosioB() {
+  const byClass = {};
+  DM_CLASS_LIST.forEach((k) => { byClass[k] = { b40: { L: 0, P: 0 }, m40: { L: 0, P: 0 }, t20: { L: 0, P: 0 } }; });
+  dmStudents.forEach((s) => {
+    const match = DM_CLASS_LIST.find((k) => dmNorm(k) === dmNorm(s.kelas));
+    if (!match) return;
+    const isL = String(s.jantina).trim().toUpperCase() === "L";
+    const grp = dmIncomeGroup(s);
+    if (isL) byClass[match][grp].L++; else byClass[match][grp].P++;
+  });
+  return byClass;
+}
+
+/**
+ * Jana HTML jadual generik (struktur sama macam Enrolmen: baris per kelas,
+ * sub-jumlah per Tingkatan, jumlah besar) untuk mana-mana kumpulan data
+ * {byClass, groups}. groups = [{key,label}] — setiap kumpulan ada L/P,
+ * Jumlah dikira automatik (L+P).
+ */
+function dmRenderGroupedTableRows(byClass, groups) {
+  const tingkatanGroups = {};
+  DM_CLASS_LIST.forEach((k) => {
+    const t = dmTingkatanOf(k);
+    if (!tingkatanGroups[t]) tingkatanGroups[t] = [];
+    tingkatanGroups[t].push(k);
+  });
+
+  let bil = 1;
+  let rowsHtml = "";
+  const grand = {};
+  groups.forEach((g) => { grand[g.key] = { L: 0, P: 0 }; });
+
+  Object.keys(tingkatanGroups).sort().forEach((t) => {
+    const sub = {};
+    groups.forEach((g) => { sub[g.key] = { L: 0, P: 0 }; });
+    tingkatanGroups[t].forEach((k) => {
+      const d = byClass[k];
+      let cellsHtml = "";
+      groups.forEach((g) => {
+        const val = d[g.key];
+        sub[g.key].L += val.L; sub[g.key].P += val.P;
+        cellsHtml += `<td>${val.L}</td><td>${val.P}</td><td class="dm-b">${val.L + val.P}</td>`;
+      });
+      rowsHtml += `<tr><td>${bil++}</td><td class="dm-kelas-cell">${dmEscape(k)}</td>${cellsHtml}</tr>`;
+    });
+    let subCellsHtml = "";
+    groups.forEach((g) => {
+      subCellsHtml += `<td>${sub[g.key].L}</td><td>${sub[g.key].P}</td><td class="dm-b">${sub[g.key].L + sub[g.key].P}</td>`;
+      grand[g.key].L += sub[g.key].L; grand[g.key].P += sub[g.key].P;
+    });
+    rowsHtml += `<tr class="dm-subtotal"><td></td><td>JUMLAH</td>${subCellsHtml}</tr>`;
+  });
+
+  let grandCellsHtml = "";
+  groups.forEach((g) => {
+    grandCellsHtml += `<td>${grand[g.key].L}</td><td>${grand[g.key].P}</td><td class="dm-b">${grand[g.key].L + grand[g.key].P}</td>`;
+  });
+  rowsHtml += `<tr class="dm-grandtotal"><td colspan="2">JUMLAH BESAR</td>${grandCellsHtml}</tr>`;
+  return rowsHtml;
+}
+
+function dmRenderKaumCard() {
+  const byClass = dmComputeKaum();
+  const groups = [
+    { key: "melayu", label: "Melayu" }, { key: "cina", label: "Cina" },
+    { key: "india", label: "India Muslim" }, { key: "lain", label: "Lain-Lain" },
+  ];
+  document.getElementById("dm-kaum-table-body").innerHTML = dmRenderGroupedTableRows(byClass, groups);
+}
+
+function dmRenderSosioACard() {
+  const byClass = dmComputeSosioA();
+  const groups = [
+    { key: "yatim", label: "Yatim" }, { key: "miskin", label: "Miskin Tegar" }, { key: "ses", label: "SES Rendah" },
+  ];
+  document.getElementById("dm-sosioa-table-body").innerHTML = dmRenderGroupedTableRows(byClass, groups);
+}
+
+function dmRenderSosioBCard() {
+  const byClass = dmComputeSosioB();
+  const groups = [
+    { key: "b40", label: "B40" }, { key: "m40", label: "M40" }, { key: "t20", label: "T20" },
+  ];
+  document.getElementById("dm-sosiob-table-body").innerHTML = dmRenderGroupedTableRows(byClass, groups);
+}
 function dmComputeEnrolment() {
   const byClass = {};
-  DM_CLASS_LIST.forEach((k) => { byClass[k] = { L: 0, P: 0, jumlah: 0, asramaL: 0, asramaP: 0, asramaJumlah: 0 }; });
 
   dmStudents.forEach((s) => {
     // Padan nama kelas fleksibel (trim/case/spasi)
@@ -542,7 +683,7 @@ function dmSwitchTab(name) {
     document.getElementById(`dm-panel-${n}`).classList.toggle("hidden", n !== name);
     document.getElementById(`dm-nav-${n}`).classList.toggle("active", n === name);
   });
-  if (name === "senarai") { dmInitClassSelect(); dmRenderSenarai(); }
+  if (name === "senarai") { dmInitClassSelect(); dmRenderSenarai(); dmCariPopulateKelas(); }
 }
 
 /* ================= Init ================= */
@@ -558,7 +699,188 @@ async function dmInit(user) {
 
   await dmFetchStudents();
   dmRenderEnrolment();
+  dmRenderKaumCard();
+  dmRenderSosioACard();
+  dmRenderSosioBCard();
+  dmStackInit();
 }
 function dmShowNoPermission() {
   alert("Muat naik data murid hanya untuk Guru Data Murid atau Admin.");
+}
+
+/* ================= Carian Murid (butiran + adik-beradik) ================= */
+function dmCariPopulateKelas() {
+  const sel = document.getElementById("dm-cari-kelas-select");
+  if (sel.dataset.built) return;
+  sel.innerHTML = `<option value="">Pilih kelas</option>` + DM_CLASS_LIST.map((k) => `<option value="${k}">${k}</option>`).join("");
+  sel.dataset.built = "1";
+}
+function dmCariPopulateNama() {
+  const kelas = document.getElementById("dm-cari-kelas-select").value;
+  const namaSel = document.getElementById("dm-cari-nama-select");
+  document.getElementById("dm-cari-result-wrap").classList.add("hidden");
+  if (!kelas) { namaSel.innerHTML = `<option value="">Pilih kelas dahulu</option>`; return; }
+  const list = dmStudents.filter((s) => dmNorm(s.kelas) === dmNorm(kelas)).sort((a, b) => a.nama.localeCompare(b.nama));
+  namaSel.innerHTML = `<option value="">Pilih murid</option>` + list.map((s) => `<option value="${dmEscape(s.noPengenalan || s.nama)}">${dmEscape(s.nama)}</option>`).join("");
+}
+
+function dmDetailField(label, value) {
+  return `<div class="dm-detail-item"><span class="dm-detail-label">${dmEscape(label)}</span><span class="dm-detail-value">${value ? dmEscape(value) : "-"}</span></div>`;
+}
+
+function dmCariShowDetail() {
+  const key = document.getElementById("dm-cari-nama-select").value;
+  const wrap = document.getElementById("dm-cari-result-wrap");
+  if (!key) { wrap.classList.add("hidden"); return; }
+  const s = dmStudents.find((x) => (x.noPengenalan || x.nama) === key);
+  if (!s) { wrap.classList.add("hidden"); return; }
+
+  document.getElementById("dm-cari-detail-utama").innerHTML =
+    dmDetailField("ID Murid", s.idMurid) + dmDetailField("Nama", s.nama) +
+    dmDetailField("Tarikh Lahir", s.tarikhLahir) + dmDetailField("Jantina", s.jantina === "L" ? "Lelaki" : s.jantina === "P" ? "Perempuan" : s.jantina) +
+    dmDetailField("Kaum", s.kaum) + dmDetailField("Warganegara", s.warganegara) +
+    dmDetailField("Agama", s.agama) + dmDetailField("Kelas", s.kelas) +
+    dmDetailField("Asrama", s.asramaKod === "T" ? "Tidak" : (s.namaAsrama || "Ya")) +
+    dmDetailField("Tarikh Masuk Sekolah", s.tarikhMasukSekolah) + dmDetailField("Tarikh Masuk Kelas", s.tarikhMasukKelas) +
+    dmDetailField("Keterangan Bidang", s.keteranganBidang);
+
+  document.getElementById("dm-cari-detail-penjaga1").innerHTML =
+    dmDetailField("Nama", s.penjaga1) + dmDetailField("No. KP", s.noPengenalanPenjaga1) +
+    dmDetailField("Hubungan", s.hubunganPenjaga1) + dmDetailField("Pekerjaan", s.pekerjaanPenjaga1) +
+    dmDetailField("Pendapatan (RM)", s.pendapatanPenjaga1) + dmDetailField("No. Tel Bimbit", s.noTelBimbitPenjaga1);
+
+  document.getElementById("dm-cari-detail-penjaga2").innerHTML =
+    dmDetailField("Nama", s.penjaga2) + dmDetailField("No. KP", s.noPengenalanPenjaga2) +
+    dmDetailField("Hubungan", s.hubunganPenjaga2) + dmDetailField("Pekerjaan", s.pekerjaanPenjaga2) +
+    dmDetailField("Pendapatan (RM)", s.pendapatanPenjaga2) + dmDetailField("No. Tel Bimbit", s.noTelBimbitPenjaga2);
+
+  const alamatGabung = [s.alamat1, s.alamat2, s.alamat3].filter(Boolean).join(", ");
+  document.getElementById("dm-cari-detail-alamat").innerHTML =
+    dmDetailField("Alamat Rumah", alamatGabung) + dmDetailField("Poskod", s.poskod) +
+    dmDetailField("Bandar", s.bandar) + dmDetailField("Daerah", s.daerah) + dmDetailField("Negeri", s.negeri);
+
+  // Adik-beradik: murid LAIN yang kongsi nama Penjaga 1 ATAU Penjaga 2 yang SAMA (bukan kosong)
+  const p1 = dmNorm(s.penjaga1), p2 = dmNorm(s.penjaga2);
+  const siblings = dmStudents.filter((other) => {
+    if (other === s) return false;
+    const op1 = dmNorm(other.penjaga1), op2 = dmNorm(other.penjaga2);
+    return (p1 && (op1 === p1 || op2 === p1)) || (p2 && (op2 === p2 || op1 === p2));
+  });
+  document.getElementById("dm-cari-sibling-count").textContent = siblings.length;
+  document.getElementById("dm-cari-sibling-list").innerHTML = siblings.length
+    ? siblings.map((sib) => `<div class="dm-sibling-row">${dmEscape(sib.nama)} <span class="dm-sibling-kelas">${dmEscape(sib.kelas)}</span></div>`).join("")
+    : `<div class="dm-empty-row" style="padding:10px 0">Tiada adik-beradik direkodkan.</div>`;
+
+  wrap.classList.remove("hidden");
+  wrap.classList.remove("dm-stack-pop-play");
+  void wrap.offsetWidth; // paksa reflow supaya animasi ulang setiap carian
+  document.getElementById("dm-cari-capture").classList.add("dm-stack-pop-play");
+}
+
+/* ================= Popup Drill-down: senarai murid ikut kategori ================= */
+const DM_DRILLDOWN_CONFIG = {
+  enrolmen: {
+    title: "Enrolmen Keseluruhan & Asrama",
+    filters: [
+      { key: "semua", label: "Semua Murid", test: () => true },
+      { key: "asrama", label: "Dalam Asrama", test: (s) => { const c = dmNorm(s.asramaKod); return c === "LA" || c === "PA"; } },
+      { key: "luar", label: "Tanpa Asrama", test: (s) => dmNorm(s.asramaKod) === "T" },
+    ],
+  },
+  kaum: {
+    title: "Enrolmen Ikut Kaum",
+    filters: [
+      { key: "melayu", label: "Melayu", test: (s) => dmNormHeader(s.kaum).indexOf("MELAYU") !== -1 },
+      { key: "cina", label: "Cina", test: (s) => dmNormHeader(s.kaum).indexOf("CINA") !== -1 },
+      { key: "india", label: "India Muslim", test: (s) => dmNormHeader(s.kaum).indexOf("INDIA") !== -1 },
+      { key: "lain", label: "Lain-Lain", test: (s) => { const k = dmNormHeader(s.kaum); return k.indexOf("MELAYU") === -1 && k.indexOf("CINA") === -1 && k.indexOf("INDIA") === -1; } },
+    ],
+  },
+  sosioa: {
+    title: "Yatim · Miskin Tegar · SES Rendah",
+    filters: [
+      { key: "yatim", label: "Yatim", test: dmIsYatim },
+      { key: "miskin", label: "Miskin Tegar", test: dmIsMiskinTegar },
+      { key: "ses", label: "SES Rendah", test: dmIsSesRendah },
+    ],
+  },
+  sosiob: {
+    title: "B40 · M40 · T20",
+    filters: [
+      { key: "b40", label: "B40", test: (s) => dmIncomeGroup(s) === "b40" },
+      { key: "m40", label: "M40", test: (s) => dmIncomeGroup(s) === "m40" },
+      { key: "t20", label: "T20", test: (s) => dmIncomeGroup(s) === "t20" },
+    ],
+  },
+};
+let dmDrilldownActiveFilter = null;
+
+function dmOpenDrilldown(cardType) {
+  const cfg = DM_DRILLDOWN_CONFIG[cardType];
+  if (!cfg) return;
+  document.getElementById("dm-drilldown-title").textContent = cfg.title;
+  document.getElementById("dm-drilldown-filters").innerHTML = cfg.filters.map((f, i) =>
+    `<button class="dm-chip${i === 0 ? " active" : ""}" onclick="dmDrilldownFilter('${cardType}','${f.key}',this)">${dmEscape(f.label)}</button>`).join("");
+  dmDrilldownActiveFilter = cfg.filters[0];
+  dmDrilldownRenderList(cfg.filters[0]);
+  document.getElementById("dm-drilldown-overlay").classList.remove("hidden");
+}
+function dmDrilldownFilter(cardType, key, btn) {
+  const cfg = DM_DRILLDOWN_CONFIG[cardType];
+  const f = cfg.filters.find((x) => x.key === key);
+  document.querySelectorAll("#dm-drilldown-filters .dm-chip").forEach((c) => c.classList.remove("active"));
+  btn.classList.add("active");
+  dmDrilldownRenderList(f);
+}
+function dmDrilldownRenderList(filterObj) {
+  const list = dmStudents.filter(filterObj.test).sort((a, b) => (a.kelas || "").localeCompare(b.kelas || "") || a.nama.localeCompare(b.nama));
+  document.getElementById("dm-drilldown-body").innerHTML = list.length
+    ? list.map((s, i) => `<tr><td>${i + 1}</td><td class="dm-nama-cell">${dmEscape(s.nama)}</td><td>${dmEscape(s.kelas)}</td></tr>`).join("")
+    : `<tr><td colspan="3" class="dm-empty-row">Tiada murid dalam kategori ini.</td></tr>`;
+}
+function dmCloseDrilldown() {
+  document.getElementById("dm-drilldown-overlay").classList.add("hidden");
+}
+
+/* ================= Timbunan kad (stack) — Enrolmen boleh slide ================= */
+let dmStackIndex = 0;
+const DM_STACK_COUNT = 4;
+
+function dmStackInit() {
+  const dotsBox = document.getElementById("dm-stack-dots");
+  dotsBox.innerHTML = Array.from({ length: DM_STACK_COUNT }, (_, i) =>
+    `<span class="dm-stack-dot${i === 0 ? " active" : ""}" onclick="dmStackGoTo(${i})"></span>`).join("");
+  dmStackApplyPositions();
+
+  const container = document.getElementById("dm-enrolmen-stack");
+  let startX = 0, dragging = false;
+  container.addEventListener("touchstart", (e) => { startX = e.touches[0].clientX; dragging = true; }, { passive: true });
+  container.addEventListener("touchend", (e) => {
+    if (!dragging) return;
+    dragging = false;
+    const deltaX = (e.changedTouches[0].clientX - startX);
+    if (deltaX < -40) dmStackNav(1);
+    else if (deltaX > 40) dmStackNav(-1);
+  });
+}
+
+function dmStackNav(dir) {
+  dmStackGoTo(Math.max(0, Math.min(dmStackIndex + dir, DM_STACK_COUNT - 1)));
+}
+function dmStackGoTo(idx) {
+  dmStackIndex = Math.max(0, Math.min(idx, DM_STACK_COUNT - 1));
+  dmStackApplyPositions();
+  document.querySelectorAll(".dm-stack-dot").forEach((d, i) => d.classList.toggle("active", i === dmStackIndex));
+}
+function dmStackApplyPositions() {
+  document.querySelectorAll(".dm-stack-item").forEach((item) => {
+    const itemIdx = parseInt(item.dataset.idx, 10);
+    const offset = itemIdx - dmStackIndex;
+    item.classList.remove("dm-stack-active", "dm-stack-next", "dm-stack-next2", "dm-stack-prev", "dm-stack-far");
+    if (offset === 0) item.classList.add("dm-stack-active");
+    else if (offset === 1) item.classList.add("dm-stack-next");
+    else if (offset === 2) item.classList.add("dm-stack-next2");
+    else if (offset < 0) item.classList.add("dm-stack-prev");
+    else item.classList.add("dm-stack-far");
+  });
 }
