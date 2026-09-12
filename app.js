@@ -504,29 +504,50 @@ async function loadPengumumanList(targetId) {
   }
 }
 
-/* ---------------- Kad Home: Hebahan Terkini (swipe ke-3) ---------------- */
+/* ---------------- Kad Home: Hebahan Terkini (swipe ke-3, auto-scroll jika >1) ---------------- */
+let homeHebahanItems = [];
+let homeHebahanIndex = 0;
+let homeHebahanTimer = null;
+
 async function renderHomeHebahanCard() {
   const box = document.getElementById("home-hebahan-content");
   if (!box) return;
   box.innerHTML = `<div class="empty-state" style="padding:14px 2px;font-size:11px">Memuatkan...</div>`;
+  clearInterval(homeHebahanTimer);
   try {
-    const items = await fetchPengumumanItems();
-    if (!items.length) {
+    homeHebahanItems = await fetchPengumumanItems();
+    if (!homeHebahanItems.length) {
       box.innerHTML = `<div class="empty-state" style="padding:14px 2px;font-size:11px">Belum ada pengumuman lagi.</div>`;
       return;
     }
-    const latest = items[0];
-    let html = "";
-    if (latest.gambar) {
-      html += `<div class="home-hebahan-img-wrap"><img class="home-hebahan-img" src="${escapeAttr(latest.gambar)}" alt="Gambar pengumuman" onerror="this.parentElement.style.display='none'" onclick="openImageLightbox('${escapeAttr(latest.gambar)}')"></div>`;
+    homeHebahanIndex = 0;
+    homeHebahanShowCurrent();
+    if (homeHebahanItems.length > 1) {
+      homeHebahanTimer = setInterval(() => {
+        homeHebahanIndex = (homeHebahanIndex + 1) % homeHebahanItems.length;
+        homeHebahanShowCurrent();
+      }, 5000);
     }
-    if (latest.teks) {
-      html += `<div class="home-hebahan-text">${escapeHtml(latest.teks)}</div>`;
-    }
-    box.innerHTML = html;
   } catch (err) {
     box.innerHTML = `<div class="empty-state" style="padding:14px 2px;font-size:11px">Gagal muatkan pengumuman.</div>`;
   }
+}
+
+function homeHebahanShowCurrent() {
+  const box = document.getElementById("home-hebahan-content");
+  if (!box || !homeHebahanItems.length) return;
+  const item = homeHebahanItems[homeHebahanIndex];
+  let html = "";
+  if (item.gambar) {
+    html += `<div class="home-hebahan-img-wrap"><img class="home-hebahan-img" src="${escapeAttr(item.gambar)}" alt="Gambar pengumuman" onerror="this.parentElement.style.display='none'" onclick="openImageLightbox('${escapeAttr(item.gambar)}')"></div>`;
+  }
+  if (item.teks) {
+    html += `<div class="home-hebahan-text">${escapeHtml(item.teks)}</div>`;
+  }
+  if (homeHebahanItems.length > 1) {
+    html += `<div class="home-hebahan-dots">${homeHebahanItems.map((_, i) => `<span class="home-hebahan-dot${i === homeHebahanIndex ? " active" : ""}"></span>`).join("")}</div>`;
+  }
+  box.innerHTML = html;
 }
 
 /* ---------------- Banner carousel (index.html sahaja) ---------------- */
