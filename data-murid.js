@@ -163,7 +163,22 @@ function dmCheckUploadAccess(user) {
 }
 
 /* ---------------- Fetch data murid (gviz, baca awam) ---------------- */
-async function dmFetchStudents() {
+const DM_CACHE_KEY = "dm_cache_databaseMurid";
+const DM_CACHE_TTL_MS = 3 * 60 * 1000;
+
+async function dmFetchStudents(forceRefresh) {
+  if (!forceRefresh) {
+    try {
+      const cached = sessionStorage.getItem(DM_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Date.now() - parsed.ts < DM_CACHE_TTL_MS) {
+          dmStudents = parsed.data;
+          return dmStudents;
+        }
+      }
+    } catch (e) { /* storan tak boleh diakses — teruskan fetch biasa */ }
+  }
   try {
     const url = `https://docs.google.com/spreadsheets/d/${DM_SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent("DatabaseMurid")}&headers=1&_ts=${Date.now()}`;
     const res = await fetch(url, { cache: "no-store" });
@@ -190,6 +205,7 @@ async function dmFetchStudents() {
       });
       return rec;
     }).filter((s) => s.nama && s.kelas);
+    try { sessionStorage.setItem(DM_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: dmStudents })); } catch (e) {}
   } catch (e) {
     dmStudents = [];
   }
@@ -666,8 +682,11 @@ async function dmConfirmUpload() {
       document.getElementById("dm-preview-box").classList.add("hidden");
       btn.classList.add("hidden");
       document.getElementById("dm-file-input").value = "";
-      await dmFetchStudents();
+      await dmFetchStudents(true);
       dmRenderEnrolment();
+      dmRenderKaumCard();
+      dmRenderSosioACard();
+      dmRenderSosioBCard();
     } else {
       statusEl.textContent = result.message || "Gagal simpan data murid.";
     }
@@ -683,7 +702,8 @@ function dmSwitchTab(name) {
     document.getElementById(`dm-panel-${n}`).classList.toggle("hidden", n !== name);
     document.getElementById(`dm-nav-${n}`).classList.toggle("active", n === name);
   });
-  if (name === "senarai") { dmInitClassSelect(); dmRenderSenarai(); dmCariPopulateKelas(); }
+  if (name === "senarai") { dmInitClassSelect(); dmRenderSenarai(); }
+  if (name === "analisis") dmCariPopulateKelas();
 }
 
 /* ================= Init ================= */
@@ -702,7 +722,6 @@ async function dmInit(user) {
   dmRenderKaumCard();
   dmRenderSosioACard();
   dmRenderSosioBCard();
-  dmStackInit();
 }
 function dmShowNoPermission() {
   alert("Muat naik data murid hanya untuk Guru Data Murid atau Admin.");
@@ -840,47 +859,4 @@ function dmDrilldownRenderList(filterObj) {
 }
 function dmCloseDrilldown() {
   document.getElementById("dm-drilldown-overlay").classList.add("hidden");
-}
-
-/* ================= Timbunan kad (stack) — Enrolmen boleh slide ================= */
-let dmStackIndex = 0;
-const DM_STACK_COUNT = 4;
-
-function dmStackInit() {
-  const dotsBox = document.getElementById("dm-stack-dots");
-  dotsBox.innerHTML = Array.from({ length: DM_STACK_COUNT }, (_, i) =>
-    `<span class="dm-stack-dot${i === 0 ? " active" : ""}" onclick="dmStackGoTo(${i})"></span>`).join("");
-  dmStackApplyPositions();
-
-  const container = document.getElementById("dm-enrolmen-stack");
-  let startX = 0, dragging = false;
-  container.addEventListener("touchstart", (e) => { startX = e.touches[0].clientX; dragging = true; }, { passive: true });
-  container.addEventListener("touchend", (e) => {
-    if (!dragging) return;
-    dragging = false;
-    const deltaX = (e.changedTouches[0].clientX - startX);
-    if (deltaX < -40) dmStackNav(1);
-    else if (deltaX > 40) dmStackNav(-1);
-  });
-}
-
-function dmStackNav(dir) {
-  dmStackGoTo(Math.max(0, Math.min(dmStackIndex + dir, DM_STACK_COUNT - 1)));
-}
-function dmStackGoTo(idx) {
-  dmStackIndex = Math.max(0, Math.min(idx, DM_STACK_COUNT - 1));
-  dmStackApplyPositions();
-  document.querySelectorAll(".dm-stack-dot").forEach((d, i) => d.classList.toggle("active", i === dmStackIndex));
-}
-function dmStackApplyPositions() {
-  document.querySelectorAll(".dm-stack-item").forEach((item) => {
-    const itemIdx = parseInt(item.dataset.idx, 10);
-    const offset = itemIdx - dmStackIndex;
-    item.classList.remove("dm-stack-active", "dm-stack-next", "dm-stack-next2", "dm-stack-prev", "dm-stack-far");
-    if (offset === 0) item.classList.add("dm-stack-active");
-    else if (offset === 1) item.classList.add("dm-stack-next");
-    else if (offset === 2) item.classList.add("dm-stack-next2");
-    else if (offset < 0) item.classList.add("dm-stack-prev");
-    else item.classList.add("dm-stack-far");
-  });
 }
