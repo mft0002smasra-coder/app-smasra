@@ -369,6 +369,7 @@ function dmRenderSosioBCard() {
 }
 function dmComputeEnrolment() {
   const byClass = {};
+  DM_CLASS_LIST.forEach((k) => { byClass[k] = { L: 0, P: 0, jumlah: 0, asramaL: 0, asramaP: 0, asramaJumlah: 0 }; });
 
   dmStudents.forEach((s) => {
     // Padan nama kelas fleksibel (trim/case/spasi)
@@ -696,16 +697,15 @@ async function dmConfirmUpload() {
       document.getElementById("dm-file-input").value = "";
       await dmFetchStudents(true);
       dmRenderEnrolment();
-      // Reset status "lazy" — kalau kad tambahan tu SEDANG dipapar, kira semula terus;
-      // kalau tersembunyi, biar dikira semula bila user klik butang seterusnya.
-      ["kaum", "sosioa", "sosiob"].forEach((key) => {
-        delete dmExtraRendered[key];
-        const card = document.getElementById(`dm-${key}-capture`);
-        if (card && !card.classList.contains("hidden")) {
-          DM_EXTRA_RENDER_FN[key]();
-          dmExtraRendered[key] = true;
-        }
-      });
+      // Reset status "lazy" — kalau page tambahan tu SEDANG dibuka, kira semula terus;
+      // kalau tidak, biar dikira semula bila user buka page tu lain kali.
+      dmExtraPageRendered = false;
+      if (!document.getElementById("dm-panel-extra").classList.contains("hidden")) {
+        dmRenderKaumCard();
+        dmRenderSosioACard();
+        dmRenderSosioBCard();
+        dmExtraPageRendered = true;
+      }
     } else {
       statusEl.textContent = result.message || "Gagal simpan data murid.";
     }
@@ -812,30 +812,27 @@ function dmCariShowDetail() {
   document.getElementById("dm-cari-capture").classList.add("dm-stack-pop-play");
 }
 
-/* ================= Butang ringkas — papar/sembunyi 3 jadual tambahan, LAZY kira sekali ================= */
-const dmExtraRendered = {};
-const DM_EXTRA_RENDER_FN = { kaum: dmRenderKaumCard, sosioa: dmRenderSosioACard, sosiob: dmRenderSosioBCard };
+/* ================= Page berasingan: 3 jadual tambahan — LAZY kira sekali sahaja ================= */
+let dmExtraPageRendered = false;
 
-function dmToggleExtra(key) {
-  const card = document.getElementById(`dm-${key}-capture`);
-  const dlBtn = document.getElementById(`dm-dl-${key}`);
-  const btn = document.getElementById(`dm-btn-${key}`);
-  const isHidden = card.classList.contains("hidden");
+function dmOpenExtraPage(focusKey) {
+  document.getElementById("dm-panel-enrolmen").classList.add("hidden");
+  document.getElementById("dm-panel-extra").classList.remove("hidden");
 
-  if (isHidden) {
-    if (!dmExtraRendered[key]) {
-      DM_EXTRA_RENDER_FN[key]();
-      dmExtraRendered[key] = true;
-    }
-    card.classList.remove("hidden");
-    dlBtn.classList.remove("hidden");
-    btn.classList.add("active");
-    card.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  } else {
-    card.classList.add("hidden");
-    dlBtn.classList.add("hidden");
-    btn.classList.remove("active");
+  if (!dmExtraPageRendered) {
+    dmRenderKaumCard();
+    dmRenderSosioACard();
+    dmRenderSosioBCard();
+    dmExtraPageRendered = true;
   }
+  if (focusKey) {
+    const target = document.getElementById(`dm-${focusKey}-capture`);
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+function dmCloseExtraPage() {
+  document.getElementById("dm-panel-extra").classList.add("hidden");
+  document.getElementById("dm-panel-enrolmen").classList.remove("hidden");
 }
 
 /* ================= Popup Drill-down: senarai murid ikut kategori ================= */
