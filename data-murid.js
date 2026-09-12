@@ -696,12 +696,16 @@ async function dmConfirmUpload() {
       document.getElementById("dm-file-input").value = "";
       await dmFetchStudents(true);
       dmRenderEnrolment();
-      // Reset status "lazy" — 3 kad lain akan dikira semula bila user lawat semula (elak beban serentak)
-      delete dmPagerRendered[1]; delete dmPagerRendered[2]; delete dmPagerRendered[3];
-      if (dmPagerIndex !== 0 && DM_PAGER_RENDER_FN[dmPagerIndex]) {
-        DM_PAGER_RENDER_FN[dmPagerIndex]();
-        dmPagerRendered[dmPagerIndex] = true;
-      }
+      // Reset status "lazy" — kalau kad tambahan tu SEDANG dipapar, kira semula terus;
+      // kalau tersembunyi, biar dikira semula bila user klik butang seterusnya.
+      ["kaum", "sosioa", "sosiob"].forEach((key) => {
+        delete dmExtraRendered[key];
+        const card = document.getElementById(`dm-${key}-capture`);
+        if (card && !card.classList.contains("hidden")) {
+          DM_EXTRA_RENDER_FN[key]();
+          dmExtraRendered[key] = true;
+        }
+      });
     } else {
       statusEl.textContent = result.message || "Gagal simpan data murid.";
     }
@@ -734,7 +738,6 @@ async function dmInit(user) {
 
   await dmFetchStudents();
   dmRenderEnrolment();
-  dmPagerInit();
 }
 function dmShowNoPermission() {
   alert("Muat naik data murid hanya untuk Guru Data Murid atau Admin.");
@@ -809,55 +812,30 @@ function dmCariShowDetail() {
   document.getElementById("dm-cari-capture").classList.add("dm-stack-pop-play");
 }
 
-/* ================= Pager mendatar (satu jadual pada satu masa) — LAZY render ================= */
-let dmPagerIndex = 0;
-const DM_PAGER_COUNT = 4;
-const dmPagerRendered = { 0: true }; // Enrolmen (indeks 0) dah dirender semasa init
+/* ================= Butang ringkas — papar/sembunyi 3 jadual tambahan, LAZY kira sekali ================= */
+const dmExtraRendered = {};
+const DM_EXTRA_RENDER_FN = { kaum: dmRenderKaumCard, sosioa: dmRenderSosioACard, sosiob: dmRenderSosioBCard };
 
-const DM_PAGER_RENDER_FN = {
-  1: dmRenderKaumCard,
-  2: dmRenderSosioACard,
-  3: dmRenderSosioBCard,
-};
+function dmToggleExtra(key) {
+  const card = document.getElementById(`dm-${key}-capture`);
+  const dlBtn = document.getElementById(`dm-dl-${key}`);
+  const btn = document.getElementById(`dm-btn-${key}`);
+  const isHidden = card.classList.contains("hidden");
 
-function dmPagerInit() {
-  const dotsBox = document.getElementById("dm-pager-dots");
-  dotsBox.innerHTML = Array.from({ length: DM_PAGER_COUNT }, (_, i) =>
-    `<span class="dm-stack-dot${i === 0 ? " active" : ""}" onclick="dmPagerGoTo(${i})"></span>`).join("");
-
-  const track = document.getElementById("dm-enrolmen-pager");
-  let startX = 0, dragging = false;
-  track.addEventListener("touchstart", (e) => { startX = e.touches[0].clientX; dragging = true; track.style.transition = "none"; }, { passive: true });
-  track.addEventListener("touchmove", (e) => {
-    if (!dragging) return;
-    const deltaX = e.touches[0].clientX - startX;
-    track.style.transform = `translateX(calc(-${dmPagerIndex * 100}% + ${deltaX}px))`;
-  }, { passive: true });
-  track.addEventListener("touchend", (e) => {
-    if (!dragging) return;
-    dragging = false;
-    track.style.transition = "";
-    const deltaX = e.changedTouches[0].clientX - startX;
-    if (deltaX < -40 && dmPagerIndex < DM_PAGER_COUNT - 1) dmPagerGoTo(dmPagerIndex + 1);
-    else if (deltaX > 40 && dmPagerIndex > 0) dmPagerGoTo(dmPagerIndex - 1);
-    else dmPagerGoTo(dmPagerIndex);
-  });
-}
-
-function dmPagerNav(dir) {
-  dmPagerGoTo(Math.max(0, Math.min(dmPagerIndex + dir, DM_PAGER_COUNT - 1)));
-}
-function dmPagerGoTo(idx) {
-  dmPagerIndex = Math.max(0, Math.min(idx, DM_PAGER_COUNT - 1));
-  // Lazy: kira & render jadual ni HANYA kali pertama diluncur ke situ, elak
-  // semua 4 jadual dikira sekaligus (punca lambat bila data besar ~400+ murid).
-  if (!dmPagerRendered[dmPagerIndex] && DM_PAGER_RENDER_FN[dmPagerIndex]) {
-    DM_PAGER_RENDER_FN[dmPagerIndex]();
-    dmPagerRendered[dmPagerIndex] = true;
+  if (isHidden) {
+    if (!dmExtraRendered[key]) {
+      DM_EXTRA_RENDER_FN[key]();
+      dmExtraRendered[key] = true;
+    }
+    card.classList.remove("hidden");
+    dlBtn.classList.remove("hidden");
+    btn.classList.add("active");
+    card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  } else {
+    card.classList.add("hidden");
+    dlBtn.classList.add("hidden");
+    btn.classList.remove("active");
   }
-  const track = document.getElementById("dm-enrolmen-pager");
-  track.style.transform = `translateX(-${dmPagerIndex * 100}%)`;
-  document.querySelectorAll("#dm-pager-dots .dm-stack-dot").forEach((d, i) => d.classList.toggle("active", i === dmPagerIndex));
 }
 
 /* ================= Popup Drill-down: senarai murid ikut kategori ================= */

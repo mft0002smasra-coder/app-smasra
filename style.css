@@ -1321,19 +1321,16 @@ tr.dm-grandtotal td{ background:var(--dm-brown) !important;color:#F8ECD8;font-we
 .dm-confirm-btn:disabled{ opacity:.6; }
 
 /* ---------- Timbunan kad (stack) — Enrolmen boleh slide ---------- */
-.dm-pager-outer{ margin-bottom:16px;overflow:hidden; }
-.dm-pager-track{ display:flex;width:400%;transition:transform .35s cubic-bezier(.22,1,.36,1);touch-action:pan-y; }
-.dm-pager-page{ width:25%;flex-shrink:0;padding-right:8px;box-sizing:border-box; }
-.dm-lazy-note{ padding:28px 10px;text-align:center;color:var(--dm-brown);font-size:11.5px;font-style:italic; }
-.dm-pager-nav{ display:flex;align-items:center;justify-content:center;gap:16px;margin-top:8px; }
-.dm-stack-arrow{
-  width:34px;height:34px;border-radius:50%;border:1px solid rgba(107,74,46,0.25);
+.dm-extra-btn-row{ display:flex;flex-direction:column;gap:10px;margin:18px 0; }
+.dm-extra-btn{
+  padding:13px;border-radius:14px;border:1.5px solid rgba(107,74,46,0.22);cursor:pointer;
   background:linear-gradient(160deg,#fff,var(--dm-cream-dark));color:var(--dm-brown-dark);
-  font-size:16px;cursor:pointer;box-shadow:0 3px 8px -4px rgba(107,74,46,0.3);
+  font-family:inherit;font-weight:700;font-size:12.5px;text-align:center;
+  box-shadow:0 3px 8px -4px rgba(107,74,46,0.25);transition:all .15s;
 }
-.dm-stack-dots{ display:flex;gap:6px; }
-.dm-stack-dot{ width:7px;height:7px;border-radius:50%;background:var(--dm-cream-dark);border:1px solid rgba(107,74,46,0.3);cursor:pointer;transition:all .2s; }
-.dm-stack-dot.active{ background:var(--dm-leather);transform:scale(1.3); }
+.dm-extra-btn.active{
+  background:linear-gradient(160deg,var(--dm-leather),var(--dm-brown));color:#F8ECD8;border-color:transparent;
+}
 .dm-stack-card-title{
   font-size:11.5px;font-weight:700;color:var(--dm-brown-dark);margin-bottom:10px;cursor:pointer;
   display:flex;align-items:center;flex-wrap:wrap;gap:6px;
