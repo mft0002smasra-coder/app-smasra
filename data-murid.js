@@ -684,9 +684,12 @@ async function dmConfirmUpload() {
       document.getElementById("dm-file-input").value = "";
       await dmFetchStudents(true);
       dmRenderEnrolment();
-      dmRenderKaumCard();
-      dmRenderSosioACard();
-      dmRenderSosioBCard();
+      // Reset status "lazy" — 3 kad lain akan dikira semula bila user lawat semula (elak beban serentak)
+      delete dmStackRendered[1]; delete dmStackRendered[2]; delete dmStackRendered[3];
+      if (dmStackIndex !== 0 && DM_STACK_RENDER_FN[dmStackIndex]) {
+        DM_STACK_RENDER_FN[dmStackIndex]();
+        dmStackRendered[dmStackIndex] = true;
+      }
     } else {
       statusEl.textContent = result.message || "Gagal simpan data murid.";
     }
@@ -719,9 +722,7 @@ async function dmInit(user) {
 
   await dmFetchStudents();
   dmRenderEnrolment();
-  dmRenderKaumCard();
-  dmRenderSosioACard();
-  dmRenderSosioBCard();
+  dmStackInit();
 }
 function dmShowNoPermission() {
   alert("Muat naik data murid hanya untuk Guru Data Murid atau Admin.");
@@ -794,6 +795,62 @@ function dmCariShowDetail() {
   wrap.classList.remove("dm-stack-pop-play");
   void wrap.offsetWidth; // paksa reflow supaya animasi ulang setiap carian
   document.getElementById("dm-cari-capture").classList.add("dm-stack-pop-play");
+}
+
+/* ================= Timbunan kad (stack) — Enrolmen boleh slide, LAZY render ================= */
+let dmStackIndex = 0;
+const DM_STACK_COUNT = 4;
+const dmStackRendered = { 0: true }; // Enrolmen (indeks 0) dah dirender semasa init
+
+const DM_STACK_RENDER_FN = {
+  1: dmRenderKaumCard,
+  2: dmRenderSosioACard,
+  3: dmRenderSosioBCard,
+};
+
+function dmStackInit() {
+  const dotsBox = document.getElementById("dm-stack-dots");
+  dotsBox.innerHTML = Array.from({ length: DM_STACK_COUNT }, (_, i) =>
+    `<span class="dm-stack-dot${i === 0 ? " active" : ""}" onclick="dmStackGoTo(${i})"></span>`).join("");
+  dmStackApplyPositions();
+
+  const container = document.getElementById("dm-enrolmen-stack");
+  let startX = 0, dragging = false;
+  container.addEventListener("touchstart", (e) => { startX = e.touches[0].clientX; dragging = true; }, { passive: true });
+  container.addEventListener("touchend", (e) => {
+    if (!dragging) return;
+    dragging = false;
+    const deltaX = (e.changedTouches[0].clientX - startX);
+    if (deltaX < -40) dmStackNav(1);
+    else if (deltaX > 40) dmStackNav(-1);
+  });
+}
+
+function dmStackNav(dir) {
+  dmStackGoTo(Math.max(0, Math.min(dmStackIndex + dir, DM_STACK_COUNT - 1)));
+}
+function dmStackGoTo(idx) {
+  dmStackIndex = Math.max(0, Math.min(idx, DM_STACK_COUNT - 1));
+  // Lazy: kira & render kad ni HANYA kali pertama dilawati, elak semua 4
+  // kad dikira sekaligus (itu punca lambat bila data besar ~400+ murid).
+  if (!dmStackRendered[dmStackIndex] && DM_STACK_RENDER_FN[dmStackIndex]) {
+    DM_STACK_RENDER_FN[dmStackIndex]();
+    dmStackRendered[dmStackIndex] = true;
+  }
+  dmStackApplyPositions();
+  document.querySelectorAll(".dm-stack-dot").forEach((d, i) => d.classList.toggle("active", i === dmStackIndex));
+}
+function dmStackApplyPositions() {
+  document.querySelectorAll(".dm-stack-item").forEach((item) => {
+    const itemIdx = parseInt(item.dataset.idx, 10);
+    const offset = itemIdx - dmStackIndex;
+    item.classList.remove("dm-stack-active", "dm-stack-next", "dm-stack-next2", "dm-stack-prev", "dm-stack-far");
+    if (offset === 0) item.classList.add("dm-stack-active");
+    else if (offset === 1) item.classList.add("dm-stack-next");
+    else if (offset === 2) item.classList.add("dm-stack-next2");
+    else if (offset < 0) item.classList.add("dm-stack-prev");
+    else item.classList.add("dm-stack-far");
+  });
 }
 
 /* ================= Popup Drill-down: senarai murid ikut kategori ================= */
