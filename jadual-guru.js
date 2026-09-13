@@ -13,6 +13,17 @@ let jgRecords = [];
 let jgLastUpdate = "";
 let jgTeacherNames = [];
 
+/** Jana kod guru dari nama penuh (huruf awalan tiap perkataan, abaikan bin/binti).
+ * Cth: "Abdul Malek bin Mat Yasin" -> "AMMY" */
+function jgGenerateKodFromName(namaGuru) {
+  const words = String(namaGuru || "").trim().split(/\s+/);
+  const initials = words
+    .filter((w) => w.toLowerCase() !== "bin" && w.toLowerCase() !== "binti")
+    .map((w) => w.charAt(0).toUpperCase())
+    .join("");
+  return initials || "-";
+}
+
 function jgEscape(str) { return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 function jgNorm(str) { return String(str || "").trim().toUpperCase().replace(/\s+/g, " "); }
 
@@ -161,7 +172,7 @@ function jgBuildClassWeeklyTable(kelasName) {
       const rec = bySlotDay[`${slot}-${hari}`];
       if (!rec || !rec.subjek) return `<td></td>`;
       const col = jgColorForSubjek(rec.subjek);
-      const kodPaparan = rec.kodGuru || rec.guru; // fallback nama penuh kalau data lama tiada kod
+      const kodPaparan = rec.kodGuru || jgGenerateKodFromName(rec.guru); // jana dari nama kalau data lama tiada kod
       const dataJson = jgEscape(JSON.stringify(rec)).replace(/'/g, "&apos;");
       return `<td><div class="jg-cell" style="background:${col.bg};color:${col.text}" onclick='jgOpenCellDetail(${dataJson})'><span class="jg-cell-time" style="color:${col.text};opacity:.75">${jgFmtWaktu(rec.waktuMula)}-${jgFmtWaktu(rec.waktuTamat)}</span><span class="jg-cell-subj" style="color:${col.text}">${jgEscape(rec.subjek)}</span><span class="jg-cell-kelas" style="color:${col.text}">${jgEscape(kodPaparan)}</span></div></td>`;
     }).join("");
@@ -288,7 +299,8 @@ function jgRowsFromAoa(aoa) {
       const row = aoa[r];
       if (!row) continue;
       const namaGuru = String(row[2] || "").trim();
-      const kodGuru = String(row[3] || "").trim();
+      const kodGuruRaw = String(row[3] || "").trim();
+      const kodGuru = kodGuruRaw || jgGenerateKodFromName(namaGuru);
       if (!namaGuru) continue;
 
       for (let slot = 1; slot <= JG_MAX_SLOTS; slot++) {
