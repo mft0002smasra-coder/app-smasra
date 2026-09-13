@@ -1524,16 +1524,21 @@ tr.dm-grandtotal td{ background:var(--dm-brown) !important;color:#F8ECD8;font-we
    JADUAL GURU — tema Minimalism, teks berkaler (kandungan sahaja)
    ============================================================ */
 .jg-scope{
-  /* --- Palet Warna --- */
-  --jg-page-bg:#F4F6FA; --jg-bg:#FFFFFF;
-  --jg-primary:#1E2A4A; --jg-primary-dark:#141B33;
-  --jg-accent:#2563EB; --jg-accent-2:#0891B2;
-  --jg-gold:#D97706;
-  --jg-text:#0F172A; --jg-text-dim:#4B5566;
-  --jg-line:#D8DDE6;
-  --jg-blue:#1D4ED8; --jg-green:#047857; --jg-amber:#B45309;
-  --jg-red:#DC2626; --jg-purple:#6D28D9; --jg-pink:#BE185D; --jg-teal:#0F766E;
-  background:var(--jg-page-bg);
+  /* --- Palet Futuristik Biru --- */
+  --jg-page-bg:#050B18; --jg-bg:#0B1830;
+  --jg-primary:#00D9FF; --jg-primary-dark:#0891B2;
+  --jg-accent:#3B82F6; --jg-accent-2:#00D9FF;
+  --jg-gold:#F59E0B;
+  --jg-text:#E0F2FE; --jg-text-dim:#5B7A99;
+  --jg-line:rgba(0,217,255,0.22);
+  --jg-blue:#3B82F6; --jg-green:#10B981; --jg-amber:#F59E0B;
+  --jg-red:#F43F5E; --jg-purple:#A855F7; --jg-pink:#EC4899; --jg-teal:#14B8A6;
+  background:
+    linear-gradient(rgba(0,217,255,0.05) 1px, transparent 1px) 0 0/32px 32px,
+    linear-gradient(90deg, rgba(0,217,255,0.05) 1px, transparent 1px) 0 0/32px 32px,
+    radial-gradient(600px 400px at 15% 0%, rgba(0,217,255,0.10), transparent 60%),
+    radial-gradient(500px 400px at 85% 20%, rgba(59,130,246,0.10), transparent 60%),
+    var(--jg-page-bg);
   border-radius:20px 20px 0 0;padding:22px 20px 100px;
   font-family:'Inter',sans-serif;color:var(--jg-text);
   min-height:calc(100vh - 92px);
@@ -1545,51 +1550,92 @@ tr.dm-grandtotal td{ background:var(--dm-brown) !important;color:#F8ECD8;font-we
 }
 .jg-scope *{ box-sizing:border-box;min-width:0; }
 .jg-page-title{
-  text-align:center;font-weight:800;font-size:15px;letter-spacing:1.4px;color:var(--jg-primary);
-  margin-bottom:4px;text-transform:uppercase;
+  text-align:center;font-weight:800;font-size:15px;letter-spacing:2px;color:var(--jg-primary);
+  margin-bottom:4px;text-transform:uppercase;font-family:'Orbitron',sans-serif;
+  text-shadow:0 0 10px rgba(0,217,255,0.6), 0 0 22px rgba(0,217,255,0.3);
 }
-.jg-teacher-name{ text-align:center;font-weight:800;font-size:18px;color:var(--jg-accent);margin-bottom:18px; }
+.jg-teacher-name{
+  text-align:center;font-weight:700;font-size:16px;color:var(--jg-accent-2);margin-bottom:18px;
+  font-family:'Orbitron',sans-serif;letter-spacing:.6px;
+  text-shadow:0 0 8px rgba(0,217,255,0.5);
+}
 
-.jg-field-label{ display:block;font-size:10.5px;font-weight:800;color:var(--jg-primary);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px; }
+.jg-field-label{ display:block;font-size:10px;font-weight:800;color:var(--jg-primary);margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px;font-family:'Orbitron',sans-serif; }
 .jg-select{
   width:100%;padding:11px 13px;border-radius:10px;border:1.5px solid var(--jg-line);
   background:var(--jg-bg);color:var(--jg-text);font-family:inherit;font-weight:700;font-size:13px;
-  margin-bottom:18px;outline:none;
+  margin-bottom:18px;outline:none;box-shadow:inset 0 0 12px rgba(0,217,255,0.06);
 }
-.jg-select:focus{ border-color:var(--jg-accent); }
+.jg-select:focus{ border-color:var(--jg-primary);box-shadow:0 0 0 2px rgba(0,217,255,0.25); }
 
-.jg-table-wrap{ width:100%;border-radius:12px;overflow:hidden;box-shadow:0 4px 14px -6px rgba(30,42,74,0.18);border:1px solid var(--jg-line); }
+.jg-table-wrap{
+  width:100%;border-radius:12px;overflow:hidden;border:1px solid var(--jg-line);
+  box-shadow:0 0 22px -4px rgba(0,217,255,0.18), inset 0 0 30px rgba(0,217,255,0.03);
+}
 table.jg-table{ border-collapse:collapse;width:100%;table-layout:fixed;background:var(--jg-bg); }
 table.jg-table th, table.jg-table td{ padding:9px 4px;text-align:center;font-size:10px;border:1px solid var(--jg-line);vertical-align:middle; }
 table.jg-table thead th{
-  background:linear-gradient(165deg,var(--jg-primary),var(--jg-primary-dark));color:#fff;
-  font-weight:800;font-size:10px;text-transform:uppercase;letter-spacing:.4px;border-color:var(--jg-primary-dark);
+  background:linear-gradient(165deg,rgba(0,217,255,0.18),rgba(11,24,48,0.9));color:var(--jg-primary);
+  font-weight:800;font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;border-color:var(--jg-line);
+  font-family:'Orbitron',sans-serif;text-shadow:0 0 6px rgba(0,217,255,0.5);
 }
-.jg-slot-cell{ font-weight:800;color:var(--jg-primary);background:#EEF1F8;font-size:11px; }
-.jg-cell{ display:flex;flex-direction:column;gap:1px;padding:4px 3px;border-radius:7px;margin:2px; }
+.jg-slot-cell{
+  font-weight:800;color:var(--jg-primary);background:rgba(0,217,255,0.06);font-size:10.5px;
+  font-family:'Orbitron',sans-serif;
+}
+.jg-cell{ display:flex;flex-direction:column;gap:1px;padding:4px 3px;border-radius:6px;margin:2px;cursor:pointer;transition:transform .12s; }
+.jg-cell:active{ transform:scale(.95); }
 .jg-cell-time{ font-size:7.5px;font-weight:700; }
 .jg-cell-subj{ font-size:10.5px;font-weight:800; }
-.jg-cell-kelas{ font-size:9px;font-weight:700; }
+.jg-cell-kelas{ font-size:9px;font-weight:700;font-family:'Orbitron',sans-serif; }
 
 .jg-guru-cell{ text-align:left !important;font-weight:700;color:var(--jg-text); }
 .jg-jumlah-cell{ font-weight:800;color:var(--jg-amber);font-size:12px; }
 .jg-empty-row{ padding:24px !important;color:var(--jg-text-dim);font-style:italic; }
 
 .jg-update-note{
-  background:#EEF1F8;border:1.5px solid var(--jg-primary);border-radius:12px;padding:13px 14px;
+  background:rgba(0,217,255,0.07);border:1.5px solid var(--jg-primary);border-radius:12px;padding:13px 14px;
   font-size:12.5px;color:var(--jg-text);margin-bottom:14px;font-weight:600;
+  box-shadow:0 0 16px -6px rgba(0,217,255,0.4);
 }
-.jg-update-note b{ color:var(--jg-accent);font-weight:800; }
+.jg-update-note b{ color:var(--jg-primary);font-weight:800;text-shadow:0 0 6px rgba(0,217,255,0.5); }
 .jg-upload-hint{ font-size:11px;color:var(--jg-text-dim);margin-bottom:16px;line-height:1.5; }
 .jg-file-btn{
   display:block;text-align:center;padding:13px;border-radius:12px;cursor:pointer;
   background:linear-gradient(165deg,var(--jg-accent),#1D4ED8);color:#fff;font-weight:800;font-size:13px;
-  box-shadow:0 6px 14px -6px rgba(37,99,235,0.5);
+  box-shadow:0 0 20px -4px rgba(59,130,246,0.7);font-family:'Orbitron',sans-serif;letter-spacing:.5px;
 }
 .jg-upload-status{ margin-top:14px;font-size:12px;color:var(--jg-text);text-align:center;font-weight:700; }
 .jg-confirm-btn{
   display:block;width:100%;margin-top:16px;padding:13px;border:none;border-radius:12px;cursor:pointer;
   background:linear-gradient(165deg,var(--jg-green),#065F46);color:#fff;font-weight:800;font-size:13px;
-  box-shadow:0 6px 14px -6px rgba(4,120,87,0.5);
+  box-shadow:0 0 20px -4px rgba(16,185,129,0.6);font-family:'Orbitron',sans-serif;letter-spacing:.5px;
 }
 .jg-confirm-btn:disabled{ opacity:.6; }
+
+/* ---------- Popup Butiran Sel (klik sel jadual) ---------- */
+.jg-detail-overlay{
+  position:fixed;inset:0;z-index:3000;background:rgba(2,8,20,.75);backdrop-filter:blur(3px);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.jg-detail-sheet{
+  width:100%;max-width:340px;background:linear-gradient(165deg,#0B1830,#050B18);
+  border:1px solid var(--jg-primary);border-radius:16px;padding:20px;position:relative;
+  box-shadow:0 0 40px rgba(0,217,255,0.35);
+}
+.jg-detail-close{
+  position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;
+  background:rgba(0,217,255,0.12);border:1px solid var(--jg-line);color:var(--jg-primary);
+  font-size:12px;cursor:pointer;
+}
+.jg-detail-guru{
+  font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;color:var(--jg-primary);
+  text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--jg-line);
+  text-shadow:0 0 10px rgba(0,217,255,0.5);
+}
+.jg-detail-row{
+  display:flex;justify-content:space-between;padding:8px 0;font-size:12.5px;color:var(--jg-text);
+  border-bottom:1px solid rgba(0,217,255,0.08);
+}
+.jg-detail-row:last-child{ border-bottom:none; }
+.jg-detail-label{ color:var(--jg-text-dim);font-weight:600;font-family:'Orbitron',sans-serif;font-size:9.5px;text-transform:uppercase;letter-spacing:.5px; }

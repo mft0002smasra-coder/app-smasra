@@ -75,12 +75,12 @@ async function jgFetchRecords(forceRefresh) {
     const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
     const table = JSON.parse(jsonStr).table;
     const cols = (table.cols || []).map((c) => jgNorm(c.label || ""));
-    const idx = { hari: cols.indexOf("HARI"), guru: cols.indexOf("NAMAGURU"), slot: cols.indexOf("SLOT"), waktuMula: cols.indexOf("WAKTUMULA"), waktuTamat: cols.indexOf("WAKTUTAMAT"), subjek: cols.indexOf("SUBJEK"), kelas: cols.indexOf("KELAS") };
+    const idx = { hari: cols.indexOf("HARI"), guru: cols.indexOf("NAMAGURU"), kodGuru: cols.indexOf("KODGURU"), slot: cols.indexOf("SLOT"), waktuMula: cols.indexOf("WAKTUMULA"), waktuTamat: cols.indexOf("WAKTUTAMAT"), subjek: cols.indexOf("SUBJEK"), kelas: cols.indexOf("KELAS") };
 
     jgRecords = (table.rows || []).map((r) => {
       const c = r.c || [];
       const get = (i) => (i !== -1 && c[i] && c[i].v != null ? c[i].v : "");
-      return { hari: get(idx.hari), guru: get(idx.guru), slot: get(idx.slot), waktuMula: get(idx.waktuMula), waktuTamat: get(idx.waktuTamat), subjek: get(idx.subjek), kelas: get(idx.kelas) };
+      return { hari: get(idx.hari), guru: get(idx.guru), kodGuru: get(idx.kodGuru), slot: get(idx.slot), waktuMula: get(idx.waktuMula), waktuTamat: get(idx.waktuTamat), subjek: get(idx.subjek), kelas: get(idx.kelas) };
     }).filter((r) => r.hari && r.guru);
 
     const names = new Set(jgRecords.map((r) => r.guru));
@@ -119,7 +119,8 @@ function jgBuildWeeklyTable(guruName) {
       const rec = bySlotDay[`${slot}-${hari}`];
       if (!rec || !rec.subjek) return `<td></td>`;
       const col = jgColorForSubjek(rec.subjek);
-      return `<td><div class="jg-cell" style="background:${col.bg};color:${col.text}"><span class="jg-cell-time" style="color:${col.text};opacity:.75">${jgFmtWaktu(rec.waktuMula)}-${jgFmtWaktu(rec.waktuTamat)}</span><span class="jg-cell-subj" style="color:${col.text}">${jgEscape(rec.subjek)}</span><span class="jg-cell-kelas" style="color:${col.text}">${jgEscape(rec.kelas)}</span></div></td>`;
+      const dataJson = jgEscape(JSON.stringify(rec)).replace(/'/g, "&apos;");
+      return `<td><div class="jg-cell" style="background:${col.bg};color:${col.text}" onclick='jgOpenCellDetail(${dataJson})'><span class="jg-cell-time" style="color:${col.text};opacity:.75">${jgFmtWaktu(rec.waktuMula)}-${jgFmtWaktu(rec.waktuTamat)}</span><span class="jg-cell-subj" style="color:${col.text}">${jgEscape(rec.subjek)}</span><span class="jg-cell-kelas" style="color:${col.text}">${jgEscape(rec.kelas)}</span></div></td>`;
     }).join("");
     rows.push(`<tr><td class="jg-slot-cell">${slot}</td>${cells}</tr>`);
   }
@@ -129,6 +130,20 @@ function jgBuildWeeklyTable(guruName) {
 function jgRenderIndividual(guruName, tableElId, titleElId) {
   if (titleElId) document.getElementById(titleElId).textContent = guruName || "-";
   document.getElementById(tableElId).innerHTML = jgBuildWeeklyTable(guruName);
+}
+
+/* ---------------- Popup: butiran penuh + nama guru penuh bila klik sel ---------------- */
+function jgOpenCellDetail(rec) {
+  const box = document.getElementById("jg-detail-overlay");
+  document.getElementById("jg-detail-guru").textContent = rec.guru || "-";
+  document.getElementById("jg-detail-hari").textContent = rec.hari || "-";
+  document.getElementById("jg-detail-waktu").textContent = `Waktu ${rec.slot} (${jgFmtWaktu(rec.waktuMula)} - ${jgFmtWaktu(rec.waktuTamat)})`;
+  document.getElementById("jg-detail-subjek").textContent = rec.subjek || "-";
+  document.getElementById("jg-detail-kelas").textContent = rec.kelas || "-";
+  box.classList.remove("hidden");
+}
+function jgCloseCellDetail() {
+  document.getElementById("jg-detail-overlay").classList.add("hidden");
 }
 
 /* ---------------- Jadual Kelas: guru+subjek per slot untuk satu kelas ---------------- */
@@ -146,7 +161,9 @@ function jgBuildClassWeeklyTable(kelasName) {
       const rec = bySlotDay[`${slot}-${hari}`];
       if (!rec || !rec.subjek) return `<td></td>`;
       const col = jgColorForSubjek(rec.subjek);
-      return `<td><div class="jg-cell" style="background:${col.bg};color:${col.text}"><span class="jg-cell-time" style="color:${col.text};opacity:.75">${jgFmtWaktu(rec.waktuMula)}-${jgFmtWaktu(rec.waktuTamat)}</span><span class="jg-cell-subj" style="color:${col.text}">${jgEscape(rec.subjek)}</span><span class="jg-cell-kelas" style="color:${col.text}">${jgEscape(rec.guru)}</span></div></td>`;
+      const kodPaparan = rec.kodGuru || rec.guru; // fallback nama penuh kalau data lama tiada kod
+      const dataJson = jgEscape(JSON.stringify(rec)).replace(/'/g, "&apos;");
+      return `<td><div class="jg-cell" style="background:${col.bg};color:${col.text}" onclick='jgOpenCellDetail(${dataJson})'><span class="jg-cell-time" style="color:${col.text};opacity:.75">${jgFmtWaktu(rec.waktuMula)}-${jgFmtWaktu(rec.waktuTamat)}</span><span class="jg-cell-subj" style="color:${col.text}">${jgEscape(rec.subjek)}</span><span class="jg-cell-kelas" style="color:${col.text}">${jgEscape(kodPaparan)}</span></div></td>`;
     }).join("");
     rows.push(`<tr><td class="jg-slot-cell">${slot}</td>${cells}</tr>`);
   }
@@ -271,6 +288,7 @@ function jgRowsFromAoa(aoa) {
       const row = aoa[r];
       if (!row) continue;
       const namaGuru = String(row[2] || "").trim();
+      const kodGuru = String(row[3] || "").trim();
       if (!namaGuru) continue;
 
       for (let slot = 1; slot <= JG_MAX_SLOTS; slot++) {
@@ -280,7 +298,7 @@ function jgRowsFromAoa(aoa) {
         const { subjek, kelas } = jgSplitSubjekKelas(raw);
         if (!subjek) continue;
         rows.push({
-          hari: hariMatch, guru: namaGuru, slot,
+          hari: hariMatch, guru: namaGuru, kodGuru, slot,
           waktuMula: mulaRow[col], waktuTamat: tamatRow[col],
           subjek, kelas,
         });

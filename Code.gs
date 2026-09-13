@@ -658,8 +658,8 @@ function getJadualGuru() {
     var row = data[i];
     if (!row[1] || !row[0]) continue; // perlu nama guru + hari
     list.push({
-      hari: row[0], guru: row[1], slot: row[2], waktuMula: row[3], waktuTamat: row[4],
-      subjek: row[5] || "", kelas: row[6] || "",
+      hari: row[0], guru: row[1], kodGuru: row[2] || "", slot: row[3], waktuMula: row[4], waktuTamat: row[5],
+      subjek: row[6] || "", kelas: row[7] || "",
     });
   }
   return jsonResponse({ data: list, lastUpdate: meta });
@@ -690,13 +690,13 @@ function uploadJadualGuru(body) {
   } else {
     sheet.clear();
   }
-  sheet.appendRow(["Hari", "NamaGuru", "Slot", "WaktuMula", "WaktuTamat", "Subjek", "Kelas"]);
+  sheet.appendRow(["Hari", "NamaGuru", "KodGuru", "Slot", "WaktuMula", "WaktuTamat", "Subjek", "Kelas"]);
 
   var values = body.rows.map(function (r) {
-    return [r.hari || "", r.guru || "", r.slot || "", r.waktuMula || "", r.waktuTamat || "", r.subjek || "", r.kelas || ""];
+    return [r.hari || "", r.guru || "", r.kodGuru || "", r.slot || "", r.waktuMula || "", r.waktuTamat || "", r.subjek || "", r.kelas || ""];
   });
   if (values.length) {
-    sheet.getRange(2, 1, values.length, 7).setValues(values);
+    sheet.getRange(2, 1, values.length, 8).setValues(values);
   }
 
   var now = kbFmtDateISO(new Date()) + " " + Utilities.formatDate(new Date(), "Asia/Kuala_Lumpur", "HH:mm");

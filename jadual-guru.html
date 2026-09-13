@@ -100,6 +100,18 @@
 
   </div>
 
+  <!-- ============ Popup: Butiran Sel (nama penuh guru + maklumat slot) ============ -->
+  <div class="jg-detail-overlay hidden" id="jg-detail-overlay">
+    <div class="jg-detail-sheet">
+      <button class="jg-detail-close" onclick="jgCloseCellDetail()">✕</button>
+      <div class="jg-detail-guru" id="jg-detail-guru">-</div>
+      <div class="jg-detail-row"><span class="jg-detail-label">Hari</span><span id="jg-detail-hari">-</span></div>
+      <div class="jg-detail-row"><span class="jg-detail-label">Waktu</span><span id="jg-detail-waktu">-</span></div>
+      <div class="jg-detail-row"><span class="jg-detail-label">Subjek</span><span id="jg-detail-subjek">-</span></div>
+      <div class="jg-detail-row"><span class="jg-detail-label">Kelas</span><span id="jg-detail-kelas">-</span></div>
+    </div>
+  </div>
+
 </div>
 
 <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
