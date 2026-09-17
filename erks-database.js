@@ -464,7 +464,10 @@ let dbHomeYear = new Date().getFullYear();
 let dbHomeMonth = new Date().getMonth() + 1;
 let dbHomeDataReady = false;
 
+let dbHomeUser = null; // simpan user SEGAR (dari DatabaseSTAFF utama, auto-refresh) untuk dbRenderHomeMonth
+
 async function dbLoadHomeAnalysis(user) {
+  dbHomeUser = user;
   const wrap = document.getElementById("db-home-analysis-wrap");
   if (!wrap) return;
   const swipeWrap = document.getElementById("home-swipe-wrap");
@@ -531,7 +534,7 @@ function dbRenderHomeMonth() {
     const dow = dateObj.getDay();
     if (dow === 0 || dow === 6) continue;
     const dateKey = dbYmd(dateObj);
-    const { masaDisplay, catatanHtml } = dbCrossRefDay(dbStaff.noKP, dbStaff.nama, dbStaff.jawatan, dateKey, kehadiranMap, rekodMap);
+    const { masaDisplay, catatanHtml } = dbCrossRefDay(dbStaff.noKP, dbStaff.nama, (dbHomeUser && dbHomeUser.jawatan) || dbStaff.jawatan, dateKey, kehadiranMap, rekodMap);
     const dLabel = `${p2(d)}/${p2(bulan)}`;
     rowsHtml.push(`<div class="db-my-kh-row">
       <span class="db-my-kh-date">${dLabel}</span>
@@ -552,6 +555,8 @@ function dbShowHomeAnalysisError(msg) {
     `<div class="empty-state" style="padding:14px 2px;font-size:10.5px;color:var(--danger)">${dbEscape(msg)}</div>`;
 }
 
+function dbNorm(str) { return String(str || "").trim().toUpperCase().replace(/\s+/g, " "); }
+
 async function dbLoadBookRecords() {
   const [kehadiranRows, rekodRows, staffRows] = await Promise.all([
     dbFetchSheet("Kehadiran"),
@@ -570,6 +575,25 @@ async function dbLoadBookRecords() {
       jawatan: (c[3] && c[3].v) || "",
     };
   }).filter((s) => s.nama);
+
+  // Jawatan dalam Sheet "Database" (eRKS) boleh JADI LAPUK (berasingan dari
+  // DatabaseSTAFF utama yang admin kemaskini). Rujuk-silang & GANTI jawatan
+  // guna sumber SEGAR (DatabaseSTAFF utama, dipadan ikut nama) — supaya
+  // Buku Kehadiran sentiasa pakai jawatan TERKINI walau eRKS lapuk.
+  try {
+    const { rows: mainStaffRows } = await gvizFetch(SPREADSHEET_ID, "DatabaseSTAFF");
+    const jawatanByName = new Map();
+    mainStaffRows.forEach((r) => {
+      const c = r.c || [];
+      const nama = (c[1] && c[1].v) || "";
+      const jawatan = (c[2] && c[2].v) || "";
+      if (nama) jawatanByName.set(dbNorm(nama), jawatan);
+    });
+    dbStaffRoster.forEach((s) => {
+      const fresh = jawatanByName.get(dbNorm(s.nama));
+      if (fresh) s.jawatan = fresh;
+    });
+  } catch (e) { /* gagal rujuk-silang — kekal jawatan dari eRKS, tak kritikal */ }
 
   // Anggota kumpulan sokongan (bukan guru — jawatan ada "PEMBANTU") diletak
   // SELEPAS senarai guru/pentadbir. Sort stabil — susunan asal dalam setiap
