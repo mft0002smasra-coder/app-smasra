@@ -590,8 +590,15 @@ async function jgInit(user) {
   jgCheckAccess(user);
   await jgFetchRecords();
 
-  // "Jadual Saya" — asas untuk SEMUA user, tak kira kebenaran lain
-  jgRenderIndividual(user.nama, "jg-individual-table", "jg-individual-title");
+  // "Jadual Saya" — sembunyikan untuk staf yang TIADA jadual mengajar
+  // langsung (cth anggota kumpulan sokongan) — papar hanya untuk guru
+  // yang wujud dalam data jadual (jgTeacherNames).
+  const userNameNorm = jgNorm(user.nama);
+  const hasScheduleData = jgTeacherNames.some((n) => jgNorm(n) === userNameNorm);
+  document.getElementById("jg-nav-saya").classList.toggle("hidden", !hasScheduleData);
+  if (hasScheduleData) {
+    jgRenderIndividual(user.nama, "jg-individual-table", "jg-individual-title");
+  }
 
   // "Jadual Kelas" — terbuka untuk SEMUA user juga
   const kelasSet = new Set(jgRecords.map((r) => r.kelas).filter(Boolean));
@@ -612,5 +619,5 @@ async function jgInit(user) {
 
   document.getElementById("jg-last-update").textContent = jgLastUpdate || "Belum pernah dikemaskini";
 
-  jgSwitchTab("saya");
+  jgSwitchTab(hasScheduleData ? "saya" : "kelas");
 }

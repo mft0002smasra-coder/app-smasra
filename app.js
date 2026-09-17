@@ -356,6 +356,17 @@ function initHomeSwipe() {
   track.dataset.swipeBound = "1";
   const count = homeSwipePageCount();
 
+  // Tetapkan lebar track/page SECARA DINAMIK ikut bilangan kad SEBENAR
+  // (sesetengah kad — cth Keberadaan Murid — mungkin dibuang kalau tiada data).
+  track.style.width = `${count * 100}%`;
+  document.querySelectorAll(".home-swipe-page").forEach((p) => { p.style.width = `${100 / count}%`; });
+
+  const dotsBox = document.getElementById("home-swipe-dots-box");
+  if (dotsBox) {
+    dotsBox.innerHTML = Array.from({ length: count }, (_, i) =>
+      `<span class="home-swipe-dot${i === 0 ? " active" : ""}" onclick="homeSwipeGoTo(${i})"></span>`).join("");
+  }
+
   track.addEventListener("touchstart", (e) => {
     homeSwipeStartX = e.touches[0].clientX;
     homeSwipeDragging = true;

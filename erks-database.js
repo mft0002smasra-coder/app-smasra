@@ -419,7 +419,16 @@ function dbCrossRefDay(noKP, nama, jawatan, dateKey, kehadiranMap, rekodMap) {
   const rekodInfo = rekodMap.get(`${String(nama).trim()}|${dateKey}`);
   const jUpper = String(jawatan || "").toUpperCase().trim();
   const isAwal = DB_AWAL_730.some((k) => jUpper.includes(k));
-  const hadMinit = isAwal ? 450 : 480;
+
+  // Peraturan khas "PPP (GURU KKQ)": Isnin & Jumaat sebelum 7:30 pagi,
+  // hari lain (Selasa/Rabu/Khamis) sebelum 10:00 pagi.
+  let hadMinit;
+  if (jUpper.indexOf("GURU KKQ") !== -1) {
+    const dow = new Date(dateKey + "T00:00:00").getDay(); // 0=Ahad,1=Isnin,...5=Jumaat
+    hadMinit = (dow === 1 || dow === 5) ? 450 : 600; // 450=7:30, 600=10:00
+  } else {
+    hadMinit = isAwal ? 450 : 480;
+  }
 
   let masaDisplay = "-", catatanHtml = "";
 
@@ -561,6 +570,16 @@ async function dbLoadBookRecords() {
       jawatan: (c[3] && c[3].v) || "",
     };
   }).filter((s) => s.nama);
+
+  // Anggota kumpulan sokongan (bukan guru — jawatan ada "PEMBANTU") diletak
+  // SELEPAS senarai guru/pentadbir. Sort stabil — susunan asal dalam setiap
+  // kumpulan (guru & sokongan) kekal tak berubah.
+  dbStaffRoster.sort((a, b) => {
+    const aSokongan = String(a.jawatan || "").toUpperCase().indexOf("PEMBANTU") !== -1;
+    const bSokongan = String(b.jawatan || "").toUpperCase().indexOf("PEMBANTU") !== -1;
+    if (aSokongan === bSokongan) return 0;
+    return aSokongan ? 1 : -1;
+  });
 }
 
 function dbChunk(arr, size) {

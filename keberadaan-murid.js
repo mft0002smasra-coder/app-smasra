@@ -75,6 +75,36 @@ async function kbFetchRecords() {
   }
 }
 
+/* ---------------- Kad Home: Keberadaan Murid (hari ini sahaja, bersyarat) ---------------- */
+async function kbRenderHomeCard() {
+  const pageEl = document.getElementById("home-kb-page");
+  if (!pageEl) return;
+  if (!kbRecords.length) await kbFetchRecords();
+
+  const todayStr = todayIso();
+  const todayItems = kbRecords.filter((r) => r.tarikh === todayStr);
+
+  if (!todayItems.length) {
+    pageEl.remove(); // tiada data hari ini — buang terus kad ni dari swipe
+    return;
+  }
+
+  const groups = {};
+  todayItems.forEach((r) => { if (!groups[r.kategori]) groups[r.kategori] = []; groups[r.kategori].push(r); });
+
+  const listEl = document.getElementById("home-kb-list");
+  listEl.innerHTML = Object.keys(groups).map((kategori) => `
+    <div class="home-kb-group">
+      <div class="home-kb-group-title">${kbEscape(kategori)} <span class="home-kb-count">${groups[kategori].length}</span></div>
+      ${groups[kategori].map((r) => `
+        <div class="jg-home-row">
+          <span class="jg-home-waktu">${kbEscape(r.tingkatan)}</span>
+          <span class="jg-home-masa">${kbEscape(r.nama)}</span>
+          <span class="jg-home-subj">📍 ${kbEscape(r.tempat || "-")}</span>
+        </div>`).join("")}
+    </div>`).join("");
+}
+
 /* ================= Navigasi tab ================= */
 function kbSwitchTab(name) {
   document.getElementById("kb-panel-senarai").classList.toggle("hidden", name !== "senarai");

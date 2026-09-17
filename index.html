@@ -108,6 +108,17 @@
           </div>
         </div>
 
+        <div class="home-swipe-page" id="home-kb-page">
+          <div class="glass card-pad" id="home-kb-wrap">
+            <div class="db-my-header">
+              <div class="db-my-title">KEBERADAAN MURID HARI INI</div>
+            </div>
+            <div class="db-my-scroll">
+              <div id="home-kb-list"></div>
+            </div>
+          </div>
+        </div>
+
         <div class="home-swipe-page">
           <div class="glass card-pad" id="home-hebahan-wrap">
             <div class="db-my-header">
@@ -120,11 +131,7 @@
         </div>
 
       </div>
-      <div class="home-swipe-dots">
-        <span class="home-swipe-dot active" onclick="homeSwipeGoTo(0)"></span>
-        <span class="home-swipe-dot" onclick="homeSwipeGoTo(1)"></span>
-        <span class="home-swipe-dot" onclick="homeSwipeGoTo(2)"></span>
-      </div>
+      <div class="home-swipe-dots" id="home-swipe-dots-box"></div>
     </div>
 
   </div>
@@ -185,14 +192,16 @@
 <script src="event.js"></script>
 <script src="erks-database.js"></script>
 <script src="jadual-guru.js"></script>
+<script src="keberadaan-murid.js"></script>
 <script>
-  function renderHome(user) {
+  async function renderHome(user) {
     renderHomeMenu(null);
     loadBanner();
     evRenderHomeTicker();
     dbLoadHomeAnalysis(user);
     jgRenderHomeCard(user);
     renderHomeHebahanCard();
+    await kbRenderHomeCard(); // mesti siap dulu (mungkin buang kad) sebelum swipe disediakan
     setTimeout(initHomeSwipe, 300);
     setTimeout(dbSizeHomeAnalysisCard, 400);
     setTimeout(dbSizeHomeAnalysisCard, 1000);
