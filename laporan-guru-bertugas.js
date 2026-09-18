@@ -6,7 +6,8 @@
    3) Sheet SAMA dipakai untuk simpan (Code.gs) & baca (gviz).
    ============================================================ */
 
-const LGB_SPREADSHEET_ID = "1EohV_hfuS6SDgiqDn--QQiM_y92_K4jvGyh87nA3HOo";
+const LGB_SPREADSHEET_ID = "1cmYZlMRGXZB4LmrCowJcmfnbY4LiKhuvE9FIoamWl2s"; // Spreadsheet SEBENAR bot
+const LGB_SHEET_NAME = "DATABOT";
 
 const LGB_SECTIONS = [
   {
@@ -261,7 +262,9 @@ async function lgbSaveSection(sectionKey, values, gambarBase64, minggu, tarikh) 
 /* ================= Senarai Laporan (gviz — SAMA sheet dgn simpan) ================= */
 async function lgbFetchRecords() {
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${LGB_SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent("LaporanGuruBertugas")}&headers=1&_ts=${Date.now()}`;
+    // TIADA "headers=" param — kod kita sendiri langkau 2 baris pertama secara
+    // eksplisit, sebab data bot SEBENAR bermula pada BARIS 3 (bukan 2).
+    const url = `https://docs.google.com/spreadsheets/d/${LGB_SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(LGB_SHEET_NAME)}&_ts=${Date.now()}`;
     const res = await fetch(url, { cache: "no-store" });
     const text = await res.text();
     const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
@@ -269,11 +272,12 @@ async function lgbFetchRecords() {
     const gvizDateToIso = (v) => {
       if (!v) return "";
       const m = String(v).match(/Date\((\d+),(\d+),(\d+)/);
-      if (!m) return String(v).trim();
+      if (!m) return String(v).replace(/^'/, "").trim();
       const y = parseInt(m[1]), mo = parseInt(m[2]) + 1, d = parseInt(m[3]);
       return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     };
-    lgbRecords = (table.rows || []).map((r) => {
+    const allRows = table.rows || [];
+    lgbRecords = allRows.slice(2).map((r) => { // langkau baris 1 & 2
       const c = r.c || [];
       const get = (i) => (c[i] && c[i].v != null ? c[i].v : "");
       return {
@@ -283,13 +287,45 @@ async function lgbFetchRecords() {
         laporanBlokC: get(12), tindakanBlokC: get(13), laporanBlokKantin: get(14), tindakanBlokKantin: get(15),
         laporanKeselamatan: get(16), tindakanKeselamatan: get(17), peristiwaProgram: get(18), tindakanPeristiwa: get(19),
         gambarBlokA: get(20), gambarBlokB: get(21), gambarBlokC: get(22), gambarBlokKantin: get(23), gambarKeselamatan: get(24),
-        dicatatOleh: get(25),
       };
     }).filter((r) => r.minggu && r.tarikh);
     lgbRecords.reverse(); // terbaru dahulu
+
+    await lgbFetchSemakan();
   } catch (e) {
     lgbRecords = [];
   }
+}
+
+/** DATA SEMAKAN: Minggu, Tarikh, Nama Pelapor, Penyemak, Catatan — cantum
+ * ke rekod DATABOT yang padan (Minggu+Tarikh), rekod TERAKHIR menang kalau berbilang. */
+async function lgbFetchSemakan() {
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${LGB_SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent("DATA SEMAKAN")}&headers=1&_ts=${Date.now()}`;
+    const res = await fetch(url, { cache: "no-store" });
+    const text = await res.text();
+    const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
+    const table = JSON.parse(jsonStr).table;
+    const gvizDateToIso = (v) => {
+      if (!v) return "";
+      const m = String(v).match(/Date\((\d+),(\d+),(\d+)/);
+      if (!m) return String(v).replace(/^'/, "").trim();
+      const y = parseInt(m[1]), mo = parseInt(m[2]) + 1, d = parseInt(m[3]);
+      return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    };
+    const semakByKey = {};
+    (table.rows || []).forEach((r) => {
+      const c = r.c || [];
+      const get = (i) => (c[i] && c[i].v != null ? c[i].v : "");
+      const key = `${get(0)}|${gvizDateToIso(get(1)) || String(get(1))}`;
+      semakByKey[key] = { penyemak: get(3) || "", catatan: get(4) || "" }; // rekod TERAKHIR menang (timpa)
+    });
+    lgbRecords.forEach((r) => {
+      const info = semakByKey[`${r.minggu}|${r.tarikh}`];
+      r.penyemak = info ? info.penyemak : "";
+      r.catatanSemakan = info ? info.catatan : "";
+    });
+  } catch (e) { /* tak kritikal — biar penyemak/catatan kosong */ }
 }
 
 async function lgbLoadSenarai() {
@@ -324,6 +360,11 @@ function lgbResumeEdit(idx) {
 
 function lgbOpenReport(idx) {
   const r = lgbRecords[idx];
+  const semakHtml = `
+    <div class="lgb-semakan-box">
+      <div class="lgb-view-row"><span class="lgb-view-label">Penyemak</span><span class="lgb-view-val">${lgbEscape(r.penyemak || "-")}</span></div>
+      <div class="lgb-view-row"><span class="lgb-view-label">Catatan / Ulasan</span><span class="lgb-view-val">${lgbEscape(r.catatanSemakan || "-")}</span></div>
+    </div>`;
   const sectionsHtml = LGB_ALL_SECTIONS.map((sec) => {
     const fieldsHtml = sec.fields.map((f) => `<div class="lgb-view-row"><span class="lgb-view-label">${lgbEscape(f.label)}</span><span class="lgb-view-val">${lgbEscape(r[f.key] || "-")}</span></div>`).join("");
     const imgUrl = sec.gambarField ? r[sec.gambarField] : "";
@@ -331,7 +372,7 @@ function lgbOpenReport(idx) {
     return `<div class="lgb-view-section"><div class="lgb-view-section-title">${lgbEscape(sec.title)}</div>${fieldsHtml}${imgHtml}</div>`;
   }).join("");
   document.getElementById("lgb-view-title").textContent = `${r.minggu} — ${r.tarikh}`;
-  document.getElementById("lgb-view-body").innerHTML = sectionsHtml;
+  document.getElementById("lgb-view-body").innerHTML = semakHtml + sectionsHtml;
   document.getElementById("lgb-view-overlay").classList.remove("hidden");
 }
 function lgbCloseReport() {

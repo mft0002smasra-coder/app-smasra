@@ -764,7 +764,11 @@ function deleteTodoItem(body) {
 }
 
 /* ---------------- LAPORAN GURU BERTUGAS ---------------- */
-// Tab "LaporanGuruBertugas" (baris 1 = header, data bermula baris 2).
+// GUNA SPREADSHEET & TAB SEBENAR BOT TELEGRAM SEDIA ADA (bukan Sheet APP SMASRA kita)
+// supaya data dikongsi terus dengan sistem bot yang sudah wujud.
+var LGB_SPREADSHEET_ID = "1cmYZlMRGXZB4LmrCowJcmfnbY4LiKhuvE9FIoamWl2s";
+var LGB_SHEET_NAME = "DATABOT";
+// PENTING: ikut konvensyen bot asal — baris 1-2 reserved, DATA BERMULA BARIS 3.
 // Lajur A-Y ikut struktur SEKSYEN/soalan bot rujukan (Data2):
 // A=Minggu B=Tarikh C=NamaPelapor D=NamaGuruBertugas
 // E=KehadiranGuru F=NamaGuruTidakHadir G=KehadiranAKP H=NamaAKPTidakHadir
@@ -772,17 +776,6 @@ function deleteTodoItem(body) {
 // M=LaporanBlokC N=TindakanBlokC O=LaporanBlokKantin P=TindakanBlokKantin
 // Q=LaporanKeselamatan R=TindakanKeselamatan S=PeristiwaProgram T=TindakanPeristiwa
 // U=GambarBlokA V=GambarBlokB W=GambarBlokC X=GambarBlokKantin Y=GambarKeselamatan
-// Z=DicatatOleh
-
-var LGB_HEADER_ROW = [
-  "Minggu", "Tarikh", "NamaPelapor", "NamaGuruBertugas",
-  "KehadiranGuru", "NamaGuruTidakHadir", "KehadiranAKP", "NamaAKPTidakHadir",
-  "LaporanBlokA", "TindakanBlokA", "LaporanBlokB", "TindakanBlokB",
-  "LaporanBlokC", "TindakanBlokC", "LaporanBlokKantin", "TindakanBlokKantin",
-  "LaporanKeselamatan", "TindakanKeselamatan", "PeristiwaProgram", "TindakanPeristiwa",
-  "GambarBlokA", "GambarBlokB", "GambarBlokC", "GambarBlokKantin", "GambarKeselamatan",
-  "DicatatOleh",
-];
 
 // Lajur (1-indexed) untuk setiap seksyen — ikut susunan field yang dihantar client.
 var LGB_SECTION_COLS = {
@@ -797,23 +790,23 @@ var LGB_SECTION_COLS = {
 var LGB_GAMBAR_COL = { blokA: 21, blokB: 22, blokC: 23, blokKantin: 24, keselamatan: 25 };
 
 /** Cari baris sedia ada (padan Minggu+Tarikh) atau cipta baris baru — SAMA
- * konsep macam ensureRowByWeekDate() dalam bot rujukan. */
+ * konsep macam ensureRowByWeekDate() dalam bot rujukan. Data bermula BARIS 3. */
 function lgbEnsureRow(sheet, minggu, tarikh) {
   var lastRow = sheet.getLastRow();
-  if (lastRow >= 2) {
-    var data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+  var cleanTarikh = String(tarikh).replace(/^'/, "");
+  if (lastRow >= 3) {
+    var data = sheet.getRange(3, 1, lastRow - 2, 2).getValues();
     for (var i = 0; i < data.length; i++) {
-      if (String(data[i][0]).trim() === String(minggu).trim() && String(data[i][1]).trim() === String(tarikh).trim()) {
-        return i + 2;
+      if (String(data[i][0]).trim() === String(minggu).trim() && String(data[i][1]).replace(/^'/, "").trim() === cleanTarikh) {
+        return i + 3;
       }
     }
   }
-  var row = new Array(26).fill("");
-  row[0] = minggu; row[1] = tarikh;
+  var row = [];
+  row[0] = minggu;
+  row[1] = "'" + cleanTarikh; // paksa teks — elak Sheet auto-tukar tarikh jadi objek Date
   sheet.appendRow(row);
-  var newRow = sheet.getLastRow();
-  sheet.getRange(newRow, 2).setNumberFormat("@").setValue(tarikh);
-  return newRow;
+  return sheet.getLastRow();
 }
 
 /** Simpan SATU seksyen sahaja (dipanggil setiap kali user klik "Seterusnya"/"Simpan"
@@ -827,10 +820,9 @@ function saveLaporanGuruBertugasSection(body) {
   if (!cols) return jsonResponse({ success: false, message: "Seksyen tidak sah." });
 
   ensureTimezone();
-  var sheet = getSheet("LaporanGuruBertugas");
+  var sheet = SpreadsheetApp.openById(LGB_SPREADSHEET_ID).getSheetByName(LGB_SHEET_NAME);
   if (!sheet) {
-    sheet = SpreadsheetApp.openById(SPREADSHEET_ID).insertSheet("LaporanGuruBertugas");
-    sheet.appendRow(LGB_HEADER_ROW);
+    return jsonResponse({ success: false, message: 'Tab "' + LGB_SHEET_NAME + '" tidak dijumpai dalam Spreadsheet bot.' });
   }
 
   var rowNum = lgbEnsureRow(sheet, body.minggu, body.tarikh);
@@ -850,8 +842,6 @@ function saveLaporanGuruBertugasSection(body) {
       imgWarning = imgErr.message;
     }
   }
-
-  sheet.getRange(rowNum, 26).setValue((user && user.nama) || body.email || "");
 
   return jsonResponse({ success: true, rowNum: rowNum, warning: imgWarning });
 }
