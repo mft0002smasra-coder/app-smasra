@@ -957,6 +957,15 @@ table.db-book-table tbody tr:nth-child(odd) td{ background:rgba(255,255,255,.02)
 .db-my-masa-range{ color:var(--text-dim);font-size:8.5px; }
 
 .home-kb-group{ margin-bottom:12px; }
+.home-kb-row{
+  padding:9px 0;border-bottom:1px solid var(--line);
+}
+.home-kb-row:last-child{ border-bottom:none; }
+.home-kb-row-top{ display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px; }
+.home-kb-nama{ font-size:12.5px;font-weight:700;color:var(--text); }
+.home-kb-kelas{ font-size:12.5px;font-weight:600;color:var(--cyan);flex-shrink:0;font-family:'Orbitron',sans-serif; }
+.home-kb-tempat{ font-size:12.5px;font-weight:600;color:var(--text-dim);margin-bottom:3px; }
+.home-kb-catatan{ font-size:12.5px;font-weight:500;color:var(--text-dim);font-style:italic; }
 .home-kb-group:last-child{ margin-bottom:0; }
 .home-kb-group-title{
   font-family:'Orbitron',sans-serif;font-size:10.5px;font-weight:700;color:var(--pink);

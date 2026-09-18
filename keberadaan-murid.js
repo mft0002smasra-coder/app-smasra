@@ -89,6 +89,13 @@ async function kbRenderHomeCard() {
     return;
   }
 
+  const dateEl = document.getElementById("home-kb-date");
+  if (dateEl) {
+    const today = new Date();
+    const hariNames = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
+    dateEl.textContent = `${hariNames[today.getDay()]}, ${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
+  }
+
   const groups = {};
   todayItems.forEach((r) => { if (!groups[r.kategori]) groups[r.kategori] = []; groups[r.kategori].push(r); });
 
@@ -97,10 +104,13 @@ async function kbRenderHomeCard() {
     <div class="home-kb-group">
       <div class="home-kb-group-title">${kbEscape(kategori)} <span class="home-kb-count">${groups[kategori].length}</span></div>
       ${groups[kategori].map((r) => `
-        <div class="jg-home-row">
-          <span class="jg-home-waktu">${kbEscape(r.tingkatan)}</span>
-          <span class="jg-home-masa">${kbEscape(r.nama)}</span>
-          <span class="jg-home-subj">📍 ${kbEscape(r.tempat || "-")}</span>
+        <div class="home-kb-row">
+          <div class="home-kb-row-top">
+            <span class="home-kb-nama">${kbEscape(r.nama)}</span>
+            <span class="home-kb-kelas">${kbEscape(r.tingkatan)}</span>
+          </div>
+          <div class="home-kb-tempat">📍 ${kbEscape(r.tempat || "-")}</div>
+          ${r.catatan ? `<div class="home-kb-catatan">📝 ${kbEscape(r.catatan)}</div>` : ""}
         </div>`).join("")}
     </div>`).join("");
 }
