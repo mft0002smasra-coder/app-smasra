@@ -54,7 +54,7 @@ function doPost(e) {
   if (body.action === "addTodoItem") return addTodoItem(body);
   if (body.action === "editTodoItem") return editTodoItem(body);
   if (body.action === "deleteTodoItem") return deleteTodoItem(body);
-  if (body.action === "addLaporanGuruBertugas") return addLaporanGuruBertugas(body);
+  if (body.action === "saveLaporanGuruBertugasSection") return saveLaporanGuruBertugasSection(body);
   return jsonResponse({ success: false, message: "Unknown action: " + body.action });
 }
 
@@ -784,11 +784,48 @@ var LGB_HEADER_ROW = [
   "DicatatOleh",
 ];
 
-function addLaporanGuruBertugas(body) {
-  var user = findUserByEmail(body.email);
-  if (!body.minggu || !body.tarikh || !body.namaPelapor) {
-    return jsonResponse({ success: false, message: "Sila lengkapkan Minggu, Tarikh, dan Nama Pelapor." });
+// Lajur (1-indexed) untuk setiap seksyen — ikut susunan field yang dihantar client.
+var LGB_SECTION_COLS = {
+  butiran: [3, 4],                 // NamaPelapor, NamaGuruBertugas
+  kehadiran: [5, 6, 7, 8],
+  blokA: [9, 10],
+  blokB: [11, 12],
+  blokC: [13, 14],
+  blokKantin: [15, 16],
+  keselamatan: [17, 18, 19, 20],
+};
+var LGB_GAMBAR_COL = { blokA: 21, blokB: 22, blokC: 23, blokKantin: 24, keselamatan: 25 };
+
+/** Cari baris sedia ada (padan Minggu+Tarikh) atau cipta baris baru — SAMA
+ * konsep macam ensureRowByWeekDate() dalam bot rujukan. */
+function lgbEnsureRow(sheet, minggu, tarikh) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow >= 2) {
+    var data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+    for (var i = 0; i < data.length; i++) {
+      if (String(data[i][0]).trim() === String(minggu).trim() && String(data[i][1]).trim() === String(tarikh).trim()) {
+        return i + 2;
+      }
+    }
   }
+  var row = new Array(26).fill("");
+  row[0] = minggu; row[1] = tarikh;
+  sheet.appendRow(row);
+  var newRow = sheet.getLastRow();
+  sheet.getRange(newRow, 2).setNumberFormat("@").setValue(tarikh);
+  return newRow;
+}
+
+/** Simpan SATU seksyen sahaja (dipanggil setiap kali user klik "Seterusnya"/"Simpan"
+ * bagi satu seksyen — bukan hantar semua borang sekali gus). */
+function saveLaporanGuruBertugasSection(body) {
+  var user = findUserByEmail(body.email);
+  if (!body.minggu || !body.tarikh) {
+    return jsonResponse({ success: false, message: "Minggu & Tarikh diperlukan." });
+  }
+  var cols = LGB_SECTION_COLS[body.sectionKey];
+  if (!cols) return jsonResponse({ success: false, message: "Seksyen tidak sah." });
+
   ensureTimezone();
   var sheet = getSheet("LaporanGuruBertugas");
   if (!sheet) {
@@ -796,34 +833,25 @@ function addLaporanGuruBertugas(body) {
     sheet.appendRow(LGB_HEADER_ROW);
   }
 
-  var stamp = new Date().getTime();
-  var imgWarnings = [];
-  var gambarUrls = {};
-  var gambarFields = ["gambarBlokA", "gambarBlokB", "gambarBlokC", "gambarBlokKantin", "gambarKeselamatan"];
-  gambarFields.forEach(function (field, i) {
-    if (body[field]) {
-      try {
-        gambarUrls[field] = lpSaveImageToDrive(body[field], "gurubertugas_" + stamp + "_" + i);
-      } catch (imgErr) {
-        imgWarnings.push(field + ": " + imgErr.message);
-      }
-    } else {
-      gambarUrls[field] = "";
-    }
+  var rowNum = lgbEnsureRow(sheet, body.minggu, body.tarikh);
+
+  var values = body.values || [];
+  cols.forEach(function (col, i) {
+    sheet.getRange(rowNum, col).setValue(values[i] || "");
   });
 
-  sheet.appendRow([
-    body.minggu, body.tarikh, body.namaPelapor, body.namaGuruBertugas || "",
-    body.kehadiranGuru || "", body.namaGuruTidakHadir || "", body.kehadiranAkp || "", body.namaAkpTidakHadir || "",
-    body.laporanBlokA || "", body.tindakanBlokA || "", body.laporanBlokB || "", body.tindakanBlokB || "",
-    body.laporanBlokC || "", body.tindakanBlokC || "", body.laporanBlokKantin || "", body.tindakanBlokKantin || "",
-    body.laporanKeselamatan || "", body.tindakanKeselamatan || "", body.peristiwaProgram || "", body.tindakanPeristiwa || "",
-    gambarUrls.gambarBlokA, gambarUrls.gambarBlokB, gambarUrls.gambarBlokC, gambarUrls.gambarBlokKantin, gambarUrls.gambarKeselamatan,
-    (user && user.nama) || body.email || "",
-  ]);
+  var imgWarning = null;
+  if (body.gambar && LGB_GAMBAR_COL[body.sectionKey]) {
+    try {
+      var stamp = new Date().getTime();
+      var url = lpSaveImageToDrive(body.gambar, "gurubertugas_" + rowNum + "_" + body.sectionKey + "_" + stamp);
+      sheet.getRange(rowNum, LGB_GAMBAR_COL[body.sectionKey]).setValue(url);
+    } catch (imgErr) {
+      imgWarning = imgErr.message;
+    }
+  }
 
-  var newRow = sheet.getLastRow();
-  sheet.getRange(newRow, 2).setNumberFormat("@").setValue(body.tarikh);
+  sheet.getRange(rowNum, 26).setValue((user && user.nama) || body.email || "");
 
-  return jsonResponse({ success: true, warning: imgWarnings.length ? imgWarnings.join(" | ") : null });
+  return jsonResponse({ success: true, rowNum: rowNum, warning: imgWarning });
 }

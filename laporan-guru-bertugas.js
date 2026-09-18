@@ -1,26 +1,16 @@
 /* ============================================================
-   LAPORAN GURU BERTUGAS — Borang berperingkat (ikut aliran bot rujukan)
-   Pengecam awalan "lgb" (Laporan Guru Bertugas).
+   LAPORAN GURU BERTUGAS — ikut aliran bot rujukan:
+   1) Isi Minggu+Tarikh+Pelapor -> SIMPAN (cipta/cari baris)
+   2) Masuk MOD PEMILIH SEKSYEN -> pilih seksyen -> isi -> SIMPAN seksyen tu
+      sahaja -> balik ke pemilih (boleh ulang, mana-mana susunan)
+   3) Sheet SAMA dipakai untuk simpan (Code.gs) & baca (gviz).
    ============================================================ */
 
 const LGB_SPREADSHEET_ID = "1EohV_hfuS6SDgiqDn--QQiM_y92_K4jvGyh87nA3HOo";
 
-/**
- * Struktur seksyen — SAMA ikut Data2 bot rujukan. Setiap "field" key
- * sepadan terus dengan kunci yang dihantar ke Code.gs (addLaporanGuruBertugas).
- */
-const LGB_STEPS = [
+const LGB_SECTIONS = [
   {
-    key: "butiran", title: "Butiran Laporan", icon: "clipboard",
-    fields: [
-      { key: "minggu", label: "Minggu", type: "text", placeholder: "Cth: Minggu 3" },
-      { key: "tarikh", label: "Tarikh", type: "date" },
-      { key: "namaPelapor", label: "Nama Pelapor", type: "text" },
-      { key: "namaGuruBertugas", label: "Nama-Nama Guru Bertugas", type: "textarea" },
-    ],
-  },
-  {
-    key: "kehadiran", title: "Kehadiran", icon: "calendar",
+    key: "kehadiran", title: "Kehadiran",
     fields: [
       { key: "kehadiranGuru", label: "Kehadiran Guru", type: "text" },
       { key: "namaGuruTidakHadir", label: "Nama Guru Tidak Hadir", type: "textarea" },
@@ -29,53 +19,63 @@ const LGB_STEPS = [
     ],
   },
   {
-    key: "blokA", title: "Blok A", icon: "door",
+    key: "blokA", title: "Blok A",
     fields: [
       { key: "laporanBlokA", label: "Laporan Tempat Bertugas Blok A", type: "textarea" },
       { key: "tindakanBlokA", label: "Tindakan", type: "textarea" },
     ],
-    gambarKey: "gambarBlokA",
+    gambarField: "gambarBlokA",
   },
   {
-    key: "blokB", title: "Blok B", icon: "door",
+    key: "blokB", title: "Blok B",
     fields: [
       { key: "laporanBlokB", label: "Laporan Tempat Bertugas Blok B", type: "textarea" },
       { key: "tindakanBlokB", label: "Tindakan", type: "textarea" },
     ],
-    gambarKey: "gambarBlokB",
+    gambarField: "gambarBlokB",
   },
   {
-    key: "blokC", title: "Blok C", icon: "door",
+    key: "blokC", title: "Blok C",
     fields: [
       { key: "laporanBlokC", label: "Laporan Tempat Bertugas Blok C", type: "textarea" },
       { key: "tindakanBlokC", label: "Tindakan", type: "textarea" },
     ],
-    gambarKey: "gambarBlokC",
+    gambarField: "gambarBlokC",
   },
   {
-    key: "blokKantin", title: "Blok Kantin", icon: "door",
+    key: "blokKantin", title: "Blok Kantin",
     fields: [
       { key: "laporanBlokKantin", label: "Laporan Tempat Bertugas Blok Kantin", type: "textarea" },
       { key: "tindakanBlokKantin", label: "Tindakan", type: "textarea" },
     ],
-    gambarKey: "gambarBlokKantin",
+    gambarField: "gambarBlokKantin",
   },
   {
-    key: "keselamatan", title: "Keselamatan & Peristiwa", icon: "folder",
+    key: "keselamatan", title: "Keselamatan & Peristiwa",
     fields: [
       { key: "laporanKeselamatan", label: "Laporan Keselamatan", type: "textarea" },
       { key: "tindakanKeselamatan", label: "Tindakan Bagi Laporan Keselamatan", type: "textarea" },
       { key: "peristiwaProgram", label: "Peristiwa / Program", type: "textarea" },
       { key: "tindakanPeristiwa", label: "Tindakan", type: "textarea" },
     ],
-    gambarKey: "gambarKeselamatan",
+    gambarField: "gambarKeselamatan",
   },
+];
+// Semua seksyen (termasuk "butiran" — langkah 1) untuk paparan laporan penuh
+const LGB_ALL_SECTIONS = [
+  { key: "butiran", title: "Butiran Laporan", fields: [
+    { key: "namaPelapor", label: "Nama Pelapor", type: "text" },
+    { key: "namaGuruBertugas", label: "Nama-Nama Guru Bertugas", type: "textarea" },
+  ] },
+  ...LGB_SECTIONS,
 ];
 
 let lgbCurrentUser = null;
-let lgbStepIndex = 0;
-let lgbFormData = {};
-let lgbImageData = {}; // { gambarBlokA: base64, ... }
+let lgbMinggu = "";
+let lgbTarikh = "";
+let lgbCurrentRow = null;   // rekod semasa (dari gviz) — untuk pre-fill semasa edit seksyen
+let lgbEditingSection = null;
+let lgbPendingImage = null;
 let lgbRecords = [];
 
 function lgbEscape(str) { return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
@@ -87,62 +87,118 @@ function lgbSwitchTab(name) {
   document.getElementById("lgb-nav-borang").classList.toggle("active", name === "borang");
   document.getElementById("lgb-nav-senarai").classList.toggle("active", name === "senarai");
   if (name === "senarai") lgbLoadSenarai();
+  if (name === "borang") lgbShowStart();
 }
 
-/* ================= Borang berperingkat (wizard) ================= */
-function lgbInitForm() {
-  lgbStepIndex = 0;
-  lgbFormData = {};
-  lgbImageData = {};
+/* ================= Skrin 1: Mula (Minggu/Tarikh/Pelapor) ================= */
+function lgbShowStart() {
+  document.getElementById("lgb-screen-start").classList.remove("hidden");
+  document.getElementById("lgb-screen-picker").classList.add("hidden");
+  document.getElementById("lgb-screen-section").classList.add("hidden");
+
   const today = new Date();
-  lgbFormData.tarikh = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-  lgbFormData.namaPelapor = (lgbCurrentUser && lgbCurrentUser.nama) || "";
-  lgbRenderStep();
+  const todayIsoStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  document.getElementById("lgb-start-minggu").value = lgbMinggu || "";
+  document.getElementById("lgb-start-tarikh").value = lgbTarikh || todayIsoStr;
+  document.getElementById("lgb-start-pelapor").value = (lgbCurrentUser && lgbCurrentUser.nama) || "";
+  document.getElementById("lgb-start-guru").value = "";
+  document.getElementById("lgb-start-error").classList.add("hidden");
 }
 
-function lgbRenderStep() {
-  const step = LGB_STEPS[lgbStepIndex];
-  document.getElementById("lgb-step-title").textContent = step.title;
-  document.getElementById("lgb-step-progress").textContent = `Langkah ${lgbStepIndex + 1} / ${LGB_STEPS.length}`;
-  document.getElementById("lgb-step-dots").innerHTML = LGB_STEPS.map((_, i) =>
-    `<span class="lgb-step-dot${i === lgbStepIndex ? " active" : ""}${i < lgbStepIndex ? " done" : ""}"></span>`).join("");
+async function lgbStartOrResume() {
+  const minggu = document.getElementById("lgb-start-minggu").value.trim();
+  const tarikh = document.getElementById("lgb-start-tarikh").value;
+  const namaPelapor = document.getElementById("lgb-start-pelapor").value.trim();
+  const namaGuruBertugas = document.getElementById("lgb-start-guru").value.trim();
+  const errEl = document.getElementById("lgb-start-error");
 
-  const fieldsHtml = step.fields.map((f) => {
-    const val = lgbFormData[f.key] || "";
+  if (!minggu || !tarikh || !namaPelapor) {
+    errEl.textContent = "Sila lengkapkan Minggu, Tarikh, dan Nama Pelapor.";
+    errEl.classList.remove("hidden");
+    return;
+  }
+  const btn = document.getElementById("lgb-start-btn");
+  btn.disabled = true; btn.textContent = "Menyimpan...";
+
+  const ok = await lgbSaveSection("butiran", [namaPelapor, namaGuruBertugas], null, minggu, tarikh);
+  btn.disabled = false; btn.textContent = "Simpan & Mula";
+
+  if (!ok) {
+    errEl.textContent = "Gagal simpan. Cuba lagi.";
+    errEl.classList.remove("hidden");
+    return;
+  }
+  lgbMinggu = minggu;
+  lgbTarikh = tarikh;
+  await lgbLoadCurrentRow();
+  lgbShowPicker();
+}
+
+/* ================= Skrin 2: Pemilih Seksyen (mod edit) ================= */
+async function lgbLoadCurrentRow() {
+  await lgbFetchRecords();
+  lgbCurrentRow = lgbRecords.find((r) => String(r.minggu).trim() === lgbMinggu && String(r.tarikh).trim() === lgbTarikh) || null;
+}
+
+function lgbShowPicker() {
+  document.getElementById("lgb-screen-start").classList.add("hidden");
+  document.getElementById("lgb-screen-picker").classList.remove("hidden");
+  document.getElementById("lgb-screen-section").classList.add("hidden");
+
+  document.getElementById("lgb-picker-subtitle").textContent = `${lgbMinggu} — ${lgbTarikh}`;
+
+  const listEl = document.getElementById("lgb-picker-list");
+  listEl.innerHTML = LGB_SECTIONS.map((sec) => {
+    const filled = lgbCurrentRow && sec.fields.some((f) => lgbCurrentRow[f.key]);
+    return `
+      <button class="lgb-picker-item" onclick="lgbOpenSection('${sec.key}')">
+        <span class="lgb-picker-item-title">${lgbEscape(sec.title)}</span>
+        <span class="lgb-picker-item-status ${filled ? "done" : ""}">${filled ? "✓ Ada Data" : "Belum Diisi"}</span>
+      </button>`;
+  }).join("");
+}
+
+function lgbBackToStart() {
+  lgbMinggu = ""; lgbTarikh = ""; lgbCurrentRow = null;
+  lgbShowStart();
+}
+
+/* ================= Skrin 3: Borang Seksyen ================= */
+function lgbOpenSection(sectionKey) {
+  const sec = LGB_SECTIONS.find((s) => s.key === sectionKey);
+  if (!sec) return;
+  lgbEditingSection = sec;
+  lgbPendingImage = null;
+
+  document.getElementById("lgb-screen-picker").classList.add("hidden");
+  document.getElementById("lgb-screen-section").classList.remove("hidden");
+  document.getElementById("lgb-section-title").textContent = sec.title;
+
+  const fieldsHtml = sec.fields.map((f) => {
+    const val = (lgbCurrentRow && lgbCurrentRow[f.key]) || "";
     if (f.type === "textarea") {
-      return `<label class="lgb-field-label">${lgbEscape(f.label)}</label><textarea class="lgb-field" data-key="${f.key}" oninput="lgbFormData['${f.key}']=this.value">${lgbEscape(val)}</textarea>`;
+      return `<label class="lgb-field-label">${lgbEscape(f.label)}</label><textarea class="lgb-field" id="lgb-f-${f.key}">${lgbEscape(val)}</textarea>`;
     }
-    return `<label class="lgb-field-label">${lgbEscape(f.label)}</label><input class="lgb-field" type="${f.type}" data-key="${f.key}" value="${lgbEscape(val)}" placeholder="${lgbEscape(f.placeholder || "")}" oninput="lgbFormData['${f.key}']=this.value">`;
+    return `<label class="lgb-field-label">${lgbEscape(f.label)}</label><input class="lgb-field" type="text" id="lgb-f-${f.key}" value="${lgbEscape(val)}">`;
   }).join("");
 
   let imgHtml = "";
-  if (step.gambarKey) {
-    const preview = lgbImageData[step.gambarKey];
+  if (sec.gambarField) {
+    const existingUrl = lgbCurrentRow && lgbCurrentRow[sec.gambarField];
     imgHtml = `
       <label class="lgb-field-label" style="margin-top:14px">Lampiran Gambar (pilihan)</label>
-      <div class="lgb-img-slot" onclick="document.getElementById('lgb-img-input').click()">
-        ${preview ? `<img src="${preview}" alt="Pratonton">` : `<div class="lgb-img-empty">📷<br>Ketik untuk pilih gambar</div>`}
-        ${preview ? `<div class="lgb-img-remove" onclick="event.stopPropagation();lgbRemoveImage()">✕</div>` : ""}
+      <div class="lgb-img-slot" id="lgb-img-slot" onclick="document.getElementById('lgb-img-input').click()">
+        ${existingUrl ? `<img id="lgb-img-preview" src="${lgbEscape(existingUrl)}">` : `<div class="lgb-img-empty" id="lgb-img-empty">📷<br>Ketik untuk pilih gambar</div>`}
       </div>
-      <input type="file" id="lgb-img-input" accept="image/*" class="hidden" onchange="lgbHandleImagePick(this,'${step.gambarKey}')">
+      <input type="file" id="lgb-img-input" accept="image/*" class="hidden" onchange="lgbHandleImagePick(this)">
     `;
   }
 
-  document.getElementById("lgb-step-fields").innerHTML = fieldsHtml + imgHtml;
-  document.getElementById("lgb-btn-prev").classList.toggle("hidden", lgbStepIndex === 0);
-  document.getElementById("lgb-btn-next").classList.toggle("hidden", lgbStepIndex === LGB_STEPS.length - 1);
-  document.getElementById("lgb-btn-submit").classList.toggle("hidden", lgbStepIndex !== LGB_STEPS.length - 1);
-  document.getElementById("lgb-form-error").classList.add("hidden");
+  document.getElementById("lgb-section-fields").innerHTML = fieldsHtml + imgHtml;
+  document.getElementById("lgb-section-error").classList.add("hidden");
 }
 
-function lgbNextStep() {
-  if (lgbStepIndex < LGB_STEPS.length - 1) { lgbStepIndex++; lgbRenderStep(); }
-}
-function lgbPrevStep() {
-  if (lgbStepIndex > 0) { lgbStepIndex--; lgbRenderStep(); }
-}
-
-function lgbHandleImagePick(input, gambarKey) {
+function lgbHandleImagePick(input) {
   const file = input.files && input.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -156,54 +212,53 @@ function lgbHandleImagePick(input, gambarKey) {
       canvas.height = img.height * scale;
       const ctx = canvas.getContext("2d");
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      lgbImageData[gambarKey] = canvas.toDataURL("image/jpeg", 0.75);
-      lgbRenderStep();
+      lgbPendingImage = canvas.toDataURL("image/jpeg", 0.75);
+      const slot = document.getElementById("lgb-img-slot");
+      slot.innerHTML = `<img id="lgb-img-preview" src="${lgbPendingImage}">`;
     };
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
-function lgbRemoveImage() {
-  const step = LGB_STEPS[lgbStepIndex];
-  delete lgbImageData[step.gambarKey];
-  lgbRenderStep();
-}
 
-async function lgbSubmit() {
-  const errEl = document.getElementById("lgb-form-error");
-  errEl.classList.add("hidden");
-  if (!lgbFormData.minggu || !lgbFormData.tarikh || !lgbFormData.namaPelapor) {
-    errEl.textContent = "Sila lengkapkan Minggu, Tarikh, dan Nama Pelapor (Langkah 1).";
+async function lgbSaveCurrentSection() {
+  const sec = lgbEditingSection;
+  const values = sec.fields.map((f) => document.getElementById(`lgb-f-${f.key}`).value.trim());
+  const errEl = document.getElementById("lgb-section-error");
+  const btn = document.getElementById("lgb-section-save-btn");
+  btn.disabled = true; btn.textContent = "Menyimpan...";
+
+  const ok = await lgbSaveSection(sec.key, values, lgbPendingImage, lgbMinggu, lgbTarikh);
+  btn.disabled = false; btn.textContent = "Simpan Seksyen";
+
+  if (!ok) {
+    errEl.textContent = "Gagal simpan. Cuba lagi.";
     errEl.classList.remove("hidden");
-    lgbStepIndex = 0; lgbRenderStep();
     return;
   }
-  if (!apiConfigured()) { errEl.textContent = "API belum disambungkan."; errEl.classList.remove("hidden"); return; }
+  await lgbLoadCurrentRow();
+  lgbShowPicker();
+}
+function lgbCancelSection() {
+  lgbShowPicker();
+}
 
-  const btn = document.getElementById("lgb-btn-submit");
-  btn.disabled = true; btn.textContent = "Menghantar...";
+/** Fungsi simpan generik — dipanggil setiap kali SATU seksyen selesai
+ * (bukan hantar semua borang sekali gus). */
+async function lgbSaveSection(sectionKey, values, gambarBase64, minggu, tarikh) {
+  if (!apiConfigured()) return false;
   try {
-    const payload = Object.assign({}, lgbFormData, lgbImageData, { email: lgbCurrentUser.email });
-    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(Object.assign({ action: "addLaporanGuruBertugas" }, payload)) });
+    const payload = { action: "saveLaporanGuruBertugasSection", email: lgbCurrentUser.email, sectionKey, values, minggu, tarikh };
+    if (gambarBase64) payload.gambar = gambarBase64;
+    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
     const data = await res.json();
-    if (data.success) {
-      document.getElementById("lgb-success-overlay").classList.remove("hidden");
-      lgbInitForm();
-    } else {
-      errEl.textContent = data.message || "Gagal hantar laporan.";
-      errEl.classList.remove("hidden");
-    }
-  } catch (err) {
-    errEl.textContent = "Ralat sambungan ke server (" + err.message + ").";
-    errEl.classList.remove("hidden");
+    return !!data.success;
+  } catch (e) {
+    return false;
   }
-  btn.disabled = false; btn.textContent = "Hantar Laporan";
-}
-function lgbCloseSuccess() {
-  document.getElementById("lgb-success-overlay").classList.add("hidden");
 }
 
-/* ================= Senarai Laporan (gviz terus) ================= */
+/* ================= Senarai Laporan (gviz — SAMA sheet dgn simpan) ================= */
 async function lgbFetchRecords() {
   try {
     const url = `https://docs.google.com/spreadsheets/d/${LGB_SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent("LaporanGuruBertugas")}&headers=1&_ts=${Date.now()}`;
@@ -255,17 +310,25 @@ function lgbRenderSenarai() {
         <span class="lgb-report-minggu">${lgbEscape(r.minggu)}</span>
         <span class="lgb-report-tarikh">${lgbEscape(r.tarikh)}</span>
       </div>
-      <div class="lgb-report-pelapor">👤 ${lgbEscape(r.namaPelapor)}</div>
+      <div class="lgb-report-pelapor">${lgbEscape(r.namaPelapor)}</div>
+      <button class="lgb-report-edit" onclick="event.stopPropagation();lgbResumeEdit(${i})">Sambung Edit</button>
     </div>`).join("");
+}
+
+function lgbResumeEdit(idx) {
+  const r = lgbRecords[idx];
+  lgbMinggu = r.minggu; lgbTarikh = r.tarikh; lgbCurrentRow = r;
+  lgbSwitchTab("borang");
+  lgbShowPicker();
 }
 
 function lgbOpenReport(idx) {
   const r = lgbRecords[idx];
-  const sectionsHtml = LGB_STEPS.map((step) => {
-    const fieldsHtml = step.fields.map((f) => `<div class="lgb-view-row"><span class="lgb-view-label">${lgbEscape(f.label)}</span><span class="lgb-view-val">${lgbEscape(r[f.key] || "-")}</span></div>`).join("");
-    const imgUrl = step.gambarKey ? r[step.gambarKey] : "";
-    const imgHtml = imgUrl ? `<div class="lgb-view-img-wrap"><img src="${lgbEscape(imgUrl)}" alt="Lampiran" onclick="openImageLightbox('${lgbEscape(imgUrl)}')"></div>` : "";
-    return `<div class="lgb-view-section"><div class="lgb-view-section-title">${lgbEscape(step.title)}</div>${fieldsHtml}${imgHtml}</div>`;
+  const sectionsHtml = LGB_ALL_SECTIONS.map((sec) => {
+    const fieldsHtml = sec.fields.map((f) => `<div class="lgb-view-row"><span class="lgb-view-label">${lgbEscape(f.label)}</span><span class="lgb-view-val">${lgbEscape(r[f.key] || "-")}</span></div>`).join("");
+    const imgUrl = sec.gambarField ? r[sec.gambarField] : "";
+    const imgHtml = imgUrl ? `<div class="lgb-view-img-wrap"><img src="${lgbEscape(imgUrl)}" onclick="openImageLightbox('${lgbEscape(imgUrl)}')"></div>` : "";
+    return `<div class="lgb-view-section"><div class="lgb-view-section-title">${lgbEscape(sec.title)}</div>${fieldsHtml}${imgHtml}</div>`;
   }).join("");
   document.getElementById("lgb-view-title").textContent = `${r.minggu} — ${r.tarikh}`;
   document.getElementById("lgb-view-body").innerHTML = sectionsHtml;
@@ -278,5 +341,5 @@ function lgbCloseReport() {
 /* ================= Init ================= */
 function lgbInit(user) {
   lgbCurrentUser = user;
-  lgbInitForm();
+  lgbShowStart();
 }

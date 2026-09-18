@@ -9,73 +9,95 @@
 <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <div class="bg-fx"></div>
+<div class="wrap">
 
-<div id="login-screen" class="hidden">
-  <img class="logo-plain school-logo-img" alt="Logo Sekolah">
-  <div class="brand-title">SM ARAB (JAIM) AL-ASYRAF</div>
-  <div class="brand-sub">Sistem Pengurusan Sekolah</div>
-  <div class="glass">
-    <div class="gsi-wrap" id="google-btn-container"></div>
-    <div class="divider">Atau</div>
-    <form id="login-form">
-      <label class="field-label" for="login-email">Emel Rasmi</label>
-      <input class="field-input" type="email" id="login-email" placeholder="nama@moe-dl.edu.my" autocomplete="email" required>
-      <button class="btn-primary" type="submit" id="login-btn">Log Masuk</button>
-      <div class="error-text hidden" id="login-error"></div>
-    </form>
+  <div id="login-screen" class="hidden">
+    <img class="logo-plain school-logo-img" alt="Logo Sekolah">
+    <div class="brand-title">SM ARAB (JAIM) AL-ASYRAF</div>
+    <div class="brand-sub">Sistem Pengurusan Sekolah</div>
+    <div class="glass">
+      <div class="gsi-wrap" id="google-btn-container"></div>
+      <div class="divider">Atau</div>
+      <form id="login-form">
+        <label class="field-label" for="login-email">Emel Rasmi</label>
+        <input class="field-input" type="email" id="login-email" placeholder="nama@moe-dl.edu.my" autocomplete="email" required>
+        <button class="btn-primary" type="submit" id="login-btn">Log Masuk</button>
+        <div class="error-text hidden" id="login-error"></div>
+      </form>
+    </div>
   </div>
-</div>
 
-<div id="app-content" class="hidden">
+  <div id="app-content" class="hidden">
 
-  <div class="site-header-wrap">
-    <header class="site-header">
-      <div class="site-header-row1">
-        <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu"><span data-icon="menu"></span></button>
-        <img class="header-logo school-logo-img" alt="Logo Sekolah">
-        <div class="header-title-block">
-          <div class="header-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
-          <div class="header-school-sub">Laporan Guru Bertugas</div>
+    <div class="site-header-wrap">
+      <header class="site-header">
+        <div class="site-header-row1">
+          <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu"><span data-icon="menu"></span></button>
+          <img class="header-logo school-logo-img" alt="Logo Sekolah">
+          <div class="header-title-block">
+            <div class="header-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
+            <div class="header-school-sub">Laporan Guru Bertugas</div>
+          </div>
         </div>
-      </div>
-      <div class="site-header-row2">
-        <span class="header-greet">Selamat Datang, <span id="header-greet-name">-</span></span>
-        <span class="header-status"><span class="status-dot"></span>Sistem Aktif <span id="live-clock">--:--:-- --</span></span>
-      </div>
-    </header>
-  </div>
-
-  <div id="lgb-content" class="lgb-scope">
+        <div class="site-header-row2">
+          <span class="header-greet">Selamat Datang, <span id="header-greet-name">-</span></span>
+          <span class="header-status"><span class="status-dot"></span>Sistem Aktif <span id="live-clock">--:--:-- --</span></span>
+        </div>
+      </header>
+    </div>
 
     <div class="tab-switch">
       <button class="tab-btn active" id="lgb-nav-borang" onclick="lgbSwitchTab('borang')">Isi Laporan</button>
       <button class="tab-btn" id="lgb-nav-senarai" onclick="lgbSwitchTab('senarai')">Senarai Laporan</button>
     </div>
 
-    <!-- ============ Tab: Borang berperingkat ============ -->
+    <!-- ============ Tab: Borang (3 skrin dalam satu panel) ============ -->
     <div id="lgb-panel-borang">
-      <div class="lgb-step-header">
-        <div class="lgb-step-title" id="lgb-step-title">-</div>
-        <div class="lgb-step-progress" id="lgb-step-progress">-</div>
-      </div>
-      <div class="lgb-step-dots" id="lgb-step-dots"></div>
 
-      <div class="lgb-card">
-        <div id="lgb-step-fields"></div>
-        <div class="lgb-error hidden" id="lgb-form-error"></div>
+      <!-- Skrin 1: Mula -->
+      <div id="lgb-screen-start">
+        <div class="section-title">Mulakan Laporan</div>
+        <div class="glass card-pad">
+          <label class="field-label">Minggu</label>
+          <input class="field-input" type="text" id="lgb-start-minggu" placeholder="Cth: Minggu 3">
+          <label class="field-label">Tarikh</label>
+          <input class="field-input" type="date" id="lgb-start-tarikh">
+          <label class="field-label">Nama Pelapor</label>
+          <input class="field-input" type="text" id="lgb-start-pelapor">
+          <label class="field-label">Nama-Nama Guru Bertugas</label>
+          <textarea class="field-input" id="lgb-start-guru" rows="2"></textarea>
+          <div class="error-text hidden" id="lgb-start-error"></div>
+          <button class="btn-bw-solid" id="lgb-start-btn" onclick="lgbStartOrResume()">Simpan & Mula</button>
+        </div>
       </div>
 
-      <div class="lgb-nav-btns">
-        <button class="lgb-btn-nav hidden" id="lgb-btn-prev" onclick="lgbPrevStep()">&larr; Sebelum</button>
-        <button class="lgb-btn-nav lgb-btn-primary" id="lgb-btn-next" onclick="lgbNextStep()">Seterusnya &rarr;</button>
-        <button class="lgb-btn-nav lgb-btn-submit hidden" id="lgb-btn-submit" onclick="lgbSubmit()">Hantar Laporan</button>
+      <!-- Skrin 2: Pemilih Seksyen -->
+      <div id="lgb-screen-picker" class="hidden">
+        <div class="section-title">Pilih Seksyen</div>
+        <div class="sub-dim" id="lgb-picker-subtitle" style="margin-bottom:14px">-</div>
+        <div id="lgb-picker-list"></div>
+        <button class="btn-bw-outline" onclick="lgbBackToStart()" style="margin-top:14px">&larr; Laporan Lain / Tukar Tarikh</button>
       </div>
+
+      <!-- Skrin 3: Borang satu seksyen -->
+      <div id="lgb-screen-section" class="hidden">
+        <div class="section-title" id="lgb-section-title">-</div>
+        <div class="glass card-pad">
+          <div id="lgb-section-fields"></div>
+          <div class="error-text hidden" id="lgb-section-error"></div>
+        </div>
+        <div class="lgb-section-btn-row">
+          <button class="btn-bw-outline" onclick="lgbCancelSection()">Batal</button>
+          <button class="btn-bw-solid" id="lgb-section-save-btn" onclick="lgbSaveCurrentSection()">Simpan Seksyen</button>
+        </div>
+      </div>
+
     </div>
 
     <!-- ============ Tab: Senarai Laporan ============ -->
@@ -85,16 +107,6 @@
 
   </div>
 
-</div>
-
-<!-- ============ Popup: Berjaya hantar ============ -->
-<div class="modal-overlay-center hidden" id="lgb-success-overlay">
-  <div class="glass modal-sheet" style="text-align:center">
-    <div style="font-size:38px;margin-bottom:10px">✓</div>
-    <div class="modal-title">Laporan Berjaya Dihantar!</div>
-    <div class="sub-dim">Terima kasih atas laporan guru bertugas hari ini.</div>
-    <button class="btn-primary" onclick="lgbCloseSuccess()">Tutup</button>
-  </div>
 </div>
 
 <!-- ============ Popup: Lihat laporan penuh ============ -->
