@@ -1667,8 +1667,7 @@ table.jg-table tbody th, table.jg-table .jg-slot-cell{
 
 /* ============================================================
    LAPORAN GURU BERTUGAS — Minimalis Putih/Hitam (berskop .lgb-scope),
-   teks label/tajuk berwarna-warni. Struktur luar (.wrap/header/nav)
-   KEKAL standard app — padan susun-atur Kehadiran.
+   teks label berwarna-warni. Susun-atur ikut Kehadiran (.wrap standard).
    ============================================================ */
 .lgb-scope{
   --lgb-c1:#3B82F6; --lgb-c2:#F43F5E; --lgb-c3:#10B981; --lgb-c4:#F59E0B;
@@ -1676,19 +1675,33 @@ table.jg-table tbody th, table.jg-table .jg-slot-cell{
 }
 
 .lgb-scope .section-title{ font-weight:800;font-size:15px;color:#fff;margin-bottom:12px;letter-spacing:.3px; }
-.lgb-scope .glass.card-pad{
-  background:#0A0A0A;border:1.5px solid #fff;border-radius:16px;
+.lgb-scope .glass.card-pad{ background:#0A0A0A;border:1.5px solid #fff;border-radius:16px; }
+
+/* ---------- Menu Utama ---------- */
+.lgb-menu-btn{
+  display:block;width:100%;padding:18px;margin-bottom:12px;border:1.5px solid #fff;border-radius:14px;
+  background:#0A0A0A;color:#fff;font-family:inherit;font-weight:800;font-size:14.5px;cursor:pointer;text-align:left;
+}
+.lgb-menu-btn:active{ background:#fff;color:#0a0a0a; }
+
+/* ---------- Senarai (Minggu/Tarikh/Seksyen/Penyemak) ---------- */
+.lgb-list-item{
+  display:block;width:100%;padding:14px 16px;margin-bottom:9px;border:1.5px solid #fff;border-radius:12px;
+  background:#0A0A0A;color:#fff;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;text-align:left;
 }
 
+/* ---------- Butang ---------- */
 .btn-bw-solid{
   display:block;width:100%;margin-top:16px;padding:14px;border:1.5px solid #fff;border-radius:12px;
   background:#fff;color:#0a0a0a;font-weight:800;font-size:13.5px;cursor:pointer;font-family:inherit;
 }
 .btn-bw-solid:disabled{ opacity:.55; }
 .btn-bw-outline{
-  display:block;width:100%;padding:13px;border:1.5px solid #fff;border-radius:12px;
+  display:block;width:100%;margin-top:12px;padding:13px;border:1.5px solid #fff;border-radius:12px;
   background:transparent;color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;
 }
+.lgb-nav-row{ display:flex;gap:10px;margin-top:12px; }
+.lgb-nav-row .btn-bw-outline, .lgb-nav-row .btn-bw-solid{ flex:1; }
 
 /* ---------- Medan borang — label berwarna-warni bergilir ---------- */
 .lgb-field-label{ display:block;font-size:11.5px;letter-spacing:.8px;font-weight:800;text-transform:uppercase;margin:14px 0 6px; }
@@ -1713,54 +1726,10 @@ textarea.lgb-field{ min-height:80px;resize:vertical;line-height:1.5; }
 .lgb-img-slot img{ width:100%;max-height:220px;object-fit:contain;display:block; }
 .lgb-img-empty{ text-align:center;color:#777;font-size:12px;font-weight:600;padding:20px; }
 
-/* ---------- Pemilih Seksyen ---------- */
-.lgb-picker-item{
-  display:flex;justify-content:space-between;align-items:center;width:100%;
-  padding:15px 16px;border:1.5px solid #fff;border-radius:14px;background:#0A0A0A;
-  color:#fff;font-family:inherit;cursor:pointer;margin-bottom:10px;
-}
-.lgb-picker-item-title{ font-weight:700;font-size:13.5px; }
-.lgb-picker-item-status{ font-size:11px;font-weight:700;color:#777; }
-.lgb-picker-item-status.done{ color:var(--lgb-c3); }
-
-.lgb-section-btn-row{ display:flex;gap:10px;margin-top:16px; }
-.lgb-section-btn-row .btn-bw-outline, .lgb-section-btn-row .btn-bw-solid{ flex:1;margin-top:0; }
-
-/* ---------- Senarai laporan ---------- */
-.lgb-report-card{
-  background:#0A0A0A;border:1.5px solid #fff;border-radius:14px;padding:14px 15px;margin-bottom:10px;cursor:pointer;
-}
-.lgb-report-top{ display:flex;justify-content:space-between;margin-bottom:6px; }
-.lgb-report-minggu{ font-weight:800;color:var(--lgb-c1);font-size:13px; }
-.lgb-report-tarikh{ font-weight:700;color:var(--lgb-c4);font-size:12.5px; }
-.lgb-report-pelapor{ font-size:12px;color:#aaa;font-weight:600;margin-bottom:10px; }
-.lgb-report-edit{
-  padding:8px 14px;border:1.5px solid #fff;border-radius:20px;background:transparent;
-  color:#fff;font-family:inherit;font-weight:700;font-size:11px;cursor:pointer;
-}
-
-/* ---------- Popup: lihat laporan penuh ---------- */
-.lgb-view-overlay{
-  position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.75);
-  display:flex;align-items:flex-end;justify-content:center;
-}
-.lgb-view-sheet{
-  width:100%;max-width:520px;max-height:85vh;overflow-y:auto;background:#0A0A0A;
-  border-radius:20px 20px 0 0;padding:18px 16px 26px;border-top:1.5px solid #fff;
-}
-.lgb-view-header{ display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;position:sticky;top:0;background:#0A0A0A;padding-bottom:8px; }
-.lgb-view-title{ font-weight:800;font-size:14px;color:#fff; }
-.lgb-view-close{
-  width:30px;height:30px;border-radius:50%;border:1.5px solid #fff;background:transparent;color:#fff;
-  font-size:13px;cursor:pointer;
-}
+/* ---------- Section View (hub utama) ---------- */
+.lgb-view-head{ color:#fff;font-size:13px;font-weight:700;margin-bottom:12px; }
 .lgb-semakan-box{
   background:#111;border:1.5px solid var(--lgb-c4);border-radius:12px;padding:10px 13px;margin-bottom:16px;
-}
-.lgb-view-section{ margin-bottom:16px; }
-.lgb-view-section-title{
-  font-weight:800;font-size:11.5px;color:#0a0a0a;background:#fff;
-  padding:6px 12px;border-radius:8px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px;display:inline-block;
 }
 .lgb-view-row{ display:flex;flex-direction:column;gap:2px;padding:6px 0;border-bottom:1px solid #222; }
 .lgb-view-row:last-of-type{ border-bottom:none; }
@@ -1768,3 +1737,13 @@ textarea.lgb-field{ min-height:80px;resize:vertical;line-height:1.5; }
 .lgb-view-val{ font-size:13px;font-weight:600;color:#fff;white-space:pre-wrap; }
 .lgb-view-img-wrap{ margin-top:8px;border-radius:10px;overflow:hidden;border:1.5px solid #333; }
 .lgb-view-img-wrap img{ width:100%;display:block;cursor:zoom-in; }
+
+/* ---------- Cetak / PDF (window.print()) — sembunyi app shell, papar laporan sahaja ---------- */
+@media print{
+  .site-header-wrap, .bottom-nav-wrap, .drawer, .drawer-overlay, .bg-fx,
+  .lgb-nav-row, #lgb-view-prev, #lgb-view-next{ display:none !important; }
+  body, .wrap{ background:#fff !important;color:#000 !important; }
+  .lgb-scope .glass.card-pad{ background:#fff !important;border-color:#000 !important; }
+  .lgb-view-val, .section-title, .lgb-view-head{ color:#000 !important; }
+  .lgb-view-label{ color:#333 !important; }
+}

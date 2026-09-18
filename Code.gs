@@ -55,6 +55,7 @@ function doPost(e) {
   if (body.action === "editTodoItem") return editTodoItem(body);
   if (body.action === "deleteTodoItem") return deleteTodoItem(body);
   if (body.action === "saveLaporanGuruBertugasSection") return saveLaporanGuruBertugasSection(body);
+  if (body.action === "saveLaporanGuruBertugasSemakan") return saveLaporanGuruBertugasSemakan(body);
   return jsonResponse({ success: false, message: "Unknown action: " + body.action });
 }
 
@@ -844,4 +845,19 @@ function saveLaporanGuruBertugasSection(body) {
   }
 
   return jsonResponse({ success: true, rowNum: rowNum, warning: imgWarning });
+}
+
+/** Simpan semakan/ulasan penyemak — appendRow ke "DATA SEMAKAN" (Sheet bot
+ * sebenar), lajur A-E: Minggu, Tarikh, Pelapor, Penyemak, Catatan/Ulasan —
+ * SAMA tepat urutan macam handleSemakLaporanSelect() dalam bot rujukan. */
+function saveLaporanGuruBertugasSemakan(body) {
+  if (!body.minggu || !body.tarikh || !body.penyemak || !body.catatan) {
+    return jsonResponse({ success: false, message: "Data semakan tidak lengkap." });
+  }
+  var sheet = SpreadsheetApp.openById(LGB_SPREADSHEET_ID).getSheetByName("DATA SEMAKAN");
+  if (!sheet) {
+    return jsonResponse({ success: false, message: 'Tab "DATA SEMAKAN" tidak dijumpai.' });
+  }
+  sheet.appendRow([body.minggu, body.tarikh, body.pelapor || "", body.penyemak, body.catatan]);
+  return jsonResponse({ success: true });
 }
