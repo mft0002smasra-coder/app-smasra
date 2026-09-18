@@ -1678,11 +1678,27 @@ table.jg-table tbody th, table.jg-table .jg-slot-cell{
 .lgb-scope .glass.card-pad{ background:#0A0A0A;border:1.5px solid #fff;border-radius:16px; }
 
 /* ---------- Menu Utama ---------- */
-.lgb-menu-btn{
-  display:block;width:100%;padding:18px;margin-bottom:12px;border:1.5px solid #fff;border-radius:14px;
-  background:#0A0A0A;color:#fff;font-family:inherit;font-weight:800;font-size:14.5px;cursor:pointer;text-align:left;
+.lgb-menu-header{ text-align:center;margin-bottom:22px; }
+.lgb-menu-icon{ font-size:34px;margin-bottom:6px; }
+.lgb-menu-header-title{ font-weight:800;font-size:17px;color:#fff;letter-spacing:.3px; }
+.lgb-menu-header-sub{ font-size:12px;color:#888;font-weight:600;margin-top:2px; }
+.lgb-menu-row{ display:flex;gap:12px; }
+.lgb-menu-card{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  padding:26px 10px;border:1.5px solid #fff;border-radius:16px;background:#0A0A0A;color:#fff;
+  font-family:inherit;cursor:pointer;
 }
-.lgb-menu-btn:active{ background:#fff;color:#0a0a0a; }
+.lgb-menu-card:active{ background:#fff;color:#0a0a0a; }
+.lgb-menu-card-icon{ font-size:28px; }
+.lgb-menu-card-title{ font-weight:800;font-size:12.5px;text-align:center;letter-spacing:.2px; }
+
+/* ---------- Grid Pilih Minggu — 5 kotak sebaris ---------- */
+.lgb-week-grid{ display:grid;grid-template-columns:repeat(5,1fr);gap:7px; }
+.lgb-week-box{
+  padding:11px 2px;border:1.5px solid #fff;border-radius:10px;background:#0A0A0A;color:#fff;
+  font-family:inherit;font-weight:800;font-size:10.5px;cursor:pointer;text-align:center;
+}
+.lgb-week-box:active{ background:#fff;color:#0a0a0a; }
 
 /* ---------- Senarai (Minggu/Tarikh/Seksyen/Penyemak) ---------- */
 .lgb-list-item{

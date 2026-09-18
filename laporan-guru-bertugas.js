@@ -119,17 +119,25 @@ async function lgbGoSemakLaporan() {
   lgbShowScreen("weeks");
   document.getElementById("lgb-weeks-list").innerHTML = `<div class="empty-state">Memuatkan...</div>`;
   await lgbFetchRecords();
-  const weeks = [...new Set(lgbRecords.map((r) => r.minggu))];
+  const weeks = [...new Set(lgbRecords.map((r) => String(r.minggu).trim()))];
+  // Susun minggu TERKINI di atas — ambil nombor dalam teks (cth "Minggu 31" -> 31)
+  // untuk susun betul secara numerik, jatuh balik ke susun teks kalau tiada nombor.
+  weeks.sort((a, b) => {
+    const na = parseInt(String(a).replace(/[^0-9]/g, ""), 10);
+    const nb = parseInt(String(b).replace(/[^0-9]/g, ""), 10);
+    if (!isNaN(na) && !isNaN(nb)) return nb - na;
+    return String(b).localeCompare(String(a));
+  });
   lgbWeeksCache = weeks;
   document.getElementById("lgb-weeks-list").innerHTML = weeks.length
-    ? weeks.map((w) => `<button class="lgb-list-item" onclick="lgbGoDates('${lgbEscape(w)}')">${lgbEscape(w)}</button>`).join("")
+    ? `<div class="lgb-week-grid">${weeks.map((w) => `<button class="lgb-week-box" onclick="lgbGoDates('${lgbEscape(w)}')">${lgbEscape(w)}</button>`).join("")}</div>`
     : `<div class="empty-state">Belum ada laporan lagi.</div>`;
 }
 function lgbGoDates(minggu) {
-  lgbMinggu = minggu;
+  lgbMinggu = String(minggu).trim();
   lgbShowScreen("dates");
-  const dates = lgbRecords.filter((r) => r.minggu === minggu).map((r) => r.tarikh);
-  document.getElementById("lgb-dates-subtitle").textContent = minggu;
+  const dates = lgbRecords.filter((r) => String(r.minggu).trim() === lgbMinggu).map((r) => r.tarikh);
+  document.getElementById("lgb-dates-subtitle").textContent = lgbMinggu;
   document.getElementById("lgb-dates-list").innerHTML = dates.length
     ? dates.map((d) => `<button class="lgb-list-item" onclick="lgbOpenSectionView('${lgbEscape(d)}',0)">${lgbEscape(d)}</button>`).join("")
     : `<div class="empty-state">Tiada tarikh untuk minggu ini.</div>`;

@@ -56,9 +56,21 @@
 
       <!-- ============ Skrin: MENU UTAMA ============ -->
       <div id="lgb-screen-menu">
-        <div class="section-title">🏠 Menu Utama</div>
-        <button class="lgb-menu-btn" onclick="lgbGoNewReport()">📝 Laporan Baru</button>
-        <button class="lgb-menu-btn" onclick="lgbGoSemakLaporan()">🔍 Semak Laporan</button>
+        <div class="lgb-menu-header">
+          <div class="lgb-menu-icon">📋</div>
+          <div class="lgb-menu-header-title">Laporan Guru Bertugas</div>
+          <div class="lgb-menu-header-sub">Sila pilih tindakan</div>
+        </div>
+        <div class="lgb-menu-row">
+          <button class="lgb-menu-card" onclick="lgbGoNewReport()">
+            <span class="lgb-menu-card-icon">📝</span>
+            <span class="lgb-menu-card-title">Laporan Baru</span>
+          </button>
+          <button class="lgb-menu-card" onclick="lgbGoSemakLaporan()">
+            <span class="lgb-menu-card-icon">🔍</span>
+            <span class="lgb-menu-card-title">Semak Laporan</span>
+          </button>
+        </div>
       </div>
 
       <!-- ============ Skrin: Borang Butiran (Laporan Baru) ============ -->
