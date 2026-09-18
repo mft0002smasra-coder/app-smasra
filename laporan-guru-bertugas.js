@@ -14,7 +14,8 @@
    ============================================================ */
 
 const LGB_SPREADSHEET_ID = "1cmYZlMRGXZB4LmrCowJcmfnbY4LiKhuvE9FIoamWl2s"; // Spreadsheet SEBENAR bot
-const LGB_SHEET_NAME = "DATABOT";
+const LGB_SHEET_NAME = "DATABOT";       // sasaran TULIS (simpan jawapan)
+const LGB_READ_SHEET_NAME = "Data2";    // sasaran BACA (formula gabungan, auto-sync dari DATABOT)
 
 const LGB_SECTIONS = [
   {
@@ -363,7 +364,7 @@ function lgbPrintReport() {
 /* ================= Fetch: DATABOT (gviz, data mula baris 3) ================= */
 async function lgbFetchRecords() {
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${LGB_SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(LGB_SHEET_NAME)}&_ts=${Date.now()}`;
+    const url = `https://docs.google.com/spreadsheets/d/${LGB_SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(LGB_READ_SHEET_NAME)}&_ts=${Date.now()}`;
     const res = await fetch(url, { cache: "no-store" });
     const text = await res.text();
     const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
