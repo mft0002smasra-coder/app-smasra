@@ -54,6 +54,7 @@ function doPost(e) {
   if (body.action === "addTodoItem") return addTodoItem(body);
   if (body.action === "editTodoItem") return editTodoItem(body);
   if (body.action === "deleteTodoItem") return deleteTodoItem(body);
+  if (body.action === "addLaporanGuruBertugas") return addLaporanGuruBertugas(body);
   return jsonResponse({ success: false, message: "Unknown action: " + body.action });
 }
 
@@ -760,4 +761,69 @@ function deleteTodoItem(body) {
     }
   }
   return jsonResponse({ success: false, message: "Rekod tidak dijumpai." });
+}
+
+/* ---------------- LAPORAN GURU BERTUGAS ---------------- */
+// Tab "LaporanGuruBertugas" (baris 1 = header, data bermula baris 2).
+// Lajur A-Y ikut struktur SEKSYEN/soalan bot rujukan (Data2):
+// A=Minggu B=Tarikh C=NamaPelapor D=NamaGuruBertugas
+// E=KehadiranGuru F=NamaGuruTidakHadir G=KehadiranAKP H=NamaAKPTidakHadir
+// I=LaporanBlokA J=TindakanBlokA K=LaporanBlokB L=TindakanBlokB
+// M=LaporanBlokC N=TindakanBlokC O=LaporanBlokKantin P=TindakanBlokKantin
+// Q=LaporanKeselamatan R=TindakanKeselamatan S=PeristiwaProgram T=TindakanPeristiwa
+// U=GambarBlokA V=GambarBlokB W=GambarBlokC X=GambarBlokKantin Y=GambarKeselamatan
+// Z=DicatatOleh
+
+var LGB_HEADER_ROW = [
+  "Minggu", "Tarikh", "NamaPelapor", "NamaGuruBertugas",
+  "KehadiranGuru", "NamaGuruTidakHadir", "KehadiranAKP", "NamaAKPTidakHadir",
+  "LaporanBlokA", "TindakanBlokA", "LaporanBlokB", "TindakanBlokB",
+  "LaporanBlokC", "TindakanBlokC", "LaporanBlokKantin", "TindakanBlokKantin",
+  "LaporanKeselamatan", "TindakanKeselamatan", "PeristiwaProgram", "TindakanPeristiwa",
+  "GambarBlokA", "GambarBlokB", "GambarBlokC", "GambarBlokKantin", "GambarKeselamatan",
+  "DicatatOleh",
+];
+
+function addLaporanGuruBertugas(body) {
+  var user = findUserByEmail(body.email);
+  if (!body.minggu || !body.tarikh || !body.namaPelapor) {
+    return jsonResponse({ success: false, message: "Sila lengkapkan Minggu, Tarikh, dan Nama Pelapor." });
+  }
+  ensureTimezone();
+  var sheet = getSheet("LaporanGuruBertugas");
+  if (!sheet) {
+    sheet = SpreadsheetApp.openById(SPREADSHEET_ID).insertSheet("LaporanGuruBertugas");
+    sheet.appendRow(LGB_HEADER_ROW);
+  }
+
+  var stamp = new Date().getTime();
+  var imgWarnings = [];
+  var gambarUrls = {};
+  var gambarFields = ["gambarBlokA", "gambarBlokB", "gambarBlokC", "gambarBlokKantin", "gambarKeselamatan"];
+  gambarFields.forEach(function (field, i) {
+    if (body[field]) {
+      try {
+        gambarUrls[field] = lpSaveImageToDrive(body[field], "gurubertugas_" + stamp + "_" + i);
+      } catch (imgErr) {
+        imgWarnings.push(field + ": " + imgErr.message);
+      }
+    } else {
+      gambarUrls[field] = "";
+    }
+  });
+
+  sheet.appendRow([
+    body.minggu, body.tarikh, body.namaPelapor, body.namaGuruBertugas || "",
+    body.kehadiranGuru || "", body.namaGuruTidakHadir || "", body.kehadiranAkp || "", body.namaAkpTidakHadir || "",
+    body.laporanBlokA || "", body.tindakanBlokA || "", body.laporanBlokB || "", body.tindakanBlokB || "",
+    body.laporanBlokC || "", body.tindakanBlokC || "", body.laporanBlokKantin || "", body.tindakanBlokKantin || "",
+    body.laporanKeselamatan || "", body.tindakanKeselamatan || "", body.peristiwaProgram || "", body.tindakanPeristiwa || "",
+    gambarUrls.gambarBlokA, gambarUrls.gambarBlokB, gambarUrls.gambarBlokC, gambarUrls.gambarBlokKantin, gambarUrls.gambarKeselamatan,
+    (user && user.nama) || body.email || "",
+  ]);
+
+  var newRow = sheet.getLastRow();
+  sheet.getRange(newRow, 2).setNumberFormat("@").setValue(body.tarikh);
+
+  return jsonResponse({ success: true, warning: imgWarnings.length ? imgWarnings.join(" | ") : null });
 }

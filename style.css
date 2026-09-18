@@ -1663,3 +1663,102 @@ table.jg-table tbody th, table.jg-table .jg-slot-cell{
 }
 .jg-detail-row:last-child{ border-bottom:none; }
 .jg-detail-label{ color:var(--jg-text-dim);font-weight:600;font-family:'Orbitron',sans-serif;font-size:9.5px;text-transform:uppercase;letter-spacing:.5px; }
+
+/* ============================================================
+   LAPORAN GURU BERTUGAS — Minimalist Putih/Hitam, teks berwarna-warni
+   ============================================================ */
+.lgb-scope{
+  --lgb-bg:#FFFFFF; --lgb-ink:#0A0A0A; --lgb-dim:#6B6B6B; --lgb-line:#E5E5E5;
+  --lgb-c1:#2563EB; --lgb-c2:#DC2626; --lgb-c3:#059669; --lgb-c4:#D97706;
+  --lgb-c5:#7C3AED; --lgb-c6:#DB2777; --lgb-c7:#0891B2;
+  background:var(--lgb-bg);
+  border-radius:20px 20px 0 0;padding:22px 20px 100px;
+  font-family:'Inter',sans-serif;color:var(--lgb-ink);
+  min-height:calc(100vh - 92px);box-sizing:border-box;
+  width:calc(100% + 32px);margin-left:-16px;margin-right:-16px;overflow-x:hidden;
+}
+.lgb-scope *{ box-sizing:border-box;min-width:0; }
+
+.lgb-step-header{ display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px; }
+.lgb-step-title{ font-weight:800;font-size:17px;color:var(--lgb-c1); }
+.lgb-step-progress{ font-size:11px;font-weight:700;color:var(--lgb-dim); }
+.lgb-step-dots{ display:flex;gap:5px;margin-bottom:18px; }
+.lgb-step-dot{ flex:1;height:4px;border-radius:3px;background:var(--lgb-line); }
+.lgb-step-dot.done{ background:var(--lgb-c3); }
+.lgb-step-dot.active{ background:var(--lgb-c1); }
+
+.lgb-card{
+  background:var(--lgb-bg);border:1.5px solid var(--lgb-ink);border-radius:16px;
+  padding:18px 16px;margin-bottom:18px;
+}
+.lgb-field-label{ display:block;font-size:11px;font-weight:800;color:var(--lgb-c5);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.4px; }
+.lgb-field-label:first-child{ margin-top:0; }
+.lgb-field{
+  width:100%;padding:11px 13px;border-radius:10px;border:1.5px solid var(--lgb-line);
+  background:#FAFAFA;color:var(--lgb-ink);font-family:inherit;font-weight:600;font-size:13.5px;outline:none;
+}
+.lgb-field:focus{ border-color:var(--lgb-c1);background:#fff; }
+textarea.lgb-field{ min-height:80px;resize:vertical;line-height:1.5; }
+
+.lgb-img-slot{
+  position:relative;width:100%;min-height:120px;border:2px dashed var(--lgb-line);border-radius:12px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;background:#FAFAFA;
+}
+.lgb-img-slot img{ width:100%;max-height:220px;object-fit:contain;display:block; }
+.lgb-img-empty{ text-align:center;color:var(--lgb-dim);font-size:12px;font-weight:600;padding:20px; }
+.lgb-img-remove{
+  position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;
+  background:rgba(220,38,38,0.92);color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:12px;cursor:pointer;font-weight:700;
+}
+
+.lgb-error{
+  margin-top:14px;padding:11px 13px;border-radius:10px;background:#FEF2F2;border:1.5px solid var(--lgb-c2);
+  color:var(--lgb-c2);font-size:12.5px;font-weight:700;
+}
+
+.lgb-nav-btns{ display:flex;gap:10px; }
+.lgb-btn-nav{
+  flex:1;padding:14px;border-radius:12px;border:1.5px solid var(--lgb-ink);background:#fff;
+  color:var(--lgb-ink);font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;
+}
+.lgb-btn-nav.lgb-btn-primary{ background:var(--lgb-ink);color:#fff; }
+.lgb-btn-nav.lgb-btn-submit{ background:var(--lgb-c3);border-color:var(--lgb-c3);color:#fff; }
+
+/* ---------- Senarai laporan ---------- */
+.lgb-report-card{
+  background:#fff;border:1.5px solid var(--lgb-line);border-radius:14px;padding:14px 15px;margin-bottom:10px;cursor:pointer;
+  transition:border-color .15s;
+}
+.lgb-report-card:active{ border-color:var(--lgb-c1); }
+.lgb-report-top{ display:flex;justify-content:space-between;margin-bottom:6px; }
+.lgb-report-minggu{ font-weight:800;color:var(--lgb-c1);font-size:13px; }
+.lgb-report-tarikh{ font-weight:700;color:var(--lgb-c4);font-size:12.5px; }
+.lgb-report-pelapor{ font-size:12px;color:var(--lgb-dim);font-weight:600; }
+
+/* ---------- Popup: lihat laporan penuh ---------- */
+.lgb-view-overlay{
+  position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.5);
+  display:flex;align-items:flex-end;justify-content:center;
+}
+.lgb-view-sheet{
+  width:100%;max-width:520px;max-height:85vh;overflow-y:auto;background:#fff;
+  border-radius:20px 20px 0 0;padding:18px 16px 26px;
+}
+.lgb-view-header{ display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;position:sticky;top:0;background:#fff;padding-bottom:8px; }
+.lgb-view-title{ font-weight:800;font-size:14px;color:var(--lgb-c1); }
+.lgb-view-close{
+  width:30px;height:30px;border-radius:50%;border:none;background:#F3F4F6;color:var(--lgb-ink);
+  font-size:13px;cursor:pointer;
+}
+.lgb-view-section{ margin-bottom:16px; }
+.lgb-view-section-title{
+  font-weight:800;font-size:11.5px;color:#fff;background:var(--lgb-c5);
+  padding:6px 12px;border-radius:8px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px;display:inline-block;
+}
+.lgb-view-row{ display:flex;flex-direction:column;gap:2px;padding:6px 0;border-bottom:1px solid var(--lgb-line); }
+.lgb-view-row:last-of-type{ border-bottom:none; }
+.lgb-view-label{ font-size:10px;font-weight:700;color:var(--lgb-c7);text-transform:uppercase;letter-spacing:.3px; }
+.lgb-view-val{ font-size:13px;font-weight:600;color:var(--lgb-ink);white-space:pre-wrap; }
+.lgb-view-img-wrap{ margin-top:8px;border-radius:10px;overflow:hidden;border:1.5px solid var(--lgb-line); }
+.lgb-view-img-wrap img{ width:100%;display:block;cursor:zoom-in; }

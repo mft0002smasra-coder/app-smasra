@@ -242,7 +242,7 @@ const MENU_STRUCTURE = [
     children: [
       { href: "pengumuman.html", icon: "announce", label: "Hebahan" },
       { href: "laporan-pentadbir.html", icon: "clipboard", label: "Laporan Pentadbir" },
-      { href: null, icon: "folder", label: "Laporan Guru Bertugas", soon: true },
+      { href: "laporan-guru-bertugas.html", icon: "folder", label: "Laporan Guru Bertugas" },
       { href: "kehadiran-staf.html", icon: "calendar", label: "Kehadiran Staf" },
       { href: "event.html", icon: "event", label: "Event" },
     ],
