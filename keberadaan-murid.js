@@ -75,6 +75,42 @@ async function kbFetchRecords() {
   }
 }
 
+const KB_KAUNSELING_SHEET_ID = "17WFKbOCBOLzp7BRHy4DVDmqSI8H5RxkKH5opS1ZvOB0";
+
+/** Rujuk-silang Tempahan Kaunseling — murid yang terlibat sesi/program
+ * kaunseling PADA TARIKH hari ini (dalam julat TarikhMula-TarikhTamat)
+ * turut dipapar dalam kad Keberadaan Murid Hari Ini di Home. Guna gviz terus. */
+async function kbFetchTodayKaunseling(todayStr) {
+  try {
+    const { rows } = await gvizFetch(KB_KAUNSELING_SHEET_ID, "PSK");
+    const list = rows.map((r) => {
+      const c = r.c || [];
+      const get = (idx) => (c[idx] && c[idx].v != null ? String(c[idx].v).trim() : "");
+      const gvizDateStr = (raw) => {
+        if (!raw) return "";
+        const m = raw.match(/Date\((\d+),(\d+),(\d+)/);
+        if (!m) return raw.replace(/^'/, "").slice(0, 10);
+        const y = parseInt(m[1]), mo = parseInt(m[2]) + 1, d = parseInt(m[3]);
+        return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      };
+      const tarikhMula = gvizDateStr(get(0));
+      const tarikhTamat = gvizDateStr(get(1)) || tarikhMula;
+      return {
+        tarikhMula, tarikhTamat,
+        jenis: get(4), perkara: get(5), nama: get(6), tingkatan: get(7), kaunselor: get(8),
+      };
+    }).filter((b) => b.nama && b.tarikhMula && todayStr >= b.tarikhMula && todayStr <= b.tarikhTamat);
+
+    return list.map((b) => ({
+      nama: b.nama, tingkatan: b.tingkatan,
+      tempat: `${b.jenis || "Kaunseling"}${b.kaunselor ? " · " + b.kaunselor : ""}`,
+      catatan: b.perkara || "",
+    }));
+  } catch (e) {
+    return [];
+  }
+}
+
 /* ---------------- Kad Home: Keberadaan Murid (hari ini sahaja, bersyarat) ---------------- */
 async function kbRenderHomeCard() {
   const pageEl = document.getElementById("home-kb-page");
@@ -83,9 +119,10 @@ async function kbRenderHomeCard() {
 
   const todayStr = todayIso();
   const todayItems = kbRecords.filter((r) => r.tarikh === todayStr);
+  const todayKaunseling = await kbFetchTodayKaunseling(todayStr);
 
-  if (!todayItems.length) {
-    pageEl.remove(); // tiada data hari ini — buang terus kad ni dari swipe
+  if (!todayItems.length && !todayKaunseling.length) {
+    pageEl.remove(); // tiada data hari ini (keberadaan MAHUPUN kaunseling) — buang terus kad ni dari swipe
     return;
   }
 
@@ -98,6 +135,7 @@ async function kbRenderHomeCard() {
 
   const groups = {};
   todayItems.forEach((r) => { if (!groups[r.kategori]) groups[r.kategori] = []; groups[r.kategori].push(r); });
+  if (todayKaunseling.length) groups["Kaunseling"] = todayKaunseling;
 
   const listEl = document.getElementById("home-kb-list");
   listEl.innerHTML = Object.keys(groups).map((kategori) => `

@@ -89,6 +89,21 @@ let lgbWeeksCache = [];
 
 function lgbEscape(str) { return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
+/** Betulkan URL gambar: kalau ia link Google Drive biasa (bukan lh3), ambil
+ * FILE ID dan tukar jadi format lh3.googleusercontent.com — punca "gambar
+ * crash" ialah link Drive biasa (drive.google.com/file/d/ID/view) tak boleh
+ * terus dipapar dalam <img>, perlu ditukar dahulu. */
+function lgbFixImageUrl(url) {
+  if (!url) return "";
+  const raw = String(url).trim();
+  if (!raw) return "";
+  if (raw.indexOf("lh3.googleusercontent.com") !== -1) return raw; // dah betul
+  // Corak biasa: /file/d/FILE_ID/... ATAU ?id=FILE_ID ATAU /d/FILE_ID
+  let m = raw.match(/\/d\/([a-zA-Z0-9_-]{20,})/) || raw.match(/[?&]id=([a-zA-Z0-9_-]{20,})/);
+  if (m && m[1]) return `https://lh3.googleusercontent.com/d/${m[1]}`;
+  return raw; // bukan link Drive dikenali — biar apa adanya
+}
+
 /* ================= Navigasi skrin (satu container, toggle) ================= */
 const LGB_SCREENS = ["menu", "start", "weeks", "dates", "view", "picker", "edit", "penyemak", "ulasan"];
 function lgbShowScreen(name) {
@@ -98,6 +113,61 @@ function lgbShowScreen(name) {
 function lgbInit(user) {
   lgbCurrentUser = user;
   lgbShowMenu();
+  lgbLoadAnalisis();
+}
+
+/* ================= Analisis Penghantaran (kad di Menu Utama) ================= */
+async function lgbLoadAnalisis() {
+  await lgbFetchRecords();
+  if (!lgbRecords.length) {
+    document.getElementById("lgb-analisis-wrap").classList.add("hidden");
+    return;
+  }
+  document.getElementById("lgb-analisis-wrap").classList.remove("hidden");
+
+  // Kira bilangan tarikh UNIK setiap minggu
+  const byWeek = {};
+  lgbRecords.forEach((r) => {
+    const w = String(r.minggu).trim();
+    if (!byWeek[w]) byWeek[w] = new Set();
+    byWeek[w].add(r.tarikh);
+  });
+  const weekNums = Object.keys(byWeek)
+    .map((w) => parseInt(String(w).replace(/[^0-9]/g, ""), 10))
+    .filter((n) => !isNaN(n));
+  const maxWeekNum = weekNums.length ? Math.max(...weekNums) : null;
+
+  // Jumlah keseluruhan
+  document.getElementById("lgb-analisis-total").textContent = lgbRecords.length;
+
+  // Prestasi minggu TERKINI (minggu tertinggi dijumpai dalam data)
+  const currentWeekKey = Object.keys(byWeek).find((w) => parseInt(String(w).replace(/[^0-9]/g, ""), 10) === maxWeekNum);
+  const currentCount = currentWeekKey ? byWeek[currentWeekKey].size : 0;
+  const pct = Math.min(100, Math.round((currentCount / 5) * 100));
+  document.getElementById("lgb-analisis-minggu-label").textContent = `Prestasi ${currentWeekKey || "-"}`;
+  document.getElementById("lgb-analisis-progress-bar").style.width = `${pct}%`;
+  document.getElementById("lgb-analisis-progress-text").textContent = `${pct}%`;
+  document.getElementById("lgb-analisis-progress-sub").textContent = `${currentCount}/5 Hari Selesai`;
+
+  // Minggu TIADA laporan langsung (dalam julat 1..maxWeekNum, tak wujud dalam data)
+  const missing = [];
+  const incomplete = [];
+  if (maxWeekNum) {
+    for (let n = 1; n <= maxWeekNum; n++) {
+      const key = Object.keys(byWeek).find((w) => parseInt(String(w).replace(/[^0-9]/g, ""), 10) === n);
+      if (!key) { missing.push(`Minggu ${n}`); continue; }
+      const count = byWeek[key].size;
+      if (count < 5) incomplete.push({ label: key, count });
+    }
+  }
+
+  document.getElementById("lgb-analisis-missing-box").innerHTML = missing.length
+    ? missing.map((m) => `<span class="lgb-week-pill lgb-week-pill-red">${lgbEscape(m)}</span>`).join("")
+    : `<span class="sub-dim">Tiada — semua minggu ada laporan.</span>`;
+
+  document.getElementById("lgb-analisis-incomplete-box").innerHTML = incomplete.length
+    ? incomplete.map((it) => `<div class="lgb-incomplete-row"><span>${lgbEscape(it.label)}</span><span class="lgb-week-pill lgb-week-pill-amber">${it.count}/5 Hari Selesai</span></div>`).join("")
+    : `<span class="sub-dim">Tiada — semua minggu genap 5 hari.</span>`;
 }
 
 /* ================= MENU UTAMA ================= */
@@ -201,8 +271,8 @@ function lgbRenderSectionView() {
     const val = r[f.key] || "-";
     return `<div class="lgb-view-row"><span class="lgb-view-label">${lgbEscape(f.label)}</span><span class="lgb-view-val">${lgbEscape(val)}</span></div>`;
   }).join("");
-  const imgUrl = sec.gambarField ? r[sec.gambarField] : "";
-  const imgHtml = imgUrl ? `<div class="lgb-view-img-wrap"><img src="${lgbEscape(imgUrl)}" onclick="openImageLightbox('${lgbEscape(imgUrl)}')"></div>` : "";
+  const imgUrl = sec.gambarField ? lgbFixImageUrl(r[sec.gambarField]) : "";
+  const imgHtml = imgUrl ? `<div class="lgb-view-img-wrap"><img src="${lgbEscape(imgUrl)}" onerror="this.parentElement.style.display='none'" onclick="openImageLightbox('${lgbEscape(imgUrl)}')"></div>` : "";
   document.getElementById("lgb-view-fields").innerHTML = fieldsHtml + imgHtml;
 
   document.getElementById("lgb-view-prev").classList.toggle("hidden", lgbSecIndex <= 0);
@@ -251,11 +321,11 @@ function lgbOpenEdit() {
 
   let imgHtml = "";
   if (sec.gambarField) {
-    const existingUrl = r[sec.gambarField];
+    const existingUrl = lgbFixImageUrl(r[sec.gambarField]);
     imgHtml = `
       <label class="lgb-field-label" style="margin-top:14px">Lampiran Gambar (pilihan)</label>
       <div class="lgb-img-slot" id="lgb-img-slot" onclick="document.getElementById('lgb-img-input').click()">
-        ${existingUrl ? `<img id="lgb-img-preview" src="${lgbEscape(existingUrl)}">` : `<div class="lgb-img-empty">📷<br>Ketik untuk pilih gambar</div>`}
+        ${existingUrl ? `<img id="lgb-img-preview" src="${lgbEscape(existingUrl)}" onerror="this.parentElement.innerHTML='<div class=\\'lgb-img-empty\\'>📷<br>Ketik untuk pilih gambar</div>'">` : `<div class="lgb-img-empty">📷<br>Ketik untuk pilih gambar</div>`}
       </div>
       <input type="file" id="lgb-img-input" accept="image/*" class="hidden" onchange="lgbHandleImagePick(this)">
     `;
@@ -364,8 +434,28 @@ function lgbCancelUlasan() {
   lgbShowScreen("view");
 }
 
-/* ================= Cetak / PDF ================= */
+/* ================= Cetak / PDF — LAPORAN PENUH (semua seksyen) ================= */
 function lgbPrintReport() {
+  const r = lgbCurrentRow || {};
+  const allSections = [
+    { title: "Butiran Laporan", fields: LGB_HEADER_FIELDS },
+    ...LGB_SECTIONS,
+  ];
+  const bodyHtml = allSections.map((sec) => {
+    const fieldsHtml = sec.fields.map((f) => `<div class="lgb-print-row"><span class="lgb-print-label">${lgbEscape(f.label)}</span><span class="lgb-print-val">${lgbEscape(r[f.key] || "-")}</span></div>`).join("");
+    const imgUrl = sec.gambarField ? lgbFixImageUrl(r[sec.gambarField]) : "";
+    const imgHtml = imgUrl ? `<img class="lgb-print-img" src="${lgbEscape(imgUrl)}">` : "";
+    return `<div class="lgb-print-section"><div class="lgb-print-section-title">${lgbEscape(sec.title)}</div>${fieldsHtml}${imgHtml}</div>`;
+  }).join("");
+
+  const printArea = document.getElementById("lgb-print-area");
+  printArea.innerHTML = `
+    <div class="lgb-print-header">
+      <div class="lgb-print-main-title">LAPORAN GURU BERTUGAS</div>
+      <div>Minggu: <b>${lgbEscape(lgbMinggu)}</b> &nbsp; Tarikh: <b>${lgbEscape(lgbTarikh)}</b></div>
+    </div>
+    <div class="lgb-print-semakan">Penyemak: <b>${lgbEscape(r.penyemak || "-")}</b> &nbsp; Catatan: <b>${lgbEscape(r.catatanSemakan || "-")}</b></div>
+    ${bodyHtml}`;
   window.print();
 }
 

@@ -61,6 +61,32 @@
           <div class="lgb-menu-header-title">Laporan Guru Bertugas</div>
           <div class="lgb-menu-header-sub">Sila pilih tindakan</div>
         </div>
+
+        <div id="lgb-analisis-wrap" class="hidden">
+          <div class="section-title">📊 Analisis Penghantaran</div>
+          <div class="lgb-analisis-grid">
+            <div class="lgb-stat-card">
+              <div class="lgb-stat-num" id="lgb-analisis-total">0</div>
+              <div class="lgb-stat-label">Jumlah Keseluruhan</div>
+            </div>
+            <div class="lgb-stat-card">
+              <div class="lgb-stat-label" id="lgb-analisis-minggu-label" style="margin-bottom:8px">-</div>
+              <div class="lgb-progress-track"><div class="lgb-progress-fill" id="lgb-analisis-progress-bar" style="width:0%"><span id="lgb-analisis-progress-text">0%</span></div></div>
+              <div class="lgb-stat-label" id="lgb-analisis-progress-sub" style="margin-top:6px">-</div>
+            </div>
+          </div>
+          <div class="lgb-analisis-grid">
+            <div class="lgb-stat-card lgb-stat-card-left">
+              <div class="lgb-stat-title lgb-stat-title-red">⚠️ Minggu Tiada Laporan</div>
+              <div class="lgb-pill-wrap" id="lgb-analisis-missing-box"></div>
+            </div>
+            <div class="lgb-stat-card lgb-stat-card-left">
+              <div class="lgb-stat-title lgb-stat-title-amber">🕐 Minggu Belum Cukup 5 Hari</div>
+              <div id="lgb-analisis-incomplete-box"></div>
+            </div>
+          </div>
+        </div>
+
         <div class="lgb-menu-row">
           <button class="lgb-menu-card" onclick="lgbGoNewReport()">
             <span class="lgb-menu-card-icon">📝</span>
@@ -200,6 +226,8 @@
     <a class="bn-item" href="profile.html" aria-label="Profil"><span data-icon="profile"></span><span class="bn-label">Profil</span></a>
   </nav>
 </div>
+
+<div id="lgb-print-area"></div>
 
 <script src="app.js"></script>
 <script src="laporan-guru-bertugas.js"></script>
