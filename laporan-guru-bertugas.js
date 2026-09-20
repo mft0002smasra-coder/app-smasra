@@ -263,8 +263,15 @@ function lgbRenderSectionView() {
 
   document.getElementById("lgb-view-minggu").textContent = lgbMinggu;
   document.getElementById("lgb-view-tarikh").textContent = lgbTarikh;
+  document.getElementById("lgb-view-pelapor").textContent = r.namaPelapor || "-";
   document.getElementById("lgb-view-penyemak").textContent = r.penyemak || "-";
-  document.getElementById("lgb-view-ulasan").textContent = r.catatanSemakan || "-";
+  const ulasanLine = document.getElementById("lgb-view-ulasan-line");
+  if (r.catatanSemakan) {
+    document.getElementById("lgb-view-ulasan").textContent = r.catatanSemakan;
+    ulasanLine.classList.remove("hidden");
+  } else {
+    ulasanLine.classList.add("hidden");
+  }
   document.getElementById("lgb-view-secname").textContent = sec.title;
 
   // Galeri kecil — SEMUA gambar laporan ni (merentasi seksyen), klik untuk popup
