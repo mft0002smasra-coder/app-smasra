@@ -267,6 +267,21 @@ function lgbRenderSectionView() {
   document.getElementById("lgb-view-ulasan").textContent = r.catatanSemakan || "-";
   document.getElementById("lgb-view-secname").textContent = sec.title;
 
+  // Galeri kecil — SEMUA gambar laporan ni (merentasi seksyen), klik untuk popup
+  const galleryEl = document.getElementById("lgb-view-gallery");
+  const allImgs = LGB_SECTIONS.filter((s) => s.gambarField && r[s.gambarField]).map((s) => ({ url: lgbFixImageUrl(r[s.gambarField]), label: s.title }));
+  if (allImgs.length > 1) {
+    galleryEl.innerHTML = `<div class="lgb-gallery-strip">${allImgs.map((im) => `
+      <div class="lgb-gallery-thumb" onclick="openImageLightbox('${lgbEscape(im.url)}')">
+        <img src="${lgbEscape(im.url)}" onerror="this.parentElement.style.display='none'">
+        <div class="lgb-gallery-thumb-label">${lgbEscape(im.label)}</div>
+      </div>`).join("")}</div>`;
+    galleryEl.classList.remove("hidden");
+  } else {
+    galleryEl.innerHTML = "";
+    galleryEl.classList.add("hidden");
+  }
+
   const fieldsHtml = sec.fields.map((f) => {
     const val = r[f.key] || "-";
     return `<div class="lgb-view-row"><span class="lgb-view-label">${lgbEscape(f.label)}</span><span class="lgb-view-val">${lgbEscape(val)}</span></div>`;

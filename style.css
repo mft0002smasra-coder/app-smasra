@@ -1702,118 +1702,140 @@ table.jg-table tbody th, table.jg-table .jg-slot-cell{
 
 
 /* ============================================================
-   LAPORAN GURU BERTUGAS — Minimalis Putih/Hitam (berskop .lgb-scope),
-   teks label berwarna-warni. Susun-atur ikut Kehadiran (.wrap standard).
+   LAPORAN GURU BERTUGAS — tema Command Deck HUD (guna pemalar
+   global --cyan/--violet/--panel-a/--line, sama app keseluruhan).
    ============================================================ */
-.lgb-scope{
-  --lgb-c1:#3B82F6; --lgb-c2:#F43F5E; --lgb-c3:#10B981; --lgb-c4:#F59E0B;
-  --lgb-c5:#A855F7; --lgb-c6:#EC4899; --lgb-c7:#06B6D4;
+.lgb-scope .section-title{
+  font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--text);
+  margin-bottom:12px;letter-spacing:.5px;
 }
-
-.lgb-scope .section-title{ font-weight:800;font-size:15px;color:#fff;margin-bottom:12px;letter-spacing:.3px; }
-.lgb-scope .glass.card-pad{ background:#0A0A0A;border:1.5px solid #fff;border-radius:16px; }
+.lgb-scope .glass.card-pad{
+  background:var(--panel-a);border:1px solid var(--line);backdrop-filter:blur(10px);
+  position:relative;overflow:hidden;
+}
+.lgb-scope .glass.card-pad::before, .lgb-scope .glass.card-pad::after{
+  content:'';position:absolute;width:18px;height:18px;pointer-events:none;
+}
+.lgb-scope .glass.card-pad::before{ top:-1px;left:-1px;border-top:2px solid var(--cyan);border-left:2px solid var(--cyan); }
+.lgb-scope .glass.card-pad::after{ bottom:-1px;right:-1px;border-bottom:2px solid var(--violet);border-right:2px solid var(--violet); }
 
 /* ---------- Menu Utama ---------- */
 .lgb-menu-header{ text-align:center;margin-bottom:22px; }
-.lgb-menu-icon{ font-size:34px;margin-bottom:6px; }
-.lgb-menu-header-title{ font-weight:800;font-size:17px;color:#fff;letter-spacing:.3px; }
-.lgb-menu-header-sub{ font-size:12px;color:#888;font-weight:600;margin-top:2px; }
+.lgb-menu-icon{ font-size:34px;margin-bottom:6px;filter:drop-shadow(0 0 10px rgba(0,229,255,.5)); }
+.lgb-menu-header-title{ font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--text);letter-spacing:.4px; }
+.lgb-menu-header-sub{ font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:2px;letter-spacing:1px;text-transform:uppercase; }
 .lgb-menu-row{ display:flex;gap:12px; }
 .lgb-menu-card{
   flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
-  padding:26px 10px;border:1.5px solid #fff;border-radius:16px;background:#0A0A0A;color:#fff;
-  font-family:inherit;cursor:pointer;
+  padding:26px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel-a);color:var(--text);
+  font-family:inherit;cursor:pointer;backdrop-filter:blur(10px);transition:all .2s;
 }
-.lgb-menu-card:active{ background:#fff;color:#0a0a0a; }
-.lgb-menu-card-icon{ font-size:28px; }
-.lgb-menu-card-title{ font-weight:800;font-size:12.5px;text-align:center;letter-spacing:.2px; }
+.lgb-menu-card:active{ border-color:var(--line-strong);box-shadow:0 0 20px rgba(0,229,255,.25);background:rgba(0,229,255,0.08); }
+.lgb-menu-card-icon{ font-size:26px; }
+.lgb-menu-card-title{ font-family:var(--font-display);font-weight:700;font-size:11.5px;text-align:center;letter-spacing:.4px;text-transform:uppercase; }
 
 /* ---------- Grid Pilih Minggu — 5 kotak sebaris ---------- */
 .lgb-week-grid{ display:grid;grid-template-columns:repeat(5,1fr);gap:7px; }
 .lgb-week-box{
-  padding:11px 2px;border:1.5px solid #fff;border-radius:10px;background:#0A0A0A;color:#fff;
-  font-family:inherit;font-weight:800;font-size:10.5px;cursor:pointer;text-align:center;
+  padding:11px 2px;border:1px solid var(--line);border-radius:5px;background:var(--panel-a);color:var(--text);
+  font-family:var(--font-mono);font-weight:700;font-size:10.5px;cursor:pointer;text-align:center;
 }
-.lgb-week-box:active{ background:#fff;color:#0a0a0a; }
-
-/* ---------- Senarai (Minggu/Tarikh/Seksyen/Penyemak) ---------- */
-.lgb-list-item{
-  display:block;width:100%;padding:14px 16px;margin-bottom:9px;border:1.5px solid #fff;border-radius:12px;
-  background:#0A0A0A;color:#fff;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;text-align:left;
-}
+.lgb-week-box:active{ border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 12px rgba(0,229,255,.3); }
 
 /* ---------- Butang ---------- */
 .btn-bw-solid{
-  display:block;width:100%;margin-top:16px;padding:14px;border:1.5px solid #fff;border-radius:12px;
-  background:#fff;color:#0a0a0a;font-weight:800;font-size:13.5px;cursor:pointer;font-family:inherit;
+  display:block;width:100%;margin-top:16px;padding:13px;border:1px solid var(--line-strong);border-radius:5px;
+  background:linear-gradient(135deg,var(--cyan),var(--blue));color:var(--void);font-weight:700;font-size:13px;
+  cursor:pointer;font-family:var(--font-display);letter-spacing:.3px;box-shadow:0 0 16px rgba(0,229,255,.35);
 }
 .btn-bw-solid:disabled{ opacity:.55; }
 .btn-bw-outline{
-  display:block;width:100%;margin-top:12px;padding:13px;border:1.5px solid #fff;border-radius:12px;
-  background:transparent;color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;
+  display:block;width:100%;margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:5px;
+  background:transparent;color:var(--text-dim);font-weight:700;font-size:12.5px;cursor:pointer;
+  font-family:var(--font-ui,inherit);letter-spacing:.2px;
 }
 .lgb-nav-row{ display:flex;gap:10px;margin-top:12px; }
-.lgb-nav-row .btn-bw-outline, .lgb-nav-row .btn-bw-solid{ flex:1; }
+.lgb-nav-row .btn-bw-outline, .lgb-nav-row .btn-bw-solid{ flex:1;margin-top:0; }
 
-/* ---------- Medan borang — label berwarna-warni bergilir ---------- */
-.lgb-field-label{ display:block;font-size:11.5px;letter-spacing:.8px;font-weight:800;text-transform:uppercase;margin:14px 0 6px; }
-.lgb-field-label:first-child{ margin-top:0; }
-.lgb-field-label:nth-of-type(6n+1){ color:var(--lgb-c1); }
-.lgb-field-label:nth-of-type(6n+2){ color:var(--lgb-c2); }
-.lgb-field-label:nth-of-type(6n+3){ color:var(--lgb-c3); }
-.lgb-field-label:nth-of-type(6n+4){ color:var(--lgb-c4); }
-.lgb-field-label:nth-of-type(6n+5){ color:var(--lgb-c5); }
-.lgb-field-label:nth-of-type(6n+0){ color:var(--lgb-c6); }
-.lgb-field{
-  width:100%;padding:16px 15px;border-radius:12px;border:1.5px solid #333;
-  background:#111;color:#fff;font-family:inherit;font-weight:600;font-size:15px;outline:none;line-height:1.6;
+/* ---------- Senarai (Minggu/Tarikh/Seksyen/Penyemak) ---------- */
+.lgb-list-item{
+  display:block;width:100%;padding:13px 15px;margin-bottom:8px;border:1px solid var(--line);border-radius:5px;
+  background:var(--panel-a);color:var(--text);font-family:inherit;font-weight:600;font-size:13px;cursor:pointer;
+  text-align:left;transition:all .2s;
 }
-.lgb-field:focus{ border-color:#fff; }
+.lgb-list-item:active{ border-color:var(--cyan);background:rgba(0,229,255,.06); }
+
+/* ---------- Medan borang — label mono cyan, ikon warna-warni ---------- */
+.lgb-field-label{
+  display:block;font-family:var(--font-mono);font-size:10.5px;letter-spacing:1.5px;font-weight:600;
+  text-transform:uppercase;margin:14px 0 6px;color:var(--cyan);
+}
+.lgb-field-label:first-child{ margin-top:0; }
+.lgb-field{
+  width:100%;padding:14px 14px;border-radius:5px;border:1px solid var(--line);
+  background:rgba(0,0,0,.25);color:var(--text);font-family:inherit;font-weight:500;font-size:15px;outline:none;line-height:1.6;
+}
+.lgb-field:focus{ border-color:var(--line-strong);box-shadow:0 0 12px rgba(0,229,255,.18); }
 textarea.lgb-field{ min-height:130px;resize:vertical; }
 
 .lgb-img-slot{
-  position:relative;width:100%;min-height:120px;border:2px dashed #333;border-radius:12px;
-  display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;background:#111;
+  position:relative;width:100%;min-height:120px;border:1.5px dashed var(--line);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;background:rgba(0,0,0,.2);
 }
 .lgb-img-slot img{ width:100%;max-height:220px;object-fit:contain;display:block; }
-.lgb-img-empty{ text-align:center;color:#777;font-size:12px;font-weight:600;padding:20px; }
+.lgb-img-empty{ text-align:center;color:var(--text-dim);font-size:12px;font-weight:600;padding:20px; }
 
 /* ---------- Analisis Penghantaran (kad Menu Utama) ---------- */
 .lgb-analisis-grid{ display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px; }
 .lgb-stat-card{
-  background:#0A0A0A;border:1.5px solid #fff;border-radius:14px;padding:16px 14px;
+  background:var(--panel-a);border:1px solid var(--line);border-radius:6px;padding:16px 14px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  position:relative;overflow:hidden;backdrop-filter:blur(10px);
 }
+.lgb-stat-card::before{ content:'';position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid var(--cyan);border-left:2px solid var(--cyan); }
 .lgb-stat-card-left{ align-items:flex-start;text-align:left; }
-.lgb-stat-num{ font-size:30px;font-weight:800;color:var(--lgb-c1); }
-.lgb-stat-label{ font-size:10.5px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.4px; }
-.lgb-stat-title{ font-size:12px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:5px; }
-.lgb-stat-title-red{ color:var(--lgb-c2); }
-.lgb-stat-title-amber{ color:var(--lgb-c4); }
-.lgb-progress-track{ width:100%;height:22px;background:#222;border-radius:20px;overflow:hidden; }
+.lgb-stat-num{ font-family:var(--font-mono);font-size:28px;font-weight:700;color:var(--cyan);text-shadow:0 0 14px rgba(0,229,255,.4); }
+.lgb-stat-label{ font-family:var(--font-mono);font-size:10px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px; }
+.lgb-stat-title{ font-family:var(--font-mono);font-size:11px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:5px;letter-spacing:.5px;text-transform:uppercase; }
+.lgb-stat-title-red{ color:var(--pink); }
+.lgb-stat-title-amber{ color:var(--amber); }
+.lgb-progress-track{ width:100%;height:20px;background:rgba(0,0,0,.35);border-radius:20px;overflow:hidden;border:1px solid var(--line); }
 .lgb-progress-fill{
-  height:100%;background:repeating-linear-gradient(45deg,var(--lgb-c1),var(--lgb-c1) 8px,#1E3A8A 8px,#1E3A8A 16px);
-  display:flex;align-items:center;justify-content:center;color:#fff;font-size:10.5px;font-weight:800;
-  transition:width .4s;min-width:32px;
+  height:100%;background:linear-gradient(90deg,var(--cyan),var(--violet));
+  display:flex;align-items:center;justify-content:center;color:var(--void);font-family:var(--font-mono);font-size:10px;font-weight:700;
+  transition:width .4s;min-width:32px;box-shadow:0 0 10px rgba(0,229,255,.4);
 }
 .lgb-pill-wrap{ display:flex;flex-wrap:wrap;gap:6px; }
-.lgb-week-pill{ padding:5px 10px;border-radius:20px;font-size:10.5px;font-weight:800;color:#fff; }
-.lgb-week-pill-red{ background:var(--lgb-c2); }
-.lgb-week-pill-amber{ background:var(--lgb-c4);color:#0a0a0a; }
-.lgb-incomplete-row{ display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:12px;font-weight:700;color:#fff; }
+.lgb-week-pill{ padding:5px 10px;border-radius:20px;font-family:var(--font-mono);font-size:10px;font-weight:700; }
+.lgb-week-pill-red{ background:rgba(255,85,119,.14);color:var(--pink);border:1px solid rgba(255,85,119,.4); }
+.lgb-week-pill-amber{ background:rgba(255,184,77,.14);color:var(--amber);border:1px solid rgba(255,184,77,.4); }
+.lgb-incomplete-row{ display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--text); }
 
 /* ---------- Section View (hub utama) ---------- */
-.lgb-view-head{ color:#fff;font-size:13px;font-weight:700;margin-bottom:12px; }
+.lgb-view-head{ font-family:var(--font-mono);color:var(--text-dim);font-size:12px;font-weight:600;margin-bottom:12px;letter-spacing:.3px; }
+.lgb-view-head b{ color:var(--cyan); }
 .lgb-semakan-box{
-  background:#111;border:1.5px solid var(--lgb-c4);border-radius:12px;padding:10px 13px;margin-bottom:16px;
+  background:rgba(255,184,77,.06);border:1px solid rgba(255,184,77,.35);border-radius:6px;padding:10px 13px;margin-bottom:16px;
 }
-.lgb-view-row{ display:flex;flex-direction:column;gap:2px;padding:6px 0;border-bottom:1px solid #222; }
+.lgb-view-row{ display:flex;flex-direction:column;gap:2px;padding:6px 0;border-bottom:1px solid var(--line); }
 .lgb-view-row:last-of-type{ border-bottom:none; }
-.lgb-view-label{ font-size:10px;font-weight:700;color:var(--lgb-c7);text-transform:uppercase;letter-spacing:.3px; }
-.lgb-view-val{ font-size:13px;font-weight:600;color:#fff;white-space:pre-wrap; }
-.lgb-view-img-wrap{ margin-top:8px;border-radius:10px;overflow:hidden;border:1.5px solid #333; }
+.lgb-view-label{ font-family:var(--font-mono);font-size:9.5px;font-weight:600;color:var(--cyan);text-transform:uppercase;letter-spacing:1px; }
+.lgb-view-val{ font-size:13.5px;font-weight:500;color:var(--text);white-space:pre-wrap; }
+.lgb-view-img-wrap{ margin-top:8px;border-radius:6px;overflow:hidden;border:1px solid var(--line); }
 .lgb-view-img-wrap img{ width:100%;display:block;cursor:zoom-in; }
 
+/* ---------- Galeri kecil (semua gambar laporan, klik untuk popup) ---------- */
+.lgb-gallery-strip{ display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px; }
+.lgb-gallery-thumb{
+  width:64px;height:64px;border-radius:6px;overflow:hidden;border:1px solid var(--line);cursor:pointer;
+  position:relative;flex-shrink:0;transition:all .2s;
+}
+.lgb-gallery-thumb:active{ border-color:var(--cyan);box-shadow:0 0 12px rgba(0,229,255,.4); }
+.lgb-gallery-thumb img{ width:100%;height:100%;object-fit:cover;display:block; }
+.lgb-gallery-thumb-label{
+  position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.7);color:var(--cyan);
+  font-family:var(--font-mono);font-size:7.5px;font-weight:700;text-align:center;padding:2px 1px;text-transform:uppercase;
+}
 /* ---------- Cetak / PDF — papar HANYA #lgb-print-area (laporan PENUH), sembunyi semua app UI biasa ---------- */
 #lgb-print-area{ display:none; }
 @media print{
