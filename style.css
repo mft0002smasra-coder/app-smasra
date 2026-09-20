@@ -1,17 +1,41 @@
+/* ============================================================
+   TEMA ASAS (Home + page yang kongsi tema Home sahaja — bukan
+   page bertema khas seperti Data Murid/Jadual Guru/Keberadaan
+   Murid/Laporan Guru Bertugas, yang semuanya guna skop sendiri).
+
+   TEMA LAMA (Holographic Teal) — DISIMPAN DI SINI untuk UNDO pantas,
+   cuma copy-paste balik ke :root bawah kalau perlu kembali:
+
+   --void:#030b12;
+   --panel-a: rgba(8,42,56,.55);
+   --panel-b: rgba(3,15,20,.68);
+   --cyan:#2be8d0;
+   --blue:#2ea8ff;
+   --mint:#39ffb0;
+   --amber:#ffb454;
+   --pink:#ff6fb5;
+   --violet:#a78bfa;
+   --text:#eafffb;
+   --text-dim:#7fb8c2;
+   --line: rgba(43,232,208,.35);
+   --line-strong: rgba(43,232,208,.65);
+
+   TEMA BAHARU — Futuristik Biru Aurora (aktif sekarang):
+   ============================================================ */
 :root{
-  --void:#030b12;
-  --panel-a: rgba(8,42,56,.55);
-  --panel-b: rgba(3,15,20,.68);
-  --cyan:#2be8d0;
-  --blue:#2ea8ff;
-  --mint:#39ffb0;
+  --void:#050A1F;
+  --panel-a: rgba(24,34,84,.55);
+  --panel-b: rgba(8,12,38,.68);
+  --cyan:#4CC9F0;
+  --blue:#4361EE;
+  --mint:#56E3B0;
   --amber:#ffb454;
-  --pink:#ff6fb5;
-  --violet:#a78bfa;
-  --text:#eafffb;
-  --text-dim:#7fb8c2;
-  --line: rgba(43,232,208,.35);
-  --line-strong: rgba(43,232,208,.65);
+  --pink:#B983FF;
+  --violet:#7B2FF7;
+  --text:#EAF0FF;
+  --text-dim:#8CA3D8;
+  --line: rgba(76,201,240,.35);
+  --line-strong: rgba(76,201,240,.65);
   --gap: clamp(12px, 1.8vw, 22px);
   --danger:#f87171;
   --radius:16px;
@@ -42,15 +66,16 @@ body{
 .bg-fx{
   position:fixed;inset:0;z-index:-2;
   background:
-    radial-gradient(600px 420px at 15% 8%, rgba(43,232,208,0.14), transparent 60%),
-    radial-gradient(520px 420px at 88% 15%, rgba(46,168,255,0.12), transparent 60%),
-    radial-gradient(600px 520px at 50% 95%, rgba(57,255,176,0.07), transparent 60%),
-    linear-gradient(180deg,#030b12 0%,#051620 100%);
+    radial-gradient(650px 460px at 12% 6%, rgba(76,201,240,0.16), transparent 60%),
+    radial-gradient(560px 460px at 90% 12%, rgba(123,47,247,0.14), transparent 60%),
+    radial-gradient(600px 520px at 45% 92%, rgba(86,227,176,0.10), transparent 60%),
+    radial-gradient(500px 400px at 70% 55%, rgba(67,97,238,0.09), transparent 65%),
+    linear-gradient(180deg,#050A1F 0%,#0A1030 100%);
 }
 .bg-fx::after{
   content:'';
   position:absolute;left:0;right:0;height:140px;
-  background:linear-gradient(180deg, transparent, rgba(43,232,208,0.05), transparent);
+  background:linear-gradient(180deg, transparent, rgba(76,201,240,0.06), transparent);
   animation:scan 8s linear infinite;
 }
 @keyframes scan{ 0%{top:-140px} 100%{top:100vh} }
