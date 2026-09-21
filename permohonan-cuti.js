@@ -4,6 +4,10 @@
    ============================================================ */
 
 let pcCurrentUser = null;
+const PC_SPREADSHEET_ID = "1AJQQ08we1ooE-Cixgiq-XGrs3xkc7zYDqm0If4oiYi8";
+const PC_SHEET_NAME = "Form responses 2";
+let pcHistoryRecords = [];
+let pcSelectedYear = null;
 
 function pcInit(user) {
   pcCurrentUser = user;
@@ -20,7 +24,82 @@ function pcGoForm() {
   document.getElementById("pc-screen-intro").classList.add("hidden");
   document.getElementById("pc-screen-form").classList.remove("hidden");
   document.getElementById("pc-form-error").classList.add("hidden");
+  pcLoadHistory();
 }
+
+/* ================= Sejarah Permohonan (gviz terus, tapis nama + tahun) ================= */
+async function pcFetchHistory() {
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${PC_SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(PC_SHEET_NAME)}&headers=1&_ts=${Date.now()}`;
+    const res = await fetch(url, { cache: "no-store" });
+    const text = await res.text();
+    const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
+    const table = JSON.parse(jsonStr).table;
+    pcHistoryRecords = (table.rows || []).map((r) => {
+      const c = r.c || [];
+      const get = (i) => (c[i] && c[i].v != null ? String(c[i].v).trim() : "");
+      return {
+        timestamp: get(0), nama: get(1), jawatan: get(2), jenisCuti: get(3),
+        mulaiDari: get(4), hingga: get(5), selama: get(6), catatan: get(7),
+      };
+    }).filter((r) => r.nama);
+  } catch (e) {
+    pcHistoryRecords = [];
+  }
+}
+
+function pcNorm(str) { return String(str || "").trim().toUpperCase().replace(/\s+/g, " "); }
+
+async function pcLoadHistory() {
+  const listEl = document.getElementById("pc-history-list");
+  listEl.innerHTML = `<div class="empty-state">Memuatkan...</div>`;
+  await pcFetchHistory();
+
+  const myRecords = pcHistoryRecords.filter((r) => pcNorm(r.nama) === pcNorm(pcCurrentUser.nama));
+
+  // Bina senarai tahun dari "MulaiDari" (dd/mm/YYYY), default TAHUN SEMASA
+  const years = [...new Set(myRecords.map((r) => {
+    const m = r.mulaiDari.match(/\/(\d{4})$/);
+    return m ? m[1] : null;
+  }).filter(Boolean))].sort((a, b) => b - a);
+  const thisYear = String(new Date().getFullYear());
+  if (!years.includes(thisYear)) years.unshift(thisYear);
+  if (!pcSelectedYear) pcSelectedYear = thisYear;
+
+  const yearSelEl = document.getElementById("pc-history-year");
+  yearSelEl.innerHTML = years.map((y) => `<option value="${y}"${y === pcSelectedYear ? " selected" : ""}>${y}</option>`).join("");
+
+  pcRenderHistory(myRecords);
+}
+
+function pcOnYearChange() {
+  pcSelectedYear = document.getElementById("pc-history-year").value;
+  const myRecords = pcHistoryRecords.filter((r) => pcNorm(r.nama) === pcNorm(pcCurrentUser.nama));
+  pcRenderHistory(myRecords);
+}
+
+function pcRenderHistory(myRecords) {
+  const filtered = myRecords.filter((r) => r.mulaiDari.endsWith("/" + pcSelectedYear));
+  filtered.sort((a, b) => {
+    const da = a.mulaiDari.split("/").reverse().join("");
+    const db = b.mulaiDari.split("/").reverse().join("");
+    return db.localeCompare(da);
+  });
+  const listEl = document.getElementById("pc-history-list");
+  listEl.innerHTML = filtered.length
+    ? filtered.map((r) => `
+      <div class="pc-history-row">
+        <div class="pc-history-row-top">
+          <span class="pc-history-jenis">${pcEscape(r.jenisCuti)}</span>
+          <span class="pc-history-selama">${pcEscape(r.selama)} hari</span>
+        </div>
+        <div class="pc-history-tarikh">${pcEscape(r.mulaiDari)} &ndash; ${pcEscape(r.hingga)}</div>
+        ${r.catatan ? `<div class="pc-history-catatan">${pcEscape(r.catatan)}</div>` : ""}
+      </div>`).join("")
+    : `<div class="empty-state">Tiada permohonan untuk tahun ${pcEscape(pcSelectedYear)}.</div>`;
+}
+
+function pcEscape(str) { return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
 /** Kira "Selama" (bilangan hari) secara automatik: Mulai Dari -> Hingga,
  * termasuk kedua-dua tarikh (inklusif), macam kaedah kiraan cuti biasa. */
@@ -75,6 +154,7 @@ async function pcSubmit() {
       document.getElementById("pc-f-hingga").value = "";
       document.getElementById("pc-f-selama").value = "-";
       document.getElementById("pc-f-catatan").value = "";
+      pcLoadHistory(); // papar semula sejarah termasuk rekod baharu
     } else {
       errEl.textContent = data.message || "Gagal hantar permohonan.";
       errEl.classList.remove("hidden");

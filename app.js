@@ -323,15 +323,70 @@ function renderHomeMenu(groupKey) {
     grid.innerHTML = MENU_STRUCTURE.map((g) =>
       `<div class="module-tile" onclick="renderHomeMenu('${g.key}')"><span data-icon="${g.icon}"></span><span class="module-tile-label">${g.label}</span></div>`
     ).join("") + `<a class="module-tile" href="kehadiran-staf.html"><span data-icon="calendar"></span><span class="module-tile-label">Kehadiran Staf</span></a>`;
+    renderIcons();
+    return;
+  }
+
+  const group = MENU_STRUCTURE.find((g) => g.key === groupKey);
+  const backTileHtml = `<div class="module-tile module-back" onclick="renderHomeMenu(null)"><span data-icon="back"></span><span class="module-tile-label">Kembali</span></div>`;
+  const tileHtml = (c) => {
+    if (!c.href || c.soon) return `<div class="module-tile soon"><span data-icon="${c.icon}"></span><span class="module-tile-label">${c.label}</span></div>`;
+    return `<a class="module-tile" href="${c.href}"><span data-icon="${c.icon}"></span><span class="module-tile-label">${c.label}</span></a>`;
+  };
+
+  const CHUNK = 6; // 2 baris x 3 lajur setiap muka
+  if (group.children.length <= 5) {
+    grid.innerHTML = backTileHtml + group.children.map(tileHtml).join("");
   } else {
-    const group = MENU_STRUCTURE.find((g) => g.key === groupKey);
-    const childrenHtml = group.children.map((c) => {
-      if (!c.href || c.soon) return `<div class="module-tile soon"><span data-icon="${c.icon}"></span><span class="module-tile-label">${c.label}</span></div>`;
-      return `<a class="module-tile" href="${c.href}"><span data-icon="${c.icon}"></span><span class="module-tile-label">${c.label}</span></a>`;
-    }).join("");
-    grid.innerHTML = `<div class="module-tile module-back" onclick="renderHomeMenu(null)"><span data-icon="back"></span><span class="module-tile-label">Kembali</span></div>${childrenHtml}`;
+    // >5 ikon — pecah ke beberapa muka, boleh slide kiri/kanan
+    const pages = [];
+    for (let i = 0; i < group.children.length; i += CHUNK) pages.push(group.children.slice(i, i + CHUNK));
+    grid.innerHTML = `
+      ${backTileHtml}
+      <div class="module-pager-outer">
+        <div class="module-pager-track" id="module-pager-track">
+          ${pages.map((page) => `<div class="module-pager-page"><div class="module-grid module-grid-inner">${page.map(tileHtml).join("")}</div></div>`).join("")}
+        </div>
+        <div class="module-pager-dots" id="module-pager-dots">
+          ${pages.map((_, i) => `<span class="module-pager-dot${i === 0 ? " active" : ""}" onclick="moduleMenuPagerGoTo(${i})"></span>`).join("")}
+        </div>
+      </div>`;
+    setTimeout(initModuleMenuPager, 0);
   }
   renderIcons();
+}
+
+/* ---------------- Paginasi ikon menu (>5 ikon dalam satu kumpulan) ---------------- */
+let moduleMenuPagerIndex = 0;
+function initModuleMenuPager() {
+  const track = document.getElementById("module-pager-track");
+  if (!track) return;
+  const count = track.children.length;
+  moduleMenuPagerIndex = 0;
+
+  let startX = 0, dragging = false;
+  track.addEventListener("touchstart", (e) => { startX = e.touches[0].clientX; dragging = true; track.style.transition = "none"; }, { passive: true });
+  track.addEventListener("touchmove", (e) => {
+    if (!dragging) return;
+    const deltaX = e.touches[0].clientX - startX;
+    track.style.transform = `translateX(calc(-${moduleMenuPagerIndex * 100}% + ${deltaX}px))`;
+  }, { passive: true });
+  track.addEventListener("touchend", (e) => {
+    if (!dragging) return;
+    dragging = false;
+    track.style.transition = "";
+    const deltaX = e.changedTouches[0].clientX - startX;
+    if (deltaX < -40 && moduleMenuPagerIndex < count - 1) moduleMenuPagerGoTo(moduleMenuPagerIndex + 1);
+    else if (deltaX > 40 && moduleMenuPagerIndex > 0) moduleMenuPagerGoTo(moduleMenuPagerIndex - 1);
+    else moduleMenuPagerGoTo(moduleMenuPagerIndex);
+  });
+}
+function moduleMenuPagerGoTo(idx) {
+  const track = document.getElementById("module-pager-track");
+  if (!track) return;
+  moduleMenuPagerIndex = idx;
+  track.style.transform = `translateX(-${idx * 100}%)`;
+  document.querySelectorAll("#module-pager-dots .module-pager-dot").forEach((d, i) => d.classList.toggle("active", i === idx));
 }
 
 /* ---------------- Home: swipe antara kad (Rekod Kehadiran <-> Jadual Waktu) ---------------- */

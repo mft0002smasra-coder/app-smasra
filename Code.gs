@@ -880,12 +880,21 @@ function savePermohonanCuti(body) {
     return jsonResponse({ success: false, message: 'Tab "' + CUTI_SHEET_NAME + '" tidak dijumpai.' });
   }
   var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || "GMT+8", "dd/MM/yyyy HH:mm:ss");
+  // Tukar YYYY-MM-DD (dari <input type=date>) -> dd/mm/YYYY untuk paparan Sheet
+  var mulaiDariFmt = cutiToDDMMYYYY(body.mulaiDari);
+  var hinggaFmt = cutiToDDMMYYYY(body.hingga);
   sheet.appendRow([
     timestamp, body.nama, body.jawatan, body.jenisCuti,
-    body.mulaiDari, body.hingga, body.selama || "", body.catatan || "",
+    mulaiDariFmt, hinggaFmt, body.selama || "", body.catatan || "",
   ]);
   var newRow = sheet.getLastRow();
-  sheet.getRange(newRow, 5).setNumberFormat("@").setValue(body.mulaiDari);
-  sheet.getRange(newRow, 6).setNumberFormat("@").setValue(body.hingga);
+  sheet.getRange(newRow, 5).setNumberFormat("@").setValue(mulaiDariFmt);
+  sheet.getRange(newRow, 6).setNumberFormat("@").setValue(hinggaFmt);
   return jsonResponse({ success: true });
+}
+
+function cutiToDDMMYYYY(isoStr) {
+  var m = String(isoStr || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return isoStr;
+  return m[3] + "/" + m[2] + "/" + m[1];
 }
