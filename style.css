@@ -1720,6 +1720,11 @@ table.jg-table tbody th, table.jg-table .jg-slot-cell{
 .lgb-scope .glass.card-pad::after{ bottom:-1px;right:-1px;border-bottom:2px solid var(--violet);border-right:2px solid var(--violet); }
 
 /* ---------- Menu Utama ---------- */
+.lgb-app-title{
+  font-family:var(--font-display);font-weight:700;font-size:19px;color:var(--text);
+  text-align:center;letter-spacing:2px;margin-bottom:18px;
+  text-shadow:0 0 16px rgba(0,229,255,.4);
+}
 .lgb-menu-header{ text-align:center;margin-bottom:22px; }
 .lgb-menu-icon{ font-size:34px;margin-bottom:6px;filter:drop-shadow(0 0 10px rgba(0,229,255,.5)); }
 .lgb-menu-header-title{ font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--text);letter-spacing:.4px; }
@@ -1742,18 +1747,20 @@ table.jg-table tbody th, table.jg-table .jg-slot-cell{
 }
 .lgb-week-box:active{ border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 12px rgba(0,229,255,.3); }
 
-/* ---------- Butang ---------- */
+/* ---------- Butang — futuristik, elegan, tiada ikon ---------- */
 .btn-bw-solid{
-  display:block;width:100%;margin-top:16px;padding:13px;border:1px solid var(--line-strong);border-radius:5px;
-  background:linear-gradient(135deg,var(--cyan),var(--blue));color:var(--void);font-weight:700;font-size:13px;
-  cursor:pointer;font-family:var(--font-display);letter-spacing:.3px;box-shadow:0 0 16px rgba(0,229,255,.35);
+  display:block;width:100%;margin-top:16px;padding:14px;border:none;border-radius:4px;
+  background:linear-gradient(90deg,var(--cyan),var(--violet));color:var(--void);font-weight:700;font-size:13px;
+  cursor:pointer;font-family:var(--font-display);letter-spacing:1.2px;text-transform:uppercase;
+  box-shadow:0 0 18px rgba(0,229,255,.28);position:relative;overflow:hidden;
 }
-.btn-bw-solid:disabled{ opacity:.55; }
+.btn-bw-solid:disabled{ opacity:.5; }
 .btn-bw-outline{
-  display:block;width:100%;margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:5px;
-  background:transparent;color:var(--text-dim);font-weight:700;font-size:12.5px;cursor:pointer;
-  font-family:var(--font-ui,inherit);letter-spacing:.2px;
+  display:block;width:100%;margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:4px;
+  background:transparent;color:var(--text-dim);font-weight:600;font-size:11.5px;cursor:pointer;
+  font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;transition:all .2s;
 }
+.btn-bw-outline:active{ border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,.05); }
 .lgb-nav-row{ display:flex;gap:10px;margin-top:12px; }
 .lgb-nav-row .btn-bw-outline, .lgb-nav-row .btn-bw-solid{ flex:1;margin-top:0; }
 
@@ -1799,6 +1806,26 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
 .lgb-stat-title{ font-family:var(--font-mono);font-size:11px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:5px;letter-spacing:.5px;text-transform:uppercase; }
 .lgb-stat-title-red{ color:var(--pink); }
 .lgb-stat-title-amber{ color:var(--amber); }
+.lgb-stat-card-clickable{ cursor:pointer;transition:all .2s; }
+.lgb-stat-card-clickable:active{ border-color:var(--cyan);box-shadow:0 0 16px rgba(0,229,255,.3);background:rgba(0,229,255,.05); }
+.lgb-stat-tap-hint{ font-family:var(--font-mono);font-size:8.5px;color:var(--text-dim);opacity:.7;margin-top:4px;letter-spacing:.5px;text-transform:uppercase; }
+
+/* ---------- Popup HUD (senarai Minggu Tiada Laporan / Belum Cukup 5 Hari) ---------- */
+.lgb-popup-overlay{
+  position:fixed;inset:0;z-index:3200;background:rgba(2,4,10,.8);backdrop-filter:blur(3px);
+  display:flex;align-items:flex-end;justify-content:center;
+}
+.lgb-popup-sheet{
+  width:100%;max-width:480px;max-height:75vh;overflow-y:auto;background:var(--void-2);
+  border:1px solid var(--line-strong);border-top:2px solid var(--cyan);border-radius:14px 14px 0 0;
+  padding:18px 16px 26px;position:relative;box-shadow:0 -10px 40px rgba(0,229,255,.15);
+}
+.lgb-popup-header{ display:flex;justify-content:space-between;align-items:center;margin-bottom:14px; }
+.lgb-popup-title{ font-family:var(--font-display);font-weight:700;font-size:13.5px;color:var(--text);letter-spacing:.4px;text-transform:uppercase; }
+.lgb-popup-close{
+  width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--text-dim);
+  font-size:12px;cursor:pointer;
+}
 .lgb-progress-track{ width:100%;height:20px;background:rgba(0,0,0,.35);border-radius:20px;overflow:hidden;border:1px solid var(--line); }
 .lgb-progress-fill{
   height:100%;background:linear-gradient(90deg,var(--cyan),var(--violet));
@@ -1827,19 +1854,10 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
 .lgb-view-val{ font-size:13.5px;font-weight:500;color:var(--text);white-space:pre-wrap; }
 .lgb-view-img-wrap{ margin-top:8px;border-radius:6px;overflow:hidden;border:1px solid var(--line); }
 .lgb-view-img-wrap img{ width:100%;display:block;cursor:zoom-in; }
+.lgb-view-img-grid{ display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:10px; }
+.lgb-view-img-grid .lgb-view-img-wrap{ margin-top:0; }
+.lgb-view-img-grid .lgb-view-img-wrap img{ aspect-ratio:1;object-fit:cover; }
 
-/* ---------- Galeri kecil (semua gambar laporan, klik untuk popup) ---------- */
-.lgb-gallery-strip{ display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px; }
-.lgb-gallery-thumb{
-  width:64px;height:64px;border-radius:6px;overflow:hidden;border:1px solid var(--line);cursor:pointer;
-  position:relative;flex-shrink:0;transition:all .2s;
-}
-.lgb-gallery-thumb:active{ border-color:var(--cyan);box-shadow:0 0 12px rgba(0,229,255,.4); }
-.lgb-gallery-thumb img{ width:100%;height:100%;object-fit:cover;display:block; }
-.lgb-gallery-thumb-label{
-  position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.7);color:var(--cyan);
-  font-family:var(--font-mono);font-size:7.5px;font-weight:700;text-align:center;padding:2px 1px;text-transform:uppercase;
-}
 /* ---------- Cetak / PDF — papar HANYA #lgb-print-area (laporan PENUH), sembunyi semua app UI biasa ---------- */
 #lgb-print-area{ display:none; }
 @media print{
@@ -1860,5 +1878,6 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
   .lgb-print-row{ display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #ddd;font-size:11.5px; }
   .lgb-print-label{ font-weight:700;min-width:180px;color:#444; }
   .lgb-print-val{ white-space:pre-wrap; }
-  .lgb-print-img{ max-width:280px;margin-top:8px;border:1px solid #999;border-radius:4px; }
+  .lgb-print-img-grid{ display:flex;flex-wrap:wrap;gap:6px;margin-top:8px; }
+  .lgb-print-img{ max-width:150px;max-height:150px;object-fit:cover;border:1px solid #999;border-radius:4px; }
 }

@@ -104,6 +104,23 @@ function lgbFixImageUrl(url) {
   return raw; // bukan link Drive dikenali — biar apa adanya
 }
 
+/** Format tarikh YYYY-MM-DD (storan) -> dd-mm-YYYY (paparan) */
+function lgbFormatDate(isoStr) {
+  if (!isoStr) return "-";
+  const m = String(isoStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return isoStr;
+  return `${m[3]}-${m[2]}-${m[1]}`;
+}
+
+/** Satu SEL data boleh ada BEBERAPA link gambar dipisah koma — pecah semua,
+ * betulkan setiap satu (Drive -> lh3), pulangkan senarai URL sah. */
+function lgbFixImageUrls(cellValue) {
+  if (!cellValue) return [];
+  return String(cellValue).split(",")
+    .map((s) => lgbFixImageUrl(s.trim()))
+    .filter((u) => u);
+}
+
 /* ================= Navigasi skrin (satu container, toggle) ================= */
 const LGB_SCREENS = ["menu", "start", "weeks", "dates", "view", "picker", "edit", "penyemak", "ulasan"];
 function lgbShowScreen(name) {
@@ -161,13 +178,28 @@ async function lgbLoadAnalisis() {
     }
   }
 
-  document.getElementById("lgb-analisis-missing-box").innerHTML = missing.length
-    ? missing.map((m) => `<span class="lgb-week-pill lgb-week-pill-red">${lgbEscape(m)}</span>`).join("")
-    : `<span class="sub-dim">Tiada — semua minggu ada laporan.</span>`;
+  document.getElementById("lgb-analisis-missing-count").textContent = missing.length;
+  document.getElementById("lgb-analisis-incomplete-count").textContent = incomplete.length;
+  lgbMissingList = missing;
+  lgbIncompleteList = incomplete;
+}
 
-  document.getElementById("lgb-analisis-incomplete-box").innerHTML = incomplete.length
-    ? incomplete.map((it) => `<div class="lgb-incomplete-row"><span>${lgbEscape(it.label)}</span><span class="lgb-week-pill lgb-week-pill-amber">${it.count}/5 Hari Selesai</span></div>`).join("")
-    : `<span class="sub-dim">Tiada — semua minggu genap 5 hari.</span>`;
+let lgbMissingList = [];
+let lgbIncompleteList = [];
+
+function lgbOpenAnalisisPopup(kind) {
+  const title = kind === "missing" ? "⚠ Minggu Tiada Laporan" : "⏱ Minggu Belum Cukup 5 Hari";
+  const list = kind === "missing" ? lgbMissingList : lgbIncompleteList;
+  document.getElementById("lgb-popup-title").textContent = title;
+  document.getElementById("lgb-popup-body").innerHTML = list.length
+    ? (kind === "missing"
+        ? `<div class="lgb-pill-wrap">${list.map((m) => `<span class="lgb-week-pill lgb-week-pill-red">${lgbEscape(m)}</span>`).join("")}</div>`
+        : list.map((it) => `<div class="lgb-incomplete-row"><span>${lgbEscape(it.label)}</span><span class="lgb-week-pill lgb-week-pill-amber">${it.count}/5 Hari Selesai</span></div>`).join(""))
+    : `<span class="sub-dim">Tiada rekod.</span>`;
+  document.getElementById("lgb-popup-overlay").classList.remove("hidden");
+}
+function lgbCloseAnalisisPopup() {
+  document.getElementById("lgb-popup-overlay").classList.add("hidden");
 }
 
 /* ================= MENU UTAMA ================= */
@@ -209,7 +241,7 @@ function lgbGoDates(minggu) {
   const dates = lgbRecords.filter((r) => String(r.minggu).trim() === lgbMinggu).map((r) => r.tarikh);
   document.getElementById("lgb-dates-subtitle").textContent = lgbMinggu;
   document.getElementById("lgb-dates-list").innerHTML = dates.length
-    ? dates.map((d) => `<button class="lgb-list-item" onclick="lgbOpenSectionView('${lgbEscape(d)}',0)">${lgbEscape(d)}</button>`).join("")
+    ? dates.map((d) => `<button class="lgb-list-item" onclick="lgbOpenSectionView('${lgbEscape(d)}',0)">${lgbEscape(lgbFormatDate(d))}</button>`).join("")
     : `<div class="empty-state">Tiada tarikh untuk minggu ini.</div>`;
 }
 
@@ -262,7 +294,7 @@ function lgbRenderSectionView() {
   const r = lgbCurrentRow || {};
 
   document.getElementById("lgb-view-minggu").textContent = lgbMinggu;
-  document.getElementById("lgb-view-tarikh").textContent = lgbTarikh;
+  document.getElementById("lgb-view-tarikh").textContent = lgbFormatDate(lgbTarikh);
   document.getElementById("lgb-view-pelapor").textContent = r.namaPelapor || "-";
   document.getElementById("lgb-view-penyemak").textContent = r.penyemak || "-";
   const ulasanLine = document.getElementById("lgb-view-ulasan-line");
@@ -274,27 +306,17 @@ function lgbRenderSectionView() {
   }
   document.getElementById("lgb-view-secname").textContent = sec.title;
 
-  // Galeri kecil — SEMUA gambar laporan ni (merentasi seksyen), klik untuk popup
-  const galleryEl = document.getElementById("lgb-view-gallery");
-  const allImgs = LGB_SECTIONS.filter((s) => s.gambarField && r[s.gambarField]).map((s) => ({ url: lgbFixImageUrl(r[s.gambarField]), label: s.title }));
-  if (allImgs.length > 1) {
-    galleryEl.innerHTML = `<div class="lgb-gallery-strip">${allImgs.map((im) => `
-      <div class="lgb-gallery-thumb" onclick="openImageLightbox('${lgbEscape(im.url)}')">
-        <img src="${lgbEscape(im.url)}" onerror="this.parentElement.style.display='none'">
-        <div class="lgb-gallery-thumb-label">${lgbEscape(im.label)}</div>
-      </div>`).join("")}</div>`;
-    galleryEl.classList.remove("hidden");
-  } else {
-    galleryEl.innerHTML = "";
-    galleryEl.classList.add("hidden");
-  }
-
   const fieldsHtml = sec.fields.map((f) => {
     const val = r[f.key] || "-";
     return `<div class="lgb-view-row"><span class="lgb-view-label">${lgbEscape(f.label)}</span><span class="lgb-view-val">${lgbEscape(val)}</span></div>`;
   }).join("");
-  const imgUrl = sec.gambarField ? lgbFixImageUrl(r[sec.gambarField]) : "";
-  const imgHtml = imgUrl ? `<div class="lgb-view-img-wrap"><img src="${lgbEscape(imgUrl)}" onerror="this.parentElement.style.display='none'" onclick="openImageLightbox('${lgbEscape(imgUrl)}')"></div>` : "";
+
+  // Satu sel gambar boleh ada BEBERAPA link dipisah koma — papar SEMUA,
+  // klik mana-mana satu untuk besarkan (lightbox).
+  const imgUrls = sec.gambarField ? lgbFixImageUrls(r[sec.gambarField]) : [];
+  const imgHtml = imgUrls.length
+    ? `<div class="lgb-view-img-grid">${imgUrls.map((u) => `<div class="lgb-view-img-wrap"><img src="${lgbEscape(u)}" onerror="this.parentElement.style.display='none'" onclick="openImageLightbox('${lgbEscape(u)}')"></div>`).join("")}</div>`
+    : "";
   document.getElementById("lgb-view-fields").innerHTML = fieldsHtml + imgHtml;
 
   document.getElementById("lgb-view-prev").classList.toggle("hidden", lgbSecIndex <= 0);
@@ -419,7 +441,7 @@ async function lgbSaveSection(sectionKey, values, gambarBase64, minggu, tarikh) 
 async function lgbOpenSemak() {
   if (!lgbPenyemakNames.length) await lgbFetchPenyemakList();
   document.getElementById("lgb-penyemak-list").innerHTML = lgbPenyemakNames.length
-    ? lgbPenyemakNames.map((n) => `<button class="lgb-list-item" onclick="lgbSelectPenyemak('${lgbEscape(n)}')">👤 ${lgbEscape(n)}</button>`).join("")
+    ? lgbPenyemakNames.map((n) => `<button class="lgb-list-item" onclick="lgbSelectPenyemak('${lgbEscape(n)}')">${lgbEscape(n)}</button>`).join("")
     : `<div class="empty-state">Sila isi senarai nama penyemak di Lajur G tab DATA SEMAKAN.</div>`;
   lgbShowScreen("penyemak");
 }
@@ -465,8 +487,10 @@ function lgbPrintReport() {
   ];
   const bodyHtml = allSections.map((sec) => {
     const fieldsHtml = sec.fields.map((f) => `<div class="lgb-print-row"><span class="lgb-print-label">${lgbEscape(f.label)}</span><span class="lgb-print-val">${lgbEscape(r[f.key] || "-")}</span></div>`).join("");
-    const imgUrl = sec.gambarField ? lgbFixImageUrl(r[sec.gambarField]) : "";
-    const imgHtml = imgUrl ? `<img class="lgb-print-img" src="${lgbEscape(imgUrl)}">` : "";
+    const imgUrls = sec.gambarField ? lgbFixImageUrls(r[sec.gambarField]) : [];
+    const imgHtml = imgUrls.length
+      ? `<div class="lgb-print-img-grid">${imgUrls.map((u) => `<img class="lgb-print-img" src="${lgbEscape(u)}">`).join("")}</div>`
+      : "";
     return `<div class="lgb-print-section"><div class="lgb-print-section-title">${lgbEscape(sec.title)}</div>${fieldsHtml}${imgHtml}</div>`;
   }).join("");
 
@@ -474,9 +498,9 @@ function lgbPrintReport() {
   printArea.innerHTML = `
     <div class="lgb-print-header">
       <div class="lgb-print-main-title">LAPORAN GURU BERTUGAS</div>
-      <div>Minggu: <b>${lgbEscape(lgbMinggu)}</b> &nbsp; Tarikh: <b>${lgbEscape(lgbTarikh)}</b></div>
+      <div>Minggu: <b>${lgbEscape(lgbMinggu)}</b> &nbsp; Tarikh: <b>${lgbEscape(lgbFormatDate(lgbTarikh))}</b> &nbsp; Pelapor: <b>${lgbEscape(r.namaPelapor || "-")}</b></div>
     </div>
-    <div class="lgb-print-semakan">Penyemak: <b>${lgbEscape(r.penyemak || "-")}</b> &nbsp; Catatan: <b>${lgbEscape(r.catatanSemakan || "-")}</b></div>
+    <div class="lgb-print-semakan">Penyemak: <b>${lgbEscape(r.penyemak || "-")}</b><br>Ulasan: <b>${lgbEscape(r.catatanSemakan || "-")}</b></div>
     ${bodyHtml}`;
   window.print();
 }
