@@ -35,12 +35,26 @@ async function pcFetchHistory() {
     const text = await res.text();
     const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
     const table = JSON.parse(jsonStr).table;
+    const get = (c, i) => (c[i] && c[i].v != null ? String(c[i].v).trim() : "");
+    // Rekod LAMA (dari Google Form sebenar, ditulis ramai guru) mungkin simpan
+    // tarikh sebagai SEL JENIS DATE SEBENAR (gviz -> "Date(y,m,d)"), manakala
+    // rekod BAHARU (dari app ni) simpan sebagai teks tulen "dd/mm/YYYY".
+    // Fungsi ni kendali KEDUA-DUA bentuk, normal ke "dd/mm/YYYY" konsisten.
+    const toDDMMYYYY = (raw) => {
+      if (!raw) return "";
+      const m = raw.match(/^Date\((\d+),(\d+),(\d+)/);
+      if (m) {
+        const y = parseInt(m[1], 10), mo = parseInt(m[2], 10) + 1, d = parseInt(m[3], 10);
+        return `${String(d).padStart(2, "0")}/${String(mo).padStart(2, "0")}/${y}`;
+      }
+      return raw; // dah teks "dd/mm/YYYY" sedia ada
+    };
     pcHistoryRecords = (table.rows || []).map((r) => {
       const c = r.c || [];
-      const get = (i) => (c[i] && c[i].v != null ? String(c[i].v).trim() : "");
       return {
-        timestamp: get(0), nama: get(1), jawatan: get(2), jenisCuti: get(3),
-        mulaiDari: get(4), hingga: get(5), selama: get(6), catatan: get(7),
+        timestamp: get(c, 0), nama: get(c, 1), jawatan: get(c, 2), jenisCuti: get(c, 3),
+        mulaiDari: toDDMMYYYY(get(c, 4)), hingga: toDDMMYYYY(get(c, 5)),
+        selama: get(c, 6), catatan: get(c, 7),
       };
     }).filter((r) => r.nama);
   } catch (e) {
