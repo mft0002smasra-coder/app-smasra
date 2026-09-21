@@ -249,11 +249,7 @@ async function kbSaveCatatan(rowId) {
   const btn = input.nextElementSibling;
   btn.disabled = true; btn.textContent = "Menyimpan...";
   try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({ action: "editKeberadaanCatatan", rowId, catatan }),
-    });
-    const data = await res.json();
+    const data = await postToAppsScript(API_URL, { action: "editKeberadaanCatatan", rowId, catatan });
     if (data.success) {
       const rec = kbRecords.find((r) => r.rowId === rowId);
       if (rec) rec.catatan = catatan;
@@ -386,11 +382,7 @@ async function kbSubmitBorang() {
   const btn = document.getElementById("kb-submit-btn");
   btn.disabled = true; btn.textContent = "Menghantar...";
   try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({ action: "addKeberadaanMurid", email: kbCurrentUser.email, kategori, tarikh, tempat, murid: muridRows }),
-    });
-    const data = await res.json();
+    const data = await postToAppsScript(API_URL, { action: "addKeberadaanMurid", email: kbCurrentUser.email, kategori, tarikh, tempat, murid: muridRows });
     if (data.success) {
       kbShowToast(`✓ ${data.count} rekod disimpan`);
       kbInitBorang();

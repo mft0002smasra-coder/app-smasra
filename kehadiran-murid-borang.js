@@ -284,19 +284,15 @@ async function submitNama() {
 
   const user = getSavedUser();
   try {
-    const res = await fetch(KM_API_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        action: "saveKehadiran",
-        kelas: KM_S.kelas,
-        tarikh: KM_S.tarikh,
-        hadir: KM_S.hadir,
-        tidakHadir: KM_S.tidak,
-        namaTidakHadir: KM_S.nama,
-        direkodOleh: (user && user.nama) || (user && user.email) || "",
-      }),
+    const data = await postToAppsScript(KM_API_URL, {
+      action: "saveKehadiran",
+      kelas: KM_S.kelas,
+      tarikh: KM_S.tarikh,
+      hadir: KM_S.hadir,
+      tidakHadir: KM_S.tidak,
+      namaTidakHadir: KM_S.nama,
+      direkodOleh: (user && user.nama) || (user && user.email) || "",
     });
-    const data = await res.json();
     if (data.success) {
       KM_S.saveError = null;
       // Kemas kini cache tempatan supaya Menu Utama terus tepat tanpa reload

@@ -88,6 +88,7 @@ let lgbSelectedPenyemak = "";
 let lgbWeeksCache = [];
 
 function lgbEscape(str) { return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+function lgbSleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
 /** Betulkan URL gambar: kalau ia link Google Drive biasa (bukan lh3), ambil
  * FILE ID dan tukar jadi format lh3.googleusercontent.com — punca "gambar
@@ -262,17 +263,20 @@ async function lgbStartOrResume() {
   btn.disabled = true; btn.textContent = "Menyimpan...";
 
   const ok = await lgbSaveSection("butiran", [namaPelapor, namaGuruBertugas], null, minggu, tarikh);
-  btn.disabled = false; btn.textContent = "Simpan & Mula";
 
   if (!ok) {
+    btn.disabled = false; btn.textContent = "Simpan & Mula";
     errEl.textContent = "Gagal simpan. Cuba lagi.";
     errEl.classList.remove("hidden");
     return;
   }
   lgbMinggu = minggu;
   lgbTarikh = tarikh;
+  btn.textContent = "Menunggu kemaskini...";
+  await lgbSleep(1200); // bagi formula Data2 sempat kira semula sebelum baca
   await lgbFetchRecords();
   lgbOpenSectionView(tarikh, 0);
+  btn.disabled = false; btn.textContent = "Simpan & Mula";
 }
 
 /* ================= SECTION VIEW — hub utama (macam reviewSectionPage) ================= */
@@ -407,17 +411,20 @@ async function lgbSaveEdit() {
   btn.disabled = true; btn.textContent = "Menyimpan...";
 
   const ok = await lgbSaveSection(sec.key, values, lgbPendingImage, lgbMinggu, lgbTarikh);
-  btn.disabled = false; btn.textContent = "Simpan";
 
   if (!ok) {
+    btn.disabled = false; btn.textContent = "Simpan";
     errEl.textContent = "Gagal simpan. Cuba lagi.";
     errEl.classList.remove("hidden");
     return;
   }
+  btn.textContent = "Menunggu kemaskini...";
+  await lgbSleep(1200); // bagi formula Data2 sempat kira semula sebelum baca
   await lgbFetchRecords();
   lgbLoadCurrentRow();
   lgbRenderSectionView();
   lgbShowScreen("view");
+  btn.disabled = false; btn.textContent = "Simpan";
 }
 function lgbCancelEdit() {
   lgbShowScreen("view");
@@ -507,7 +514,8 @@ function lgbPrintReport() {
 /* ================= Fetch: DATABOT (gviz, data mula baris 3) ================= */
 async function lgbFetchRecords() {
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${LGB_SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(LGB_READ_SHEET_NAME)}&_ts=${Date.now()}`;
+    const cacheBust = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const url = `https://docs.google.com/spreadsheets/d/${LGB_SPREADSHEET_ID}/gviz/tq?tqx=out:json;reqId:0&sheet=${encodeURIComponent(LGB_READ_SHEET_NAME)}&_ts=${cacheBust}`;
     const res = await fetch(url, { cache: "no-store" });
     const text = await res.text();
     const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);

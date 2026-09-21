@@ -106,18 +106,14 @@ async function lpSubmitForm(e) {
   btn.disabled = true;
   btn.textContent = "Menghantar...";
   try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        action: "addLaporanPentadbir",
-        email: lpCurrentUser.email,
-        namaPentadbir: nama,
-        tarikh, masa, blokKelas: blok, catatan,
-        gambar1: lpImageData[1] || "",
-        gambar2: lpImageData[2] || "",
-      }),
+    const data = await postToAppsScript(API_URL, {
+      action: "addLaporanPentadbir",
+      email: lpCurrentUser.email,
+      namaPentadbir: nama,
+      tarikh, masa, blokKelas: blok, catatan,
+      gambar1: lpImageData[1] || "",
+      gambar2: lpImageData[2] || "",
     });
-    const data = await res.json();
     if (data.success) {
       lpResetForm();
       alert(data.warning ? `Rekod dihantar, tapi ada masalah gambar:\n${data.warning}` : "Rekod pemantauan berjaya dihantar!");
@@ -325,11 +321,7 @@ async function lpDoDelete() {
   btn.disabled = true;
   btn.textContent = "Memadam...";
   try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({ action: "deleteLaporanPentadbir", namaPentadbir: lpDeleteTarget.namaPentadbir, tarikh: lpDeleteTarget.tarikh }),
-    });
-    const data = await res.json();
+    const data = await postToAppsScript(API_URL, { action: "deleteLaporanPentadbir", namaPentadbir: lpDeleteTarget.namaPentadbir, tarikh: lpDeleteTarget.tarikh });
     if (data.success) {
       lpCancelDelete();
       lpCloseReport();

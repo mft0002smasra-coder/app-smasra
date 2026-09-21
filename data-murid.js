@@ -684,11 +684,7 @@ async function dmConfirmUpload() {
   if (!apiConfigured()) { statusEl.textContent = "API_URL belum disambung."; return; }
   btn.disabled = true; btn.textContent = "Menyimpan...";
   try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({ action: "uploadDataMurid", email: dmCurrentUser.email, murid: dmParsedRows }),
-    });
-    const result = await res.json();
+    const result = await postToAppsScript(API_URL, { action: "uploadDataMurid", email: dmCurrentUser.email, murid: dmParsedRows });
     if (result.success) {
       statusEl.textContent = `Berjaya! ${result.added} rekod baharu ditambah, ${result.updated} dikemaskini${result.skipped ? `, ${result.skipped} dilangkau (data tak lengkap)` : ""}.`;
       dmParsedRows = [];

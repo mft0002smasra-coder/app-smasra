@@ -147,11 +147,7 @@ async function dbSubmitKehadiran() {
   btn.disabled = true; btn.textContent = "Menghantar...";
   const latLongStr = dbCurrentLatLng.lat !== null ? `${dbCurrentLatLng.lat.toFixed(6)}, ${dbCurrentLatLng.lng.toFixed(6)}` : "0.000000, 0.000000";
   try {
-    const res = await fetch(DB_API_URL, {
-      method: "POST",
-      body: JSON.stringify({ action: "addKehadiran", noKP: dbStaff.noKP, nama: dbStaff.nama, jawatan: dbStaff.jawatan, tujuan, latLong: latLongStr }),
-    });
-    const data = await res.json();
+    const data = await postToAppsScript(DB_API_URL, { action: "addKehadiran", noKP: dbStaff.noKP, nama: dbStaff.nama, jawatan: dbStaff.jawatan, tujuan, latLong: latLongStr });
     if (data.success) {
       dbCloseKehadiranForm();
       dbClearSheetCache("Kehadiran");
@@ -237,14 +233,10 @@ async function dbSubmitKeberadaan() {
   btn.disabled = true; btn.textContent = "Menghantar...";
   const latLongStr = dbCurrentLatLng.lat !== null ? `${dbCurrentLatLng.lat.toFixed(6)}, ${dbCurrentLatLng.lng.toFixed(6)}` : "0.000000, 0.000000";
   try {
-    const res = await fetch(DB_API_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        action: "addKeberadaan", noKP: dbStaff.noKP, nama: dbStaff.nama, jawatan: dbStaff.jawatan,
-        tujuan, perkara, tempat, latLong: latLongStr, mula, tamat, masaMula, masaTamat,
-      }),
+    const data = await postToAppsScript(DB_API_URL, {
+      action: "addKeberadaan", noKP: dbStaff.noKP, nama: dbStaff.nama, jawatan: dbStaff.jawatan,
+      tujuan, perkara, tempat, latLong: latLongStr, mula, tamat, masaMula, masaTamat,
     });
-    const data = await res.json();
     if (data.success) {
       dbCloseKeberadaanForm();
       dbClearSheetCache("Rekod");

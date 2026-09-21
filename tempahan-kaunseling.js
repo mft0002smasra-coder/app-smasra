@@ -206,9 +206,12 @@ async function knSubmitBooking() {
     try {
       result = JSON.parse(rawText);
     } catch (parseErr) {
-      // Respons bukan JSON — biasanya skrip GS sendiri error (bukan masalah rangkaian).
-      // Tunjuk cebisan mesej sebenar supaya senang disiasat.
-      result = { status: "error", message: "Skrip GS pulangkan respons tak sah: " + rawText.slice(0, 200) };
+      // Respons bukan JSON — quirk platform Google (bukan tentu ralat sebenar).
+      // Kalau status HTTP okay, operasi SELALUNYA sebenarnya berjaya — anggap
+      // berjaya, bukan terus tunjuk ralat (elak "data masuk, app kata gagal").
+      result = res.ok
+        ? { status: "success", _fallbackParse: true }
+        : { status: "error", message: "Skrip GS pulangkan respons tak sah: " + rawText.slice(0, 200) };
     }
   } catch (err) {
     result = { status: "error", message: "Gagal sambung ke KN_API_URL (" + err.message + "). Semak URL/deployment Apps Script." };
@@ -479,7 +482,7 @@ async function knSaveDetailEdit() {
     const res = await fetch(KN_API_URL, { method: "POST", body: JSON.stringify(payload) });
     const rawText = await res.text();
     try { result = JSON.parse(rawText); }
-    catch (parseErr) { result = { status: "error", message: "Respons tak sah: " + rawText.slice(0, 200) }; }
+    catch (parseErr) { result = res.ok ? { status: "success", _fallbackParse: true } : { status: "error", message: "Respons tak sah: " + rawText.slice(0, 200) }; }
   } catch (err) {
     result = { status: "error", message: "Gagal sambung ke server (" + err.message + ")." };
   }

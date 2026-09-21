@@ -364,11 +364,7 @@ async function jgConfirmUpload() {
   if (!apiConfigured()) { statusEl.textContent = "API_URL belum disambung."; return; }
   btn.disabled = true; btn.textContent = "Menyimpan...";
   try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({ action: "uploadJadualGuru", email: jgCurrentUser.email, rows: jgParsedRows }),
-    });
-    const result = await res.json();
+    const result = await postToAppsScript(API_URL, { action: "uploadJadualGuru", email: jgCurrentUser.email, rows: jgParsedRows });
     if (result.success) {
       statusEl.textContent = `✓ Berjaya! ${result.count} slot kelas disimpan.`;
       btn.classList.add("hidden");
@@ -503,11 +499,7 @@ async function todoSubmitForm() {
   btn.disabled = true; btn.textContent = "Menyimpan...";
   try {
     const action = id ? "editTodoItem" : "addTodoItem";
-    const res = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({ action, id, email: todoCurrentUser.email, tarikhMula, tarikhAkhir, perkara }),
-    });
-    const data = await res.json();
+    const data = await postToAppsScript(API_URL, { action, id, email: todoCurrentUser.email, tarikhMula, tarikhAkhir, perkara });
     if (data.success) {
       todoCloseForm();
       await todoFetchItems(todoCurrentUser.nama);
@@ -527,8 +519,7 @@ async function todoDeleteItem(id) {
   if (!confirm("Padam tugasan ini?")) return;
   if (!apiConfigured()) return;
   try {
-    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "deleteTodoItem", id }) });
-    const data = await res.json();
+    const data = await postToAppsScript(API_URL, { action: "deleteTodoItem", id });
     if (data.success) {
       await todoFetchItems(todoCurrentUser.nama);
       todoRenderCard();

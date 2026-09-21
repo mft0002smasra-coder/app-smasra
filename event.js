@@ -194,11 +194,7 @@ async function evSubmitAdd(e) {
   btn.disabled = true;
   btn.textContent = "Menghantar...";
   try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({ action: "addEvent", email: evCurrentUser.email, unit, tarikhDari, tarikhHingga, masa, tajuk, tempat }),
-    });
-    const data = await res.json();
+    const data = await postToAppsScript(API_URL, { action: "addEvent", email: evCurrentUser.email, unit, tarikhDari, tarikhHingga, masa, tajuk, tempat });
     if (data.success) {
       evCloseAddModal();
       await evLoadEvents();
