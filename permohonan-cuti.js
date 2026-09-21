@@ -152,14 +152,10 @@ async function pcSubmit() {
   const btn = document.getElementById("pc-submit-btn");
   btn.disabled = true; btn.textContent = "Menghantar...";
   try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        action: "savePermohonanCuti",
-        nama: pcCurrentUser.nama, jawatan, jenisCuti, mulaiDari, hingga, selama, catatan,
-      }),
+    const data = await postToAppsScript(API_URL, {
+      action: "savePermohonanCuti",
+      nama: pcCurrentUser.nama, jawatan, jenisCuti, mulaiDari, hingga, selama, catatan,
     });
-    const data = await res.json();
     if (data.success) {
       document.getElementById("pc-success-overlay").classList.remove("hidden");
       // Reset borang untuk permohonan seterusnya

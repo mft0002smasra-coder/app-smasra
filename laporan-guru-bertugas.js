@@ -429,8 +429,7 @@ async function lgbSaveSection(sectionKey, values, gambarBase64, minggu, tarikh) 
   try {
     const payload = { action: "saveLaporanGuruBertugasSection", email: lgbCurrentUser.email, sectionKey, values, minggu, tarikh };
     if (gambarBase64) payload.gambar = gambarBase64;
-    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
-    const data = await res.json();
+    const data = await postToAppsScript(API_URL, payload);
     return !!data.success;
   } catch (e) {
     return false;
@@ -592,11 +591,7 @@ async function lgbFetchPenyemakList() {
 async function lgbSaveSemakan(minggu, tarikh, pelapor, penyemak, catatan) {
   if (!apiConfigured()) return false;
   try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({ action: "saveLaporanGuruBertugasSemakan", minggu, tarikh, pelapor, penyemak, catatan }),
-    });
-    const data = await res.json();
+    const data = await postToAppsScript(API_URL, { action: "saveLaporanGuruBertugasSemakan", minggu, tarikh, pelapor, penyemak, catatan });
     return !!data.success;
   } catch (e) {
     return false;

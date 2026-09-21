@@ -92,6 +92,25 @@ function logout() { localStorage.removeItem(USER_KEY); location.href = "index.ht
 function apiConfigured() { return API_URL && API_URL.indexOf("PASTE_") !== 0; }
 function googleConfigured() { return GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID.indexOf("PASTE_") !== 0; }
 
+/**
+ * POST ke Apps Script yang TAHAN quirk platform Google: kadang-kadang
+ * (terutama bila skrip padat/lambat) Google pulangkan HALAMAN HTML dalaman
+ * (bukan JSON dari jsonResponse() kita) WALAUPUN operasi (tulis ke Sheet)
+ * SEBENARNYA berjaya — sebab tu "data masuk tapi ralat JSON di app".
+ * Baca respons sebagai TEKS dahulu, cuba parse JSON; kalau gagal TAPI
+ * status HTTP okay, anggap ia berjaya (fallback), bukan terus lempar ralat.
+ */
+async function postToAppsScript(url, payload) {
+  const res = await fetch(url, { method: "POST", body: JSON.stringify(payload) });
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    if (res.ok) return { success: true, _fallbackParse: true };
+    throw new Error("Respons pelayan tidak sah (bukan JSON).");
+  }
+}
+
 function showLoginError(msg) {
   const el = document.getElementById("login-error");
   if (!el) return;

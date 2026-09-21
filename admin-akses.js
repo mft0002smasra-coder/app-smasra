@@ -102,15 +102,11 @@ async function aaSaveEdit() {
   const btn = document.getElementById("aa-edit-save-btn");
   btn.disabled = true; btn.textContent = "Menyimpan...";
   try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        action: "updateStaffAccess",
-        callerEmail: aaCurrentUser.email, targetEmail: aaEditingEmail,
-        jawatan, role, role2, role3,
-      }),
+    const data = await postToAppsScript(API_URL, {
+      action: "updateStaffAccess",
+      callerEmail: aaCurrentUser.email, targetEmail: aaEditingEmail,
+      jawatan, role, role2, role3,
     });
-    const data = await res.json();
     if (data.success) {
       // Kemaskini terus dalam senarai tempatan supaya tak perlu fetch semula
       const s = aaStaffList.find((x) => x.emel1 === aaEditingEmail);
