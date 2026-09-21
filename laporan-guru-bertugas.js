@@ -273,7 +273,7 @@ async function lgbStartOrResume() {
   lgbTarikh = tarikh;
   btn.textContent = "Menunggu kemaskini...";
   await lgbSleep(1200); // bagi cache gviz Google sempat "sejuk" sebelum baca semula
-  await lgbFetchRecords();
+  await lgbFetchRecords(true); // paksa segar — jangan guna cache lepas simpan
   lgbOpenSectionView(tarikh, 0);
   btn.disabled = false; btn.textContent = "Simpan & Mula";
 }
@@ -419,7 +419,7 @@ async function lgbSaveEdit() {
   }
   btn.textContent = "Menunggu kemaskini...";
   await lgbSleep(1200); // bagi cache gviz Google sempat "sejuk" sebelum baca semula
-  await lgbFetchRecords();
+  await lgbFetchRecords(true); // paksa segar — jangan guna cache lepas simpan
   lgbLoadCurrentRow();
   lgbRenderSectionView();
   lgbShowScreen("view");
@@ -598,17 +598,33 @@ function lgbMergeRecords(primaryList, secondaryList) {
   return order.map((key) => merged[key]);
 }
 
-async function lgbFetchRecords() {
+const LGB_CACHE_KEY = "lgb_records_cache";
+const LGB_CACHE_TTL_MS = 90 * 1000; // 90 saat — cukup pendek untuk kekal segar, cukup panjang elak app "hang"
+
+async function lgbFetchRecords(forceRefresh) {
+  if (!forceRefresh) {
+    try {
+      const cached = sessionStorage.getItem(LGB_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Date.now() - parsed.ts < LGB_CACHE_TTL_MS) {
+          lgbRecords = parsed.data;
+          return;
+        }
+      }
+    } catch (e) { /* storan tak boleh diakses — teruskan fetch biasa */ }
+  }
   try {
     const [databotRows, formRows] = await Promise.all([
       lgbGvizFetchTable(LGB_SPREADSHEET_ID, LGB_SHEET_NAME, 2), // DATABOT: langkau baris 1&2
-      lgbGvizFetchTable(LGB_SHEET2_ID, LGB_SHEET2_NAME, 1),     // Form Responses: langkau baris 1 (header biasa)
+      lgbGvizFetchTable(LGB_SHEET2_ID, LGB_SHEET2_NAME, 559),   // Form Responses: mula baca dari BARIS 560
     ]);
     const databotList = lgbParseDatabotRows(databotRows);
     const formList = lgbParseFormResponsesRows(formRows);
     lgbRecords = lgbMergeRecords(databotList, formList);
 
     await lgbFetchSemakan();
+    try { sessionStorage.setItem(LGB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: lgbRecords })); } catch (e) {}
   } catch (e) {
     lgbRecords = [];
   }
