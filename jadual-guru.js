@@ -47,10 +47,13 @@ function jgFmtWaktu(val) {
 
 /* ---------------- Akses ---------------- */
 function jgCheckAccess(user) {
-  jgIsPentadbir = String(user.role2 || "").trim().toLowerCase() === "pentadbir";
   const jawatanUpper = String(user.jawatan || "").trim().toUpperCase();
   const isJadualGuru = jawatanUpper === "PPP (GURU JADUAL WAKTU)";
   const isAdmin = String(user.role || "").trim().toLowerCase() === "admin";
+  const isPentadbirRole2 = String(user.role2 || "").trim().toLowerCase() === "pentadbir";
+  // "PPP (GURU JADUAL WAKTU)" boleh akses SEMUA tab (Saya/Kelas/Semua Guru/
+  // Analisis/Update) — sama macam Pentadbir, sebab dia yang urus jadual ni.
+  jgIsPentadbir = isPentadbirRole2 || isJadualGuru;
   jgCanUpload = isJadualGuru || isAdmin;
 }
 
