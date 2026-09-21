@@ -62,6 +62,12 @@
         <div class="pc-intro-sub">Klik di sini untuk mengisi permohonan cuti rehat terus di dalam app.</div>
         <button class="pc-intro-btn" onclick="pcGoForm()">ISI BORANG SEKARANG &rarr;</button>
       </div>
+
+      <div class="pc-history-header">
+        <div class="section-title" style="margin-bottom:0">Sejarah Permohonan Saya</div>
+        <select class="pc-history-year-select" id="pc-history-year" onchange="pcOnYearChange()"></select>
+      </div>
+      <div id="pc-history-list"><div class="empty-state">Memuatkan...</div></div>
     </div>
 
     <!-- ============ Skrin 2: Borang ============ -->
@@ -96,12 +102,6 @@
         <button class="pc-intro-btn" id="pc-submit-btn" style="margin-top:18px" onclick="pcSubmit()">Hantar Permohonan</button>
       </div>
       <button class="btn-bw-outline" onclick="pcGoIntro()" style="margin-top:12px">&larr; Kembali</button>
-
-      <div class="pc-history-header">
-        <div class="section-title" style="margin-bottom:0">Sejarah Permohonan Saya</div>
-        <select class="pc-history-year-select" id="pc-history-year" onchange="pcOnYearChange()"></select>
-      </div>
-      <div id="pc-history-list"><div class="empty-state">Memuatkan...</div></div>
     </div>
 
   </div>

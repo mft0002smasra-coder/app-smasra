@@ -19,12 +19,12 @@ function pcInit(user) {
 function pcGoIntro() {
   document.getElementById("pc-screen-intro").classList.remove("hidden");
   document.getElementById("pc-screen-form").classList.add("hidden");
+  pcLoadHistory();
 }
 function pcGoForm() {
   document.getElementById("pc-screen-intro").classList.add("hidden");
   document.getElementById("pc-screen-form").classList.remove("hidden");
   document.getElementById("pc-form-error").classList.add("hidden");
-  pcLoadHistory();
 }
 
 /* ================= Sejarah Permohonan (gviz terus, tapis nama + tahun) ================= */
