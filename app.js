@@ -243,6 +243,8 @@ const MENU_STRUCTURE = [
       { href: "pengumuman.html", icon: "announce", label: "Hebahan" },
       { href: "laporan-pentadbir.html", icon: "clipboard", label: "Laporan Pentadbir" },
       { href: "laporan-guru-bertugas.html", icon: "folder", label: "Laporan Guru Bertugas" },
+      { href: "permohonan-cuti.html", icon: "clipboard", label: "Permohonan Cuti Rehat" },
+      { href: "kewangan.html", icon: "chart", label: "Kewangan" },
       { href: "kehadiran-staf.html", icon: "calendar", label: "Kehadiran Staf" },
       { href: "event.html", icon: "event", label: "Event" },
     ],

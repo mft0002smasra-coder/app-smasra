@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kewangan — SM Arab (Jaim) Al-Asyraf</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#050810">
+<link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+<div class="bg-fx"></div>
+<div class="wrap">
+
+  <div id="login-screen" class="hidden">
+    <img class="logo-plain school-logo-img" alt="Logo Sekolah">
+    <div class="brand-title">SM ARAB (JAIM) AL-ASYRAF</div>
+    <div class="brand-sub">Sistem Pengurusan Sekolah</div>
+    <div class="glass">
+      <div class="gsi-wrap" id="google-btn-container"></div>
+      <div class="divider">Atau</div>
+      <form id="login-form">
+        <label class="field-label" for="login-email">Emel Rasmi</label>
+        <input class="field-input" type="email" id="login-email" placeholder="nama@moe-dl.edu.my" autocomplete="email" required>
+        <button class="btn-primary" type="submit" id="login-btn">Log Masuk</button>
+        <div class="error-text hidden" id="login-error"></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="app-content" class="hidden">
+
+    <div class="site-header-wrap">
+      <header class="site-header">
+        <div class="site-header-row1">
+          <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu"><span data-icon="menu"></span></button>
+          <img class="header-logo school-logo-img" alt="Logo Sekolah">
+          <div class="header-title-block">
+            <div class="header-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
+            <div class="header-school-sub">Kewangan</div>
+          </div>
+        </div>
+        <div class="site-header-row2">
+          <span class="header-greet">Selamat Datang, <span id="header-greet-name">-</span></span>
+          <span class="header-status"><span class="status-dot"></span>Sistem Aktif <span id="live-clock">--:--:-- --</span></span>
+        </div>
+      </header>
+    </div>
+
+    <div class="tab-switch">
+      <button class="tab-btn active" id="kw-nav-nota" onclick="kwSwitchTab('nota')">Nota Minta</button>
+    </div>
+
+    <!-- ============ Tab: Nota Minta ============ -->
+    <div id="kw-panel-nota">
+      <div class="kw-nota-title">NOTA MINTA SMA (JAIM) AL-ASYRAF</div>
+      <div class="kw-nota-underline"></div>
+
+      <div class="kw-nota-grid">
+        <div class="kw-nota-card">
+          <div class="kw-nota-icon kw-nota-icon-yellow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="21" x2="21" y2="21"/><line x1="5" y1="21" x2="5" y2="10"/><line x1="19" y1="21" x2="19" y2="10"/><polygon points="12 3 2 9 22 9"/><line x1="9" y1="21" x2="9" y2="10"/><line x1="15" y1="21" x2="15" y2="10"/></svg>
+          </div>
+          <div class="kw-nota-card-title">AKAUN KERAJAAN</div>
+          <div class="kw-nota-card-desc">Pengurusan peruntukan kewangan rasmi kerajaan.</div>
+          <a class="kw-nota-btn" href="https://docs.google.com/forms/d/e/1FAIpQLScy5oi8UvCWU_huIkZTXCWWAjWsgmXMzoAgG_NfAYVLsPZmsQ/viewform" target="_blank" rel="noopener">BORANG NOTA MINTA</a>
+        </div>
+
+        <div class="kw-nota-card">
+          <div class="kw-nota-icon kw-nota-icon-blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+          </div>
+          <div class="kw-nota-card-title">AKAUN SUWA</div>
+          <div class="kw-nota-card-desc">Sumbangan Wang Awam dan dana sekolah.</div>
+          <a class="kw-nota-btn" href="https://docs.google.com/forms/d/e/1FAIpQLSczjONO0Hrz2Js3SjMOKdEXXIxZlYycf_COCEIvfgQkUFfyMw/viewform" target="_blank" rel="noopener">BORANG NOTA MINTA</a>
+        </div>
+
+        <div class="kw-nota-card">
+          <div class="kw-nota-icon kw-nota-icon-green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <div class="kw-nota-card-title">AKAUN ASRAMA</div>
+          <div class="kw-nota-card-desc">Pengurusan logistik, makan minum, dan kebajikan asrama.</div>
+          <a class="kw-nota-btn" href="https://docs.google.com/forms/d/e/1FAIpQLSf5s3rFQBXyXu4O7imAumQISCD_sk-efK5sFxrM9H5gCM992A/viewform" target="_blank" rel="noopener">BORANG NOTA MINTA</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<nav class="drawer" id="drawer">
+  <div class="drawer-logo-row"><img class="school-logo-img" alt=""><span>SMASRA</span></div>
+  <a class="drawer-item" href="index.html"><span data-icon="home"></span><span class="drawer-label">Laman Utama</span></a>
+  <div id="drawer-menu-body"></div>
+  <div class="drawer-spacer"></div>
+  <a class="drawer-item drawer-logout" href="#" onclick="logout();return false;"><span data-icon="power"></span><span class="drawer-label">Log Keluar</span></a>
+</nav>
+
+<div class="bottom-nav-wrap">
+  <nav class="bottom-nav">
+    <a class="bn-item" href="kehadiran-staf.html?open=kehadiran" aria-label="Kehadiran"><span data-icon="calendar"></span><span class="bn-label">Kehadiran</span></a>
+    <a class="bn-item" href="event.html" aria-label="Event"><span data-icon="event"></span><span class="bn-label">Event</span></a>
+    <a class="bn-item" href="index.html" aria-label="Home"><span data-icon="home"></span><span class="bn-label">Home</span></a>
+    <a class="bn-item" href="laporan-pentadbir.html" aria-label="Laporan"><span data-icon="clipboard"></span><span class="bn-label">Laporan</span></a>
+    <a class="bn-item" href="profile.html" aria-label="Profil"><span data-icon="profile"></span><span class="bn-label">Profil</span></a>
+  </nav>
+</div>
+
+<script src="app.js"></script>
+<script src="kewangan.js"></script>
+<script>
+  initApp(kwInit);
+</script>
+</body>
+</html>

@@ -1885,3 +1885,70 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
   .lgb-print-img{ max-width:150px;max-height:150px;object-fit:cover;border:1px solid #999;border-radius:4px; }
 }
 
+/* ============================================================
+   PERMOHONAN CUTI REHAT — kad intro gelap, ikon hijau-mint bercahaya
+   (rujuk gambar reka bentuk), guna pemalar tema global.
+   ============================================================ */
+.pc-intro-card{
+  background:var(--panel-a);border:1px solid var(--line);border-radius:16px;
+  padding:36px 24px;text-align:center;backdrop-filter:blur(10px);margin-top:10px;
+}
+.pc-intro-icon{
+  width:72px;height:72px;margin:0 auto 22px;border-radius:16px;
+  background:rgba(25,227,161,0.10);border:1px solid rgba(25,227,161,0.35);
+  display:flex;align-items:center;justify-content:center;color:var(--mint);
+  box-shadow:0 0 24px rgba(25,227,161,0.25);
+}
+.pc-intro-icon svg{ width:34px;height:34px; }
+.pc-intro-title{
+  font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--text);
+  letter-spacing:.8px;margin-bottom:10px;
+}
+.pc-intro-sub{ font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:24px; }
+.pc-intro-btn{
+  display:inline-block;padding:13px 26px;border:none;border-radius:30px;
+  background:linear-gradient(90deg,var(--mint),#0eb888);color:#04140e;
+  font-family:var(--font-display);font-weight:700;font-size:12.5px;letter-spacing:.5px;
+  cursor:pointer;box-shadow:0 0 22px rgba(25,227,161,.4);width:100%;
+}
+.pc-intro-btn:disabled{ opacity:.55; }
+
+.pc-success-sheet{ text-align:center; }
+.pc-success-icon{
+  width:56px;height:56px;margin:0 auto 14px;border-radius:50%;
+  background:rgba(25,227,161,.12);border:1.5px solid var(--mint);color:var(--mint);
+  display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;
+}
+
+/* ============================================================
+   KEWANGAN — tab Nota Minta (rujuk gambar reka bentuk: 3 kad akaun).
+   ============================================================ */
+.kw-nota-title{
+  font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--text);
+  text-align:center;letter-spacing:.5px;margin-top:6px;margin-bottom:12px;
+}
+.kw-nota-underline{
+  width:150px;height:4px;margin:0 auto 22px;border-radius:4px;
+  background:linear-gradient(90deg,var(--amber),var(--mint),var(--cyan));
+}
+.kw-nota-grid{ display:flex;flex-direction:column;gap:16px; }
+.kw-nota-card{
+  background:var(--panel-a);border:1px solid var(--line);border-radius:16px;
+  padding:26px 20px;text-align:center;backdrop-filter:blur(10px);
+}
+.kw-nota-icon{
+  width:64px;height:64px;margin:0 auto 16px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;color:#fff;
+}
+.kw-nota-icon svg{ width:30px;height:30px; }
+.kw-nota-icon-yellow{ background:linear-gradient(160deg,#F5C244,#D99A1B);box-shadow:0 0 22px rgba(245,194,68,.35); }
+.kw-nota-icon-blue{ background:linear-gradient(160deg,#2E5C9E,#1C3A66);box-shadow:0 0 22px rgba(46,92,158,.4); }
+.kw-nota-icon-green{ background:linear-gradient(160deg,#1F7A4D,#0F4A2E);box-shadow:0 0 22px rgba(31,122,77,.4); }
+.kw-nota-card-title{ font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--text);letter-spacing:.4px;margin-bottom:8px; }
+.kw-nota-card-desc{ font-size:12.5px;color:var(--text-dim);line-height:1.6;margin-bottom:20px; }
+.kw-nota-btn{
+  display:block;padding:12px;border-radius:10px;border:1px solid var(--line);
+  background:transparent;color:var(--text-dim);font-family:var(--font-mono);font-weight:700;
+  font-size:11px;letter-spacing:1px;text-decoration:none;transition:all .2s;
+}
+.kw-nota-btn:active{ border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,.06); }

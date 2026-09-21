@@ -56,6 +56,7 @@ function doPost(e) {
   if (body.action === "deleteTodoItem") return deleteTodoItem(body);
   if (body.action === "saveLaporanGuruBertugasSection") return saveLaporanGuruBertugasSection(body);
   if (body.action === "saveLaporanGuruBertugasSemakan") return saveLaporanGuruBertugasSemakan(body);
+  if (body.action === "savePermohonanCuti") return savePermohonanCuti(body);
   return jsonResponse({ success: false, message: "Unknown action: " + body.action });
 }
 
@@ -859,5 +860,32 @@ function saveLaporanGuruBertugasSemakan(body) {
     return jsonResponse({ success: false, message: 'Tab "DATA SEMAKAN" tidak dijumpai.' });
   }
   sheet.appendRow([body.minggu, body.tarikh, body.pelapor || "", body.penyemak, body.catatan]);
+  return jsonResponse({ success: true });
+}
+
+/* ---------------- PERMOHONAN CUTI REHAT ---------------- */
+// Spreadsheet & tab SEBENAR (Borang Cuti Rehat Khas sedia ada — dikongsi
+// dengan sistem lain di sekolah). Lajur A-H:
+// A=Timestamp B=Nama C=Jawatan D=JenisCuti E=MulaiDari F=Hingga G=Selama H=Catatan
+var CUTI_SPREADSHEET_ID = "1AJQQ08we1ooE-Cixgiq-XGrs3xkc7zYDqm0If4oiYi8";
+var CUTI_SHEET_NAME = "Form responses 2";
+
+function savePermohonanCuti(body) {
+  if (!body.nama || !body.jawatan || !body.jenisCuti || !body.mulaiDari || !body.hingga) {
+    return jsonResponse({ success: false, message: "Sila lengkapkan semua medan." });
+  }
+  ensureTimezone();
+  var sheet = SpreadsheetApp.openById(CUTI_SPREADSHEET_ID).getSheetByName(CUTI_SHEET_NAME);
+  if (!sheet) {
+    return jsonResponse({ success: false, message: 'Tab "' + CUTI_SHEET_NAME + '" tidak dijumpai.' });
+  }
+  var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || "GMT+8", "dd/MM/yyyy HH:mm:ss");
+  sheet.appendRow([
+    timestamp, body.nama, body.jawatan, body.jenisCuti,
+    body.mulaiDari, body.hingga, body.selama || "", body.catatan || "",
+  ]);
+  var newRow = sheet.getLastRow();
+  sheet.getRange(newRow, 5).setNumberFormat("@").setValue(body.mulaiDari);
+  sheet.getRange(newRow, 6).setNumberFormat("@").setValue(body.hingga);
   return jsonResponse({ success: true });
 }
