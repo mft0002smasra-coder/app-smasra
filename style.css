@@ -1731,13 +1731,15 @@ table.jg-table tbody th, table.jg-table .jg-slot-cell{
 .lgb-menu-header-sub{ font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:2px;letter-spacing:1px;text-transform:uppercase; }
 .lgb-menu-row{ display:flex;gap:12px; }
 .lgb-menu-card{
-  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
-  padding:26px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel-a);color:var(--text);
-  font-family:inherit;cursor:pointer;backdrop-filter:blur(10px);transition:all .2s;
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  padding:26px 10px;border:none;border-radius:6px;color:var(--void);
+  font-family:inherit;cursor:pointer;transition:all .2s;box-shadow:0 0 20px rgba(0,0,0,.25);
 }
-.lgb-menu-card:active{ border-color:var(--line-strong);box-shadow:0 0 20px rgba(0,229,255,.25);background:rgba(0,229,255,0.08); }
+.lgb-menu-card:nth-child(1){ background:linear-gradient(135deg,var(--cyan),var(--blue)); }
+.lgb-menu-card:nth-child(2){ background:linear-gradient(135deg,var(--violet),var(--pink)); }
+.lgb-menu-card:active{ transform:scale(.97);filter:brightness(1.1); }
 .lgb-menu-card-icon{ font-size:26px; }
-.lgb-menu-card-title{ font-family:var(--font-display);font-weight:700;font-size:11.5px;text-align:center;letter-spacing:.4px;text-transform:uppercase; }
+.lgb-menu-card-title{ font-family:var(--font-display);font-weight:700;font-size:12px;text-align:center;letter-spacing:.4px;text-transform:uppercase; }
 
 /* ---------- Grid Pilih Minggu — 5 kotak sebaris ---------- */
 .lgb-week-grid{ display:grid;grid-template-columns:repeat(5,1fr);gap:7px; }
@@ -1813,13 +1815,15 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
 /* ---------- Popup HUD (senarai Minggu Tiada Laporan / Belum Cukup 5 Hari) ---------- */
 .lgb-popup-overlay{
   position:fixed;inset:0;z-index:3200;background:rgba(2,4,10,.8);backdrop-filter:blur(3px);
-  display:flex;align-items:flex-end;justify-content:center;
+  display:flex;align-items:center;justify-content:center;padding:20px;
 }
 .lgb-popup-sheet{
-  width:100%;max-width:480px;max-height:75vh;overflow-y:auto;background:var(--void-2);
-  border:1px solid var(--line-strong);border-top:2px solid var(--cyan);border-radius:14px 14px 0 0;
-  padding:18px 16px 26px;position:relative;box-shadow:0 -10px 40px rgba(0,229,255,.15);
+  width:100%;max-width:420px;max-height:75vh;overflow-y:auto;background:var(--panel-a);
+  border:1px solid var(--line);border-radius:8px;
+  padding:18px 16px;position:relative;backdrop-filter:blur(10px);
 }
+.lgb-popup-sheet::before{ content:'';position:absolute;top:-1px;left:-1px;width:16px;height:16px;border-top:2px solid var(--cyan);border-left:2px solid var(--cyan); }
+.lgb-popup-sheet::after{ content:'';position:absolute;bottom:-1px;right:-1px;width:16px;height:16px;border-bottom:2px solid var(--violet);border-right:2px solid var(--violet); }
 .lgb-popup-header{ display:flex;justify-content:space-between;align-items:center;margin-bottom:14px; }
 .lgb-popup-title{ font-family:var(--font-display);font-weight:700;font-size:13.5px;color:var(--text);letter-spacing:.4px;text-transform:uppercase; }
 .lgb-popup-close{
@@ -1861,16 +1865,15 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
 /* ---------- Cetak / PDF — papar HANYA #lgb-print-area (laporan PENUH), sembunyi semua app UI biasa ---------- */
 #lgb-print-area{ display:none; }
 @media print{
-  body *{ visibility:hidden; }
-  #lgb-print-area, #lgb-print-area *{ visibility:visible; }
+  html, body{ height:auto !important;overflow:visible !important;max-width:none !important; }
+  body > *:not(#lgb-print-area){ display:none !important; }
   #lgb-print-area{
-    display:block !important;position:absolute;top:0;left:0;width:100%;
-    background:#fff;color:#000;padding:20px;
+    display:block !important;width:100%;background:#fff;color:#000;padding:16px;
   }
   .lgb-print-header{ text-align:center;margin-bottom:14px;border-bottom:2px solid #000;padding-bottom:10px; }
   .lgb-print-main-title{ font-weight:800;font-size:18px;margin-bottom:4px; }
   .lgb-print-semakan{ background:#f3f3f3;border:1px solid #999;border-radius:6px;padding:8px 12px;margin-bottom:16px;font-size:12px; }
-  .lgb-print-section{ margin-bottom:14px;page-break-inside:avoid; }
+  .lgb-print-section{ margin-bottom:14px;page-break-inside:avoid;break-inside:avoid; }
   .lgb-print-section-title{
     font-weight:800;font-size:12px;background:#000;color:#fff;padding:5px 10px;border-radius:4px;
     margin-bottom:6px;text-transform:uppercase;display:inline-block;
@@ -1881,3 +1884,4 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
   .lgb-print-img-grid{ display:flex;flex-wrap:wrap;gap:6px;margin-top:8px; }
   .lgb-print-img{ max-width:150px;max-height:150px;object-fit:cover;border:1px solid #999;border-radius:4px; }
 }
+
