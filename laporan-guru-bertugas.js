@@ -614,19 +614,34 @@ async function lgbFetchRecords(forceRefresh) {
       }
     } catch (e) { /* storan tak boleh diakses — teruskan fetch biasa */ }
   }
+  // Ambil KEDUA sumber SECARA BERASINGAN — kalau SATU gagal (cth akses/kongsi
+  // Spreadsheet kedua tak dibuka untuk sesiapa), yang SATU LAGI tetap papar,
+  // bukan hilang kedua-duanya. console.log dedah bilangan rekod setiap
+  // sumber untuk senang disiasat kalau gabungan masih tak jalan.
+  let databotList = [];
+  let formList = [];
   try {
-    const [databotRows, formRows] = await Promise.all([
-      lgbGvizFetchTable(LGB_SPREADSHEET_ID, LGB_SHEET_NAME, 2), // DATABOT: langkau baris 1&2
-      lgbGvizFetchTable(LGB_SHEET2_ID, LGB_SHEET2_NAME, 559),   // Form Responses: mula baca dari BARIS 560
-    ]);
-    const databotList = lgbParseDatabotRows(databotRows);
-    const formList = lgbParseFormResponsesRows(formRows);
-    lgbRecords = lgbMergeRecords(databotList, formList);
+    const databotRows = await lgbGvizFetchTable(LGB_SPREADSHEET_ID, LGB_SHEET_NAME, 2);
+    databotList = lgbParseDatabotRows(databotRows);
+    console.log("[LGB] DATABOT: " + databotRows.length + " baris mentah -> " + databotList.length + " rekod sah");
+  } catch (e) {
+    console.error("[LGB] Gagal baca DATABOT:", e);
+  }
+  try {
+    const formRows = await lgbGvizFetchTable(LGB_SHEET2_ID, LGB_SHEET2_NAME, 559);
+    formList = lgbParseFormResponsesRows(formRows);
+    console.log("[LGB] Form Responses 1: " + formRows.length + " baris mentah -> " + formList.length + " rekod sah");
+  } catch (e) {
+    console.error("[LGB] Gagal baca Form Responses 1 (mungkin Spreadsheet tak dikongsi awam):", e);
+  }
+  lgbRecords = lgbMergeRecords(databotList, formList);
+  console.log("[LGB] Selepas gabung: " + lgbRecords.length + " rekod unik (Minggu+Tarikh)");
 
+  try {
     await lgbFetchSemakan();
     try { sessionStorage.setItem(LGB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: lgbRecords })); } catch (e) {}
   } catch (e) {
-    lgbRecords = [];
+    console.error("[LGB] Gagal baca DATA SEMAKAN:", e);
   }
 }
 
