@@ -15,7 +15,6 @@
 
 const LGB_SPREADSHEET_ID = "1cmYZlMRGXZB4LmrCowJcmfnbY4LiKhuvE9FIoamWl2s"; // Spreadsheet SEBENAR bot
 const LGB_SHEET_NAME = "DATABOT";       // sasaran TULIS (simpan jawapan)
-const LGB_READ_SHEET_NAME = "Data2";    // sasaran BACA (formula gabungan, auto-sync dari DATABOT)
 
 const LGB_SECTIONS = [
   {
@@ -273,7 +272,7 @@ async function lgbStartOrResume() {
   lgbMinggu = minggu;
   lgbTarikh = tarikh;
   btn.textContent = "Menunggu kemaskini...";
-  await lgbSleep(1200); // bagi formula Data2 sempat kira semula sebelum baca
+  await lgbSleep(1200); // bagi cache gviz Google sempat "sejuk" sebelum baca semula
   await lgbFetchRecords();
   lgbOpenSectionView(tarikh, 0);
   btn.disabled = false; btn.textContent = "Simpan & Mula";
@@ -419,7 +418,7 @@ async function lgbSaveEdit() {
     return;
   }
   btn.textContent = "Menunggu kemaskini...";
-  await lgbSleep(1200); // bagi formula Data2 sempat kira semula sebelum baca
+  await lgbSleep(1200); // bagi cache gviz Google sempat "sejuk" sebelum baca semula
   await lgbFetchRecords();
   lgbLoadCurrentRow();
   lgbRenderSectionView();
@@ -512,34 +511,102 @@ function lgbPrintReport() {
 }
 
 /* ================= Fetch: DATABOT (gviz, data mula baris 3) ================= */
+// Sheet KEDUA (Google Form asal, laluan berasingan dari DATABOT) — Data2
+// sebenarnya formula GABUNGAN kedua-dua sheet ni, tapi formula ada LAG
+// cache Google yang tak boleh dipintas. Jadi baca KEDUA-DUA terus & GABUNG
+// dalam JS sendiri — data sentiasa terkini, tiada pergantungan formula.
+const LGB_SHEET2_ID = "1e845mkjWxkicgnndzbufvxMvqVs3-Gteg6FvxSTP7eI";
+const LGB_SHEET2_NAME = "Form Responses 1";
+
+function lgbGvizDateToIso(v) {
+  if (!v) return "";
+  const m = String(v).match(/Date\((\d+),(\d+),(\d+)/);
+  if (!m) return String(v).replace(/^'/, "").trim();
+  const y = parseInt(m[1]), mo = parseInt(m[2]) + 1, d = parseInt(m[3]);
+  return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
+async function lgbGvizFetchTable(spreadsheetId, sheetName, skipRows) {
+  const cacheBust = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json;reqId:0&sheet=${encodeURIComponent(sheetName)}&_ts=${cacheBust}`;
+  const res = await fetch(url, { cache: "no-store" });
+  const text = await res.text();
+  const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
+  const table = JSON.parse(jsonStr).table;
+  return (table.rows || []).slice(skipRows);
+}
+
+/** DATABOT — lajur A-Y (konvensyen bot: data mula BARIS 3). */
+function lgbParseDatabotRows(rows) {
+  return rows.map((r) => {
+    const c = r.c || [];
+    const get = (i) => (c[i] && c[i].v != null ? c[i].v : "");
+    return {
+      minggu: get(0), tarikh: lgbGvizDateToIso(get(1)) || String(get(1)),
+      namaPelapor: get(2), namaGuruBertugas: get(3),
+      kehadiranGuru: get(4), namaGuruTidakHadir: get(5), kehadiranAkp: get(6), namaAkpTidakHadir: get(7),
+      laporanBlokA: get(8), tindakanBlokA: get(9), laporanBlokB: get(10), tindakanBlokB: get(11),
+      laporanBlokC: get(12), tindakanBlokC: get(13), laporanBlokKantin: get(14), tindakanBlokKantin: get(15),
+      laporanKeselamatan: get(16), tindakanKeselamatan: get(17), peristiwaProgram: get(18), tindakanPeristiwa: get(19),
+      gambarBlokA: get(20), gambarBlokB: get(21), gambarBlokC: get(22), gambarBlokKantin: get(23), gambarKeselamatan: get(24),
+    };
+  }).filter((r) => r.minggu && r.tarikh);
+}
+
+/** "Form Responses 1" — susunan lajur BERBEZA (Google Form ASAL):
+ * A=Minggu B=Tarikh C=Hari D=NamaGuruBertugas E=KehadiranGuru F=NamaGuruTidakHadir
+ * G=KehadiranAKP H=LaporanBlokA I=TindakanBlokA J=GambarBlokA K=LaporanBlokB
+ * L=TindakanBlokB M=GambarBlokB N=LaporanBlokC O=TindakanBlokC P=GambarBlokC
+ * Q=LaporanKantin R=TindakanKantin S=GambarKantin T=LaporanKeselamatan
+ * U=TindakanKeselamatan V=PeristiwaProgram W=TindakanPeristiwa X=GambarKeselamatan
+ * Y=NamaPelapor Z=NamaAKPTidakHadir */
+function lgbParseFormResponsesRows(rows) {
+  return rows.map((r) => {
+    const c = r.c || [];
+    const get = (i) => (c[i] && c[i].v != null ? c[i].v : "");
+    return {
+      minggu: get(0), tarikh: lgbGvizDateToIso(get(1)) || String(get(1)),
+      namaGuruBertugas: get(3), kehadiranGuru: get(4), namaGuruTidakHadir: get(5), kehadiranAkp: get(6),
+      laporanBlokA: get(7), tindakanBlokA: get(8), gambarBlokA: get(9),
+      laporanBlokB: get(10), tindakanBlokB: get(11), gambarBlokB: get(12),
+      laporanBlokC: get(13), tindakanBlokC: get(14), gambarBlokC: get(15),
+      laporanBlokKantin: get(16), tindakanBlokKantin: get(17), gambarBlokKantin: get(18),
+      laporanKeselamatan: get(19), tindakanKeselamatan: get(20),
+      peristiwaProgram: get(21), tindakanPeristiwa: get(22), gambarKeselamatan: get(23),
+      namaPelapor: get(24), namaAkpTidakHadir: get(25),
+    };
+  }).filter((r) => r.minggu && r.tarikh);
+}
+
+/** Gabung 2 senarai (DATABOT + Form Responses) ikut kunci Minggu+Tarikh —
+ * kalau padan, GABUNG medan demi medan (utamakan DATABOT bila kedua ada nilai). */
+function lgbMergeRecords(primaryList, secondaryList) {
+  const mergeKey = (r) => `${String(r.minggu).trim()}|${String(r.tarikh).trim()}`;
+  const merged = {};
+  const order = [];
+  secondaryList.forEach((r) => {
+    const key = mergeKey(r);
+    merged[key] = Object.assign({}, r);
+    order.push(key);
+  });
+  primaryList.forEach((r) => {
+    const key = mergeKey(r);
+    if (!merged[key]) { merged[key] = Object.assign({}, r); order.push(key); return; }
+    // Padan — DATABOT (primary) menang untuk setiap medan yang ADA nilai
+    Object.keys(r).forEach((field) => { if (r[field]) merged[key][field] = r[field]; });
+  });
+  return order.map((key) => merged[key]);
+}
+
 async function lgbFetchRecords() {
   try {
-    const cacheBust = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const url = `https://docs.google.com/spreadsheets/d/${LGB_SPREADSHEET_ID}/gviz/tq?tqx=out:json;reqId:0&sheet=${encodeURIComponent(LGB_READ_SHEET_NAME)}&_ts=${cacheBust}`;
-    const res = await fetch(url, { cache: "no-store" });
-    const text = await res.text();
-    const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
-    const table = JSON.parse(jsonStr).table;
-    const gvizDateToIso = (v) => {
-      if (!v) return "";
-      const m = String(v).match(/Date\((\d+),(\d+),(\d+)/);
-      if (!m) return String(v).replace(/^'/, "").trim();
-      const y = parseInt(m[1]), mo = parseInt(m[2]) + 1, d = parseInt(m[3]);
-      return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-    };
-    const allRows = table.rows || [];
-    lgbRecords = allRows.slice(2).map((r) => { // langkau baris 1 & 2 (konvensyen bot: data mula baris 3)
-      const c = r.c || [];
-      const get = (i) => (c[i] && c[i].v != null ? c[i].v : "");
-      return {
-        minggu: get(0), tarikh: gvizDateToIso(get(1)) || String(get(1)), namaPelapor: get(2), namaGuruBertugas: get(3),
-        kehadiranGuru: get(4), namaGuruTidakHadir: get(5), kehadiranAkp: get(6), namaAkpTidakHadir: get(7),
-        laporanBlokA: get(8), tindakanBlokA: get(9), laporanBlokB: get(10), tindakanBlokB: get(11),
-        laporanBlokC: get(12), tindakanBlokC: get(13), laporanBlokKantin: get(14), tindakanBlokKantin: get(15),
-        laporanKeselamatan: get(16), tindakanKeselamatan: get(17), peristiwaProgram: get(18), tindakanPeristiwa: get(19),
-        gambarBlokA: get(20), gambarBlokB: get(21), gambarBlokC: get(22), gambarBlokKantin: get(23), gambarKeselamatan: get(24),
-      };
-    }).filter((r) => r.minggu && r.tarikh);
+    const [databotRows, formRows] = await Promise.all([
+      lgbGvizFetchTable(LGB_SPREADSHEET_ID, LGB_SHEET_NAME, 2), // DATABOT: langkau baris 1&2
+      lgbGvizFetchTable(LGB_SHEET2_ID, LGB_SHEET2_NAME, 1),     // Form Responses: langkau baris 1 (header biasa)
+    ]);
+    const databotList = lgbParseDatabotRows(databotRows);
+    const formList = lgbParseFormResponsesRows(formRows);
+    lgbRecords = lgbMergeRecords(databotList, formList);
 
     await lgbFetchSemakan();
   } catch (e) {
