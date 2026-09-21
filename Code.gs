@@ -797,7 +797,7 @@ var LGB_GAMBAR_COL = { blokA: 21, blokB: 22, blokC: 23, blokKantin: 24, keselama
 
 /** Cari baris sedia ada (padan Minggu+Tarikh) atau cipta baris baru — SAMA
  * konsep macam ensureRowByWeekDate() dalam bot rujukan. Data bermula BARIS 3. */
-function lgbEnsureRow(sheet, minggu, tarikh) {
+function lgbEnsureRow(sheet, minggu, tarikh, fullRecord) {
   var lastRow = sheet.getLastRow();
   var cleanTarikh = String(tarikh).replace(/^'/, "");
   if (lastRow >= 3) {
@@ -808,11 +808,22 @@ function lgbEnsureRow(sheet, minggu, tarikh) {
       }
     }
   }
-  var row = [];
-  row[0] = minggu;
-  row[1] = "'" + cleanTarikh; // paksa teks — elak Sheet auto-tukar tarikh jadi objek Date
+  // Baris TAK WUJUD lagi dalam DATABOT — mungkin rekod ni asalnya dari tab
+  // "DATA" (dibaca melalui Data2). MIGRATE SEMUA medan yang ada (fullRecord)
+  // supaya data sedia ada TAK HILANG, bukan cuma simpan Minggu+Tarikh kosong.
+  var fr = fullRecord || {};
+  var row = [
+    minggu, "'" + cleanTarikh, fr.namaPelapor || "", fr.namaGuruBertugas || "",
+    fr.kehadiranGuru || "", fr.namaGuruTidakHadir || "", fr.kehadiranAkp || "", fr.namaAkpTidakHadir || "",
+    fr.laporanBlokA || "", fr.tindakanBlokA || "", fr.laporanBlokB || "", fr.tindakanBlokB || "",
+    fr.laporanBlokC || "", fr.tindakanBlokC || "", fr.laporanBlokKantin || "", fr.tindakanBlokKantin || "",
+    fr.laporanKeselamatan || "", fr.tindakanKeselamatan || "", fr.peristiwaProgram || "", fr.tindakanPeristiwa || "",
+    fr.gambarBlokA || "", fr.gambarBlokB || "", fr.gambarBlokC || "", fr.gambarBlokKantin || "", fr.gambarKeselamatan || "",
+  ];
   sheet.appendRow(row);
-  return sheet.getLastRow();
+  var newRowNum = sheet.getLastRow();
+  sheet.getRange(newRowNum, 2).setNumberFormat("@").setValue(cleanTarikh); // paksa teks — elak Sheet auto-tukar tarikh jadi objek Date
+  return newRowNum;
 }
 
 /** Simpan SATU seksyen sahaja (dipanggil setiap kali user klik "Seterusnya"/"Simpan"
@@ -831,7 +842,7 @@ function saveLaporanGuruBertugasSection(body) {
     return jsonResponse({ success: false, message: 'Tab "' + LGB_SHEET_NAME + '" tidak dijumpai dalam Spreadsheet bot.' });
   }
 
-  var rowNum = lgbEnsureRow(sheet, body.minggu, body.tarikh);
+  var rowNum = lgbEnsureRow(sheet, body.minggu, body.tarikh, body.fullRecord);
 
   var values = body.values || [];
   cols.forEach(function (col, i) {
