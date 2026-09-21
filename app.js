@@ -335,17 +335,18 @@ function renderHomeMenu(groupKey) {
   };
 
   const CHUNK = 6; // 2 baris x 3 lajur setiap muka
-  if (group.children.length <= 5) {
-    grid.innerHTML = backTileHtml + group.children.map(tileHtml).join("");
+  const allTilesHtml = [backTileHtml, ...group.children.map(tileHtml)];
+  if (allTilesHtml.length <= 6) {
+    grid.innerHTML = allTilesHtml.join("");
   } else {
-    // >5 ikon — pecah ke beberapa muka, boleh slide kiri/kanan
+    // >6 ubin (termasuk Kembali) — pecah ke beberapa muka, boleh slide kiri/kanan.
+    // "Kembali" jadi ubin PERTAMA muka 1 — sebaris sama dengan ikon-ikon lain.
     const pages = [];
-    for (let i = 0; i < group.children.length; i += CHUNK) pages.push(group.children.slice(i, i + CHUNK));
+    for (let i = 0; i < allTilesHtml.length; i += CHUNK) pages.push(allTilesHtml.slice(i, i + CHUNK));
     grid.innerHTML = `
-      ${backTileHtml}
       <div class="module-pager-outer">
         <div class="module-pager-track" id="module-pager-track">
-          ${pages.map((page) => `<div class="module-pager-page"><div class="module-grid module-grid-inner">${page.map(tileHtml).join("")}</div></div>`).join("")}
+          ${pages.map((page) => `<div class="module-pager-page"><div class="module-grid module-grid-inner">${page.join("")}</div></div>`).join("")}
         </div>
         <div class="module-pager-dots" id="module-pager-dots">
           ${pages.map((_, i) => `<span class="module-pager-dot${i === 0 ? " active" : ""}" onclick="moduleMenuPagerGoTo(${i})"></span>`).join("")}
