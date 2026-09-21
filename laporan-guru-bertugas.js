@@ -543,7 +543,11 @@ async function lgbFetchRecords(forceRefresh) {
   }
   try {
     const cacheBust = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const url = `https://docs.google.com/spreadsheets/d/${LGB_SPREADSHEET_ID}/gviz/tq?tqx=out:json;reqId:0&sheet=${encodeURIComponent(LGB_READ_SHEET_NAME)}&_ts=${cacheBust}`;
+    // "range" EKSPLISIT paksa gviz scan sampai baris 5000 — elak gviz
+    // "tersasar" tentang saiz data sebenar untuk Sheet formula dinamik
+    // (VSTACK/SORTN spill boleh buat gviz anggap saiz lama, tak update
+    // serta-merta bila formula spill ke lebih banyak baris).
+    const url = `https://docs.google.com/spreadsheets/d/${LGB_SPREADSHEET_ID}/gviz/tq?tqx=out:json;reqId:0&sheet=${encodeURIComponent(LGB_READ_SHEET_NAME)}&range=A1:Y5000&_ts=${cacheBust}`;
     const res = await fetch(url, { cache: "no-store" });
     const text = await res.text();
     const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
