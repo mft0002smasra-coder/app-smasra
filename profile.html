@@ -75,6 +75,12 @@
       <div class="id-card-strip"></div>
     </div>
 
+    <div class="glass card-pad admin-app-card hidden" id="profile-admin-app-card">
+      <div class="admin-app-card-title">🛡️ Panel Kawalan Akses</div>
+      <div class="admin-app-card-desc">Anda dilantik sebagai <b>Admin App</b> — boleh kemaskini Jawatan, Role, Role2 &amp; Role3 untuk semua staf dalam sistem.</div>
+      <a class="btn-primary" href="admin-akses.html" style="display:block;text-align:center;text-decoration:none">Buka Panel Kawalan Akses</a>
+    </div>
+
     <button class="btn-danger" onclick="logout()">Log Keluar</button>
 
   </div>
@@ -115,6 +121,10 @@
     const badge = document.getElementById("profile-role-badge");
     badge.textContent = user.role === "Admin" ? "Admin" : "Staf";
     badge.classList.toggle("role-admin", user.role === "Admin");
+
+    if (String(user.role3 || "").trim().toLowerCase() === "admin app") {
+      document.getElementById("profile-admin-app-card").classList.remove("hidden");
+    }
   }
   initApp(renderProfile);
 </script>

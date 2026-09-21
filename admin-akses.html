@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Panel Kawalan Akses — SM Arab (Jaim) Al-Asyraf</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#050810">
+<link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+<div class="bg-fx"></div>
+<div class="wrap">
+
+  <div id="login-screen" class="hidden">
+    <img class="logo-plain school-logo-img" alt="Logo Sekolah">
+    <div class="brand-title">SM ARAB (JAIM) AL-ASYRAF</div>
+    <div class="brand-sub">Sistem Pengurusan Sekolah</div>
+    <div class="glass">
+      <div class="gsi-wrap" id="google-btn-container"></div>
+      <div class="divider">Atau</div>
+      <form id="login-form">
+        <label class="field-label" for="login-email">Emel Rasmi</label>
+        <input class="field-input" type="email" id="login-email" placeholder="nama@moe-dl.edu.my" autocomplete="email" required>
+        <button class="btn-primary" type="submit" id="login-btn">Log Masuk</button>
+        <div class="error-text hidden" id="login-error"></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="app-content" class="hidden">
+
+    <div class="site-header-wrap">
+      <header class="site-header">
+        <div class="site-header-row1">
+          <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu"><span data-icon="menu"></span></button>
+          <img class="header-logo school-logo-img" alt="Logo Sekolah">
+          <div class="header-title-block">
+            <div class="header-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
+            <div class="header-school-sub">Panel Kawalan Akses</div>
+          </div>
+        </div>
+        <div class="site-header-row2">
+          <span class="header-greet">Selamat Datang, <span id="header-greet-name">-</span></span>
+          <span class="header-status"><span class="status-dot"></span>Sistem Aktif <span id="live-clock">--:--:-- --</span></span>
+        </div>
+      </header>
+    </div>
+
+    <!-- ============ Akses Ditolak (bukan Admin App) ============ -->
+    <div id="aa-denied" class="hidden">
+      <div class="glass card-pad" style="text-align:center;margin-top:20px">
+        <div style="font-size:34px;margin-bottom:10px">🚫</div>
+        <div class="section-title">Akses Ditolak</div>
+        <div class="sub-dim">Panel ini hanya untuk staf yang dilantik sebagai <b>Admin App</b> (Role3).</div>
+      </div>
+    </div>
+
+    <!-- ============ Kandungan utama (Admin App sahaja) ============ -->
+    <div id="aa-main" class="hidden">
+
+      <div class="aa-legend glass card-pad">
+        <div class="aa-legend-title">Rujukan Ringkas — Apa Setiap Nilai Buka</div>
+        <div class="aa-legend-row"><span class="aa-legend-tag aa-tag-role">Role = Admin</span> Akses tambahan semua modul jawatan-khas (Data Murid, Jadual Guru, Kaunseling)</div>
+        <div class="aa-legend-row"><span class="aa-legend-tag aa-tag-role2">Role2 = Pentadbir</span> Laporan Pentadbir (akses penuh), Jadual Guru (Semua Guru + Analisis), Kaunseling (isi/edit)</div>
+        <div class="aa-legend-row"><span class="aa-legend-tag aa-tag-role3">Role3 = Admin App</span> Buka Panel Kawalan Akses ini</div>
+        <div class="aa-legend-row"><span class="aa-legend-tag aa-tag-jwt">Jawatan</span> "PPP (GURU DATA MURID)" / "PPP (GURU JADUAL WAKTU)" / "PPP (KAUNSELOR SEPENUH MASA)" → akses muat naik/edit modul berkaitan</div>
+      </div>
+
+      <label class="field-label">Cari Nama Staf</label>
+      <input class="field-input" type="text" id="aa-search" placeholder="Taip nama untuk cari..." oninput="aaFilterList()">
+
+      <div id="aa-staff-list"><div class="empty-state">Memuatkan senarai staf...</div></div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ============ Popup: Edit akses satu staf ============ -->
+<div class="modal-overlay-center hidden" id="aa-edit-overlay">
+  <div class="glass modal-sheet" style="text-align:left;max-width:420px">
+    <div class="modal-title" id="aa-edit-nama">-</div>
+    <div class="sub-dim" id="aa-edit-emel" style="margin-bottom:16px">-</div>
+
+    <label class="field-label">Jawatan</label>
+    <input class="field-input" type="text" id="aa-edit-jawatan" list="aa-jawatan-list">
+    <datalist id="aa-jawatan-list">
+      <option value="PPP (GURU DATA MURID)">
+      <option value="PPP (GURU JADUAL WAKTU)">
+      <option value="PPP (KAUNSELOR SEPENUH MASA)">
+      <option value="PPP (GURU KKQ)">
+      <option value="PENGETUA">
+      <option value="PK PENTADBIRAN">
+      <option value="PK HAL EHWAL MURID">
+      <option value="PK KOKURIKULUM">
+      <option value="PK TINGKATAN 6">
+      <option value="GURU">
+      <option value="PEMBANTU TADBIR (ASRAMA)">
+      <option value="PEMBANTU KHIDMAT AM">
+      <option value="PEMBANTU TADBIR (P/O)">
+      <option value="PEMBANTU MAKMAL">
+    </datalist>
+
+    <label class="field-label">Role</label>
+    <select class="field-input" id="aa-edit-role">
+      <option value="">(Tiada)</option>
+      <option value="Admin">Admin</option>
+    </select>
+
+    <label class="field-label">Role2</label>
+    <select class="field-input" id="aa-edit-role2">
+      <option value="">(Tiada)</option>
+      <option value="Pentadbir">Pentadbir</option>
+    </select>
+
+    <label class="field-label">Role3</label>
+    <select class="field-input" id="aa-edit-role3">
+      <option value="">(Tiada)</option>
+      <option value="Admin App">Admin App</option>
+    </select>
+
+    <div class="error-text hidden" id="aa-edit-error"></div>
+    <div class="lgb-nav-row" style="margin-top:16px">
+      <button class="btn-bw-outline" onclick="aaCloseEdit()">Batal</button>
+      <button class="pc-intro-btn" id="aa-edit-save-btn" onclick="aaSaveEdit()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<nav class="drawer" id="drawer">
+  <div class="drawer-logo-row"><img class="school-logo-img" alt=""><span>SMASRA</span></div>
+  <a class="drawer-item" href="index.html"><span data-icon="home"></span><span class="drawer-label">Laman Utama</span></a>
+  <div id="drawer-menu-body"></div>
+  <div class="drawer-spacer"></div>
+  <a class="drawer-item drawer-logout" href="#" onclick="logout();return false;"><span data-icon="power"></span><span class="drawer-label">Log Keluar</span></a>
+</nav>
+
+<div class="bottom-nav-wrap">
+  <nav class="bottom-nav">
+    <a class="bn-item" href="kehadiran-staf.html?open=kehadiran" aria-label="Kehadiran"><span data-icon="calendar"></span><span class="bn-label">Kehadiran</span></a>
+    <a class="bn-item" href="event.html" aria-label="Event"><span data-icon="event"></span><span class="bn-label">Event</span></a>
+    <a class="bn-item" href="index.html" aria-label="Home"><span data-icon="home"></span><span class="bn-label">Home</span></a>
+    <a class="bn-item" href="laporan-pentadbir.html" aria-label="Laporan"><span data-icon="clipboard"></span><span class="bn-label">Laporan</span></a>
+    <a class="bn-item" href="profile.html" aria-label="Profil"><span data-icon="profile"></span><span class="bn-label">Profil</span></a>
+  </nav>
+</div>
+
+<script src="app.js"></script>
+<script src="admin-akses.js"></script>
+<script>
+  initApp(aaInit);
+</script>
+</body>
+</html>

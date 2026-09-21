@@ -1974,3 +1974,33 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
   font-size:11px;letter-spacing:1px;text-decoration:none;transition:all .2s;
 }
 .kw-nota-btn:active{ border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,.06); }
+
+/* ---------- Profil: kad Admin App (bersyarat, Role3 sahaja) ---------- */
+.admin-app-card{ margin-top:18px;border-color:var(--violet); }
+.admin-app-card-title{ font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--violet);margin-bottom:8px; }
+.admin-app-card-desc{ font-size:12.5px;color:var(--text-dim);line-height:1.6;margin-bottom:16px; }
+
+/* ============================================================
+   PANEL KAWALAN AKSES (admin-akses.html) — Role3 "Admin App" sahaja.
+   ============================================================ */
+.aa-legend{ margin-bottom:18px; }
+.aa-legend-title{ font-family:var(--font-display);font-weight:700;font-size:12.5px;color:var(--text);margin-bottom:12px;letter-spacing:.3px; }
+.aa-legend-row{ font-size:11.5px;color:var(--text-dim);line-height:1.6;margin-bottom:10px; }
+.aa-legend-row:last-child{ margin-bottom:0; }
+.aa-legend-tag{ display:inline-block;padding:3px 9px;border-radius:20px;font-family:var(--font-mono);font-weight:700;font-size:10px;margin-right:6px;margin-bottom:3px; }
+
+.aa-tag-role{ background:rgba(0,229,255,.12);color:var(--cyan);border:1px solid rgba(0,229,255,.35); }
+.aa-tag-role2{ background:rgba(139,123,255,.12);color:var(--violet);border:1px solid rgba(139,123,255,.35); }
+.aa-tag-role3{ background:rgba(255,85,119,.12);color:var(--pink);border:1px solid rgba(255,85,119,.35); }
+.aa-tag-jwt{ background:rgba(25,227,161,.12);color:var(--mint);border:1px solid rgba(25,227,161,.35); }
+
+.aa-staff-row{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  background:var(--panel-a);border:1px solid var(--line);border-radius:10px;padding:13px 14px;margin-bottom:9px;
+  cursor:pointer;margin-top:14px;
+}
+.aa-staff-row:active{ border-color:var(--cyan); }
+.aa-staff-nama{ font-weight:700;font-size:13px;color:var(--text); }
+.aa-staff-jawatan{ font-size:11px;color:var(--text-dim);margin-top:2px; }
+.aa-staff-badges{ display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0; }
+.aa-badge{ padding:3px 9px;border-radius:20px;font-family:var(--font-mono);font-weight:700;font-size:9px;white-space:nowrap; }

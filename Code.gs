@@ -22,6 +22,7 @@ var COL_EMEL1 = 4;
 var COL_EMEL2 = 5;
 var COL_ROLE = 6;
 var COL_ROLE2 = 7;
+var COL_ROLE3 = 8; // Lajur I — "Admin App" untuk akses Panel Kawalan Akses
 
 function doGet(e) {
   var action = e.parameter.action;
@@ -57,6 +58,7 @@ function doPost(e) {
   if (body.action === "saveLaporanGuruBertugasSection") return saveLaporanGuruBertugasSection(body);
   if (body.action === "saveLaporanGuruBertugasSemakan") return saveLaporanGuruBertugasSemakan(body);
   if (body.action === "savePermohonanCuti") return savePermohonanCuti(body);
+  if (body.action === "updateStaffAccess") return updateStaffAccess(body);
   return jsonResponse({ success: false, message: "Unknown action: " + body.action });
 }
 
@@ -99,6 +101,7 @@ function findUserByEmail(email) {
         gambar: row[COL_GAMBAR],
         role: row[COL_ROLE] || "",
         role2: row[COL_ROLE2] || "",
+        role3: row[COL_ROLE3] || "",
         emel1: row[COL_EMEL1],
         emel2: row[COL_EMEL2],
       };
@@ -117,6 +120,7 @@ function getUser(email) {
     gambar: user.gambar,
     role: user.role,
     role2: user.role2,
+    role3: user.role3,
     telefon: user.telefon,
     emel1: user.emel1,
     emel2: user.emel2,
@@ -897,4 +901,36 @@ function cutiToDDMMYYYY(isoStr) {
   var m = String(isoStr || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!m) return isoStr;
   return m[3] + "/" + m[2] + "/" + m[1];
+}
+
+/* ---------------- PANEL KAWALAN AKSES (Admin App sahaja) ---------------- */
+/** Kemaskini Jawatan/Role/Role2/Role3 SATU staf. SAHKAN pemanggil sebenar
+ * Role3="Admin App" di PELAYAN dahulu — jangan percaya UI sahaja, elak
+ * sesiapa panggil API terus untuk beri diri sendiri akses admin. */
+function updateStaffAccess(body) {
+  if (!body.callerEmail || !body.targetEmail) {
+    return jsonResponse({ success: false, message: "Maklumat tidak lengkap." });
+  }
+  var caller = findUserByEmail(body.callerEmail);
+  if (!caller || String(caller.role3 || "").trim().toLowerCase() !== "admin app") {
+    return jsonResponse({ success: false, message: "Akses ditolak — hanya Admin App boleh kemaskini akses staf." });
+  }
+
+  var sheet = getSheet("DatabaseSTAFF");
+  var data = sheet.getDataRange().getValues();
+  var target = String(body.targetEmail).trim().toLowerCase();
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    var emel1 = String(row[COL_EMEL1] || "").trim().toLowerCase();
+    var emel2 = String(row[COL_EMEL2] || "").trim().toLowerCase();
+    if (emel1 === target || emel2 === target) {
+      var rowNum = i + 1;
+      if (body.jawatan != null) sheet.getRange(rowNum, COL_JAWATAN + 1).setValue(body.jawatan);
+      if (body.role != null) sheet.getRange(rowNum, COL_ROLE + 1).setValue(body.role);
+      if (body.role2 != null) sheet.getRange(rowNum, COL_ROLE2 + 1).setValue(body.role2);
+      if (body.role3 != null) sheet.getRange(rowNum, COL_ROLE3 + 1).setValue(body.role3);
+      return jsonResponse({ success: true });
+    }
+  }
+  return jsonResponse({ success: false, message: "Staf tidak dijumpai (emel tidak sepadan)." });
 }

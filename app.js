@@ -113,7 +113,7 @@ async function loginWithEmail(email, btn, btnLabel) {
     if (data.found) {
       saveUser({
         email, nama: data.nama, jawatan: data.jawatan, gambar: data.gambar, role: data.role || "",
-        role2: data.role2 || "", telefon: data.telefon || "", emel1: data.emel1 || email, emel2: data.emel2 || "",
+        role2: data.role2 || "", role3: data.role3 || "", telefon: data.telefon || "", emel1: data.emel1 || email, emel2: data.emel2 || "",
       });
       location.reload();
     } else {
@@ -492,11 +492,11 @@ async function refreshUserInBackground(cachedUser) {
     const res = await fetch(`${API_URL}?action=getUser&email=${encodeURIComponent(cachedUser.email)}`);
     const data = await res.json();
     if (!data || !data.found) return;
-    const changed = data.jawatan !== cachedUser.jawatan || data.role !== cachedUser.role || data.role2 !== cachedUser.role2 || data.nama !== cachedUser.nama;
+    const changed = data.jawatan !== cachedUser.jawatan || data.role !== cachedUser.role || data.role2 !== cachedUser.role2 || data.role3 !== cachedUser.role3 || data.nama !== cachedUser.nama;
     if (changed) {
       saveUser({
         email: cachedUser.email, nama: data.nama, jawatan: data.jawatan, gambar: data.gambar,
-        role: data.role || "", role2: data.role2 || "", telefon: data.telefon, emel1: data.emel1, emel2: data.emel2,
+        role: data.role || "", role2: data.role2 || "", role3: data.role3 || "", telefon: data.telefon, emel1: data.emel1, emel2: data.emel2,
       });
       location.reload();
     }
