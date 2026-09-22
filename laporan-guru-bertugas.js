@@ -281,6 +281,8 @@ async function lgbStartOrResume() {
 /* ================= SECTION VIEW — hub utama (macam reviewSectionPage) ================= */
 function lgbLoadCurrentRow() {
   lgbCurrentRow = lgbRecords.find((r) => String(r.minggu).trim() === lgbMinggu && String(r.tarikh).trim() === lgbTarikh) || null;
+  console.log("[LGB] Cari rekod — lgbMinggu='" + lgbMinggu + "' lgbTarikh='" + lgbTarikh + "'");
+  console.log("[LGB] Jumpa?", lgbCurrentRow ? "YA" : "TIDAK — senarai kunci sedia ada:", lgbCurrentRow ? "" : lgbRecords.map((r) => `'${r.minggu}'|'${r.tarikh}'`));
 }
 
 async function lgbOpenSectionView(tarikh, secIndex) {
