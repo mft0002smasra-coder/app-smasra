@@ -517,16 +517,92 @@ function lgbPrintReport() {
 // sendiri) — formula Google yang uruskan penggabungan.
 const LGB_READ_SHEET_NAME = "Data2";
 
-function lgbGvizDateToIso(v) {
-  if (!v) return "";
-  const m = String(v).match(/Date\((\d+),(\d+),(\d+)/);
-  if (!m) return String(v).replace(/^'/, "").trim();
-  const y = parseInt(m[1]), mo = parseInt(m[2]) + 1, d = parseInt(m[3]);
-  return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-}
-
 const LGB_CACHE_KEY = "lgb_records_cache";
 const LGB_CACHE_TTL_MS = 90 * 1000; // 90 saat — cukup pendek untuk kekal segar, cukup panjang elak app "hang"
+
+/** Parser CSV ringkas (kendali medan bertanda petikan "..." yang ada koma
+ * dalam kandungannya sendiri) — perlu sebab guna tqx=out:csv, bukan JSON. */
+function lgbParseCsv(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else inQuotes = false;
+      } else field += ch;
+    } else {
+      if (ch === '"') inQuotes = true;
+      else if (ch === ",") { row.push(field); field = ""; }
+      else if (ch === "\r") { /* abaikan, tunggu \n */ }
+      else if (ch === "\n") { row.push(field); field = ""; rows.push(row); row = []; }
+      else field += ch;
+    }
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+/** Normalkan TARIKH ke storan dalaman ISO (yyyy-mm-dd), APA SAHAJA format ia
+ * ditaip/dipapar dalam Sheet — sebab CSV pulangkan nilai PAPARAN (ikut
+ * locale sel), bukan mentah, dan format boleh berbeza-beza (dd/mm/yyyy,
+ * yyyy-mm-dd, dd-mm-yyyy). Kalau tak padan corak tarikh langsung (cth
+ * teks status "CUTI"), pulangkan asal (bukan tarikh, biar apa adanya). */
+function lgbNormalizeTarikh(raw) {
+  const s = String(raw || "").trim();
+  if (!s) return "";
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/); // yyyy-mm-dd (dah ISO)
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/); // dd/mm/yyyy ATAU dd-mm-yyyy
+  if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+  return s; // bukan corak tarikh dikenali (cth "CUTI") — biar apa adanya
+}
+
+/** Baca satu Sheet (julat A3:Y5000, guna CSV — lebih literal, elak gviz
+ * keliru dengan lajur bercampur jenis) dan pulangkan senarai rekod. */
+async function lgbFetchSheetAsRecords(sheetName) {
+  const cacheBust = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const url = `https://docs.google.com/spreadsheets/d/${LGB_SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}&range=A3:Y5000&_ts=${cacheBust}`;
+  const res = await fetch(url, { cache: "no-store" });
+  const text = await res.text();
+  const rows = lgbParseCsv(text);
+  return rows.map((c) => {
+    const get = (i) => (c[i] != null ? String(c[i]).trim() : "");
+    return {
+      minggu: get(0), tarikh: lgbNormalizeTarikh(get(1)),
+      namaPelapor: get(2), namaGuruBertugas: get(3),
+      kehadiranGuru: get(4), namaGuruTidakHadir: get(5), kehadiranAkp: get(6), namaAkpTidakHadir: get(7),
+      laporanBlokA: get(8), tindakanBlokA: get(9), laporanBlokB: get(10), tindakanBlokB: get(11),
+      laporanBlokC: get(12), tindakanBlokC: get(13), laporanBlokKantin: get(14), tindakanBlokKantin: get(15),
+      laporanKeselamatan: get(16), tindakanKeselamatan: get(17), peristiwaProgram: get(18), tindakanPeristiwa: get(19),
+      gambarBlokA: get(20), gambarBlokB: get(21), gambarBlokC: get(22), gambarBlokKantin: get(23), gambarKeselamatan: get(24),
+    };
+  }).filter((r) => r.minggu && r.tarikh);
+}
+
+/** Gabung Data2 (formula, mungkin ada lag) + DATABOT (sumber TERUS, tiada
+ * formula) ikut kunci Minggu+Tarikh. DATABOT MENANG untuk setiap medan
+ * yang ADA nilai — sebab ia baca terus, jadi lebih boleh dipercayai
+ * berbanding Data2 yang kadang tertinggal (had cache formula gviz). */
+function lgbMergeWithDatabot(data2List, databotList) {
+  const mergeKey = (r) => `${String(r.minggu).trim()}|${String(r.tarikh).trim()}`;
+  const merged = {};
+  const order = [];
+  data2List.forEach((r) => {
+    const key = mergeKey(r);
+    merged[key] = Object.assign({}, r);
+    order.push(key);
+  });
+  databotList.forEach((r) => {
+    const key = mergeKey(r);
+    if (!merged[key]) { merged[key] = Object.assign({}, r); order.push(key); return; }
+    Object.keys(r).forEach((field) => { if (r[field]) merged[key][field] = r[field]; });
+  });
+  return order.map((key) => merged[key]);
+}
 
 async function lgbFetchRecords(forceRefresh) {
   if (!forceRefresh) {
@@ -541,36 +617,30 @@ async function lgbFetchRecords(forceRefresh) {
       }
     } catch (e) { /* storan tak boleh diakses — teruskan fetch biasa */ }
   }
+  // Baca Data2 & DATABOT SECARA BERASINGAN — satu gagal takkan hapuskan yang
+  // lain. console.log dedah bilangan rekod setiap sumber untuk diagnostik.
+  let data2List = [];
+  let databotList = [];
   try {
-    const cacheBust = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    // "range" EKSPLISIT paksa gviz scan sampai baris 5000 — elak gviz
-    // "tersasar" tentang saiz data sebenar untuk Sheet formula dinamik
-    // (VSTACK/SORTN spill boleh buat gviz anggap saiz lama, tak update
-    // serta-merta bila formula spill ke lebih banyak baris).
-    const url = `https://docs.google.com/spreadsheets/d/${LGB_SPREADSHEET_ID}/gviz/tq?tqx=out:json;reqId:0&sheet=${encodeURIComponent(LGB_READ_SHEET_NAME)}&range=A1:Y5000&_ts=${cacheBust}`;
-    const res = await fetch(url, { cache: "no-store" });
-    const text = await res.text();
-    const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
-    const table = JSON.parse(jsonStr).table;
-    const allRows = table.rows || [];
-    lgbRecords = allRows.slice(2).map((r) => { // langkau baris 1 & 2 (seksyen/header) — data mula baris 3
-      const c = r.c || [];
-      const get = (i) => (c[i] && c[i].v != null ? c[i].v : "");
-      return {
-        minggu: get(0), tarikh: lgbGvizDateToIso(get(1)) || String(get(1)),
-        namaPelapor: get(2), namaGuruBertugas: get(3),
-        kehadiranGuru: get(4), namaGuruTidakHadir: get(5), kehadiranAkp: get(6), namaAkpTidakHadir: get(7),
-        laporanBlokA: get(8), tindakanBlokA: get(9), laporanBlokB: get(10), tindakanBlokB: get(11),
-        laporanBlokC: get(12), tindakanBlokC: get(13), laporanBlokKantin: get(14), tindakanBlokKantin: get(15),
-        laporanKeselamatan: get(16), tindakanKeselamatan: get(17), peristiwaProgram: get(18), tindakanPeristiwa: get(19),
-        gambarBlokA: get(20), gambarBlokB: get(21), gambarBlokC: get(22), gambarBlokKantin: get(23), gambarKeselamatan: get(24),
-      };
-    }).filter((r) => r.minggu && r.tarikh);
+    data2List = await lgbFetchSheetAsRecords(LGB_READ_SHEET_NAME);
+    console.log("[LGB] Data2: " + data2List.length + " rekod sah");
+  } catch (e) {
+    console.error("[LGB] Gagal baca Data2:", e);
+  }
+  try {
+    databotList = await lgbFetchSheetAsRecords(LGB_SHEET_NAME);
+    console.log("[LGB] DATABOT: " + databotList.length + " rekod sah");
+  } catch (e) {
+    console.error("[LGB] Gagal baca DATABOT:", e);
+  }
+  lgbRecords = lgbMergeWithDatabot(data2List, databotList);
+  console.log("[LGB] Selepas cross-check: " + lgbRecords.length + " rekod unik");
 
+  try {
     await lgbFetchSemakan();
     try { sessionStorage.setItem(LGB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: lgbRecords })); } catch (e) {}
   } catch (e) {
-    lgbRecords = [];
+    console.error("[LGB] Gagal baca DATA SEMAKAN:", e);
   }
 }
 
