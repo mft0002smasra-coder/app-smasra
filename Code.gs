@@ -803,7 +803,11 @@ function lgbEnsureRow(sheet, minggu, tarikh, fullRecord) {
   if (lastRow >= 3) {
     var data = sheet.getRange(3, 1, lastRow - 2, 2).getValues();
     for (var i = 0; i < data.length; i++) {
-      if (String(data[i][0]).trim() === String(minggu).trim() && String(data[i][1]).replace(/^'/, "").trim() === cleanTarikh) {
+      var cellTarikh = data[i][1];
+      var cellTarikhStr = cellTarikh instanceof Date
+        ? Utilities.formatDate(cellTarikh, Session.getScriptTimeZone() || "GMT+8", "yyyy-MM-dd")
+        : String(cellTarikh).replace(/^'/, "").trim();
+      if (String(data[i][0]).trim() === String(minggu).trim() && cellTarikhStr === cleanTarikh) {
         return i + 3;
       }
     }
@@ -822,7 +826,14 @@ function lgbEnsureRow(sheet, minggu, tarikh, fullRecord) {
   ];
   sheet.appendRow(row);
   var newRowNum = sheet.getLastRow();
-  sheet.getRange(newRowNum, 2).setNumberFormat("@").setValue(cleanTarikh); // paksa teks — elak Sheet auto-tukar tarikh jadi objek Date
+  // Simpan TARIKH SEBENAR (objek Date), BUKAN teks dipaksa — padan konvensyen
+  // lajur Tarikh yang lain dalam Sheet ni. Format paparan dd/mm/yyyy.
+  var dateObj = new Date(cleanTarikh + "T00:00:00");
+  if (!isNaN(dateObj.getTime())) {
+    sheet.getRange(newRowNum, 2).setNumberFormat("dd/mm/yyyy").setValue(dateObj);
+  } else {
+    sheet.getRange(newRowNum, 2).setValue(cleanTarikh); // fallback — biar teks kalau genuinely bukan tarikh sah
+  }
   return newRowNum;
 }
 
