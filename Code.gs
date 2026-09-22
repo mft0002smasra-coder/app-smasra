@@ -850,14 +850,22 @@ function saveLaporanGuruBertugasSection(body) {
   });
 
   var imgWarning = null;
-  if (body.gambar && LGB_GAMBAR_COL[body.sectionKey]) {
-    try {
-      var stamp = new Date().getTime();
-      var url = lpSaveImageToDrive(body.gambar, "gurubertugas_" + rowNum + "_" + body.sectionKey + "_" + stamp);
-      sheet.getRange(rowNum, LGB_GAMBAR_COL[body.sectionKey]).setValue(url);
-    } catch (imgErr) {
-      imgWarning = imgErr.message;
+  if (body.gambarList && body.gambarList.length && LGB_GAMBAR_COL[body.sectionKey]) {
+    var stamp = new Date().getTime();
+    var uploadedUrls = [];
+    var imgErrors = [];
+    for (var g = 0; g < body.gambarList.length; g++) {
+      try {
+        var url = lpSaveImageToDrive(body.gambarList[g], "gurubertugas_" + rowNum + "_" + body.sectionKey + "_" + stamp + "_" + g);
+        uploadedUrls.push(url);
+      } catch (imgErr) {
+        imgErrors.push("Gambar " + (g + 1) + ": " + imgErr.message);
+      }
     }
+    if (uploadedUrls.length) {
+      sheet.getRange(rowNum, LGB_GAMBAR_COL[body.sectionKey]).setValue(uploadedUrls.join(","));
+    }
+    if (imgErrors.length) imgWarning = imgErrors.join(" | ");
   }
 
   return jsonResponse({ success: true, rowNum: rowNum, warning: imgWarning });

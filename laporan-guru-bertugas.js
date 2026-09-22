@@ -80,7 +80,6 @@ let lgbTarikh = "";
 let lgbCurrentRow = null;
 let lgbSecIndex = 0;
 let lgbEditingSection = null;
-let lgbPendingImage = null;
 let lgbRecords = [];
 let lgbPenyemakNames = [];
 let lgbSelectedPenyemak = "";
@@ -357,7 +356,7 @@ function lgbPickerGo(idx) {
 function lgbOpenEdit() {
   const sec = LGB_SECTIONS[lgbSecIndex];
   lgbEditingSection = sec;
-  lgbPendingImage = null;
+  lgbPendingImages = [];
   const r = lgbCurrentRow || {};
 
   document.getElementById("lgb-edit-title").textContent = sec.title;
@@ -371,39 +370,90 @@ function lgbOpenEdit() {
 
   let imgHtml = "";
   if (sec.gambarField) {
-    const existingUrl = lgbFixImageUrl(r[sec.gambarField]);
+    const existingUrls = lgbFixImageUrls(r[sec.gambarField]);
+    lgbPendingImages = []; // reset — pemilihan baharu akan GANTIKAN sepenuhnya gambar sedia ada bila disimpan
     imgHtml = `
-      <label class="lgb-field-label" style="margin-top:14px">Lampiran Gambar (pilihan)</label>
-      <div class="lgb-img-slot" id="lgb-img-slot" onclick="document.getElementById('lgb-img-input').click()">
-        ${existingUrl ? `<img id="lgb-img-preview" src="${lgbEscape(existingUrl)}" onerror="this.parentElement.innerHTML='<div class=\\'lgb-img-empty\\'>📷<br>Ketik untuk pilih gambar</div>'">` : `<div class="lgb-img-empty">📷<br>Ketik untuk pilih gambar</div>`}
+      <label class="lgb-field-label" style="margin-top:14px">Lampiran Gambar (max 5, 10MB setiap satu)</label>
+      <div class="lgb-img-grid" id="lgb-img-grid">
+        ${existingUrls.map((u) => `<div class="lgb-img-thumb"><img src="${lgbEscape(u)}" onerror="this.parentElement.style.display='none'"></div>`).join("")}
+        <div class="lgb-img-add-slot" onclick="document.getElementById('lgb-img-input').click()">＋<br><span style="font-size:9px">Tambah</span></div>
       </div>
-      <input type="file" id="lgb-img-input" accept="image/*" class="hidden" onchange="lgbHandleImagePick(this)">
+      <div class="sub-dim" id="lgb-img-hint" style="margin-top:6px">Gambar sedia ada dipapar di atas. Pilih gambar baharu untuk GANTIKAN kesemuanya.</div>
+      <div class="error-text hidden" id="lgb-img-error" style="margin-top:6px"></div>
+      <input type="file" id="lgb-img-input" accept="image/*" multiple class="hidden" onchange="lgbHandleImagePick(this)">
     `;
   }
   document.getElementById("lgb-edit-fields").innerHTML = fieldsHtml + imgHtml;
   document.getElementById("lgb-edit-error").classList.add("hidden");
   lgbShowScreen("edit");
 }
+
+const LGB_MAX_IMAGES = 5;
+const LGB_MAX_IMAGE_MB = 10;
+let lgbPendingImages = [];
+
 function lgbHandleImagePick(input) {
-  const file = input.files && input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const img = new Image();
-    img.onload = () => {
-      const maxW = 1000;
-      const scale = Math.min(1, maxW / img.width);
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      lgbPendingImage = canvas.toDataURL("image/jpeg", 0.75);
-      document.getElementById("lgb-img-slot").innerHTML = `<img id="lgb-img-preview" src="${lgbPendingImage}">`;
+  const files = Array.from(input.files || []);
+  const errEl = document.getElementById("lgb-img-error");
+  errEl.classList.add("hidden");
+  if (!files.length) return;
+
+  const totalAfter = lgbPendingImages.length + files.length;
+  if (totalAfter > LGB_MAX_IMAGES) {
+    errEl.textContent = `Maksimum ${LGB_MAX_IMAGES} gambar sahaja. Awak dah pilih ${lgbPendingImages.length}, cuma boleh tambah ${Math.max(0, LGB_MAX_IMAGES - lgbPendingImages.length)} lagi.`;
+    errEl.classList.remove("hidden");
+    input.value = "";
+    return;
+  }
+  const tooBig = files.find((f) => f.size > LGB_MAX_IMAGE_MB * 1024 * 1024);
+  if (tooBig) {
+    errEl.textContent = `"${tooBig.name}" melebihi ${LGB_MAX_IMAGE_MB}MB. Sila pilih gambar lebih kecil.`;
+    errEl.classList.remove("hidden");
+    input.value = "";
+    return;
+  }
+
+  files.forEach((file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxW = 1000;
+        const scale = Math.min(1, maxW / img.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        lgbPendingImages.push(canvas.toDataURL("image/jpeg", 0.75));
+        lgbRenderImageGrid();
+      };
+      img.src = e.target.result;
     };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
+    reader.readAsDataURL(file);
+  });
+  input.value = "";
+}
+
+function lgbRenderImageGrid() {
+  const grid = document.getElementById("lgb-img-grid");
+  if (!grid) return;
+  const addSlotHtml = lgbPendingImages.length < LGB_MAX_IMAGES
+    ? `<div class="lgb-img-add-slot" onclick="document.getElementById('lgb-img-input').click()">＋<br><span style="font-size:9px">Tambah</span></div>`
+    : "";
+  grid.innerHTML = lgbPendingImages.map((src, i) => `
+    <div class="lgb-img-thumb">
+      <img src="${src}">
+      <div class="lgb-img-remove" onclick="lgbRemovePendingImage(${i})">✕</div>
+    </div>`).join("") + addSlotHtml;
+  const hint = document.getElementById("lgb-img-hint");
+  if (hint) hint.textContent = lgbPendingImages.length
+    ? `${lgbPendingImages.length} gambar baharu dipilih — ini akan GANTIKAN gambar sedia ada bila disimpan.`
+    : "Gambar sedia ada dipapar di atas. Pilih gambar baharu untuk GANTIKAN kesemuanya.";
+}
+function lgbRemovePendingImage(idx) {
+  lgbPendingImages.splice(idx, 1);
+  lgbRenderImageGrid();
 }
 async function lgbSaveEdit() {
   const sec = lgbEditingSection;
@@ -412,7 +462,7 @@ async function lgbSaveEdit() {
   const btn = document.getElementById("lgb-edit-save-btn");
   btn.disabled = true; btn.textContent = "Menyimpan...";
 
-  const ok = await lgbSaveSection(sec.key, values, lgbPendingImage, lgbMinggu, lgbTarikh, lgbCurrentRow);
+  const ok = await lgbSaveSection(sec.key, values, lgbPendingImages, lgbMinggu, lgbTarikh, lgbCurrentRow);
 
   if (!ok) {
     btn.disabled = false; btn.textContent = "Simpan";
@@ -433,11 +483,11 @@ function lgbCancelEdit() {
 }
 
 /** Fungsi simpan generik — SATU seksyen sahaja setiap panggilan. */
-async function lgbSaveSection(sectionKey, values, gambarBase64, minggu, tarikh, fullRecord) {
+async function lgbSaveSection(sectionKey, values, gambarBase64Array, minggu, tarikh, fullRecord) {
   if (!apiConfigured()) return false;
   try {
     const payload = { action: "saveLaporanGuruBertugasSection", email: lgbCurrentUser.email, sectionKey, values, minggu, tarikh };
-    if (gambarBase64) payload.gambar = gambarBase64;
+    if (gambarBase64Array && gambarBase64Array.length) payload.gambarList = gambarBase64Array;
     if (fullRecord) payload.fullRecord = fullRecord; // untuk migrate PENUH ke DATABOT kalau baris belum wujud di situ
     const data = await postToAppsScript(API_URL, payload);
     return !!data.success;
