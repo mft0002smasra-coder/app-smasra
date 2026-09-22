@@ -813,7 +813,7 @@ function lgbEnsureRow(sheet, minggu, tarikh, fullRecord) {
   // supaya data sedia ada TAK HILANG, bukan cuma simpan Minggu+Tarikh kosong.
   var fr = fullRecord || {};
   var row = [
-    minggu, "'" + cleanTarikh, fr.namaPelapor || "", fr.namaGuruBertugas || "",
+    minggu, cleanTarikh, fr.namaPelapor || "", fr.namaGuruBertugas || "",
     fr.kehadiranGuru || "", fr.namaGuruTidakHadir || "", fr.kehadiranAkp || "", fr.namaAkpTidakHadir || "",
     fr.laporanBlokA || "", fr.tindakanBlokA || "", fr.laporanBlokB || "", fr.tindakanBlokB || "",
     fr.laporanBlokC || "", fr.tindakanBlokC || "", fr.laporanBlokKantin || "", fr.tindakanBlokKantin || "",

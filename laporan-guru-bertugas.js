@@ -539,7 +539,7 @@ function lgbParseCsv(text) {
  * yyyy-mm-dd, dd-mm-yyyy). Kalau tak padan corak tarikh langsung (cth
  * teks status "CUTI"), pulangkan asal (bukan tarikh, biar apa adanya). */
 function lgbNormalizeTarikh(raw) {
-  const s = String(raw || "").trim();
+  const s = String(raw || "").trim().replace(/^'/, ""); // buang '  hadapan (Sheets convention/data lama)
   if (!s) return "";
   let m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/); // yyyy-mm-dd (dah ISO)
   if (m) return `${m[1]}-${m[2]}-${m[3]}`;
