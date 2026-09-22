@@ -800,11 +800,20 @@ var LGB_GAMBAR_COL = { blokA: 21, blokB: 22, blokC: 23, blokKantin: 24, keselama
 function lgbEnsureRow(sheet, minggu, tarikh, fullRecord) {
   var lastRow = sheet.getLastRow();
   var cleanTarikh = String(tarikh).replace(/^'/, "").trim();
+  var tz = Session.getScriptTimeZone() || "GMT+8";
   if (lastRow >= 3) {
     var data = sheet.getRange(3, 1, lastRow - 2, 2).getValues();
     for (var i = 0; i < data.length; i++) {
       var cellMinggu = String(data[i][0]).trim();
-      var cellTarikh = String(data[i][1]).replace(/^'/, "").trim();
+      var rawTarikh = data[i][1];
+      // Sheets kadang AUTO-TUKAR teks tarikh biasa jadi OBJEK Date sebenar
+      // (walaupun kita tak paksa format) — kalau tak dikesan, String(objek
+      // Date) jadi teks panjang (cth "Wed Sep 22 2026..."), TAK SEKALI-KALI
+      // sepadan dgn cleanTarikh ("2026-09-22") — sebab tu kod asal SENTIASA
+      // fikir baris tak wujud & cipta baris BAHARU tiap kali "edit".
+      var cellTarikh = rawTarikh instanceof Date
+        ? Utilities.formatDate(rawTarikh, tz, "yyyy-MM-dd")
+        : String(rawTarikh).replace(/^'/, "").trim();
       if (cellMinggu === String(minggu).trim() && cellTarikh === cleanTarikh) {
         return i + 3;
       }
