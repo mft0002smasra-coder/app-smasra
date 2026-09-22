@@ -525,28 +525,12 @@ const LGB_CACHE_TTL_MS = 90 * 1000; // 90 saat — cukup pendek untuk kekal sega
 
 /** Parser CSV ringkas (kendali medan bertanda petikan "..." yang ada koma
  * dalam kandungannya sendiri) — perlu sebab guna tqx=out:csv, bukan JSON. */
+/** Parse CSV guna PapaParse (pustaka teruji) — elak bug parser buatan
+ * sendiri yang boleh silap kira baris bila sel ada teks laporan PANJANG
+ * dengan baris-baru/aksara istimewa terbenam di dalamnya. */
 function lgbParseCsv(text) {
-  const rows = [];
-  let row = [];
-  let field = "";
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (inQuotes) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; }
-        else inQuotes = false;
-      } else field += ch;
-    } else {
-      if (ch === '"') inQuotes = true;
-      else if (ch === ",") { row.push(field); field = ""; }
-      else if (ch === "\r") { /* abaikan, tunggu \n */ }
-      else if (ch === "\n") { row.push(field); field = ""; rows.push(row); row = []; }
-      else field += ch;
-    }
-  }
-  if (field.length || row.length) { row.push(field); rows.push(row); }
-  return rows;
+  const result = Papa.parse(text, { skipEmptyLines: false });
+  return result.data;
 }
 
 /** Normalkan TARIKH ke storan dalaman ISO (yyyy-mm-dd), APA SAHAJA format ia
@@ -572,7 +556,9 @@ async function lgbFetchSheetAsRecords(sheetName) {
   const res = await fetch(url, { cache: "no-store" });
   const text = await res.text();
   const rows = lgbParseCsv(text);
-  return rows.map((c) => {
+  const withData = rows.filter((c) => c && c.some((v) => v));
+  console.log("[LGB] " + sheetName + ": teks respons " + text.length + " aksara -> " + rows.length + " baris CSV mentah -> " + withData.length + " baris ADA data (bukan kosong penuh)");
+  const filtered = rows.map((c) => {
     const get = (i) => (c[i] != null ? String(c[i]).trim() : "");
     return {
       minggu: get(0), tarikh: lgbNormalizeTarikh(get(1)),
@@ -584,6 +570,14 @@ async function lgbFetchSheetAsRecords(sheetName) {
       gambarBlokA: get(20), gambarBlokB: get(21), gambarBlokC: get(22), gambarBlokKantin: get(23), gambarKeselamatan: get(24),
     };
   }).filter((r) => r.minggu && r.tarikh);
+  // Tunjuk baris yang ADA data tapi TERTAPIS (minggu/tarikh kosong) — ni
+  // "hilang" yang dilaporkan sebelum ni, senang nampak PUNCA sebenar.
+  const droppedWithData = withData.length - filtered.length;
+  if (droppedWithData > 0) {
+    const examples = rows.filter((c) => c && c.some((v) => v) && !(String(c[0] || "").trim() && String(c[1] || "").trim())).slice(0, 3);
+    console.log("[LGB] " + sheetName + ": " + droppedWithData + " baris ADA data tapi minggu/tarikh KOSONG — contoh baris:", JSON.stringify(examples));
+  }
+  return filtered;
 }
 
 /** Gabung Data2 (formula, mungkin ada lag) + DATABOT (sumber TERUS, tiada
