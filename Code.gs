@@ -799,15 +799,13 @@ var LGB_GAMBAR_COL = { blokA: 21, blokB: 22, blokC: 23, blokKantin: 24, keselama
  * konsep macam ensureRowByWeekDate() dalam bot rujukan. Data bermula BARIS 3. */
 function lgbEnsureRow(sheet, minggu, tarikh, fullRecord) {
   var lastRow = sheet.getLastRow();
-  var cleanTarikh = String(tarikh).replace(/^'/, "");
+  var cleanTarikh = String(tarikh).replace(/^'/, "").trim();
   if (lastRow >= 3) {
     var data = sheet.getRange(3, 1, lastRow - 2, 2).getValues();
     for (var i = 0; i < data.length; i++) {
-      var cellTarikh = data[i][1];
-      var cellTarikhStr = cellTarikh instanceof Date
-        ? Utilities.formatDate(cellTarikh, Session.getScriptTimeZone() || "GMT+8", "yyyy-MM-dd")
-        : String(cellTarikh).replace(/^'/, "").trim();
-      if (String(data[i][0]).trim() === String(minggu).trim() && cellTarikhStr === cleanTarikh) {
+      var cellMinggu = String(data[i][0]).trim();
+      var cellTarikh = String(data[i][1]).replace(/^'/, "").trim();
+      if (cellMinggu === String(minggu).trim() && cellTarikh === cleanTarikh) {
         return i + 3;
       }
     }
@@ -815,6 +813,7 @@ function lgbEnsureRow(sheet, minggu, tarikh, fullRecord) {
   // Baris TAK WUJUD lagi dalam DATABOT — mungkin rekod ni asalnya dari tab
   // "DATA" (dibaca melalui Data2). MIGRATE SEMUA medan yang ada (fullRecord)
   // supaya data sedia ada TAK HILANG, bukan cuma simpan Minggu+Tarikh kosong.
+  // TIADA paksaan format — biar Sheet guna format sedia ada lajur ni sendiri.
   var fr = fullRecord || {};
   var row = [
     minggu, cleanTarikh, fr.namaPelapor || "", fr.namaGuruBertugas || "",
@@ -825,22 +824,12 @@ function lgbEnsureRow(sheet, minggu, tarikh, fullRecord) {
     fr.gambarBlokA || "", fr.gambarBlokB || "", fr.gambarBlokC || "", fr.gambarBlokKantin || "", fr.gambarKeselamatan || "",
   ];
   sheet.appendRow(row);
-  var newRowNum = sheet.getLastRow();
-  // Simpan TARIKH SEBENAR (objek Date), BUKAN teks dipaksa — padan konvensyen
-  // lajur Tarikh yang lain dalam Sheet ni. Format paparan dd/mm/yyyy.
-  var dateObj = new Date(cleanTarikh + "T00:00:00");
-  if (!isNaN(dateObj.getTime())) {
-    sheet.getRange(newRowNum, 2).setNumberFormat("dd/mm/yyyy").setValue(dateObj);
-  } else {
-    sheet.getRange(newRowNum, 2).setValue(cleanTarikh); // fallback — biar teks kalau genuinely bukan tarikh sah
-  }
-  return newRowNum;
+  return sheet.getLastRow();
 }
 
 /** Simpan SATU seksyen sahaja (dipanggil setiap kali user klik "Seterusnya"/"Simpan"
  * bagi satu seksyen — bukan hantar semua borang sekali gus). */
 function saveLaporanGuruBertugasSection(body) {
-  var user = findUserByEmail(body.email);
   if (!body.minggu || !body.tarikh) {
     return jsonResponse({ success: false, message: "Minggu & Tarikh diperlukan." });
   }
