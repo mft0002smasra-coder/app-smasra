@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Laporan Guru Bertugas — SM Arab (Jaim) Al-Asyraf</title>
+<meta name="theme-color" content="#050810">
+<link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  /* Halaman EMBED — tiada hamburger/drawer/nav bawah, jadi buang padding
+     bawah yang asalnya untuk elak overlap dengan bottom-nav sistem penuh. */
+  #app-content{ padding-bottom:20px; }
+  .wrap{ padding-bottom:24px; }
+  .lgb-header-logout{
+    background:transparent;border:1px solid var(--line);color:var(--text-dim);
+    border-radius:6px;padding:5px 12px;font-family:inherit;font-size:11px;cursor:pointer;
+  }
+</style>
+</head>
+<body>
+<div class="bg-fx"></div>
+<div class="wrap">
+
+  <div id="login-screen" class="hidden">
+    <img class="logo-plain school-logo-img" alt="Logo Sekolah">
+    <div class="brand-title">SM ARAB (JAIM) AL-ASYRAF</div>
+    <div class="brand-sub">Laporan Guru Bertugas</div>
+    <div class="glass">
+      <div class="gsi-wrap" id="google-btn-container"></div>
+      <div class="divider">Atau</div>
+      <form id="login-form">
+        <label class="field-label" for="login-email">Emel Rasmi</label>
+        <input class="field-input" type="email" id="login-email" placeholder="nama@moe-dl.edu.my" autocomplete="email" required>
+        <button class="btn-primary" type="submit" id="login-btn">Log Masuk</button>
+        <div class="error-text hidden" id="login-error"></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="app-content" class="hidden">
+
+    <div class="site-header-wrap">
+      <header class="site-header">
+        <div class="site-header-row1">
+          <img class="header-logo school-logo-img" alt="Logo Sekolah">
+          <div class="header-title-block">
+            <div class="header-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
+            <div class="header-school-sub">Laporan Guru Bertugas</div>
+          </div>
+        </div>
+        <div class="site-header-row2">
+          <span class="header-greet">Selamat Datang, <span id="header-greet-name">-</span></span>
+          <button class="lgb-header-logout" onclick="logout()">Log Keluar</button>
+        </div>
+      </header>
+    </div>
+
+    <div class="lgb-scope">
+
+      <!-- ============ Skrin: MENU UTAMA ============ -->
+      <div id="lgb-screen-menu">
+        <div class="lgb-app-title">LAPORAN GURU BERTUGAS</div>
+        <div class="lgb-menu-header">
+          <div class="lgb-menu-header-sub">Sila pilih tindakan</div>
+        </div>
+
+        <div id="lgb-analisis-wrap" class="hidden">
+          <div class="section-title">Analisis Penghantaran</div>
+          <div class="lgb-analisis-grid">
+            <div class="lgb-stat-card">
+              <div class="lgb-stat-num" id="lgb-analisis-total">0</div>
+              <div class="lgb-stat-label">Jumlah Keseluruhan</div>
+            </div>
+            <div class="lgb-stat-card">
+              <div class="lgb-stat-label" id="lgb-analisis-minggu-label" style="margin-bottom:8px">-</div>
+              <div class="lgb-progress-track"><div class="lgb-progress-fill" id="lgb-analisis-progress-bar" style="width:0%"><span id="lgb-analisis-progress-text">0%</span></div></div>
+              <div class="lgb-stat-label" id="lgb-analisis-progress-sub" style="margin-top:6px">-</div>
+            </div>
+          </div>
+          <div class="lgb-analisis-grid">
+            <div class="lgb-stat-card lgb-stat-card-clickable" onclick="lgbOpenAnalisisPopup('missing')">
+              <div class="lgb-stat-title lgb-stat-title-red">Minggu Tiada Laporan</div>
+              <div class="lgb-stat-num" id="lgb-analisis-missing-count">0</div>
+              <div class="lgb-stat-tap-hint">Ketik untuk senarai</div>
+            </div>
+            <div class="lgb-stat-card lgb-stat-card-clickable" onclick="lgbOpenAnalisisPopup('incomplete')">
+              <div class="lgb-stat-title lgb-stat-title-amber">Minggu Belum Cukup 5 Hari</div>
+              <div class="lgb-stat-num" id="lgb-analisis-incomplete-count">0</div>
+              <div class="lgb-stat-tap-hint">Ketik untuk senarai</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lgb-menu-row">
+          <button class="lgb-menu-card" onclick="lgbGoNewReport()">
+            <span class="lgb-menu-card-title">Laporan Baru</span>
+          </button>
+          <button class="lgb-menu-card" onclick="lgbGoSemakLaporan()">
+            <span class="lgb-menu-card-title">Semak Laporan</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ============ Skrin: Borang Butiran (Laporan Baru) ============ -->
+      <div id="lgb-screen-start" class="hidden">
+        <div class="section-title">Mulakan Laporan</div>
+        <div class="glass card-pad">
+          <label class="field-label">Minggu</label>
+          <input class="field-input" type="text" id="lgb-start-minggu" placeholder="Cth: Minggu 3">
+          <label class="field-label">Tarikh</label>
+          <input class="field-input" type="date" id="lgb-start-tarikh">
+          <label class="field-label">Nama Pelapor</label>
+          <input class="field-input" type="text" id="lgb-start-pelapor">
+          <label class="field-label">Nama-Nama Guru Bertugas</label>
+          <textarea class="field-input" id="lgb-start-guru" rows="2"></textarea>
+          <div class="error-text hidden" id="lgb-start-error"></div>
+          <button class="btn-bw-solid" id="lgb-start-btn" onclick="lgbStartOrResume()">Simpan &amp; Mula</button>
+        </div>
+        <button class="btn-bw-outline" onclick="lgbBackToMenu()" style="margin-top:12px">&larr; Menu Utama</button>
+      </div>
+
+      <!-- ============ Skrin: Pilih Minggu (Semak Laporan) ============ -->
+      <div id="lgb-screen-weeks" class="hidden">
+        <div class="section-title">Semak Laporan — Pilih Minggu</div>
+        <div id="lgb-weeks-list"></div>
+        <button class="btn-bw-outline" onclick="lgbBackToMenu()" style="margin-top:12px">&larr; Menu Utama</button>
+      </div>
+
+      <!-- ============ Skrin: Pilih Tarikh ============ -->
+      <div id="lgb-screen-dates" class="hidden">
+        <div class="section-title">Pilih Tarikh</div>
+        <div class="sub-dim" id="lgb-dates-subtitle" style="margin-bottom:12px">-</div>
+        <div id="lgb-dates-list"></div>
+        <button class="btn-bw-outline" onclick="lgbGoSemakLaporan()" style="margin-top:12px">&larr; Pilih Minggu Lain</button>
+      </div>
+
+      <!-- ============ Skrin: SECTION VIEW (hub utama) ============ -->
+      <div id="lgb-screen-view" class="hidden">
+        <div class="lgb-info-header">
+          <div class="lgb-info-line"><span class="lgb-info-label lgb-info-c1">Minggu:</span> <span id="lgb-view-minggu">-</span></div>
+          <div class="lgb-info-line"><span class="lgb-info-label lgb-info-c2">Tarikh:</span> <span id="lgb-view-tarikh">-</span></div>
+          <div class="lgb-info-line"><span class="lgb-info-label lgb-info-c3">Pelapor:</span> <span id="lgb-view-pelapor">-</span></div>
+          <div class="lgb-info-line"><span class="lgb-info-label lgb-info-c4">Penyemak:</span> <span id="lgb-view-penyemak">-</span></div>
+          <div class="lgb-info-line hidden" id="lgb-view-ulasan-line"><span class="lgb-info-label lgb-info-c5">Ulasan:</span> <span id="lgb-view-ulasan">-</span></div>
+        </div>
+        <div id="lgb-view-gallery" class="hidden"></div>
+        <div class="section-title" id="lgb-view-secname">-</div>
+        <div class="glass card-pad" id="lgb-view-capture">
+          <div id="lgb-view-fields"></div>
+        </div>
+
+        <div class="lgb-nav-row">
+          <button class="btn-bw-outline hidden" id="lgb-view-prev" onclick="lgbViewNav(-1)">Sebelum</button>
+          <button class="btn-bw-outline hidden" id="lgb-view-next" onclick="lgbViewNav(1)">Seterusnya</button>
+        </div>
+        <button class="btn-bw-outline" onclick="lgbOpenPicker()">Pilih Seksyen</button>
+        <div class="lgb-nav-row">
+          <button class="btn-bw-solid" style="margin-top:0" onclick="lgbOpenEdit()">Edit Bahagian Ini</button>
+          <button class="btn-bw-solid" style="margin-top:0" onclick="lgbOpenSemak()">Semak Laporan Ini</button>
+        </div>
+        <div class="lgb-nav-row">
+          <button class="btn-bw-outline" onclick="lgbPrintReport()">Cetak / PDF Laporan Ini</button>
+          <button class="btn-bw-outline" onclick="lgbBackToDates()">Tarikh Lain</button>
+        </div>
+        <button class="btn-bw-outline" onclick="lgbBackToMenu()">Menu Utama</button>
+      </div>
+
+      <!-- ============ Skrin: Pilih Seksyen (senarai bernombor) ============ -->
+      <div id="lgb-screen-picker" class="hidden">
+        <div class="section-title">Senarai Seksyen</div>
+        <div id="lgb-picker-list"></div>
+        <button class="btn-bw-outline" onclick="lgbShowScreen('view')" style="margin-top:12px">&larr; Kembali</button>
+      </div>
+
+      <!-- ============ Skrin: Edit Seksyen ============ -->
+      <div id="lgb-screen-edit" class="hidden">
+        <div class="section-title">Edit — <span id="lgb-edit-title">-</span></div>
+        <div class="glass card-pad">
+          <div id="lgb-edit-fields"></div>
+          <div class="error-text hidden" id="lgb-edit-error"></div>
+        </div>
+        <div class="lgb-nav-row">
+          <button class="btn-bw-outline" onclick="lgbCancelEdit()">Batal</button>
+          <button class="btn-bw-solid" id="lgb-edit-save-btn" style="margin-top:0" onclick="lgbSaveEdit()">Simpan</button>
+        </div>
+      </div>
+
+      <!-- ============ Skrin: Pilih Penyemak ============ -->
+      <div id="lgb-screen-penyemak" class="hidden">
+        <div class="section-title">Semakan Laporan — Pilih Penyemak</div>
+        <div id="lgb-penyemak-list"></div>
+        <button class="btn-bw-outline" onclick="lgbShowScreen('view')" style="margin-top:12px">&larr; Batal</button>
+      </div>
+
+      <!-- ============ Skrin: Taip Ulasan ============ -->
+      <div id="lgb-screen-ulasan" class="hidden">
+        <div class="section-title">Taip Ulasan / Catatan</div>
+        <div class="glass card-pad">
+          <div class="sub-dim" id="lgb-ulasan-summary" style="margin-bottom:14px">-</div>
+          <label class="field-label">Ulasan / Catatan</label>
+          <textarea class="field-input" id="lgb-ulasan-text" rows="4"></textarea>
+          <div class="error-text hidden" id="lgb-ulasan-error"></div>
+          <button class="btn-bw-solid" id="lgb-ulasan-submit-btn" onclick="lgbSubmitUlasan()">Simpan Semakan</button>
+        </div>
+        <button class="btn-bw-outline" onclick="lgbCancelUlasan()" style="margin-top:12px">Batal</button>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<div class="lgb-popup-overlay hidden" id="lgb-popup-overlay">
+  <div class="lgb-popup-sheet">
+    <div class="lgb-popup-header">
+      <div class="lgb-popup-title" id="lgb-popup-title">-</div>
+      <button class="lgb-popup-close" onclick="lgbCloseAnalisisPopup()">✕</button>
+    </div>
+    <div id="lgb-popup-body"></div>
+  </div>
+</div>
+
+<div id="lgb-print-area"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="app.js"></script>
+<script src="laporan-guru-bertugas.js"></script>
+<script>
+  initApp(lgbInit);
+</script>
+</body>
+</html>
