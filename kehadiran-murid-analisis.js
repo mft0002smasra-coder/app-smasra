@@ -261,7 +261,7 @@ function maRenderUtama() {
   const kpis = [
     { icon: "🏫", label: "Kelas Telah Isi", value: `${jumlahKelasIsi}<small> / ${MA_ALL_CLASSES.length}</small>`, sub: "Kelas menghantar rekod", accent: "--cyan" },
     { icon: "✅", label: "Jumlah Hadir", value: `${jumlahHadir}<small> orang</small>`, sub: "Murid hadir ke sekolah", accent: "--mint" },
-    { icon: "❌", label: "Tidak Hadir", value: `${jumlahTidakHadir}<small> orang</small>`, sub: "Murid tidak hadir", accent: "--danger" },
+    { icon: "❌", label: "Tidak Hadir", value: `${jumlahTidakHadir}<small> orang</small>`, sub: "Ketik untuk senarai ikut kelas", accent: "--danger", onClick: "maOpenAbsentAllClassesModal()" },
     { icon: "👥", label: "Jumlah Murid", value: `${jumlahMurid}<small> orang</small>`, sub: "Jumlah keseluruhan direkodkan", accent: "--amber" },
     { icon: "📊", label: "Peratus Kehadiran", value: `${peratusKeseluruhan}<small>%</small>`, sub: "Kehadiran keseluruhan", accent: "--blue" },
   ];
@@ -271,7 +271,7 @@ function maRenderUtama() {
       <div class="ma-donut-mini-wrap"><canvas id="ma-chartDonut"></canvas></div>
     </div>`;
   document.getElementById("ma-u-kpis").innerHTML = kpis.map((k) => `
-    <div class="ma-kpi-card" style="--ma-accent:var(${k.accent})">
+    <div class="ma-kpi-card${k.onClick ? " ma-kpi-clickable" : ""}"${k.onClick ? ` onclick="${k.onClick}"` : ""} style="--ma-accent:var(${k.accent})">
       <span class="ma-kpi-icon">${k.icon}</span>
       <div class="ma-kpi-label">${k.label}</div>
       <div class="ma-kpi-value">${k.value}</div>
@@ -517,6 +517,32 @@ function maRenderTahunan() {
 }
 
 /* ---------------- Modal kad kelas (Page Utama) ---------------- */
+/** Popup senarai murid tidak hadir SEMUA kelas (bila kad "Tidak Hadir" diklik
+ * di Tab Utama) — kumpul dayRecords ikut kelas, papar nama setiap satu. */
+function maOpenAbsentAllClassesModal() {
+  const box = document.getElementById("ma-modal-content");
+  const withAbsent = maLastDayRecords.filter((r) => r.tidakHadir > 0 && r.namaList.length);
+  if (!withAbsent.length) {
+    box.innerHTML = `<div class="ma-modal-date">${maLastDayLabel}</div><div class="ma-modal-classname">Murid Tidak Hadir</div>
+      <div class="ma-empty-state" style="padding:34px 0;">🎉 Tiada murid tidak hadir pada tarikh ini — kehadiran penuh!</div>`;
+  } else {
+    const sorted = [...withAbsent].sort((a, b) => b.tidakHadir - a.tidakHadir);
+    const classBlocksHtml = sorted.map((r) => `
+      <div class="ma-absent-class-block">
+        <div class="ma-absent-class-head">
+          <span class="ma-absent-class-name">${r.kelas} <span class="ma-class-ting">Ting. ${r.tingkatan}</span></span>
+          <span class="ma-absent-class-count">${r.tidakHadir} orang</span>
+        </div>
+        <div class="ma-modal-absent-list">${r.namaList.map((n) => `<span class="ma-chip">${n}</span>`).join("")}</div>
+      </div>`).join("");
+    box.innerHTML = `
+      <div class="ma-modal-date">${maLastDayLabel}</div>
+      <div class="ma-modal-classname">Murid Tidak Hadir — Semua Kelas</div>
+      ${classBlocksHtml}`;
+  }
+  document.getElementById("ma-modal-overlay").classList.add("show");
+}
+
 function maOpenClassModal(kName) {
   const rec = maLastDayRecords.find((r) => r.kelas === kName);
   const box = document.getElementById("ma-modal-content");
