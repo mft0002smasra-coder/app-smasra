@@ -538,6 +538,15 @@ textarea.field-input{ resize:vertical;min-height:100px;font-size:15px; }
 }
 .tile:active{ transform:scale(.96); }
 .tile-sub{ display:block;font-size:10.5px;color:var(--text-dim);font-weight:500;margin-top:4px; }
+.km-murid-list{ max-height:340px;overflow-y:auto;border:1px solid var(--line);border-radius:8px; }
+.km-murid-row{
+  display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);
+  cursor:pointer;font-size:14px;
+}
+.km-murid-row:last-child{ border-bottom:none; }
+.km-murid-row:active{ background:rgba(0,229,255,.06); }
+.km-murid-row input[type="checkbox"]{ width:18px;height:18px;flex-shrink:0;accent-color:var(--cyan); }
+
 .context-chip{
   display:inline-block;background:rgba(43,232,208,.1);border:1px solid var(--line);color:var(--cyan);
   font-size:12px;padding:5px 12px;border-radius:20px;margin-bottom:16px;
