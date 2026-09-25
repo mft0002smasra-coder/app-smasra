@@ -682,9 +682,8 @@ function uploadJadualGuru(body) {
   var user = findUserByEmail(body.email);
   var jawatanUpper = user ? String(user.jawatan || "").trim().toUpperCase() : "";
   var isJadualGuru = jawatanUpper === "PPP (GURU JADUAL WAKTU)";
-  var isAdmin = user && String(user.role || "").trim().toLowerCase() === "admin";
-  if (!user || (!isJadualGuru && !isAdmin)) {
-    return jsonResponse({ success: false, message: "Hanya Guru Jadual Waktu atau Admin boleh kemaskini jadual guru." });
+  if (!user || !isJadualGuru) {
+    return jsonResponse({ success: false, message: "Hanya Guru Jadual Waktu boleh kemaskini jadual guru." });
   }
   if (!body.rows || !body.rows.length) {
     return jsonResponse({ success: false, message: "Tiada data jadual dihantar." });

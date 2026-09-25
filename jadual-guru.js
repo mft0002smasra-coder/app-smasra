@@ -49,12 +49,13 @@ function jgFmtWaktu(val) {
 function jgCheckAccess(user) {
   const jawatanUpper = String(user.jawatan || "").trim().toUpperCase();
   const isJadualGuru = jawatanUpper === "PPP (GURU JADUAL WAKTU)";
-  const isAdmin = String(user.role || "").trim().toLowerCase() === "admin";
   const isPentadbirRole2 = String(user.role2 || "").trim().toLowerCase() === "pentadbir";
-  // "PPP (GURU JADUAL WAKTU)" boleh akses SEMUA tab (Saya/Kelas/Semua Guru/
-  // Analisis/Update) — sama macam Pentadbir, sebab dia yang urus jadual ni.
+  // Jadual Guru DIKHASKAN — Admin (role) TAK dapat akses istimewa di sini,
+  // hanya nampak tab "Saya" & "Kelas" (paparan biasa). Cuma "PPP (GURU JADUAL
+  // WAKTU)" (jawatan) & Pentadbir (role2) dapat akses penuh (Semua Guru/
+  // Analisis/Update) — sebab merekalah yang urus jadual sebenar.
   jgIsPentadbir = isPentadbirRole2 || isJadualGuru;
-  jgCanUpload = isJadualGuru || isAdmin;
+  jgCanUpload = isJadualGuru;
 }
 
 const JG_SPREADSHEET_ID = "1EohV_hfuS6SDgiqDn--QQiM_y92_K4jvGyh87nA3HOo";
@@ -310,6 +311,10 @@ function jgRowsFromAoa(aoa) {
         const col = 3 + slot; // E(indeks4)=slot1, F(indeks5)=slot2, dst.
         const raw = row[col];
         if (!raw || raw === 0 || raw === "0") continue;
+        const rawTrim = String(raw).trim().toLowerCase();
+        // Tanda "tiada kelas/offday" biasa dalam jadual (cth "o") — BUKAN
+        // subjek sebenar, jangan masukkan (elak slot "hantu" dalam paparan).
+        if (rawTrim === "o" || rawTrim === "-" || rawTrim === "x" || rawTrim === "off") continue;
         const { subjek, kelas } = jgSplitSubjekKelas(raw);
         if (!subjek) continue;
         rows.push({
