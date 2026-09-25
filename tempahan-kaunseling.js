@@ -72,11 +72,7 @@ let knCanEdit = false;
 
 /* ---------------- Akses ---------------- */
 function knCheckAccess(user) {
-  const jawatanUpper = String(user.jawatan || "").toUpperCase().trim();
-  const isKaunselor = jawatanUpper.indexOf("KAUNSELOR SEPENUH MASA") !== -1;
-  const isAdmin = String(user.role || "").trim().toLowerCase() === "admin";
-  const isPentadbir = String(user.role2 || "").trim().toLowerCase() === "pentadbir";
-  return isKaunselor || isAdmin || isPentadbir;
+  return checkModuleAccess(user, "kaunseling");
 }
 
 /* ---------------- Tab ---------------- */

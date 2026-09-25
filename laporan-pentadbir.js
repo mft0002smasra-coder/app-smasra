@@ -341,8 +341,8 @@ async function lpDoDelete() {
 function lpInit(user) {
   lpCurrentUser = user;
 
-  const role2Norm = String(user.role2 || "").trim().toLowerCase();
-  if (role2Norm !== "pentadbir") {
+  const hasAccess = checkModuleAccess(user, "laporan_pentadbir");
+  if (!hasAccess) {
     document.getElementById("lp-access-denied-overlay").classList.remove("hidden");
     document.getElementById("lp-main-content").classList.add("hidden");
     return;

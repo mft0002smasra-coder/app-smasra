@@ -123,3 +123,88 @@ async function aaSaveEdit() {
   }
   btn.disabled = false; btn.textContent = "Simpan";
 }
+
+/* ================= Tab switch ================= */
+function aaSwitchTab(name) {
+  document.getElementById("aa-panel-staf").classList.toggle("hidden", name !== "staf");
+  document.getElementById("aa-panel-modul").classList.toggle("hidden", name !== "modul");
+  document.getElementById("aa-nav-staf").classList.toggle("active", name === "staf");
+  document.getElementById("aa-nav-modul").classList.toggle("active", name === "modul");
+  if (name === "modul") aaLoadModulSettings();
+}
+
+/* ================= Tab: Tetapan Modul ================= */
+const AA_MODUL_LABELS = {
+  data_murid: "Data Murid (Muat Naik)",
+  jadual_guru: "Jadual Guru (Semua Guru / Analisis / Update)",
+  kaunseling: "Tempahan Kaunseling (Isi / Edit)",
+  laporan_pentadbir: "Laporan Pentadbir (Akses Penuh)",
+};
+let aaEditingModulKey = "";
+
+async function aaLoadModulSettings() {
+  const box = document.getElementById("aa-modul-list");
+  box.innerHTML = `<div class="empty-state">Memuatkan tetapan modul...</div>`;
+  await fetchAccessSettings(); // fungsi global dari app.js — baca terus Sheet TetapanAkses terkini
+  const keys = Object.keys(AA_MODUL_LABELS);
+  box.innerHTML = keys.map((key) => {
+    const s = ACCESS_SETTINGS[key] || {};
+    return `
+      <div class="aa-staff-row" onclick="aaOpenModulEdit('${key}')">
+        <div>
+          <div class="aa-staff-nama">${aaEscape(AA_MODUL_LABELS[key])}</div>
+        </div>
+        <div class="aa-staff-badges">
+          ${s.jawatan ? `<span class="aa-badge aa-tag-jwt">${aaEscape(s.jawatan)}</span>` : ""}
+          ${s.role ? `<span class="aa-badge aa-tag-role">Role: ${aaEscape(s.role)}</span>` : ""}
+          ${s.role2 ? `<span class="aa-badge aa-tag-role2">Role2: ${aaEscape(s.role2)}</span>` : ""}
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function aaOpenModulEdit(key) {
+  aaEditingModulKey = key;
+  const s = ACCESS_SETTINGS[key] || {};
+  document.getElementById("aa-modul-edit-nama").textContent = AA_MODUL_LABELS[key];
+  document.getElementById("aa-modul-edit-jawatan").value = s.jawatan || "";
+  document.getElementById("aa-modul-edit-role").value = s.role || "";
+  document.getElementById("aa-modul-edit-role2").value = s.role2 || "";
+  document.getElementById("aa-modul-edit-error").classList.add("hidden");
+  document.getElementById("aa-modul-edit-overlay").classList.remove("hidden");
+}
+function aaCloseModulEdit() {
+  document.getElementById("aa-modul-edit-overlay").classList.add("hidden");
+}
+
+async function aaSaveModulEdit() {
+  const jawatan = document.getElementById("aa-modul-edit-jawatan").value.trim();
+  const role = document.getElementById("aa-modul-edit-role").value;
+  const role2 = document.getElementById("aa-modul-edit-role2").value;
+  const errEl = document.getElementById("aa-modul-edit-error");
+  errEl.classList.add("hidden");
+
+  if (!apiConfigured()) { errEl.textContent = "API belum disambungkan."; errEl.classList.remove("hidden"); return; }
+
+  const btn = document.getElementById("aa-modul-edit-save-btn");
+  btn.disabled = true; btn.textContent = "Menyimpan...";
+  try {
+    const data = await postToAppsScript(API_URL, {
+      action: "saveTetapanAkses",
+      callerEmail: aaCurrentUser.email, modulKey: aaEditingModulKey,
+      jawatan, role, role2,
+    });
+    if (data.success) {
+      ACCESS_SETTINGS[aaEditingModulKey] = { jawatan, role, role2 };
+      aaCloseModulEdit();
+      aaLoadModulSettings();
+    } else {
+      errEl.textContent = data.message || "Gagal simpan.";
+      errEl.classList.remove("hidden");
+    }
+  } catch (err) {
+    errEl.textContent = "Ralat sambungan (" + err.message + ").";
+    errEl.classList.remove("hidden");
+  }
+  btn.disabled = false; btn.textContent = "Simpan";
+}

@@ -47,15 +47,15 @@ function jgFmtWaktu(val) {
 
 /* ---------------- Akses ---------------- */
 function jgCheckAccess(user) {
+  const isAdminApp = String(user.role3 || "").trim().toLowerCase() === "admin app";
+  // Lihat Semua Guru/Analisis: ikut tetapan dinamik penuh (jawatan ATAU role2)
+  jgIsPentadbir = isAdminApp || checkModuleAccess(user, "jadual_guru");
+  // Muat naik/kemaskini: HANYA jawatan yang ditetapkan (bukan role2) — padan
+  // pembezaan asal, elak Pentadbir (view sahaja) dapat akses tulis tanpa sengaja.
+  const setting = ACCESS_SETTINGS["jadual_guru"] || {};
   const jawatanUpper = String(user.jawatan || "").trim().toUpperCase();
-  const isJadualGuru = jawatanUpper === "PPP (GURU JADUAL WAKTU)";
-  const isPentadbirRole2 = String(user.role2 || "").trim().toLowerCase() === "pentadbir";
-  // Jadual Guru DIKHASKAN — Admin (role) TAK dapat akses istimewa di sini,
-  // hanya nampak tab "Saya" & "Kelas" (paparan biasa). Cuma "PPP (GURU JADUAL
-  // WAKTU)" (jawatan) & Pentadbir (role2) dapat akses penuh (Semua Guru/
-  // Analisis/Update) — sebab merekalah yang urus jadual sebenar.
-  jgIsPentadbir = isPentadbirRole2 || isJadualGuru;
-  jgCanUpload = isJadualGuru;
+  const matchJawatan = setting.jawatan && jawatanUpper === setting.jawatan.trim().toUpperCase();
+  jgCanUpload = isAdminApp || !!matchJawatan;
 }
 
 const JG_SPREADSHEET_ID = "1EohV_hfuS6SDgiqDn--QQiM_y92_K4jvGyh87nA3HOo";

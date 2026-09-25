@@ -64,18 +64,34 @@
     <!-- ============ Kandungan utama (Admin App sahaja) ============ -->
     <div id="aa-main" class="hidden">
 
-      <div class="aa-legend glass card-pad">
-        <div class="aa-legend-title">Rujukan Ringkas — Apa Setiap Nilai Buka</div>
-        <div class="aa-legend-row"><span class="aa-legend-tag aa-tag-role">Role = Admin</span> Akses tambahan semua modul jawatan-khas (Data Murid, Jadual Guru, Kaunseling)</div>
-        <div class="aa-legend-row"><span class="aa-legend-tag aa-tag-role2">Role2 = Pentadbir</span> Laporan Pentadbir (akses penuh), Jadual Guru (Semua Guru + Analisis), Kaunseling (isi/edit)</div>
-        <div class="aa-legend-row"><span class="aa-legend-tag aa-tag-role3">Role3 = Admin App</span> Buka Panel Kawalan Akses ini</div>
-        <div class="aa-legend-row"><span class="aa-legend-tag aa-tag-jwt">Jawatan</span> "PPP (GURU DATA MURID)" / "PPP (GURU JADUAL WAKTU)" / "PPP (KAUNSELOR SEPENUH MASA)" → akses muat naik/edit modul berkaitan</div>
+      <div class="tab-switch">
+        <button class="tab-btn active" id="aa-nav-staf" onclick="aaSwitchTab('staf')">Staf</button>
+        <button class="tab-btn" id="aa-nav-modul" onclick="aaSwitchTab('modul')">Tetapan Modul</button>
       </div>
 
-      <label class="field-label">Cari Nama Staf</label>
-      <input class="field-input" type="text" id="aa-search" placeholder="Taip nama untuk cari..." oninput="aaFilterList()">
+      <!-- ============ Tab: Staf ============ -->
+      <div id="aa-panel-staf">
+        <div class="aa-legend glass card-pad">
+          <div class="aa-legend-title">Rujukan Ringkas</div>
+          <div class="aa-legend-row"><span class="aa-legend-tag aa-tag-role3">Role3 = Admin App</span> Buka Panel ini &amp; akses PENUH semua modul, tak kira tetapan</div>
+          <div class="aa-legend-row">Akses modul lain (Data Murid, Jadual Guru, dll) kini ditetapkan dalam tab <b style="color:var(--text)">"Tetapan Modul"</b> — bukan tetap dalam kod lagi.</div>
+        </div>
 
-      <div id="aa-staff-list"><div class="empty-state">Memuatkan senarai staf...</div></div>
+        <label class="field-label">Cari Nama Staf</label>
+        <input class="field-input" type="text" id="aa-search" placeholder="Taip nama untuk cari..." oninput="aaFilterList()">
+
+        <div id="aa-staff-list"><div class="empty-state">Memuatkan senarai staf...</div></div>
+      </div>
+
+      <!-- ============ Tab: Tetapan Modul ============ -->
+      <div id="aa-panel-modul" class="hidden">
+        <div class="aa-legend glass card-pad">
+          <div class="aa-legend-title">Cara Guna</div>
+          <div class="aa-legend-row">Setiap modul boleh dibuka ikut <b style="color:var(--text)">Jawatan</b>, <b style="color:var(--text)">Role</b>, ATAU <b style="color:var(--text)">Role2</b> — sesiapa padan MANA-MANA satu akan dapat akses. Kosongkan medan untuk tak guna syarat tu.</div>
+          <div class="aa-legend-row"><span class="aa-legend-tag aa-tag-role3">Admin App</span> sentiasa dapat akses PENUH semua modul, tak kira tetapan di bawah.</div>
+        </div>
+        <div id="aa-modul-list"><div class="empty-state">Memuatkan tetapan modul...</div></div>
+      </div>
     </div>
 
   </div>
@@ -129,6 +145,35 @@
     <div class="lgb-nav-row" style="margin-top:16px">
       <button class="btn-bw-outline" onclick="aaCloseEdit()">Batal</button>
       <button class="pc-intro-btn" id="aa-edit-save-btn" onclick="aaSaveEdit()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Popup: Edit tetapan SATU modul ============ -->
+<div class="modal-overlay-center hidden" id="aa-modul-edit-overlay">
+  <div class="glass modal-sheet" style="text-align:left;max-width:420px">
+    <div class="modal-title" id="aa-modul-edit-nama">-</div>
+    <div class="sub-dim" style="margin-bottom:16px">Sesiapa padan MANA-MANA satu syarat di bawah akan dapat akses.</div>
+
+    <label class="field-label">Jawatan (kosongkan jika tak guna)</label>
+    <input class="field-input" type="text" id="aa-modul-edit-jawatan" list="aa-jawatan-list" placeholder="Cth: PPP (GURU DATA MURID)">
+
+    <label class="field-label">Role</label>
+    <select class="field-input" id="aa-modul-edit-role">
+      <option value="">(Tiada)</option>
+      <option value="Admin">Admin</option>
+    </select>
+
+    <label class="field-label">Role2</label>
+    <select class="field-input" id="aa-modul-edit-role2">
+      <option value="">(Tiada)</option>
+      <option value="Pentadbir">Pentadbir</option>
+    </select>
+
+    <div class="error-text hidden" id="aa-modul-edit-error"></div>
+    <div class="lgb-nav-row" style="margin-top:16px">
+      <button class="btn-bw-outline" onclick="aaCloseModulEdit()">Batal</button>
+      <button class="pc-intro-btn" id="aa-modul-edit-save-btn" onclick="aaSaveModulEdit()">Simpan</button>
     </div>
   </div>
 </div>

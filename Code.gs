@@ -26,7 +26,7 @@ var COL_ROLE3 = 8; // Lajur I — "Admin App" untuk akses Panel Kawalan Akses
 
 function doGet(e) {
   var action = e.parameter.action;
-  if (action === "getUser") return getUser(e.parameter.email);
+  if (action === "getUser") { taEnsureSheet(); return getUser(e.parameter.email); }
   if (action === "getPengumuman") return getPengumuman();
   if (action === "getBanner") return getBanner();
   if (action === "getEvents") return getEvents();
@@ -59,6 +59,7 @@ function doPost(e) {
   if (body.action === "saveLaporanGuruBertugasSemakan") return saveLaporanGuruBertugasSemakan(body);
   if (body.action === "savePermohonanCuti") return savePermohonanCuti(body);
   if (body.action === "updateStaffAccess") return updateStaffAccess(body);
+  if (body.action === "saveTetapanAkses") return saveTetapanAkses(body);
   return jsonResponse({ success: false, message: "Unknown action: " + body.action });
 }
 
@@ -525,7 +526,8 @@ function uploadDataMurid(body) {
   var jawatanUpper = user ? String(user.jawatan || "").trim().toUpperCase() : "";
   var isDataMuridGuru = jawatanUpper === "PPP (GURU DATA MURID)";
   var isAdmin = user && String(user.role || "").trim().toLowerCase() === "admin";
-  if (!user || (!isDataMuridGuru && !isAdmin)) {
+  var isAdminApp = user && String(user.role3 || "").trim().toLowerCase() === "admin app";
+  if (!user || (!isDataMuridGuru && !isAdmin && !isAdminApp)) {
     return jsonResponse({ success: false, message: "Hanya Guru Data Murid atau Admin boleh muat naik data murid." });
   }
   if (!body.murid || !body.murid.length) {
@@ -682,7 +684,8 @@ function uploadJadualGuru(body) {
   var user = findUserByEmail(body.email);
   var jawatanUpper = user ? String(user.jawatan || "").trim().toUpperCase() : "";
   var isJadualGuru = jawatanUpper === "PPP (GURU JADUAL WAKTU)";
-  if (!user || !isJadualGuru) {
+  var isAdminApp = user && String(user.role3 || "").trim().toLowerCase() === "admin app";
+  if (!user || (!isJadualGuru && !isAdminApp)) {
     return jsonResponse({ success: false, message: "Hanya Guru Jadual Waktu boleh kemaskini jadual guru." });
   }
   if (!body.rows || !body.rows.length) {
@@ -960,4 +963,50 @@ function updateStaffAccess(body) {
     }
   }
   return jsonResponse({ success: false, message: "Staf tidak dijumpai (emel tidak sepadan)." });
+}
+
+/* ---------------- TETAPAN AKSES MODUL (dinamik, boleh ubah) ---------------- */
+// Sheet "TetapanAkses" dalam Spreadsheet UTAMA (sama tempat DatabaseSTAFF).
+// Lajur: A=ModulKey B=ModulLabel C=Jawatan D=Role E=Role2
+// Nilai LALAI padan EXACT tingkah laku hardcode sebelum ni — supaya kalau
+// Sheet belum wujud/kosong, app tetap berfungsi macam asal (tiada gangguan).
+var TA_DEFAULTS = [
+  ["data_murid", "Data Murid (Muat Naik)", "PPP (GURU DATA MURID)", "Admin", ""],
+  ["jadual_guru", "Jadual Guru (Semua Guru/Analisis/Update)", "PPP (GURU JADUAL WAKTU)", "", "Pentadbir"],
+  ["kaunseling", "Tempahan Kaunseling (Isi/Edit)", "PPP (KAUNSELOR SEPENUH MASA)", "Admin", "Pentadbir"],
+  ["laporan_pentadbir", "Laporan Pentadbir (Akses Penuh)", "", "", "Pentadbir"],
+];
+
+function taEnsureSheet() {
+  var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName("TetapanAkses");
+  if (!sheet) {
+    sheet = SpreadsheetApp.openById(SPREADSHEET_ID).insertSheet("TetapanAkses");
+    sheet.appendRow(["ModulKey", "ModulLabel", "Jawatan", "Role", "Role2"]);
+    TA_DEFAULTS.forEach(function (row) { sheet.appendRow(row); });
+  }
+  return sheet;
+}
+
+/** Kemaskini SATU baris tetapan modul. SAHKAN pemanggil Role3="Admin App"
+ * di PELAYAN dahulu (corak sama macam updateStaffAccess). */
+function saveTetapanAkses(body) {
+  if (!body.callerEmail || !body.modulKey) {
+    return jsonResponse({ success: false, message: "Maklumat tidak lengkap." });
+  }
+  var caller = findUserByEmail(body.callerEmail);
+  if (!caller || String(caller.role3 || "").trim().toLowerCase() !== "admin app") {
+    return jsonResponse({ success: false, message: "Akses ditolak — hanya Admin App boleh kemaskini tetapan akses." });
+  }
+  var sheet = taEnsureSheet();
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() === String(body.modulKey).trim()) {
+      var rowNum = i + 1;
+      if (body.jawatan != null) sheet.getRange(rowNum, 3).setValue(body.jawatan);
+      if (body.role != null) sheet.getRange(rowNum, 4).setValue(body.role);
+      if (body.role2 != null) sheet.getRange(rowNum, 5).setValue(body.role2);
+      return jsonResponse({ success: true });
+    }
+  }
+  return jsonResponse({ success: false, message: "Modul '" + body.modulKey + "' tidak dijumpai dalam TetapanAkses." });
 }

@@ -469,7 +469,54 @@ function initHomeSwipe() {
   });
 }
 
-function initApp(onReady) {
+/* ================= Tetapan Akses Modul (dinamik, boleh ubah admin) ================= */
+// Sheet "TetapanAkses" dalam Spreadsheet utama — setiap modul (Data Murid,
+// Jadual Guru, dll) boleh baca dari sini utk tentukan Jawatan/Role/Role2
+// mana yang dibenarkan akses, TANPA perlu edit kod. Nilai LALAI (fallback)
+// padan EXACT tingkah laku hardcode asal — kalau fetch gagal/Sheet kosong,
+// app kekal berfungsi macam biasa (tiada gangguan).
+const ACCESS_SETTINGS_DEFAULTS = {
+  data_murid: { jawatan: "PPP (GURU DATA MURID)", role: "Admin", role2: "" },
+  jadual_guru: { jawatan: "PPP (GURU JADUAL WAKTU)", role: "", role2: "Pentadbir" },
+  kaunseling: { jawatan: "PPP (KAUNSELOR SEPENUH MASA)", role: "Admin", role2: "Pentadbir" },
+  laporan_pentadbir: { jawatan: "", role: "", role2: "Pentadbir" },
+};
+let ACCESS_SETTINGS = { ...ACCESS_SETTINGS_DEFAULTS };
+
+async function fetchAccessSettings() {
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent("TetapanAkses")}&headers=1&_ts=${Date.now()}`;
+    const res = await fetch(url, { cache: "no-store" });
+    const text = await res.text();
+    const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
+    const table = JSON.parse(jsonStr).table;
+    const fetched = {};
+    (table.rows || []).forEach((r) => {
+      const c = r.c || [];
+      const get = (i) => (c[i] && c[i].v != null ? String(c[i].v).trim() : "");
+      const key = get(0);
+      if (key) fetched[key] = { jawatan: get(2), role: get(3), role2: get(4) };
+    });
+    // GABUNG dengan default — kalau modul tertentu tiada dalam Sheet (belum sync), guna default
+    ACCESS_SETTINGS = { ...ACCESS_SETTINGS_DEFAULTS, ...fetched };
+  } catch (e) {
+    ACCESS_SETTINGS = { ...ACCESS_SETTINGS_DEFAULTS }; // fetch gagal — kekal default, app tetap jalan
+  }
+}
+
+/** Semak akses SATU modul ikut tetapan dinamik + Admin App (Role3) SENTIASA lulus. */
+function checkModuleAccess(user, moduleKey) {
+  const isAdminApp = String(user.role3 || "").trim().toLowerCase() === "admin app";
+  if (isAdminApp) return true;
+  const setting = ACCESS_SETTINGS[moduleKey] || ACCESS_SETTINGS_DEFAULTS[moduleKey] || {};
+  const jawatanUpper = String(user.jawatan || "").trim().toUpperCase();
+  const matchJawatan = setting.jawatan && jawatanUpper === setting.jawatan.trim().toUpperCase();
+  const matchRole = setting.role && String(user.role || "").trim().toLowerCase() === setting.role.trim().toLowerCase();
+  const matchRole2 = setting.role2 && String(user.role2 || "").trim().toLowerCase() === setting.role2.trim().toLowerCase();
+  return !!(matchJawatan || matchRole || matchRole2);
+}
+
+async function initApp(onReady) {
   renderIcons();
   document.querySelectorAll(".school-logo-img").forEach((img) => { img.src = SCHOOL_LOGO_URL; });
 
@@ -494,6 +541,7 @@ function initApp(onReady) {
     appContent.classList.remove("hidden");
     renderHeader(user);
     renderDrawerMenu();
+    await fetchAccessSettings(); // sedia SEBELUM onReady, supaya modul boleh guna checkModuleAccess() terus
     if (typeof onReady === "function") onReady(user);
     refreshUserInBackground(user);
   }

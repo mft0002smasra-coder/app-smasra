@@ -156,10 +156,7 @@ function dmShowToast(msg) {
 
 /* ---------------- Akses (Analisis/Upload) ---------------- */
 function dmCheckUploadAccess(user) {
-  const jawatanUpper = String(user.jawatan || "").trim().toUpperCase();
-  const isDataMuridGuru = jawatanUpper === "PPP (GURU DATA MURID)";
-  const isAdmin = String(user.role || "").trim().toLowerCase() === "admin";
-  return isDataMuridGuru || isAdmin;
+  return checkModuleAccess(user, "data_murid");
 }
 
 /* ---------------- Fetch data murid (gviz, baca awam) ---------------- */
