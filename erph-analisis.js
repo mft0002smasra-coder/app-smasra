@@ -14,9 +14,15 @@ const ER_SHEET_ID = "1l9YS_m19yIzhz6gy0MgAIoNSM0huXAWa95YdZJxuQZU";
 const ER_SHEET_ERPH = "DATA eRPH";
 const ER_SHEET_SEMAKAN = "DATA SEMAKAN";
 
-// Jawatan yang dianggap Pentadbir (tab "Semakan Saya"). Padanan: jawatan bermula dengan
-// mana-mana kata kunci di bawah. Tambah/buang di sini kalau perlu.
-const ER_PENTADBIR_KEYWORDS = ["PENGETUA", "PK ", "GKMP", "GKPM"];
+// Tab "Semakan Saya" hanya untuk jawatan PENGETUA, PK (PK PENTADBIRAN, PK HEM, PK KOKURIKULUM,
+// PK TINGKATAN 6) dan GKMP (GKMP BAHASA dll) — serta Admin App. Padanan: jawatan BERMULA dengan
+// kata kunci di bawah. Jawatan lain tak nampak tab ini.
+const ER_PENTADBIR_KEYWORDS = ["PENGETUA", "PK ", "GKMP"];
+
+// Dikecualikan daripada analisis penghantaran (mereka hantar e-RPH di tempat lain).
+// Nama di bawah SENTIASA dikecualikan; selain itu sesiapa yang berjawatan PENGETUA dalam
+// DatabaseSTAFF turut dikecualikan secara automatik (kalau Pengetua bertukar).
+const ER_KECUALI_NAMA = ["DR. SURINA BINTI HAMED"];
 
 const ER_MONTHS = ["Januari", "Februari", "Mac", "April", "Mei", "Jun", "Julai", "Ogos", "September", "Oktober", "November", "Disember"];
 const ER_MON_SHORT = ["Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis"];
@@ -31,6 +37,7 @@ let ER = { erph: [], sem: [] };
 let erF = { tahun: "", bulan: "__ALL__", minggu: "__ALL__" };
 let erTab = "hantar";
 let erLast = null; // hasil pengiraan terkini — dipakai popup senarai
+let erExcluded = new Set(); // nama (dinormalkan) yang dikecualikan dari senarai guru
 
 /* ================= Utiliti ================= */
 function erEsc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
@@ -99,6 +106,24 @@ function erYearFromRow(row, idxs) {
     if (m) return parseInt(m[1], 10);
   }
   return null;
+}
+
+/** Bina senarai pengecualian: nama tetap + sesiapa berjawatan PENGETUA dalam DatabaseSTAFF. */
+async function erLoadExcluded() {
+  const set = new Set(ER_KECUALI_NAMA.map(erNormName));
+  try {
+    if (typeof SPREADSHEET_ID !== "undefined") {
+      const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent("DatabaseSTAFF")}&headers=1&_ts=${Date.now()}`;
+      const res = await fetch(url, { cache: "no-store" });
+      const text = await res.text();
+      const parsed = JSON.parse(text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1));
+      ((parsed.table && parsed.table.rows) || []).forEach((r) => {
+        // DatabaseSTAFF: B=Nama, C=Jawatan
+        if (erText(r, 2).toUpperCase().startsWith("PENGETUA") && erText(r, 1)) set.add(erNormName(erText(r, 1)));
+      });
+    }
+  } catch (e) { /* guna senarai tetap sahaja */ }
+  erExcluded = set;
 }
 
 function erBuild(rawErph, rawSem) {
@@ -180,8 +205,8 @@ function erEffectiveSem(tahun, filterFn) {
 /** Senarai guru = semua nama yang muncul dalam data tahun itu (tab "Senarai Nama" tiada dalam Sheet ini). */
 function erRosterFor(tahun) {
   const m = new Map();
-  ER.erph.filter(erInYear(tahun)).forEach((r) => { if (!m.has(r.key)) m.set(r.key, r.nama); });
-  ER.sem.filter(erInYear(tahun)).forEach((r) => { if (!m.has(r.key)) m.set(r.key, r.nama); });
+  ER.erph.filter(erInYear(tahun)).forEach((r) => { if (!erExcluded.has(r.key) && !m.has(r.key)) m.set(r.key, r.nama); });
+  ER.sem.filter(erInYear(tahun)).forEach((r) => { if (!erExcluded.has(r.key) && !m.has(r.key)) m.set(r.key, r.nama); });
   return m;
 }
 
@@ -461,6 +486,10 @@ function erPillFor(sem, hantar) {
 
 function erRenderSaya() {
   const myKey = erNormName(erUser.nama);
+  if (erExcluded.has(myKey)) {
+    return `<div class="er-card"><div class="er-card-title">Prestasi Saya <span class="er-card-sub">${erEsc(erUser.nama)}</span></div>
+      <div class="empty-state">Anda menghantar e-RPH di tempat lain, jadi tiada analisis penghantaran e-RPH untuk anda di sini.</div></div>`;
+  }
   const A = erCompute(erF.tahun, erF.bulan, erF.minggu, myKey);
   erLast = A;
   if (!A.totalGuru) {
@@ -586,7 +615,7 @@ async function erInit(user) {
   if (erIsPentadbir(user)) document.getElementById("er-nav-semak").classList.remove("hidden");
   const banner = document.getElementById("er-banner");
   try {
-    const [rawErph, rawSem] = await Promise.all([erFetchSheet(ER_SHEET_ERPH), erFetchSheet(ER_SHEET_SEMAKAN)]);
+    const [rawErph, rawSem] = await Promise.all([erFetchSheet(ER_SHEET_ERPH), erFetchSheet(ER_SHEET_SEMAKAN), erLoadExcluded()]);
     ER = erBuild(rawErph, rawSem);
     if (!ER.erph.length) throw new Error("Tiada rekod e-RPH dikesan dalam Sheet");
   } catch (e) {
