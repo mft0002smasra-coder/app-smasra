@@ -251,7 +251,8 @@ async function lgbGoSemakLaporan(keepYear) {
   const keep = keepYear === true && lgbSelectedYear && years.includes(lgbSelectedYear);
   if (!keep) lgbSelectedYear = years.includes(thisYear) ? thisYear : (years[0] || thisYear); // tiada data tahun semasa -> tahun terkini yang ada
   const sel = document.getElementById("lgb-year-select");
-  sel.innerHTML = (years.length ? years : [lgbSelectedYear]).map((y) => `<option value="${y}"${y === lgbSelectedYear ? " selected" : ""}>${y}</option>`).join("");
+  // Dropdown mungkin tiada kalau fail HTML belum dikemas kini — jangan biar ia menghalang senarai minggu.
+  if (sel) sel.innerHTML = (years.length ? years : [lgbSelectedYear]).map((y) => `<option value="${y}"${y === lgbSelectedYear ? " selected" : ""}>${y}</option>`).join("");
   lgbRenderWeeks();
 }
 function lgbOnYearChange() {
