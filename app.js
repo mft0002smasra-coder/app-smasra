@@ -273,6 +273,7 @@ const MENU_STRUCTURE = [
     children: [
       { href: "tempahan-bilik.html", icon: "door", label: "Tempahan Bilik Khas" },
       { href: "jadual-guru.html", icon: "clipboard", label: "Jadual Guru" },
+      { href: "erph-analisis.html", icon: "chart", label: "Analisis e-RPH" },
     ],
   },
   {
