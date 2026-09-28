@@ -126,7 +126,10 @@
 
       <!-- ============ Skrin: Pilih Minggu (Semak Laporan) ============ -->
       <div id="lgb-screen-weeks" class="hidden">
-        <div class="section-title">Semak Laporan — Pilih Minggu</div>
+        <div class="lgb-year-row">
+          <div class="section-title" style="margin-bottom:0">Semak Laporan — Pilih Minggu</div>
+          <select class="lgb-year-select" id="lgb-year-select" onchange="lgbOnYearChange()"></select>
+        </div>
         <div id="lgb-weeks-list"></div>
         <button class="btn-bw-outline" onclick="lgbBackToMenu()" style="margin-top:12px">&larr; Menu Utama</button>
       </div>
@@ -136,7 +139,7 @@
         <div class="section-title">Pilih Tarikh</div>
         <div class="sub-dim" id="lgb-dates-subtitle" style="margin-bottom:12px">-</div>
         <div id="lgb-dates-list"></div>
-        <button class="btn-bw-outline" onclick="lgbGoSemakLaporan()" style="margin-top:12px">&larr; Pilih Minggu Lain</button>
+        <button class="btn-bw-outline" onclick="lgbGoSemakLaporan(true)" style="margin-top:12px">&larr; Pilih Minggu Lain</button>
       </div>
 
       <!-- ============ Skrin: SECTION VIEW (hub utama) ============ -->
