@@ -103,12 +103,32 @@ function lgbFixImageUrl(url) {
   return raw; // bukan link Drive dikenali — biar apa adanya
 }
 
-/** Format tarikh YYYY-MM-DD (storan) -> dd-mm-YYYY (paparan) */
+/** Format tarikh YYYY-MM-DD (storan) -> dd/MMM/yyyy (paparan), cth 22/Sep/2026.
+ * Nama bulan singkatan Bahasa Melayu (Mac, Mei, Ogo, Okt, Dis) — selaras nama hari. */
+const LGB_MONTHS = ["Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis"];
+const LGB_DAYS = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
 function lgbFormatDate(isoStr) {
   if (!isoStr) return "-";
   const m = String(isoStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!m) return isoStr;
-  return `${m[3]}-${m[2]}-${m[1]}`;
+  return `${m[3]}/${LGB_MONTHS[parseInt(m[2], 10) - 1] || m[2]}/${m[1]}`;
+}
+/** Nama hari dari tarikh ISO — bina Date guna komponen (bukan string) supaya
+ * tak terkesan zon waktu. */
+function lgbDayName(isoStr) {
+  const m = String(isoStr || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return "";
+  return LGB_DAYS[new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10)).getDay()];
+}
+/** cth "22/Sep/2026 (Selasa)" — untuk paparan laporan. */
+function lgbFormatDateWithDay(isoStr) {
+  const base = lgbFormatDate(isoStr);
+  const day = lgbDayName(isoStr);
+  return day ? `${base} (${day})` : base;
+}
+function lgbYearOf(isoStr) {
+  const m = String(isoStr || "").match(/^(\d{4})-/);
+  return m ? m[1] : "";
 }
 
 /** Satu SEL data boleh ada BEBERAPA link gambar dipisah koma — pecah semua,
@@ -216,11 +236,31 @@ function lgbGoNewReport() {
   document.getElementById("lgb-start-error").classList.add("hidden");
   lgbShowScreen("start");
 }
-async function lgbGoSemakLaporan() {
+let lgbSelectedYear = "";
+
+/** keepYear=true: kekalkan tahun pilihan (cth balik dari skrin tarikh);
+ * tanpa itu (dari Menu Utama) tahun ditetapkan semula ke tahun semasa. */
+async function lgbGoSemakLaporan(keepYear) {
   lgbShowScreen("weeks");
   document.getElementById("lgb-weeks-list").innerHTML = `<div class="empty-state">Memuatkan...</div>`;
   await lgbFetchRecords();
-  const weeks = [...new Set(lgbRecords.map((r) => String(r.minggu).trim()))];
+
+  // Senarai tahun yang ADA dalam data (terkini di atas)
+  const years = [...new Set(lgbRecords.map((r) => lgbYearOf(r.tarikh)).filter(Boolean))].sort((a, b) => b - a);
+  const thisYear = String(new Date().getFullYear());
+  const keep = keepYear === true && lgbSelectedYear && years.includes(lgbSelectedYear);
+  if (!keep) lgbSelectedYear = years.includes(thisYear) ? thisYear : (years[0] || thisYear); // tiada data tahun semasa -> tahun terkini yang ada
+  const sel = document.getElementById("lgb-year-select");
+  sel.innerHTML = (years.length ? years : [lgbSelectedYear]).map((y) => `<option value="${y}"${y === lgbSelectedYear ? " selected" : ""}>${y}</option>`).join("");
+  lgbRenderWeeks();
+}
+function lgbOnYearChange() {
+  lgbSelectedYear = document.getElementById("lgb-year-select").value;
+  lgbRenderWeeks();
+}
+function lgbRenderWeeks() {
+  const inYear = lgbRecords.filter((r) => lgbYearOf(r.tarikh) === lgbSelectedYear);
+  const weeks = [...new Set(inYear.map((r) => String(r.minggu).trim()))];
   // Susun minggu TERKINI di atas — ambil nombor dalam teks (cth "Minggu 31" -> 31)
   // untuk susun betul secara numerik, jatuh balik ke susun teks kalau tiada nombor.
   weeks.sort((a, b) => {
@@ -232,13 +272,15 @@ async function lgbGoSemakLaporan() {
   lgbWeeksCache = weeks;
   document.getElementById("lgb-weeks-list").innerHTML = weeks.length
     ? `<div class="lgb-week-grid">${weeks.map((w) => `<button class="lgb-week-box" onclick="lgbGoDates('${lgbEscape(w)}')">${lgbEscape(w)}</button>`).join("")}</div>`
-    : `<div class="empty-state">Belum ada laporan lagi.</div>`;
+    : `<div class="empty-state">Tiada laporan untuk tahun ${lgbEscape(lgbSelectedYear)}.</div>`;
 }
 function lgbGoDates(minggu) {
   lgbMinggu = String(minggu).trim();
   lgbShowScreen("dates");
-  const dates = lgbRecords.filter((r) => String(r.minggu).trim() === lgbMinggu).map((r) => r.tarikh);
-  document.getElementById("lgb-dates-subtitle").textContent = lgbMinggu;
+  const dates = lgbRecords
+    .filter((r) => String(r.minggu).trim() === lgbMinggu && (!lgbSelectedYear || lgbYearOf(r.tarikh) === lgbSelectedYear))
+    .map((r) => r.tarikh);
+  document.getElementById("lgb-dates-subtitle").textContent = `${lgbMinggu} · ${lgbSelectedYear}`;
   document.getElementById("lgb-dates-list").innerHTML = dates.length
     ? dates.map((d) => `<button class="lgb-list-item" onclick="lgbOpenSectionView('${lgbEscape(d)}',0)">${lgbEscape(lgbFormatDate(d))}</button>`).join("")
     : `<div class="empty-state">Tiada tarikh untuk minggu ini.</div>`;
@@ -287,6 +329,7 @@ function lgbLoadCurrentRow() {
 
 async function lgbOpenSectionView(tarikh, secIndex) {
   lgbTarikh = tarikh;
+  if (lgbYearOf(tarikh)) lgbSelectedYear = lgbYearOf(tarikh);
   lgbSecIndex = secIndex;
   if (!lgbRecords.length) await lgbFetchRecords();
   lgbLoadCurrentRow();
@@ -299,7 +342,7 @@ function lgbRenderSectionView() {
   const r = lgbCurrentRow || {};
 
   document.getElementById("lgb-view-minggu").textContent = lgbMinggu;
-  document.getElementById("lgb-view-tarikh").textContent = lgbFormatDate(lgbTarikh);
+  document.getElementById("lgb-view-tarikh").textContent = lgbFormatDateWithDay(lgbTarikh);
   document.getElementById("lgb-view-pelapor").textContent = r.namaPelapor || "-";
   document.getElementById("lgb-view-penyemak").textContent = r.penyemak || "-";
   const ulasanLine = document.getElementById("lgb-view-ulasan-line");
@@ -507,7 +550,7 @@ async function lgbOpenSemak() {
 function lgbSelectPenyemak(nama) {
   lgbSelectedPenyemak = nama;
   document.getElementById("lgb-ulasan-summary").innerHTML =
-    `Minggu: <b>${lgbEscape(lgbMinggu)}</b><br>Tarikh: <b>${lgbEscape(lgbTarikh)}</b><br>Pelapor: <b>${lgbEscape((lgbCurrentRow && lgbCurrentRow.namaPelapor) || "-")}</b><br>Penyemak: <b>${lgbEscape(nama)}</b>`;
+    `Minggu: <b>${lgbEscape(lgbMinggu)}</b><br>Tarikh: <b>${lgbEscape(lgbFormatDateWithDay(lgbTarikh))}</b><br>Pelapor: <b>${lgbEscape((lgbCurrentRow && lgbCurrentRow.namaPelapor) || "-")}</b><br>Penyemak: <b>${lgbEscape(nama)}</b>`;
   document.getElementById("lgb-ulasan-text").value = "";
   document.getElementById("lgb-ulasan-error").classList.add("hidden");
   lgbShowScreen("ulasan");
@@ -530,7 +573,7 @@ async function lgbSubmitUlasan() {
     return;
   }
   // PAPAR SEMULA SENARAI TARIKH — sama macam bot rujukan (bukan balik ke laporan)
-  await lgbGoSemakLaporan();
+  await lgbGoSemakLaporan(true);
   lgbGoDates(lgbMinggu);
 }
 function lgbCancelUlasan() {
@@ -557,7 +600,7 @@ function lgbPrintReport() {
   printArea.innerHTML = `
     <div class="lgb-print-header">
       <div class="lgb-print-main-title">LAPORAN GURU BERTUGAS</div>
-      <div>Minggu: <b>${lgbEscape(lgbMinggu)}</b> &nbsp; Tarikh: <b>${lgbEscape(lgbFormatDate(lgbTarikh))}</b> &nbsp; Pelapor: <b>${lgbEscape(r.namaPelapor || "-")}</b></div>
+      <div>Minggu: <b>${lgbEscape(lgbMinggu)}</b> &nbsp; Tarikh: <b>${lgbEscape(lgbFormatDateWithDay(lgbTarikh))}</b> &nbsp; Pelapor: <b>${lgbEscape(r.namaPelapor || "-")}</b></div>
     </div>
     <div class="lgb-print-semakan">Penyemak: <b>${lgbEscape(r.penyemak || "-")}</b><br>Ulasan: <b>${lgbEscape(r.catatanSemakan || "-")}</b></div>
     ${bodyHtml}`;
