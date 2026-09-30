@@ -299,13 +299,63 @@ function maRenderUtama() {
     </div>`;
   }
 
+  function buildTingkatanCard(t, classNames) {
+    const recs = classNames.map((kName) => dayRecords.find((r) => r.kelas === kName)).filter(Boolean);
+    if (!recs.length) return "";
+    const sumHadir = recs.reduce((a, r) => a + (r.hadir || 0), 0);
+    const sumTidakHadir = recs.reduce((a, r) => a + (r.tidakHadir || 0), 0);
+    const jumlahMurid = sumHadir + sumTidakHadir;
+    const peratus = jumlahMurid ? ((sumHadir / jumlahMurid) * 100).toFixed(2) : "0.00";
+    const col = maRingColor(Math.round(parseFloat(peratus)));
+    return `<div class="ma-ting-summary-card" onclick="maOpenTingkatanAbsentModal(${t})">
+      <div class="ma-ting-summary-head">
+        <span class="ma-ting-summary-title">Kehadiran Keseluruhan Tingkatan ${t}</span>
+        <span class="ma-ting-summary-pct" style="color:${col}">${peratus}%</span>
+      </div>
+      <div class="ma-ting-summary-stats">
+        <span class="ma-ting-summary-stat ma-stat-hadir"><b>${sumHadir}</b> Hadir</span>
+        <span class="ma-ting-summary-stat ma-stat-tidakhadir"><b>${sumTidakHadir}</b> Tidak Hadir</span>
+      </div>
+      <div class="ma-ting-summary-hint">Ketik untuk senarai murid tidak hadir</div>
+    </div>`;
+  }
+
   const groups = {};
   MA_ALL_CLASSES.forEach((kName) => { const t = maTingkatanOf(kName); (groups[t] = groups[t] || []).push(kName); });
+  MA_TINGKATAN_DAY_RECORDS = dayRecords; // simpan untuk popup ringkasan tingkatan
   const grid = document.getElementById("ma-u-classgrid");
   grid.innerHTML = Object.keys(groups).sort((a, b) => a - b).map((t) => {
+    const summaryCard = buildTingkatanCard(t, groups[t]);
     const cards = groups[t].map(buildClassCard).join("");
-    return `<div class="ma-ting-group"><div class="ma-ting-heading">Tingkatan ${t}</div><div class="ma-class-grid">${cards}</div></div>`;
+    return `<div class="ma-ting-group"><div class="ma-ting-heading">Tingkatan ${t}</div>${summaryCard}<div class="ma-class-grid">${cards}</div></div>`;
   }).join("");
+}
+
+/** Popup senarai murid tidak hadir SEMUA kelas dalam SATU tingkatan (kad ringkasan
+ * tingkatan, Tab Utama). Guna modal generik sedia ada (#ma-modal-overlay). */
+let MA_TINGKATAN_DAY_RECORDS = [];
+function maOpenTingkatanAbsentModal(tingkatan) {
+  const box = document.getElementById("ma-modal-content");
+  const recs = MA_TINGKATAN_DAY_RECORDS.filter((r) => String(r.tingkatan) === String(tingkatan) && r.tidakHadir > 0 && r.namaList.length);
+  if (!recs.length) {
+    box.innerHTML = `<div class="ma-modal-date">${maLastDayLabel}</div><div class="ma-modal-classname">Tingkatan ${tingkatan} — Murid Tidak Hadir</div>
+      <div class="ma-empty-state" style="padding:34px 0;">🎉 Tiada murid tidak hadir di Tingkatan ${tingkatan} pada tarikh ini!</div>`;
+  } else {
+    const sorted = [...recs].sort((a, b) => b.tidakHadir - a.tidakHadir);
+    const classBlocksHtml = sorted.map((r) => `
+      <div class="ma-absent-class-block">
+        <div class="ma-absent-class-head">
+          <span class="ma-absent-class-name">${r.kelas}</span>
+          <span class="ma-absent-class-count">${r.tidakHadir} orang</span>
+        </div>
+        <div class="ma-modal-absent-list">${r.namaList.map((n) => `<span class="ma-chip">${n}</span>`).join("")}</div>
+      </div>`).join("");
+    box.innerHTML = `
+      <div class="ma-modal-date">${maLastDayLabel}</div>
+      <div class="ma-modal-classname">Tingkatan ${tingkatan} — Murid Tidak Hadir</div>
+      ${classBlocksHtml}`;
+  }
+  document.getElementById("ma-modal-overlay").classList.add("show");
 }
 
 function maDrawBarChart(data, ids) {
