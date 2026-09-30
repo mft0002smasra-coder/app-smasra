@@ -307,16 +307,10 @@ function maRenderUtama() {
     const jumlahMurid = sumHadir + sumTidakHadir;
     const peratus = jumlahMurid ? ((sumHadir / jumlahMurid) * 100).toFixed(2) : "0.00";
     const col = maRingColor(Math.round(parseFloat(peratus)));
-    return `<div class="ma-ting-summary-card" onclick="maOpenTingkatanAbsentModal(${t})">
-      <div class="ma-ting-summary-head">
-        <span class="ma-ting-summary-title">Kehadiran Keseluruhan Tingkatan ${t}</span>
-        <span class="ma-ting-summary-pct" style="color:${col}">${peratus}%</span>
-      </div>
-      <div class="ma-ting-summary-stats">
-        <span class="ma-ting-summary-stat ma-stat-hadir"><b>${sumHadir}</b> Hadir</span>
-        <span class="ma-ting-summary-stat ma-stat-tidakhadir"><b>${sumTidakHadir}</b> Tidak Hadir</span>
-      </div>
-      <div class="ma-ting-summary-hint">Ketik untuk senarai murid tidak hadir</div>
+    return `<div class="ma-class-card ma-ting-summary-card" onclick="maOpenTingkatanAbsentModal(${t})">
+      <div class="ma-class-top"><span class="ma-class-name">Keseluruhan T${t}</span></div>
+      <div class="ma-mini-pct" style="color:${col}">${peratus}%</div>
+      <div class="ma-mini-stats"><b>${sumHadir}</b> hadir · <b>${sumTidakHadir}</b> t.hadir</div>
     </div>`;
   }
 
@@ -325,9 +319,8 @@ function maRenderUtama() {
   MA_TINGKATAN_DAY_RECORDS = dayRecords; // simpan untuk popup ringkasan tingkatan
   const grid = document.getElementById("ma-u-classgrid");
   grid.innerHTML = Object.keys(groups).sort((a, b) => a - b).map((t) => {
-    const summaryCard = buildTingkatanCard(t, groups[t]);
-    const cards = groups[t].map(buildClassCard).join("");
-    return `<div class="ma-ting-group"><div class="ma-ting-heading">Tingkatan ${t}</div>${summaryCard}<div class="ma-class-grid">${cards}</div></div>`;
+    const cards = groups[t].map(buildClassCard).join("") + buildTingkatanCard(t, groups[t]); // kad ringkasan di HUJUNG
+    return `<div class="ma-ting-group"><div class="ma-ting-heading">Tingkatan ${t}</div><div class="ma-class-grid">${cards}</div></div>`;
   }).join("");
 }
 

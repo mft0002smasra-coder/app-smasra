@@ -651,20 +651,9 @@ textarea.field-input{ resize:vertical;min-height:100px;font-size:15px; }
 .ma-ting-group{ margin-bottom:16px; }
 .ma-ting-heading{ font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--cyan);margin-bottom:7px;display:flex;align-items:center;gap:8px; }
 
-.ma-ting-summary-card{
-  background:var(--panel-a);border:1px solid var(--line);border-radius:11px;padding:12px 14px;
-  margin-bottom:8px;cursor:pointer;transition:transform .15s,border-color .15s;
-}
-.ma-ting-summary-card:active{ transform:scale(.98);border-color:var(--danger); }
-.ma-ting-summary-head{ display:flex;justify-content:space-between;align-items:center;gap:8px; }
-.ma-ting-summary-title{ font-size:12.5px;font-weight:700;color:var(--text); }
-.ma-ting-summary-pct{ font-size:17px;font-weight:800;font-family:var(--font-mono); }
-.ma-ting-summary-stats{ display:flex;gap:16px;margin-top:8px; }
-.ma-ting-summary-stat{ font-size:11.5px;color:var(--text-dim); }
-.ma-ting-summary-stat b{ font-size:13px;margin-right:3px; }
-.ma-ting-summary-stat.ma-stat-hadir b{ color:var(--mint,#2ecc71); }
-.ma-ting-summary-stat.ma-stat-tidakhadir b{ color:var(--danger); }
-.ma-ting-summary-hint{ font-size:9.5px;color:var(--text-dim);opacity:.7;margin-top:6px; }
+/* Kad ringkasan tingkatan — SAMA saiz macam .ma-class-card, cuma aksen border/latar berbeza */
+.ma-ting-summary-card{ border-color:var(--cyan);background:rgba(0,229,255,.06); }
+.ma-ting-summary-card .ma-class-name{ color:var(--cyan); }
 .ma-ting-heading::after{ content:'';flex:1;height:1px;background:var(--line); }
 .ma-class-grid{ display:grid;grid-template-columns:repeat(2,1fr);gap:8px;min-width:0; }
 .ma-class-card{
