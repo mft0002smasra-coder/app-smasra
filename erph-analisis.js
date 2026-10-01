@@ -47,12 +47,50 @@ function erFmtDate(d) {
   if (!d) return "—";
   return `${String(d.getDate()).padStart(2, "0")}/${ER_MON_SHORT[d.getMonth()]}/${d.getFullYear()}`;
 }
-/** Samakan nama untuk padanan: huruf besar, buang tanda baca & gelaran (DR, PN, EN...). */
+/** Samakan nama untuk padanan: huruf besar, buang tanda baca & gelaran (DR, PN, EN...),
+ * dan samakan singkatan BIN/BINTI (cth "B", "BT", "BTE") ke bentuk penuh — supaya
+ * "AHMAD B ALI" dan "AHMAD BIN ALI" dikenali sebagai GURU YANG SAMA. */
 function erNormName(s) {
   let t = String(s || "").toUpperCase().replace(/[.,'’`]/g, " ").replace(/\s+/g, " ").trim();
   const titles = /^(DR|PN|PUAN|EN|ENCIK|CIK|HJ|HJH|TS|PROF|USTAZ|USTAZAH|TN|TUAN)\s+/;
   while (titles.test(t)) t = t.replace(titles, "");
-  return t;
+  t = t.replace(/\bB\b/g, "BIN");
+  t = t.replace(/\bBTE\b/g, "BINTI").replace(/\bBT\b/g, "BINTI");
+  return t.replace(/\s+/g, " ").trim();
+}
+
+/** Jarak Levenshtein (bilangan suntingan huruf) — untuk kesan salah eja nama. */
+function erLevenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const d = Array.from({ length: m + 1 }, (_, i) => [i, ...new Array(n).fill(0)]);
+  for (let j = 0; j <= n; j++) d[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      d[i][j] = a[i - 1] === b[j - 1] ? d[i - 1][j - 1] : 1 + Math.min(d[i - 1][j], d[i][j - 1], d[i - 1][j - 1]);
+    }
+  }
+  return d[m][n];
+}
+function erSimilarity(a, b) {
+  const maxLen = Math.max(a.length, b.length);
+  return maxLen ? 1 - erLevenshtein(a, b) / maxLen : 1;
+}
+
+/** Cari pasangan nama (selepas normalisasi BIN/BINTI/gelaran) yang SANGAT HAMPIR tapi
+ * TAK IDENTIK — berkemungkinan salah eja/nama sama ganda. Ambang 85% supaya tak terlalu
+ * longgar (elak cadangkan 2 guru BERLAINAN sebagai sama). */
+function erFindPossibleDuplicates() {
+  const names = [...erRosterFor(erF.tahun || new Date().getFullYear()).entries()]; // [key, namaAsal]
+  const pairs = [];
+  for (let i = 0; i < names.length; i++) {
+    for (let j = i + 1; j < names.length; j++) {
+      const [keyA, namaA] = names[i], [keyB, namaB] = names[j];
+      if (keyA === keyB) continue; // sudah sepadan (dikira guru sama)
+      const sim = erSimilarity(keyA, keyB);
+      if (sim >= 0.85) pairs.push({ namaA, namaB, sim: Math.round(sim * 100) });
+    }
+  }
+  return pairs.sort((a, b) => b.sim - a.sim);
 }
 function erNormStatus(text) {
   const t = String(text || "").toLowerCase().trim();
@@ -396,8 +434,21 @@ function erScopeLabel() {
   return parts.join(" · ");
 }
 function erOpenList(type) {
-  if (!erLast) return;
+  if (type !== "duplikat" && !erLast) return;
   let title = "", body = "";
+  if (type === "duplikat") {
+    title = "Nama Guru Berpotensi Sama";
+    body = erLastDups.length ? erLastDups.map((p) => `
+      <div class="er-li">
+        <div class="er-dup-pair"><b>${erEsc(p.namaA)}</b><span class="er-dup-vs">atau</span><b>${erEsc(p.namaB)}</b></div>
+        <div class="er-dup-sim">${p.sim}% sepadan — semak ejaan/singkatan bin-binti dalam Sheet</div>
+      </div>`).join("") : `<div class="er-empty-ok">Tiada nama berpotensi sama dikesan</div>`;
+    document.getElementById("er-popup-title").textContent = title;
+    document.getElementById("er-popup-sub").textContent = "Semak Sheet DATA eRPH / DATA SEMAKAN";
+    document.getElementById("er-popup-body").innerHTML = body;
+    document.getElementById("er-popup-overlay").classList.remove("hidden");
+    return;
+  }
   if (type === "belumHantar") {
     title = "Guru Belum Hantar e-RPH";
     body = erListHtml(erLast.belumHantar, "er-chip-red", true, "✓ Semua guru telah menghantar e-RPH");
@@ -471,8 +522,23 @@ function erRenderHantar() {
         <div class="er-d-sub"><span style="color:${ER_COL.green}">${A.selesai}</span> · <span style="color:${ER_COL.amber}">${A.proses}</span> · <span style="color:${ER_COL.red}">${A.belumSiap}</span></div>
         <div class="er-hint">Ketik: senarai guru</div>
       </div>
+    </div>
+    ${erRenderDuplicateWarning()}`;
+}
+
+/** Kad amaran nama guru berpotensi sama (salah eja / singkatan BIN·BINTI tak konsisten)
+ * — hanya papar kalau jumpa, bukan "no-op" senyap kalau data bersih. */
+function erRenderDuplicateWarning() {
+  const dups = erFindPossibleDuplicates();
+  if (!dups.length) return "";
+  erLastDups = dups;
+  return `
+    <div class="er-card er-dup-card" onclick="erOpenList('duplikat')">
+      <div class="er-dup-head">⚠️ ${dups.length} Pasangan Nama Berpotensi Sama</div>
+      <div class="er-dup-sub">Kemungkinan salah eja atau singkatan "bin/binti" tak konsisten — ketik untuk semak</div>
     </div>`;
 }
+let erLastDups = [];
 
 function erPillFor(sem, hantar) {
   if (sem) {
@@ -594,13 +660,35 @@ function erFillMinggu() {
     `<option value="__ALL__">Semua Minggu</option>` +
     list.map((w) => `<option value="${erEsc(w)}"${w === erF.minggu ? " selected" : ""}>Minggu ${erEsc(w)}</option>`).join("");
 }
+/** Cari minggu "semasa" dalam DATA — minggu yang julat tarikhnya (Awal..Awal+6 hari)
+ * merangkumi hari ini; kalau tiada (cuti/hujung tahun), minggu TERDEKAT dengan hari ini. */
+function erFindCurrentWeek() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  let best = null, bestDist = Infinity;
+  ER.erph.forEach((r) => {
+    if (!r.awal || !r.tahun || !r.minggu) return;
+    const start = new Date(r.awal); start.setHours(0, 0, 0, 0);
+    const end = new Date(start); end.setDate(end.getDate() + 6);
+    const dist = today >= start && today <= end ? 0 : Math.min(Math.abs(today - start), Math.abs(today - end));
+    if (dist < bestDist) { bestDist = dist; best = { tahun: r.tahun, minggu: r.minggu, bulan: start.getMonth() + 1 }; }
+  });
+  return best;
+}
+
 function erInitFilters() {
   const years = [...new Set(ER.erph.map((r) => r.tahun))].sort((a, b) => b - a);
   const thisYear = new Date().getFullYear();
-  erF.tahun = String(years.includes(thisYear) ? thisYear : years[0] || thisYear);
+  const current = erFindCurrentWeek(); // tahun/bulan/minggu SEBENAR yang ada dalam data, terdekat hari ini
+
+  erF.tahun = String((current && current.tahun) || (years.includes(thisYear) ? thisYear : years[0] || thisYear));
   document.getElementById("er-f-tahun").innerHTML = (years.length ? years : [thisYear])
     .map((y) => `<option value="${y}"${String(y) === erF.tahun ? " selected" : ""}>${y}</option>`).join("");
-  erFillBulan(); erFillMinggu();
+
+  // Default ke bulan & minggu SEMASA (bukan "Semua") — hanya kalau ia sepadan tahun yang dipilih
+  erF.bulan = current && String(current.tahun) === erF.tahun ? String(current.bulan) : "__ALL__";
+  erFillBulan();
+  erF.minggu = current && String(current.tahun) === erF.tahun ? String(current.minggu) : "__ALL__";
+  erFillMinggu();
 }
 function erOnFilter(which) {
   if (which === "tahun") { erF.tahun = document.getElementById("er-f-tahun").value; erF.bulan = "__ALL__"; erF.minggu = "__ALL__"; erFillBulan(); erFillMinggu(); }
