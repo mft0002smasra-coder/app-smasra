@@ -653,7 +653,11 @@ async function lgbFetchSheetAsRecords(sheetName) {
   const withData = rows.filter((c) => c && c.some((v) => v));
   console.log("[LGB] " + sheetName + ": teks respons " + text.length + " aksara -> " + rows.length + " baris CSV mentah -> " + withData.length + " baris ADA data (bukan kosong penuh)");
   const filtered = rows.map((c) => {
-    const get = (i) => (c[i] != null ? String(c[i]).trim() : "");
+    // Buang ' hadapan SETIAP medan — bot Telegram (& Sheets API am) kadang simpan
+    // apostrophe SEBAGAI AKSARA SEBENAR (bukan cuma arahan format "paksa teks"
+    // macam bila ditaip terus dalam UI Sheets), jadi ia boleh muncul pada
+    // MANA-MANA lajur, bukan tarikh sahaja (cth lajur Minggu: "'32" bukan "32").
+    const get = (i) => (c[i] != null ? String(c[i]).trim().replace(/^'+/, "").trim() : "");
     return {
       minggu: get(0), tarikh: lgbNormalizeTarikh(get(1)),
       namaPelapor: get(2), namaGuruBertugas: get(3),
@@ -744,18 +748,24 @@ async function lgbFetchSemakan() {
     const text = await res.text();
     const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
     const table = JSON.parse(jsonStr).table;
+    // Tarikh "DATA SEMAKAN" boleh dalam Date(...) SEBENAR ATAU teks biasa
+    // (dd/mm/yyyy dgn/tanpa ') — guna lgbNormalizeTarikh SAMA seperti laporan
+    // utama supaya KUNCI PADANAN (minggu|tarikh) konsisten format, atau
+    // padanan akan GAGAL walaupun kedua rujuk tarikh SAMA.
     const gvizDateToIso = (v) => {
       if (!v) return "";
       const m = String(v).match(/Date\((\d+),(\d+),(\d+)/);
-      if (!m) return String(v).replace(/^'/, "").trim();
-      const y = parseInt(m[1]), mo = parseInt(m[2]) + 1, d = parseInt(m[3]);
-      return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      if (m) {
+        const y = parseInt(m[1]), mo = parseInt(m[2]) + 1, d = parseInt(m[3]);
+        return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      }
+      return lgbNormalizeTarikh(v);
     };
     const semakByKey = {};
     (table.rows || []).forEach((r) => {
       const c = r.c || [];
       const get = (i) => (c[i] && c[i].v != null ? c[i].v : "");
-      const key = `${get(0)}|${gvizDateToIso(get(1)) || String(get(1))}`;
+      const key = `${String(get(0)).replace(/^'/, "").trim()}|${gvizDateToIso(get(1)) || String(get(1))}`;
       semakByKey[key] = { penyemak: get(3) || "", catatan: get(4) || "" }; // rekod TERAKHIR menang
     });
     lgbRecords.forEach((r) => {
