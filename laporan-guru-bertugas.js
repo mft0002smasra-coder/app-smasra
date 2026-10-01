@@ -658,6 +658,13 @@ async function lgbFetchSheetAsRecords(sheetName) {
     // macam bila ditaip terus dalam UI Sheets), jadi ia boleh muncul pada
     // MANA-MANA lajur, bukan tarikh sahaja (cth lajur Minggu: "'32" bukan "32").
     const get = (i) => (c[i] != null ? String(c[i]).trim().replace(/^'+/, "").trim() : "");
+    // DIAGNOSTIK SEMENTARA: dedah EXACT nilai setiap peringkat untuk Minggu 34,
+    // supaya nampak TEPAT di mana (jika ada) ia gagal — bukan teka lagi.
+    if (c[0] != null && String(c[0]).trim().replace(/^'+/, "") === "34") {
+      const rawB = c[1];
+      console.log("[LGB-DEBUG] " + sheetName + " Minggu34: lajur-B MENTAH=" + JSON.stringify(rawB) + " (panjang=" + String(rawB || "").length + ")"
+        + " | selepas get()=" + JSON.stringify(get(1)) + " | selepas lgbNormalizeTarikh()=" + JSON.stringify(lgbNormalizeTarikh(get(1))));
+    }
     return {
       minggu: get(0), tarikh: lgbNormalizeTarikh(get(1)),
       namaPelapor: get(2), namaGuruBertugas: get(3),
