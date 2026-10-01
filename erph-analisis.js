@@ -79,8 +79,13 @@ function erSimilarity(a, b) {
 /** Cari pasangan nama (selepas normalisasi BIN/BINTI/gelaran) yang SANGAT HAMPIR tapi
  * TAK IDENTIK — berkemungkinan salah eja/nama sama ganda. Ambang 85% supaya tak terlalu
  * longgar (elak cadangkan 2 guru BERLAINAN sebagai sama). */
+let erDupCache = { tahun: null, result: null };
 function erFindPossibleDuplicates() {
-  const names = [...erRosterFor(erF.tahun || new Date().getFullYear()).entries()]; // [key, namaAsal]
+  const tahun = erF.tahun || new Date().getFullYear();
+  // Hasil tak bergantung pada bulan/minggu — cache ikut TAHUN sahaja, elak kira
+  // semula O(n²) Levenshtein setiap kali render (punca lambat bila banyak guru).
+  if (erDupCache.tahun === tahun) return erDupCache.result;
+  const names = [...erRosterFor(tahun).entries()]; // [key, namaAsal]
   const pairs = [];
   for (let i = 0; i < names.length; i++) {
     for (let j = i + 1; j < names.length; j++) {
@@ -90,7 +95,9 @@ function erFindPossibleDuplicates() {
       if (sim >= 0.85) pairs.push({ namaA, namaB, sim: Math.round(sim * 100) });
     }
   }
-  return pairs.sort((a, b) => b.sim - a.sim);
+  const result = pairs.sort((a, b) => b.sim - a.sim);
+  erDupCache = { tahun, result };
+  return result;
 }
 function erNormStatus(text) {
   const t = String(text || "").toLowerCase().trim();
