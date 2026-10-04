@@ -644,45 +644,56 @@ function lgbNormalizeTarikh(raw) {
 
 /** Baca satu Sheet (julat A3:Y5000, guna CSV — lebih literal, elak gviz
  * keliru dengan lajur bercampur jenis) dan pulangkan senarai rekod. */
+/** Tukar baris mentah (array lajur A..Y) kepada objek rekod. Dikongsi oleh bacaan
+ * Apps Script (utama) dan gviz CSV (sandaran) supaya hasilnya seragam. */
+function lgbRowsToRecords(rows, label) {
+  const withData = rows.filter((c) => c && c.some((v) => String(v == null ? "" : v).trim() !== ""));
+  // Buang ' hadapan SETIAP medan (kalau ada sebagai aksara sebenar). Nota: formula bar Sheets
+  // sentiasa PAPAR ' untuk sel teks yang nampak macam tarikh — itu penanda paparan, bukan nilai.
+  const get = (c, i) => (c[i] != null ? String(c[i]).trim().replace(/^'+/, "").trim() : "");
+  const filtered = rows.map((c) => ({
+    minggu: get(c, 0), tarikh: lgbNormalizeTarikh(get(c, 1)),
+    namaPelapor: get(c, 2), namaGuruBertugas: get(c, 3),
+    kehadiranGuru: get(c, 4), namaGuruTidakHadir: get(c, 5), kehadiranAkp: get(c, 6), namaAkpTidakHadir: get(c, 7),
+    laporanBlokA: get(c, 8), tindakanBlokA: get(c, 9), laporanBlokB: get(c, 10), tindakanBlokB: get(c, 11),
+    laporanBlokC: get(c, 12), tindakanBlokC: get(c, 13), laporanBlokKantin: get(c, 14), tindakanBlokKantin: get(c, 15),
+    laporanKeselamatan: get(c, 16), tindakanKeselamatan: get(c, 17), peristiwaProgram: get(c, 18), tindakanPeristiwa: get(c, 19),
+    gambarBlokA: get(c, 20), gambarBlokB: get(c, 21), gambarBlokC: get(c, 22), gambarBlokKantin: get(c, 23), gambarKeselamatan: get(c, 24),
+  })).filter((r) => r.minggu && r.tarikh);
+  const dropped = withData.length - filtered.length;
+  console.log("[LGB] " + label + ": " + withData.length + " baris ada data -> " + filtered.length + " rekod sah" + (dropped > 0 ? " (" + dropped + " DIBUANG: minggu/tarikh kosong)" : ""));
+  return { records: filtered, dropped };
+}
+
+/** Bacaan UTAMA — Apps Script (nilai sebenar setiap sel; tak kena masalah gviz buang sel
+ * bercampur jenis). Pulang null kalau Code.gs belum diredeploy / gagal -> guna sandaran gviz. */
+async function lgbFetchViaAppsScript() {
+  if (typeof apiConfigured === "function" && !apiConfigured()) return null;
+  const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), 15000) : null; // jangan biar app tergantung
+  try {
+    const res = await fetch(`${API_URL}?action=getLaporanGuruBertugasRows&_ts=${Date.now()}`, { cache: "no-store", signal: ctrl ? ctrl.signal : undefined });
+    const data = JSON.parse(await res.text());
+    if (!data || data.success !== true || !Array.isArray(data.databot) || !Array.isArray(data.data2)) return null; // Code.gs lama
+    return {
+      data2: lgbRowsToRecords(data.data2, "Data2 (Apps Script)").records,
+      databot: lgbRowsToRecords(data.databot, "DATABOT (Apps Script)").records,
+    };
+  } finally { if (timer) clearTimeout(timer); }
+}
+
+/** SANDARAN — gviz CSV. HAD DIKETAHUI: gviz kosongkan sel yang jenisnya lain daripada
+ * majoriti lajur (cth tarikh bertulis TEKS dalam lajur tarikh sebenar) -> rekod hilang. */
 async function lgbFetchSheetAsRecords(sheetName) {
   const cacheBust = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const url = `https://docs.google.com/spreadsheets/d/${LGB_SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}&range=A3:Y5000&_ts=${cacheBust}`;
   const res = await fetch(url, { cache: "no-store" });
   const text = await res.text();
-  const rows = lgbParseCsv(text);
-  const withData = rows.filter((c) => c && c.some((v) => v));
-  console.log("[LGB] " + sheetName + ": teks respons " + text.length + " aksara -> " + rows.length + " baris CSV mentah -> " + withData.length + " baris ADA data (bukan kosong penuh)");
-  const filtered = rows.map((c) => {
-    // Buang ' hadapan SETIAP medan — bot Telegram (& Sheets API am) kadang simpan
-    // apostrophe SEBAGAI AKSARA SEBENAR (bukan cuma arahan format "paksa teks"
-    // macam bila ditaip terus dalam UI Sheets), jadi ia boleh muncul pada
-    // MANA-MANA lajur, bukan tarikh sahaja (cth lajur Minggu: "'32" bukan "32").
-    const get = (i) => (c[i] != null ? String(c[i]).trim().replace(/^'+/, "").trim() : "");
-    // DIAGNOSTIK SEMENTARA: dedah EXACT nilai setiap peringkat untuk Minggu 34,
-    // supaya nampak TEPAT di mana (jika ada) ia gagal — bukan teka lagi.
-    if (c[0] != null && String(c[0]).trim().replace(/^'+/, "") === "34") {
-      const rawB = c[1];
-      console.log("[LGB-DEBUG] " + sheetName + " Minggu34: lajur-B MENTAH=" + JSON.stringify(rawB) + " (panjang=" + String(rawB || "").length + ")"
-        + " | selepas get()=" + JSON.stringify(get(1)) + " | selepas lgbNormalizeTarikh()=" + JSON.stringify(lgbNormalizeTarikh(get(1))));
-    }
-    return {
-      minggu: get(0), tarikh: lgbNormalizeTarikh(get(1)),
-      namaPelapor: get(2), namaGuruBertugas: get(3),
-      kehadiranGuru: get(4), namaGuruTidakHadir: get(5), kehadiranAkp: get(6), namaAkpTidakHadir: get(7),
-      laporanBlokA: get(8), tindakanBlokA: get(9), laporanBlokB: get(10), tindakanBlokB: get(11),
-      laporanBlokC: get(12), tindakanBlokC: get(13), laporanBlokKantin: get(14), tindakanBlokKantin: get(15),
-      laporanKeselamatan: get(16), tindakanKeselamatan: get(17), peristiwaProgram: get(18), tindakanPeristiwa: get(19),
-      gambarBlokA: get(20), gambarBlokB: get(21), gambarBlokC: get(22), gambarBlokKantin: get(23), gambarKeselamatan: get(24),
-    };
-  }).filter((r) => r.minggu && r.tarikh);
-  // Tunjuk baris yang ADA data tapi TERTAPIS (minggu/tarikh kosong) — ni
-  // "hilang" yang dilaporkan sebelum ni, senang nampak PUNCA sebenar.
-  const droppedWithData = withData.length - filtered.length;
-  if (droppedWithData > 0) {
-    const examples = rows.filter((c) => c && c.some((v) => v) && !(String(c[0] || "").trim() && String(c[1] || "").trim())).slice(0, 3);
-    console.log("[LGB] " + sheetName + ": " + droppedWithData + " baris ADA data tapi minggu/tarikh KOSONG — contoh baris:", JSON.stringify(examples));
+  const { records, dropped } = lgbRowsToRecords(lgbParseCsv(text), sheetName + " (gviz)");
+  if (dropped > 0) {
+    console.warn("[LGB] " + sheetName + ": " + dropped + " baris hilang kerana tarikh dikembalikan KOSONG oleh gviz (tarikh bertulis teks dalam lajur tarikh sebenar). Redeploy Code.gs terkini supaya bacaan guna Apps Script.");
   }
-  return filtered;
+  return records;
 }
 
 /** Gabung Data2 (formula, mungkin ada lag) + DATABOT (sumber TERUS, tiada
@@ -723,17 +734,27 @@ async function lgbFetchRecords(forceRefresh) {
   // lain. console.log dedah bilangan rekod setiap sumber untuk diagnostik.
   let data2List = [];
   let databotList = [];
+  let viaAppsScript = null;
   try {
-    data2List = await lgbFetchSheetAsRecords(LGB_READ_SHEET_NAME);
-    console.log("[LGB] Data2: " + data2List.length + " rekod sah");
+    viaAppsScript = await lgbFetchViaAppsScript();
   } catch (e) {
-    console.error("[LGB] Gagal baca Data2:", e);
+    console.warn("[LGB] Bacaan Apps Script gagal (" + (e && e.message) + ") — guna gviz sebagai sandaran");
   }
-  try {
-    databotList = await lgbFetchSheetAsRecords(LGB_SHEET_NAME);
-    console.log("[LGB] DATABOT: " + databotList.length + " rekod sah");
-  } catch (e) {
-    console.error("[LGB] Gagal baca DATABOT:", e);
+  if (viaAppsScript) {
+    data2List = viaAppsScript.data2;
+    databotList = viaAppsScript.databot;
+  } else {
+    console.warn("[LGB] Apps Script tak tersedia (Code.gs belum diredeploy?) — guna gviz; tarikh bertulis teks mungkin hilang");
+    try {
+      data2List = await lgbFetchSheetAsRecords(LGB_READ_SHEET_NAME);
+    } catch (e) {
+      console.error("[LGB] Gagal baca Data2:", e);
+    }
+    try {
+      databotList = await lgbFetchSheetAsRecords(LGB_SHEET_NAME);
+    } catch (e) {
+      console.error("[LGB] Gagal baca DATABOT:", e);
+    }
   }
   lgbRecords = lgbMergeWithDatabot(data2List, databotList);
   console.log("[LGB] Selepas cross-check: " + lgbRecords.length + " rekod unik");
