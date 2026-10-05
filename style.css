@@ -2245,7 +2245,7 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
 .banner-carousel{ margin-bottom:4px; }
 .event-ticker-wrap{ height:20px;margin-bottom:4px; }
 .event-ticker-content{ font-size:12px; }
-.solat-strip{ padding:6px 10px;margin-bottom:6px; }
+.solat-strip{ padding:6px 10px;margin:6px 0 0; }
 #home-menu-label{ margin:2px 0 0 2px;font-size:11px;letter-spacing:1.8px;line-height:1.2; }
-#home-module-grid, #home-module-grid .module-grid-inner{ gap:2px 8px; }
-#home-module-grid .module-tile{ padding:3px 4px;gap:3px; }
+#home-module-grid, #home-module-grid .module-grid-inner{ gap:8px 8px; }
+#home-module-grid .module-tile{ padding:4px 4px;gap:4px; }
