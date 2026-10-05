@@ -73,6 +73,10 @@
       <div class="event-ticker-track"><div class="event-ticker-content" id="event-ticker-content"></div></div>
     </div>
 
+    <div class="solat-strip" id="solat-strip" onclick="solatOpenModal()" role="button" tabindex="0" aria-label="Waktu solat — ketik untuk tukar negeri atau lihat butiran">
+      <div class="solat-msg">Memuatkan waktu solat...</div>
+    </div>
+
     <div class="section-label">Menu Utama</div>
     <div class="module-grid" id="home-module-grid"></div>
 
@@ -136,7 +140,18 @@
   </div>
 
   <!-- ============ DRAWER / SIDEBAR (ikon + teks) ============ -->
-  <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+  <!-- ============ Popup: Waktu Solat (butiran + pilih negeri/zon) ============ -->
+<div class="solat-modal-overlay hidden" id="solat-modal-overlay" onclick="if(event.target===this)solatCloseModal()">
+  <div class="solat-modal-card">
+    <div class="solat-modal-head">
+      <div class="solat-modal-title">Waktu Solat</div>
+      <button class="solat-modal-close" onclick="solatCloseModal()" aria-label="Tutup">✕</button>
+    </div>
+    <div id="solat-modal-body"></div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
   <nav class="drawer" id="drawer">
     <div class="drawer-logo-row"><img class="school-logo-img" alt=""><span>SMASRA</span></div>
     <a class="drawer-item active" href="index.html"><span data-icon="home"></span><span class="drawer-label">Laman Utama</span></a>
@@ -192,6 +207,7 @@
 <script src="erks-database.js"></script>
 <script src="jadual-guru.js"></script>
 <script src="keberadaan-murid.js"></script>
+<script src="solat.js"></script>
 <script>
   async function renderHome(user) {
     renderHomeMenu(null);
@@ -200,6 +216,7 @@
     dbLoadHomeAnalysis(user);
     jgRenderHomeCard(user);
     renderHomeHebahanCard();
+    solatInit();
     await kbRenderHomeCard(); // mesti siap dulu (mungkin buang kad) sebelum swipe disediakan
     setTimeout(initHomeSwipe, 300);
     setTimeout(dbSizeHomeAnalysisCard, 400);
