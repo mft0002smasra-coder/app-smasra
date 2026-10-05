@@ -368,9 +368,6 @@ function renderHomeMenu(groupKey) {
         <div class="module-pager-track" id="module-pager-track">
           ${pages.map((page) => `<div class="module-pager-page"><div class="module-grid module-grid-inner">${page.join("")}</div></div>`).join("")}
         </div>
-        <div class="module-pager-dots" id="module-pager-dots">
-          ${pages.map((_, i) => `<span class="module-pager-dot${i === 0 ? " active" : ""}" onclick="moduleMenuPagerGoTo(${i})"></span>`).join("")}
-        </div>
       </div>`;
     setTimeout(initModuleMenuPager, 0);
   }
@@ -407,7 +404,6 @@ function moduleMenuPagerGoTo(idx) {
   if (!track) return;
   moduleMenuPagerIndex = idx;
   track.style.transform = `translateX(-${idx * 100}%)`;
-  document.querySelectorAll("#module-pager-dots .module-pager-dot").forEach((d, i) => d.classList.toggle("active", i === idx));
 }
 
 /* ---------------- Home: swipe antara kad (Rekod Kehadiran <-> Jadual Waktu) ---------------- */
@@ -425,7 +421,6 @@ function homeSwipeGoTo(idx) {
   homeSwipeIndex = Math.max(0, Math.min(idx, count - 1));
   const track = document.getElementById("home-swipe-track");
   if (track) track.style.transform = `translateX(-${homeSwipeIndex * (100 / count)}%)`;
-  document.querySelectorAll(".home-swipe-dot").forEach((d, i) => d.classList.toggle("active", i === homeSwipeIndex));
 }
 
 function initHomeSwipe() {
@@ -438,12 +433,6 @@ function initHomeSwipe() {
   // (sesetengah kad — cth Keberadaan Murid — mungkin dibuang kalau tiada data).
   track.style.width = `${count * 100}%`;
   document.querySelectorAll(".home-swipe-page").forEach((p) => { p.style.width = `${100 / count}%`; });
-
-  const dotsBox = document.getElementById("home-swipe-dots-box");
-  if (dotsBox) {
-    dotsBox.innerHTML = Array.from({ length: count }, (_, i) =>
-      `<span class="home-swipe-dot${i === 0 ? " active" : ""}" onclick="homeSwipeGoTo(${i})"></span>`).join("");
-  }
 
   track.addEventListener("touchstart", (e) => {
     homeSwipeStartX = e.touches[0].clientX;
@@ -681,9 +670,6 @@ function homeHebahanShowCurrent() {
   if (item.teks) {
     html += `<div class="home-hebahan-text">${escapeHtml(item.teks)}</div>`;
   }
-  if (homeHebahanItems.length > 1) {
-    html += `<div class="home-hebahan-dots">${homeHebahanItems.map((_, i) => `<span class="home-hebahan-dot${i === homeHebahanIndex ? " active" : ""}"></span>`).join("")}</div>`;
-  }
   box.innerHTML = html;
 }
 
@@ -695,7 +681,6 @@ let bannerTimer = null;
 
 async function loadBanner() {
   const track = document.getElementById("banner-track");
-  const dots = document.getElementById("banner-dots");
   if (!track) return;
   try {
     const { rows } = await gvizFetch(SPREADSHEET_ID, "Banner");
@@ -706,9 +691,6 @@ async function loadBanner() {
     }
     track.innerHTML = bannerImages
       .map((url) => `<div class="banner-slide"><img src="${escapeAttr(url)}" alt="Banner sekolah" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`)
-      .join("");
-    dots.innerHTML = bannerImages
-      .map((_, i) => `<button class="banner-dot${i === 0 ? " active" : ""}" onclick="event.stopPropagation();goToBanner(${i})" aria-label="Slaid ${i + 1}"></button>`)
       .join("");
     bannerIndex = 0;
     if (bannerImages.length > 1) {
@@ -723,7 +705,6 @@ function goToBanner(i) {
   bannerIndex = i;
   const track = document.getElementById("banner-track");
   if (track) track.style.transform = `translateX(-${i * 100}%)`;
-  document.querySelectorAll(".banner-dot").forEach((d, idx) => d.classList.toggle("active", idx === i));
 }
 
 function expandBanner() {
