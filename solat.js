@@ -14,6 +14,7 @@ const SOLAT_TZ = "Asia/Kuala_Lumpur";
 const SOLAT_LS_ZONE = "smasra_solat_zone";
 const SOLAT_LS_CACHE = "smasra_solat_cache_v1";
 const SOLAT_LS_DIRECT_BLOCKED = "smasra_solat_direct_blocked_until";
+const SOLAT_LS_OPEN = "smasra_solat_open"; // kotak enam waktu: "1" = didedahkan (lalai: disorok)
 
 // Senarai zon rasmi — disalin dari portal e-Solat (Okt 2026). Disusun ikut abjad negeri.
 const SOLAT_NEGERI = [
@@ -78,6 +79,11 @@ const SOLAT_DAYS = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabt
 const SOLAT_HIJRI = ["Muharram", "Safar", "Rabiulawal", "Rabiulakhir", "Jamadilawal", "Jamadilakhir", "Rejab", "Syaaban", "Ramadan", "Syawal", "Zulkaedah", "Zulhijjah"];
 // Enam waktu pada jalur Home (Syuruk ialah penanda tamat Subuh)
 const SOLAT_STRIP = [["fajr", "Subuh"], ["syuruk", "Syuruk"], ["dhuhr", "Zohor"], ["asr", "Asar"], ["maghrib", "Maghrib"], ["isha", "Isyak"]];
+// Selepas waktu masuk, kad menyatakan "Telah masuk waktu ..." selama tempoh ini — baru kemudian beralih
+// kepada kiraan detik ke waktu seterusnya. Hanya lima waktu fardu; Syuruk ialah penanda tamat Subuh
+// (bukan waktu solat), jadi ia tak mendapat tempoh ini.
+const SOLAT_HOLD_SECS = 600; // 10 minit
+const SOLAT_FARDHU = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
 // Senarai penuh dalam paparan butiran
 const SOLAT_FULL = [["imsak", "Imsak"], ["fajr", "Subuh"], ["syuruk", "Syuruk"], ["dhuha", "Dhuha"], ["dhuhr", "Zohor"], ["asr", "Asar"], ["maghrib", "Maghrib"], ["isha", "Isyak"]];
 
@@ -87,6 +93,7 @@ let solatLastNextSig = "";
 let solatInflight = {};
 let solatTomorrowTried = {};
 let solatClock = () => new Date(); // boleh diganti dalam ujian
+let solatOpen = false; // kotak enam waktu didedahkan? (dimuat dari peranti dalam solatInit)
 
 /* ================= Utiliti masa (zon waktu Malaysia) ================= */
 function solatPad(n) { return String(n).padStart(2, "0"); }
@@ -148,6 +155,21 @@ function solatComputeNext(today, tomorrow, nowSecs) {
   }
   return { key: "fajr", label: "Subuh", time: null, inSecs: null, tomorrow: true }; // cth malam akhir bulan, data esok belum ada
 }
+
+/** Keadaan kad: mode "current" bila SATU waktu fardu baru masuk (dalam tempoh SOLAT_HOLD_SECS selepas masanya),
+ * selain itu mode "next" (kiraan ke waktu seterusnya, sama seperti solatComputeNext). */
+function solatComputeActive(today, tomorrow, nowSecs) {
+  for (const [k, label] of SOLAT_STRIP) {
+    if (!SOLAT_FARDHU.includes(k)) continue;
+    const t = today && today[k];
+    if (!t) continue;
+    const s = solatHHMMToSecs(t);
+    if (nowSecs >= s && nowSecs < s + SOLAT_HOLD_SECS) return { mode: "current", key: k, label, time: t, tomorrow: false, sinceSecs: nowSecs - s };
+  }
+  return Object.assign({ mode: "next" }, solatComputeNext(today, tomorrow, nowSecs));
+}
+/** Tandatangan keadaan — bila berubah, kad dirender semula sepenuhnya (cth masuk waktu / tamat 10 minit). */
+function solatSig(a) { return a.mode + "|" + a.key + "|" + a.tomorrow; }
 
 /* ================= Zon & pilihan pengguna ================= */
 function solatZoneInfo(code) {
@@ -299,40 +321,71 @@ function solatCurrentNext() {
   return solatComputeNext(solatState.today, solatState.tomorrow, now.secs);
 }
 
+/** Baris atas kad: tajuk + zon, dan butang "Tukar" (buka popup pilih negeri/zon). */
+function solatTopHtml(loc) {
+  return `<div class="solat-top"><span class="solat-loc">WAKTU SOLAT · ${loc}</span><button type="button" class="solat-change" onclick="event.stopPropagation();solatOpenModal()">Tukar</button></div>`;
+}
+const SOLAT_CHEVRON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+/** Dedah / sorok enam kotak waktu. Diingati dalam peranti; kad bawah dikira semula agar masih muat. */
+function solatToggleCells(ev) {
+  if (ev) ev.stopPropagation(); // jangan buka popup (klik pada kad membuka popup)
+  solatOpen = !solatOpen;
+  try { localStorage.setItem(SOLAT_LS_OPEN, solatOpen ? "1" : "0"); } catch (e) {}
+  const wrap = document.querySelector("#solat-strip .solat-cells-wrap");
+  const btn = document.querySelector("#solat-strip .solat-toggle");
+  if (wrap) wrap.classList.toggle("is-open", solatOpen);
+  if (btn) {
+    btn.setAttribute("aria-expanded", String(solatOpen));
+    btn.setAttribute("aria-label", solatOpen ? "Sembunyikan semua waktu solat" : "Papar semua waktu solat");
+  }
+  solatRefitHome();
+}
+/** Kad bawah Home mengisi baki skrin — kira semula bila tinggi kad solat berubah. */
+function solatRefitHome() {
+  if (typeof dbSizeHomeAnalysisCard === "function") { dbSizeHomeAnalysisCard(); setTimeout(dbSizeHomeAnalysisCard, 300); }
+}
+
 function solatRender() {
   const strip = document.getElementById("solat-strip");
   if (!strip) return;
   const loc = solatEsc(solatZoneLabel(solatState.zone)).toUpperCase();
   if (solatState.status === "loading") {
-    strip.innerHTML = `<div class="solat-top"><span class="solat-loc">WAKTU SOLAT · ${loc}</span><span class="solat-change">Tukar ▾</span></div>
+    strip.innerHTML = `${solatTopHtml(loc)}
       <div class="solat-msg">Memuatkan waktu solat...</div>`;
     solatLastNextSig = "";
     return;
   }
   if (solatState.status === "error") {
-    strip.innerHTML = `<div class="solat-top"><span class="solat-loc">WAKTU SOLAT · ${loc}</span><span class="solat-change">Tukar ▾</span></div>
+    strip.innerHTML = `${solatTopHtml(loc)}
       <div class="solat-msg solat-msg-error">${solatEsc(solatState.message)}<br><span>Ketik untuk cuba lagi / tukar zon</span></div>`;
     solatLastNextSig = "";
     return;
   }
   const now = solatNowMYT();
-  const next = solatComputeNext(solatState.today, solatState.tomorrow, now.secs);
-  solatLastNextSig = next.key + "|" + next.tomorrow;
+  const act = solatComputeActive(solatState.today, solatState.tomorrow, now.secs);
+  solatLastNextSig = solatSig(act);
   const cells = SOLAT_STRIP.map(([k, label]) => {
     const t = solatState.today[k];
     const f = solatFmt12(t);
-    const isNext = !next.tomorrow && next.key === k;
-    const isPast = t && solatHHMMToSecs(t) <= now.secs && !isNext;
-    return `<div class="solat-cell${isNext ? " is-next" : ""}${isPast ? " is-past" : ""}">
+    const isNow = act.mode === "current" && act.key === k;
+    const isNext = act.mode === "next" && !act.tomorrow && act.key === k;
+    const isPast = t && solatHHMMToSecs(t) <= now.secs && !isNext && !isNow;
+    return `<div class="solat-cell${isNow ? " is-now" : ""}${isNext ? " is-next" : ""}${isPast ? " is-past" : ""}">
       <div class="solat-cell-name">${label}</div><div class="solat-cell-time">${f.t}</div><span class="solat-cell-suf">${f.s}</span></div>`;
   }).join("");
-  const nf = solatFmt12(next.time);
-  strip.innerHTML = `<div class="solat-top"><span class="solat-loc">WAKTU SOLAT · ${loc}</span><span class="solat-change">Tukar ▾</span></div>
+  const af = solatFmt12(act.time);
+  const toggleBtn = `<button type="button" class="solat-toggle" aria-expanded="${solatOpen}" aria-controls="solat-cells" aria-label="${solatOpen ? "Sembunyikan semua waktu solat" : "Papar semua waktu solat"}" onclick="solatToggleCells(event)">${SOLAT_CHEVRON}</button>`;
+  const labelHtml = act.mode === "current"
+    ? `<span class="solat-nextlabel solat-now"><span class="solat-now-pre">Telah masuk waktu</span> <b>${act.label}</b> <small>${af.t} ${af.s}</small></span>`
+    : `<span class="solat-nextlabel">${act.label}${act.tomorrow ? " <em>esok</em>" : ""} <small>${act.time ? af.t + " " + af.s : ""}</small></span>`;
+  const countdownHtml = act.mode === "current" ? "" : `<span class="solat-countdown" id="solat-countdown">${act.inSecs == null ? "" : solatFmtCountdown(act.inSecs)}</span>`;
+  strip.innerHTML = `${solatTopHtml(loc)}
     <div class="solat-nextline">
-      <span class="solat-nextlabel">${next.label}${next.tomorrow ? " <em>esok</em>" : ""} <small>${next.time ? nf.t + " " + nf.s : ""}</small></span>
-      <span class="solat-countdown" id="solat-countdown">${next.inSecs == null ? "" : solatFmtCountdown(next.inSecs)}</span>
+      ${labelHtml}
+      <span class="solat-nextright">${countdownHtml}${toggleBtn}</span>
     </div>
-    <div class="solat-times">${cells}</div>`;
+    <div class="solat-cells-wrap${solatOpen ? " is-open" : ""}" id="solat-cells"><div class="solat-cells-inner"><div class="solat-times">${cells}</div></div></div>`;
 }
 
 /** Selepas gagal memuatkan (cth internet putus ketika app dibuka): cuba semula SECARA SENYAP —
@@ -359,11 +412,11 @@ function solatTick() {
   if (solatState.todayKey && now.key !== solatState.todayKey) { solatLoadAndRender(); return; } // tengah malam
   if (solatState.status === "error") { solatRetryIfError(false); return; }
   if (solatState.status !== "ok") return;
-  const next = solatComputeNext(solatState.today, solatState.tomorrow, now.secs);
-  const sig = next.key + "|" + next.tomorrow;
-  if (sig !== solatLastNextSig) { solatRender(); solatRefreshModalIfOpen(); return; } // waktu bertukar -> render penuh
+  const act = solatComputeActive(solatState.today, solatState.tomorrow, now.secs);
+  if (solatSig(act) !== solatLastNextSig) { solatRender(); solatRefreshModalIfOpen(); return; } // waktu masuk / tamat 10 minit / bertukar -> render penuh
+  if (act.mode !== "next") return; // "Telah masuk waktu" tiada kiraan detik untuk dikemas kini
   const el = document.getElementById("solat-countdown");
-  if (el && next.inSecs != null) el.textContent = solatFmtCountdown(next.inSecs);
+  if (el && act.inSecs != null) el.textContent = solatFmtCountdown(act.inSecs);
 }
 
 /* ================= Popup butiran + pilih negeri/zon ================= */
@@ -385,14 +438,15 @@ function solatRenderModal() {
   let dateLine = "";
   if (solatState.status === "ok" && solatState.today) {
     const now = solatNowMYT();
-    const next = solatComputeNext(solatState.today, solatState.tomorrow, now.secs);
+    const act = solatComputeActive(solatState.today, solatState.tomorrow, now.secs);
     dateLine = `<div class="solat-modal-date">${solatFmtDateLong(solatState.todayKey)}${solatFmtHijri(solatState.today.hijri) ? " · " + solatFmtHijri(solatState.today.hijri) : ""}</div>`;
     rows = SOLAT_FULL.map(([k, label]) => {
       const t = solatState.today[k];
       if (!t) return "";
       const f = solatFmt12(t);
-      const isNext = !next.tomorrow && next.key === k;
-      return `<div class="solat-row${isNext ? " is-next" : ""}"><span>${label}</span><span class="solat-row-time">${f.t} <small>${f.s}</small></span></div>`;
+      const isNow = act.mode === "current" && act.key === k;
+      const isNext = act.mode === "next" && !act.tomorrow && act.key === k;
+      return `<div class="solat-row${isNow ? " is-now" : ""}${isNext ? " is-next" : ""}"><span>${label}</span><span class="solat-row-time">${f.t} <small>${f.s}</small></span></div>`;
     }).join("");
   }
   body.innerHTML = `
@@ -431,6 +485,7 @@ function solatRefreshData() { solatLoadAndRender(true).then(solatRefreshModalIfO
 /* ================= Mula ================= */
 function solatInit() {
   if (!document.getElementById("solat-strip")) return;
+  try { solatOpen = localStorage.getItem(SOLAT_LS_OPEN) === "1"; } catch (e) { solatOpen = false; }
   solatLoadAndRender();
   if (solatTimer) clearInterval(solatTimer);
   solatTimer = setInterval(solatTick, 1000);

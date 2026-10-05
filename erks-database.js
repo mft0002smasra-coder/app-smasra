@@ -742,10 +742,25 @@ function dbSizeHomeAnalysisCard() {
   const bottomNav = document.querySelector(".bottom-nav-wrap");
   const navHeight = bottomNav ? bottomNav.offsetHeight : 60;
   const cardTop = card.getBoundingClientRect().top;
-  const available = window.innerHeight - cardTop - navHeight - 16;
-  const finalHeight = Math.max(180, available) + "px";
+  const available = window.innerHeight - cardTop - navHeight - 10;
+  const finalHeight = Math.max(140, available) + "px"; // senarai dalam kad boleh diskrol sendiri
   card.style.height = finalHeight;
   if (card2) card2.style.height = finalHeight;
   if (card3) card3.style.height = finalHeight;
+  // Ruang di bawah kad = TEPAT tinggi bar navigasi + jarak. Bekas halaman (.wrap) ada padding-bawah 96px untuk
+  // semua halaman — di Home ia melebihi keperluan lalu mencipta skrol 20-26px walaupun kad sudah muat. Kita
+  // ganti dengan ruang tepat: bila semua muat, tinggi halaman SAMA dengan skrin (tiada skrol); bila tak muat
+  // (skrin pendek / kotak solat didedah) halaman boleh diskrol sehingga kad kelihatan penuh.
+  const pageWrap = outerWrap.closest(".wrap");
+  if (pageWrap) pageWrap.style.paddingBottom = "0px";
+  outerWrap.style.marginBottom = (navHeight + 10) + "px";
 }
 window.addEventListener("resize", dbSizeHomeAnalysisCard);
+// Kira semula bila susun atur DI ATAS kad berubah (ticker acara muncul lewat selepas rangkaian, kad solat
+// dimuat/dilipat, menu bertukar kumpulan, fon siap dimuat). Tanpa ini kad dikira terlalu awal, terlalu tinggi,
+// lalu tersorok di belakang bar navigasi.
+(function () {
+  if (typeof ResizeObserver === "undefined") return;
+  const ro = new ResizeObserver(() => dbSizeHomeAnalysisCard());
+  ["event-ticker-wrap", "solat-strip", "home-module-grid"].forEach((id) => { const el = document.getElementById(id); if (el) ro.observe(el); });
+})();

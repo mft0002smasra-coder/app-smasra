@@ -2177,15 +2177,22 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
   font-family:var(--font-mono);font-size:10px;letter-spacing:1.2px;color:var(--text-dim);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;
 }
-.solat-change{ font-size:10px;color:var(--cyan);flex-shrink:0; }
-.solat-nextline{ display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:7px 0 9px; }
+.solat-change{ font-size:10px;color:var(--cyan);flex-shrink:0;background:none;border:none;padding:2px 0 2px 10px;cursor:pointer;font-family:inherit; }
+.solat-nextline{ display:flex;justify-content:space-between;align-items:center;gap:8px;margin:3px 0 0; }
 .solat-nextlabel{ font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--text);letter-spacing:.3px;text-transform:uppercase; }
 .solat-nextlabel em{ font-style:normal;font-size:10px;color:var(--text-dim);text-transform:none; }
 .solat-nextlabel small{ font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--cyan);text-transform:none;margin-left:4px; }
 .solat-countdown{ font-family:var(--font-mono);font-weight:700;font-size:14px;color:var(--mint);flex-shrink:0; }
-.solat-times{ display:grid;grid-template-columns:repeat(6,1fr);gap:5px; }
+/* Tempoh 10 minit selepas waktu masuk: "Telah masuk waktu ZOHOR 1:02 PTG" (satu baris; elak patah baris pada skrin sempit) */
+.solat-nextlabel.solat-now{ color:var(--mint);white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis; }
+.solat-now-pre{ font-family:'Rajdhani',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.5px;color:var(--mint); }
+.solat-nextlabel.solat-now b{ font-size:14px;font-weight:700; }
+.solat-nextlabel.solat-now small{ color:var(--mint);opacity:.85;font-size:11px;margin-left:2px; }
+@media (max-width:340px){ .solat-nextlabel.solat-now small{ display:none; } } /* skrin sangat sempit: masa sudah ada dalam kotak */
+.solat-times{ display:grid;grid-template-columns:repeat(6,1fr);gap:5px;padding-top:8px; }
 .solat-cell{ text-align:center;border:1px solid var(--line);border-radius:8px;padding:6px 0 5px;min-width:0; }
 .solat-cell.is-next{ border-color:var(--cyan);background:rgba(0,229,255,.09);box-shadow:0 0 10px -2px rgba(0,229,255,.55); }
+.solat-cell.is-now{ border-color:var(--mint);background:rgba(25,227,161,.10);box-shadow:0 0 10px -2px rgba(25,227,161,.55); }
 .solat-cell.is-past{ opacity:.45; }
 .solat-cell-name{ font-size:8.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--text-dim); }
 .solat-cell-time{ font-family:var(--font-mono);font-weight:700;font-size:13.5px;color:var(--text);margin-top:2px; }
@@ -2211,8 +2218,34 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
 .solat-row{ display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);font-size:13.5px;color:var(--text); }
 .solat-row:last-child{ border-bottom:none; }
 .solat-row.is-next{ background:rgba(0,229,255,.1);color:var(--cyan);font-weight:700; }
+.solat-row.is-now{ background:rgba(25,227,161,.12);color:var(--mint);font-weight:700; }
 .solat-row-time{ font-family:var(--font-mono);font-weight:700; }
 .solat-row-time small{ font-size:9px;color:var(--text-dim);font-weight:500; }
 .solat-modal-msg{ padding:16px;text-align:center;font-size:12.5px;color:var(--text-dim); }
 .solat-modal-foot{ display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:10.5px;color:var(--text-dim); }
 .solat-refresh{ border:1px solid var(--line);background:transparent;color:var(--cyan);border-radius:7px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer; }
+
+/* ============================================================
+   Kad solat boleh lipat (anak panah) + Home padat — semua muat satu skrin
+   Peraturan di bawah dihadkan kepada elemen Home sahaja.
+   ============================================================ */
+.solat-nextright{ display:flex;align-items:center;gap:8px;flex-shrink:0; }
+.solat-toggle{
+  width:32px;height:26px;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;
+  border:1px solid var(--line);border-radius:7px;background:transparent;color:var(--cyan);
+}
+.solat-toggle:active{ border-color:var(--cyan); }
+.solat-toggle svg{ width:14px;height:14px;transition:transform .25s ease; }
+.solat-toggle[aria-expanded="true"] svg{ transform:rotate(180deg); }
+.solat-cells-wrap{ display:grid;grid-template-rows:0fr;transition:grid-template-rows .25s ease; }
+.solat-cells-wrap.is-open{ grid-template-rows:1fr; }
+.solat-cells-inner{ overflow:hidden;min-height:0; }
+@media (prefers-reduced-motion: reduce){ .solat-cells-wrap,.solat-toggle svg{ transition:none; } }
+
+.banner-carousel{ margin-bottom:4px; }
+.event-ticker-wrap{ height:20px;margin-bottom:4px; }
+.event-ticker-content{ font-size:12px; }
+.solat-strip{ padding:6px 10px;margin-bottom:6px; }
+#home-menu-label{ margin:2px 0 0 2px;font-size:11px;letter-spacing:1.8px;line-height:1.2; }
+#home-module-grid, #home-module-grid .module-grid-inner{ gap:2px 8px; }
+#home-module-grid .module-tile{ padding:3px 4px;gap:3px; }
