@@ -119,9 +119,27 @@
         </div>
       </div>
       <div class="lp-report-actions">
+        <button class="lp-btn-edit" id="lp-edit-btn" onclick="lpOpenEdit()">Edit Laporan Ini</button>
         <button class="lp-btn-delete" onclick="lpConfirmDelete()">Padam Laporan</button>
         <button class="lp-btn-download" id="lp-download-btn" onclick="lpDownloadPng()">Muat Turun PNG</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ============ Popup: edit laporan ============ -->
+  <div class="lp-edit-overlay hidden" id="lp-edit-overlay">
+    <div class="lp-edit-box">
+      <div class="lp-edit-head">
+        <div class="lp-edit-title">Edit Laporan</div>
+        <button class="lp-edit-close" onclick="lpCloseEdit()">✕</button>
+      </div>
+      <div class="lp-edit-scroll" id="lp-edit-body"></div>
+      <div class="error-text hidden" id="lp-edit-error" style="margin:0 16px 8px"></div>
+      <div class="lp-edit-actions">
+        <button class="btn-ghost" onclick="lpCloseEdit()">Batal</button>
+        <button class="lp-btn-save" id="lp-edit-save-btn" onclick="lpSaveEdit()">Simpan Perubahan</button>
+      </div>
+      <input type="file" id="lp-edit-file" accept="image/*" class="hidden" onchange="lpEditOnFile(this)">
     </div>
   </div>
 

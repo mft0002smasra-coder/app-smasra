@@ -2132,3 +2132,48 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
 .er-dup-pair{ display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--text); }
 .er-dup-vs{ font-size:10px;color:var(--text-dim);font-style:italic; }
 .er-dup-sim{ font-size:10.5px;color:var(--amber);margin-top:5px; }
+
+/* ============================================================
+   Laporan Pentadbir — butang & editor "Edit Laporan Ini"
+   ============================================================ */
+.lp-report-actions{ flex-wrap:wrap; }
+.lp-report-actions .lp-btn-edit{ flex:1 1 100%; background:linear-gradient(90deg,var(--violet),#6a5cf0);color:#fff; }
+.lp-report-actions .lp-btn-edit:disabled{ opacity:.6; }
+
+.lp-edit-overlay{
+  position:fixed;inset:0;z-index:3300;background:rgba(2,4,10,.82);backdrop-filter:blur(3px);
+  display:flex;align-items:center;justify-content:center;padding:14px;
+}
+.lp-edit-box{
+  width:100%;max-width:520px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;
+  background:var(--void-2);border:1px solid var(--line);border-radius:12px;
+}
+.lp-edit-head{ display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line); }
+.lp-edit-title{ font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--text);letter-spacing:.4px;text-transform:uppercase; }
+.lp-edit-close{ width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--text-dim);font-size:12px;cursor:pointer; }
+.lp-edit-scroll{ overflow-y:auto;padding:14px 16px 6px;flex:1; }
+.lp-edit-section{ font-family:var(--font-display);font-weight:700;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--cyan);margin:14px 0 8px; }
+.lp-edit-section:first-child{ margin-top:0; }
+.lp-edit-entry{ border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px;background:var(--panel-a); }
+.lp-edit-entry-head{ display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:700;font-size:12.5px;color:var(--text); }
+.lp-e-del{ border:1px solid rgba(255,85,119,.45);background:rgba(255,85,119,.1);color:var(--danger);border-radius:7px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer; }
+.lp-edit-entry-del{ border-color:rgba(255,85,119,.5); }
+.lp-edit-entry-del .lp-edit-fields{ opacity:.35;pointer-events:none; }
+.lp-edit-entry-del .lp-edit-entry-head > span{ text-decoration:line-through;color:var(--danger); }
+.lp-edit-imgs{ display:flex;gap:12px; }
+.lp-edit-img{ width:88px;text-align:center; }
+.lp-edit-thumb{
+  width:88px;height:88px;border-radius:8px;border:1px dashed var(--line);overflow:hidden;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.25);color:var(--text-dim);font-size:10.5px;line-height:1.4;
+}
+.lp-edit-thumb img{ width:100%;height:100%;object-fit:cover; }
+.lp-edit-img-btns{ display:flex;gap:4px;justify-content:center;margin-top:5px; }
+.lp-edit-img-btns button{ font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--text-dim);cursor:pointer; }
+.lp-edit-actions{ display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--line); }
+.lp-edit-actions .btn-ghost{ flex:1;margin-top:0; }
+.lp-btn-save{
+  flex:1;padding:11px 12px;border-radius:9px;border:none;cursor:pointer;
+  background:linear-gradient(90deg,var(--cyan),var(--blue));color:#03130d;
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13.5px;
+}
+.lp-btn-save:disabled{ opacity:.6; }

@@ -337,6 +337,236 @@ async function lpDoDelete() {
   btn.textContent = "Ya, Padam";
 }
 
+/* ---------------- Edit laporan ---------------- */
+// Nombor baris diambil TERUS dari server (getLaporanPentadbir) semasa butang Edit ditekan —
+// bukan dari paparan gviz — supaya rujukan baris tepat & data semasa. Server turut menolak
+// simpanan kalau baris sudah diubah orang lain.
+let lpEdit = null; // { orig:{namaPentadbir,tarikh}, entries:[{rowNum,del,init,gambar:[{url,mode,data}x2]}] }
+let lpEditPickTarget = null;
+
+function lpEscapeAttr(str) { return lpEscape(str).replace(/"/g, "&quot;"); }
+
+/** "09:30" | "9:30 AM" | "9:30 PM" | "21:05" -> "HH:mm" untuk <input type=time>; "" kalau tak dikenali. */
+function lpMasaToInput(str) {
+  const m = String(str || "").trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*([AaPp][Mm])?$/);
+  if (!m) return "";
+  let h = parseInt(m[1], 10);
+  if (m[3]) {
+    const pm = m[3].toLowerCase() === "pm";
+    if (pm && h < 12) h += 12;
+    if (!pm && h === 12) h = 0;
+  }
+  return h > 23 ? "" : `${lpPad2(h)}:${m[2]}`;
+}
+
+function lpCompressImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Gagal baca fail"));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Fail bukan gambar sah"));
+      img.onload = () => {
+        const scale = Math.min(1, 1000 / img.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.75));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function lpOpenEdit() {
+  if (!lpDeleteTarget) return;
+  if (!apiConfigured()) { alert("API belum disambungkan."); return; }
+  const btn = document.getElementById("lp-edit-btn");
+  const oldLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Memuatkan...";
+  try {
+    const res = await fetch(`${API_URL}?action=getLaporanPentadbir&_ts=${Date.now()}`, { cache: "no-store" });
+    const list = JSON.parse(await res.text());
+    if (!Array.isArray(list)) throw new Error("Respons pelayan tidak sah");
+    const t = lpDeleteTarget;
+    const items = list
+      .filter((r) => r.tarikh === t.tarikh && String(r.namaPentadbir || "").trim() === String(t.namaPentadbir || "").trim())
+      .sort((a, b) => a.rowNum - b.rowNum);
+    if (!items.length) { alert("Laporan tak dijumpai di pelayan (mungkin telah diubah). Sila muat semula senarai."); return; }
+    lpEdit = {
+      orig: { namaPentadbir: String(t.namaPentadbir).trim(), tarikh: t.tarikh },
+      entries: items.map((r) => ({
+        rowNum: r.rowNum, del: false,
+        init: { masa: lpMasaToInput(r.masa), blokKelas: String(r.blokKelas || ""), catatan: String(r.catatan || "").trim() },
+        gambar: [r.gambar1, r.gambar2].map((u) => ({ url: u || "", mode: "keep", data: "" })),
+      })),
+    };
+    lpRenderEdit();
+    document.getElementById("lp-edit-error").classList.add("hidden");
+    document.getElementById("lp-edit-overlay").classList.remove("hidden");
+  } catch (err) {
+    alert("Gagal memuatkan data untuk edit: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = oldLabel;
+  }
+}
+function lpCloseEdit() {
+  document.getElementById("lp-edit-overlay").classList.add("hidden");
+  lpEdit = null;
+  lpEditPickTarget = null;
+}
+
+function lpEditSlotHtml(i, k) {
+  const s = lpEdit.entries[i].gambar[k];
+  const src = s.mode === "replace" ? s.data : (s.mode === "remove" ? "" : s.url);
+  const thumb = src ? `<img src="${lpEscapeAttr(src)}" alt="Gambar ${k + 1}">` : `<span>＋<br>Gambar ${k + 1}</span>`;
+  const btns = src
+    ? `<button type="button" onclick="lpEditPickImage(${i},${k})">Tukar</button><button type="button" onclick="lpEditClearImage(${i},${k})">Buang</button>`
+    : `<button type="button" onclick="lpEditPickImage(${i},${k})">Tambah</button>`;
+  return `<div class="lp-edit-img"><div class="lp-edit-thumb" onclick="lpEditPickImage(${i},${k})">${thumb}</div><div class="lp-edit-img-btns">${btns}</div></div>`;
+}
+function lpEditRefreshImgs(i) {
+  document.getElementById(`lp-e-imgs-${i}`).innerHTML = [0, 1].map((k) => lpEditSlotHtml(i, k)).join("");
+}
+
+function lpRenderEdit() {
+  const { orig, entries } = lpEdit;
+  const blokOptions = (cur) => {
+    // Nilai semasa mungkin tiada dalam senarai standard (data lama) — masukkan supaya tak hilang senyap
+    const list = LP_BLOK_LIST.includes(cur) ? LP_BLOK_LIST : [cur].concat(LP_BLOK_LIST);
+    return list.map((b) => `<option value="${lpEscapeAttr(b)}"${b === cur ? " selected" : ""}>${lpEscape(b)}</option>`).join("");
+  };
+  const cards = entries.map((e, i) => `
+    <div class="lp-edit-entry" id="lp-e-card-${i}">
+      <div class="lp-edit-entry-head">
+        <span>Rekod ${i + 1}</span>
+        <button type="button" class="lp-e-del" id="lp-e-delbtn-${i}" onclick="lpEditToggleDel(${i})">Padam rekod ini</button>
+      </div>
+      <div class="lp-edit-fields">
+        <label class="field-label">Masa</label>
+        <input class="field-input" type="time" id="lp-e-masa-${i}" value="${lpEscapeAttr(e.init.masa)}">
+        <label class="field-label">Blok/Kelas</label>
+        <select class="field-input" id="lp-e-blok-${i}">${blokOptions(e.init.blokKelas)}</select>
+        <label class="field-label">Catatan/Ulasan</label>
+        <textarea class="field-input" id="lp-e-catatan-${i}">${lpEscape(e.init.catatan)}</textarea>
+        <label class="field-label">Gambar</label>
+        <div class="lp-edit-imgs" id="lp-e-imgs-${i}">${[0, 1].map((k) => lpEditSlotHtml(i, k)).join("")}</div>
+      </div>
+    </div>`).join("");
+  document.getElementById("lp-edit-body").innerHTML = `
+    <div class="lp-edit-section">Maklumat Laporan</div>
+    <label class="field-label">Nama Pentadbir Bertugas</label>
+    <input class="field-input" id="lp-e-nama" value="${lpEscapeAttr(orig.namaPentadbir)}">
+    <label class="field-label">Tarikh</label>
+    <input class="field-input" type="date" id="lp-e-tarikh" value="${lpEscapeAttr(orig.tarikh)}">
+    <div class="lp-edit-section">Rekod Pemantauan (${entries.length})</div>
+    ${cards}`;
+}
+
+function lpEditToggleDel(i) {
+  const e = lpEdit.entries[i];
+  e.del = !e.del;
+  document.getElementById(`lp-e-card-${i}`).classList.toggle("lp-edit-entry-del", e.del);
+  document.getElementById(`lp-e-delbtn-${i}`).textContent = e.del ? "Batal padam" : "Padam rekod ini";
+}
+function lpEditPickImage(i, k) {
+  lpEditPickTarget = { i, k };
+  const f = document.getElementById("lp-edit-file");
+  f.value = "";
+  f.click();
+}
+async function lpEditOnFile(input) {
+  const file = input.files && input.files[0];
+  if (!file || !lpEdit || !lpEditPickTarget) return;
+  const { i, k } = lpEditPickTarget;
+  try {
+    const dataUrl = await lpCompressImage(file);
+    if (!lpEdit) return; // editor ditutup semasa memampat
+    lpEdit.entries[i].gambar[k] = { url: lpEdit.entries[i].gambar[k].url, mode: "replace", data: dataUrl };
+    lpEditRefreshImgs(i);
+  } catch (err) {
+    alert("Gagal memproses gambar: " + err.message);
+  }
+  input.value = "";
+}
+function lpEditClearImage(i, k) {
+  const s = lpEdit.entries[i].gambar[k];
+  // Slot asalnya kosong -> "buang" bermaksud batal tambahan (tiada perubahan sebenar)
+  lpEdit.entries[i].gambar[k] = { url: s.url, mode: s.url ? "remove" : "keep", data: "" };
+  lpEditRefreshImgs(i);
+}
+
+async function lpSaveEdit() {
+  const errEl = document.getElementById("lp-edit-error");
+  errEl.classList.add("hidden");
+  const showErr = (m) => { errEl.textContent = m; errEl.classList.remove("hidden"); };
+  if (!lpEdit) return;
+
+  const nama = document.getElementById("lp-e-nama").value.trim();
+  const tarikh = document.getElementById("lp-e-tarikh").value;
+  if (!nama || !tarikh) { showErr("Sila lengkapkan nama pentadbir dan tarikh."); return; }
+
+  // Kumpul HANYA medan yang berubah (selebihnya dibiarkan tak disentuh di Sheet)
+  const entries = lpEdit.entries.map((e, i) => {
+    if (e.del) return { rowNum: e.rowNum, del: true };
+    const masa = document.getElementById(`lp-e-masa-${i}`).value;
+    const blok = document.getElementById(`lp-e-blok-${i}`).value;
+    const catatan = document.getElementById(`lp-e-catatan-${i}`).value.trim();
+    const changes = {};
+    if (masa !== e.init.masa) changes.masa = masa;
+    if (blok !== e.init.blokKelas) changes.blokKelas = blok;
+    if (catatan !== e.init.catatan) changes.catatan = catatan;
+    const out = { rowNum: e.rowNum, del: false, changes };
+    e.gambar.forEach((s, k) => {
+      if (s.mode === "replace" && s.data) out["gambar" + (k + 1)] = { mode: "replace", data: s.data };
+      else if (s.mode === "remove") out["gambar" + (k + 1)] = { mode: "remove" };
+    });
+    return out;
+  });
+
+  if (!entries.some((x) => !x.del)) { showErr('Sekurang-kurangnya satu rekod mesti kekal. Guna "Padam Laporan" untuk memadam keseluruhan laporan.'); return; }
+  const unchanged = nama === lpEdit.orig.namaPentadbir && tarikh === lpEdit.orig.tarikh
+    && entries.every((x) => !x.del && !Object.keys(x.changes).length && !x.gambar1 && !x.gambar2);
+  if (unchanged) { showErr("Tiada perubahan untuk disimpan."); return; }
+  if (!apiConfigured()) { showErr("API belum disambungkan."); return; }
+
+  const btn = document.getElementById("lp-edit-save-btn");
+  const btnReset = () => { btn.disabled = false; btn.textContent = "Simpan Perubahan"; };
+  btn.disabled = true;
+  btn.textContent = "Menyimpan...";
+  try {
+    const data = await postToAppsScript(API_URL, {
+      action: "editLaporanPentadbir",
+      email: lpCurrentUser.email,
+      original: lpEdit.orig,
+      namaPentadbir: nama, tarikh, entries,
+    });
+    if (data.success) {
+      const unclear = !!data._fallbackParse; // respons bukan JSON — tak pasti hasil sebenar
+      lpCloseEdit();
+      lpCloseReport();
+      await new Promise((r) => setTimeout(r, 700)); // bagi gviz sempat segar
+      await lpLoadRecords();
+      lpRenderListInner();
+      const visible = lpRecords.some((r) => r.namaPentadbir === nama && r.tarikh === tarikh);
+      if (visible) lpOpenReport(nama, tarikh); // buka semula laporan yang dikemas kini
+      else if (!unclear) { alert("Perubahan telah disimpan. Senarai mungkin mengambil beberapa saat untuk dikemas kini — muat semula halaman kalau belum kelihatan."); return btnReset(); }
+      if (unclear) alert("Respons pelayan tidak jelas. Sila semak laporan untuk pastikan perubahan tersimpan.");
+      else alert(data.warning ? `Laporan dikemas kini, tapi ada masalah gambar:\n${data.warning}` : "Laporan berjaya dikemas kini.");
+    } else {
+      showErr(data.message || "Gagal menyimpan perubahan.");
+    }
+  } catch (err) {
+    showErr("Ralat sambungan ke server.");
+  }
+  btn.disabled = false;
+  btn.textContent = "Simpan Perubahan";
+}
+
 /* ---------------- Init ---------------- */
 function lpInit(user) {
   lpCurrentUser = user;
