@@ -401,14 +401,15 @@ function dbBuildKehadiranRekodMaps(kehadiranRows, rekodRows, tahun, bulan) {
 }
 
 /**
- * Cross-reference SATU staf pada SATU tarikh. Keutamaan: Kehadiran (LEWAT/
- * TEPAT MASA ikut jawatan) sebagai catatan utama; kalau Rekod Keberadaan
- * WUJUD SEKALI pada hari sama, tambah perkara + masa mula/tamat sekali.
- * Kalau cuma Rekod Keberadaan sahaja (tiada Kehadiran) -> badge tersendiri.
+ * Klasifikasi SATU staf pada SATU tarikh — TANPA HTML. Sumber tunggal peraturan Lewat/Tepat/Rekod/Belum
+ * (jawatan "awal 7:30", GURU KKQ, dsb). Dipakai oleh dbCrossRefDay (paparan Home & Buku) DAN analisis
+ * individu, supaya angka kedua-duanya sentiasa sepadan dan peraturan tak bercanggah.
+ * Pulang: { masaMasuk:"H:MM"|null, masaMinit, hadMinit, lewat, lewatMinit, rekod:info|null,
+ *           state:"tepat"|"lewat"|"rekod"|"belum" }
  */
-function dbCrossRefDay(noKP, nama, jawatan, dateKey, kehadiranMap, rekodMap) {
-  const masaMasuk = kehadiranMap.get(`${noKP}|${dateKey}`);
-  const rekodInfo = rekodMap.get(`${String(nama).trim()}|${dateKey}`);
+function dbClassifyDay(noKP, nama, jawatan, dateKey, kehadiranMap, rekodMap) {
+  const masaMasuk = kehadiranMap.get(`${noKP}|${dateKey}`) || null;
+  const rekod = rekodMap.get(`${String(nama).trim()}|${dateKey}`) || null;
   const jUpper = String(jawatan || "").toUpperCase().trim();
   const isAwal = DB_AWAL_730.some((k) => jUpper.includes(k));
 
@@ -422,13 +423,31 @@ function dbCrossRefDay(noKP, nama, jawatan, dateKey, kehadiranMap, rekodMap) {
     hadMinit = isAwal ? 450 : 480;
   }
 
+  let masaMinit = null, lewat = false;
+  if (masaMasuk) {
+    const parts = masaMasuk.split(":").map(Number);
+    masaMinit = parts[0] * 60 + parts[1];
+    lewat = masaMinit > hadMinit;
+  }
+  const state = masaMasuk ? (lewat ? "lewat" : "tepat") : (rekod ? "rekod" : "belum");
+  return { masaMasuk, masaMinit, hadMinit, lewat, lewatMinit: lewat ? masaMinit - hadMinit : 0, rekod, state };
+}
+
+/**
+ * Cross-reference SATU staf pada SATU tarikh (versi HTML). Keutamaan: Kehadiran (LEWAT/
+ * TEPAT MASA ikut jawatan) sebagai catatan utama; kalau Rekod Keberadaan
+ * WUJUD SEKALI pada hari sama, tambah perkara + masa mula/tamat sekali.
+ * Kalau cuma Rekod Keberadaan sahaja (tiada Kehadiran) -> badge tersendiri.
+ */
+function dbCrossRefDay(noKP, nama, jawatan, dateKey, kehadiranMap, rekodMap) {
+  const c = dbClassifyDay(noKP, nama, jawatan, dateKey, kehadiranMap, rekodMap);
+  const rekodInfo = c.rekod;
+
   let masaDisplay = "-", catatanHtml = "";
 
-  if (masaMasuk) {
-    masaDisplay = dbFormatAmPm(masaMasuk);
-    const parts = masaMasuk.split(":").map(Number);
-    const totalMinit = parts[0] * 60 + parts[1];
-    catatanHtml = totalMinit > hadMinit
+  if (c.masaMasuk) {
+    masaDisplay = dbFormatAmPm(c.masaMasuk);
+    catatanHtml = c.lewat
       ? `<span class="db-badge db-badge-lewat">LEWAT</span>`
       : `<span class="db-badge db-badge-tepat">TEPAT MASA</span>`;
     if (rekodInfo) {
@@ -715,6 +734,18 @@ function dbBookTouchEnd(e) {
   const dx = e.changedTouches[0].clientX - dbTouchStartX;
   if (Math.abs(dx) > 50) dbChangeBookPage(dx < 0 ? 1 : -1);
   dbTouchStartX = null;
+}
+
+/** Selepas data disegarkan: bina semula Buku Kehadiran tetapi KEKAL pada muka yang sedang dibaca
+ * (dbBuildAndRenderPages sendiri menetapkan semula ke muka pertama — sesuai bila penapis ditukar,
+ * tetapi tak sesuai untuk segar semula automatik setiap 5 minit). */
+function dbRebuildBookKeepPosition() {
+  const keep = dbBookPageIdx;
+  dbBuildAndRenderPages();
+  if (dbBookPages.length) {
+    dbBookPageIdx = Math.min(keep, dbBookPages.length - 1);
+    dbRenderBookPage();
+  }
 }
 
 let dbBookLoaded = false;

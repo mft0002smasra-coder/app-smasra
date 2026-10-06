@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20261006a">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -423,8 +423,8 @@
 </div>
 
 <script src="app.js"></script>
-<script src="erks-database.js"></script>
-<script src="kehadiran-staf-individu.js"></script>
+<script src="erks-database.js?v=20261006a"></script>
+<script src="kehadiran-staf-individu.js?v=20261006a"></script>
 <script>
   /* ---------------- eRKS link + tab switching ---------------- */
   document.getElementById("erks-link-btn").href = APPSHEET_ERKS_URL;
@@ -510,8 +510,10 @@
       document.getElementById("rks-error").classList.add("hidden");
       document.getElementById("rks-dashboard").classList.remove("hidden");
       rksProcessData();
-      if (dbBookLoaded) dbRebuildBookKeepPosition(); // Buku: kekal pada muka yang sedang dibaca
-      if (typeof indOnData === "function") indOnData();
+      // Buku: kekal pada muka yang sedang dibaca (kalau erks-database.js lama tiada fungsi ini -> bina semula biasa)
+      if (dbBookLoaded) { if (typeof dbRebuildBookKeepPosition === "function") dbRebuildBookKeepPosition(); else dbBuildAndRenderPages(); }
+      // Ralat dalam paparan Individu TIDAK boleh menjadikan segar semula data dianggap gagal (data Sheet sudah berjaya dimuat)
+      if (typeof indOnData === "function") { try { indOnData(); } catch (e) { console.error("indOnData:", e); } }
       rksMarkOk();
     } catch (err) {
       if (!rksHasData) {

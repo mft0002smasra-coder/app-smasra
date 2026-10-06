@@ -27,6 +27,30 @@ const IND_CARDS = {
   rekod: { judul: "Analisis Keberadaan", label: "Keberadaan", kelas: "blue", fail: "Keberadaan" },
 };
 
+/* Fungsi daripada erks-database.js yang diperlukan modul ini. Fail-fail dimuat naik secara manual, jadi versi boleh tak sepadan
+   (cth erks-database.js lama masih di pelayan / tersangkut dalam cache). Semak awal & beritahu dengan jelas — jangan biar
+   ReferenceError senyap yang menghalang kad daripada keluar. */
+const IND_DEPS = ["dbClassifyDay", "dbBuildKehadiranRekodMaps", "dbYmd", "dbNorm", "dbFormatAmPm", "dbEscape", "dbLoadBookRecords", "dbFetchSheet"];
+function indMissingDeps() {
+  const missing = IND_DEPS.filter((n) => typeof window[n] !== "function");
+  if (typeof DB_BULAN === "undefined") missing.push("DB_BULAN");
+  return missing;
+}
+function indSetEmpty(html, cls) {
+  const el = document.getElementById("ind-empty");
+  if (!el) return;
+  el.innerHTML = html;
+  el.classList.toggle("ind-broken", !!cls);
+  el.classList.remove("hidden");
+  const r = document.getElementById("ind-result");
+  if (r) r.classList.add("hidden");
+}
+function indShowBroken(missing) {
+  indSetEmpty(`<div class="ind-broken-title">⚠️ Fail aplikasi tidak sepadan</div>Fail <b>erks-database.js</b> di laman ini ialah versi lama (tiada: ${missing.join(", ")}).<br>Muat naik <b>erks-database.js</b> yang terkini ke GitHub, kemudian muat semula halaman.`, true);
+  const input = document.getElementById("ind-search");
+  if (input) input.disabled = true;
+}
+
 let indUser = null;
 let indAllowed = false;
 let indSelKey = "";     // kunci pegawai terpilih (noKP|nama) — kekal walaupun senarai staf disegarkan
@@ -196,7 +220,7 @@ function indResultsOpen() { return !document.getElementById("ind-results").class
 
 function indPick(ri) {
   const st = dbStaffRoster[ri];
-  if (!st) return;
+  if (!st || indMissingDeps().length) return;
   indSelKey = indStaffKey(st);
   const input = document.getElementById("ind-search");
   input.value = st.nama;
@@ -266,16 +290,22 @@ function indRender() {
   const empty = document.getElementById("ind-empty");
   const result = document.getElementById("ind-result");
   if (!empty || !result) return;
+  const missing = indMissingDeps();
+  if (missing.length) { indLast = null; indShowBroken(missing); return; }
   const staff = indSelectedStaff();
-  if (!dbStaffRoster.length) { empty.textContent = "Memuatkan senarai pegawai..."; empty.classList.remove("hidden"); result.classList.add("hidden"); return; }
-  if (!staff) {
-    empty.textContent = "Pilih pegawai untuk melihat analisis individu.";
-    empty.classList.remove("hidden"); result.classList.add("hidden");
+  if (!dbStaffRoster.length) { indSetEmpty("Memuatkan senarai pegawai..."); return; }
+  if (!staff) { indLast = null; indSetEmpty("Pilih pegawai untuk melihat analisis individu."); return; }
+  const { bulan, tahun } = indPeriod();
+  try {
+    indLast = indComputeMonth({ staff, kehadiranRows: dbBookKehadiranRows, rekodRows: dbBookRekodRows, rosterSize: dbStaffRoster.length, tahun, bulan });
+  } catch (err) {
+    // Ralat pengiraan dipaparkan di sini (bukan senyap / bukan sebagai "gagal segar data Sheet")
+    console.error("indComputeMonth:", err);
     indLast = null;
+    indSetEmpty(`<div class="ind-broken-title">⚠️ Ralat mengira analisis</div>${dbEscape(err && err.message ? err.message : String(err))}`, true);
     return;
   }
-  const { bulan, tahun } = indPeriod();
-  indLast = indComputeMonth({ staff, kehadiranRows: dbBookKehadiranRows, rekodRows: dbBookRekodRows, rosterSize: dbStaffRoster.length, tahun, bulan });
+  empty.classList.remove("ind-broken");
 
   empty.classList.add("hidden");
   result.classList.remove("hidden");
@@ -450,4 +480,6 @@ function indInit(user) {
   monthSel.addEventListener("change", indRender);
   yearSel.addEventListener("change", indRender);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && indOpenKey) indCloseModal(); });
+  const missing = indMissingDeps();
+  if (missing.length) { console.error("kehadiran-staf-individu: fungsi tiada daripada erks-database.js:", missing.join(", ")); indShowBroken(missing); }
 }

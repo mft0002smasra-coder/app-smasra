@@ -2335,3 +2335,7 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
 .ind-res-name{ font-size:14.5px;font-weight:600;color:var(--text); }
 .ind-res-sub{ font-size:11px;color:var(--text-dim); }
 .ind-res-msg{ padding:16px 14px;text-align:center;font-size:12.5px;color:var(--text-dim); }
+
+/* Mesej "fail tidak sepadan" / ralat dalam Analisis Individu */
+.ind-broken{ text-align:left;line-height:1.7;font-size:13px;color:var(--text);padding:14px 16px;margin:0;border:1px solid rgba(255,184,77,.45);background:rgba(255,184,77,.07);border-radius:12px; }
+.ind-broken-title{ font-family:'Orbitron',sans-serif;font-weight:700;font-size:12px;letter-spacing:.5px;color:var(--amber);margin-bottom:6px; }
