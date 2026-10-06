@@ -61,6 +61,17 @@
       <button class="tab-btn" id="tab-btn-buku" onclick="switchTab('buku')">Buku Kehadiran</button>
     </div>
 
+    <!-- Segar semula data (sama macam Kehadiran Murid): status + Segar + automatik 5 minit -->
+    <div class="ma-toolbar hidden" id="rks-toolbar">
+      <span class="ma-status-pill" id="rks-status-pill"><span class="status-dot"></span><span id="rks-status-text">MENYAMBUNG</span></span>
+      <span class="rks-updated" id="rks-updated"></span>
+      <button class="ma-refresh-btn" id="rks-refresh-btn" type="button" title="Muat semula data" onclick="rksRefresh()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+        Segar
+      </button>
+    </div>
+    <div class="ma-banner ma-banner-error" id="rks-banner-error"></div>
+
     <!-- Tab: eRKS — 3 kad pilihan -->
     <div class="tab-panel" id="tab-panel-erks">
       <div class="db-option-grid">
@@ -94,10 +105,10 @@
     <!-- Tab: Analisis eRKS -->
     <div class="tab-panel hidden" id="tab-panel-analisis">
 
-      <div class="rks-datebar">
-        <span class="icon" data-icon="calendar"></span>
-        <label for="rks-filter-date">Tarikh Analisis:</label>
-        <input type="date" id="rks-filter-date" onchange="rksProcessData()">
+      <!-- Sub-tab: hanya kelihatan untuk Pentadbir & Admin App (ditentukan oleh indInit) -->
+      <div class="ma-tabs hidden" id="rks-subtabs">
+        <button class="ma-tab-btn active" id="rks-subtab-harian" type="button" onclick="indSwitchView('harian')">Harian</button>
+        <button class="ma-tab-btn" id="rks-subtab-individu" type="button" onclick="indSwitchView('individu')">Individu</button>
       </div>
 
       <div id="rks-loading" class="rks-loading">
@@ -106,6 +117,13 @@
       </div>
 
       <div id="rks-error" class="empty-state hidden"></div>
+
+      <div id="rks-view-harian">
+      <div class="rks-datebar">
+        <span class="icon" data-icon="calendar"></span>
+        <label for="rks-filter-date">Tarikh Analisis:</label>
+        <input type="date" id="rks-filter-date" onchange="rksProcessData()">
+      </div>
 
       <div id="rks-dashboard" class="hidden">
         <div class="rks-summary">
@@ -171,6 +189,51 @@
               <div class="rks-list-box" id="rks-akp-belum-list"></div>
             </div>
           </div>
+        </div>
+      </div>
+      </div><!-- /rks-view-harian -->
+
+      <!-- Analisis individu (Pentadbir & Admin App) -->
+      <div id="rks-view-individu" class="hidden">
+        <div class="ind-filters">
+          <input type="search" class="field-input" id="ind-search" placeholder="Cari nama pegawai..." autocomplete="off">
+          <select class="field-input" id="ind-staff"><option value="">— Pilih pegawai —</option></select>
+          <div class="ind-period">
+            <select class="field-input" id="ind-month" aria-label="Bulan"></select>
+            <select class="field-input" id="ind-year" aria-label="Tahun"></select>
+          </div>
+        </div>
+
+        <div id="ind-empty" class="empty-state">Pilih pegawai untuk melihat analisis individu.</div>
+
+        <div id="ind-result" class="hidden">
+          <div class="ind-who">
+            <div class="ind-who-name" id="ind-who-name">-</div>
+            <div class="ind-who-sub" id="ind-who-sub">-</div>
+          </div>
+          <div class="rks-summary">
+            <div class="rks-card green clickable" onclick="indOpenCard('hadir')">
+              <div class="rks-card-title">Jumlah Kehadiran</div>
+              <div class="rks-card-value green" id="ind-val-hadir">0</div>
+              <div class="rks-card-sub">hari · klik lihat</div>
+            </div>
+            <div class="rks-card gold clickable" onclick="indOpenCard('lewat')">
+              <div class="rks-card-title">Lewat</div>
+              <div class="rks-card-value gold" id="ind-val-lewat">0</div>
+              <div class="rks-card-sub">hari · klik lihat</div>
+            </div>
+            <div class="rks-card red clickable" onclick="indOpenCard('belum')">
+              <div class="rks-card-title">Tidak Mengisi</div>
+              <div class="rks-card-value red" id="ind-val-belum">0</div>
+              <div class="rks-card-sub">hari · klik lihat</div>
+            </div>
+            <div class="rks-card blue clickable" onclick="indOpenCard('rekod')">
+              <div class="rks-card-title">Keberadaan</div>
+              <div class="rks-card-value blue" id="ind-val-rekod">0</div>
+              <div class="rks-card-sub">hari · klik lihat</div>
+            </div>
+          </div>
+          <div class="ind-note" id="ind-note"></div>
         </div>
       </div>
     </div>
@@ -344,8 +407,20 @@
 
 </div>
 
+<!-- Popup kad analisis individu (kad ini yang dimuat turun sebagai PNG) -->
+<div class="ind-modal-overlay" id="ind-modal-overlay" onclick="indCloseModalOutside(event)">
+  <div class="ind-modal-sheet">
+    <div class="ind-modal-bar">
+      <button class="ind-btn-png" id="ind-png-btn" type="button" onclick="indDownloadPng()">Muat Turun PNG</button>
+      <button class="ind-modal-close" type="button" aria-label="Tutup" onclick="indCloseModal()">✕</button>
+    </div>
+    <div class="ind-modal-scroll"><div class="ind-card" id="ind-card"></div></div>
+  </div>
+</div>
+
 <script src="app.js"></script>
 <script src="erks-database.js"></script>
+<script src="kehadiran-staf-individu.js"></script>
 <script>
   /* ---------------- eRKS link + tab switching ---------------- */
   document.getElementById("erks-link-btn").href = APPSHEET_ERKS_URL;
@@ -357,46 +432,127 @@
     document.getElementById("tab-btn-erks").classList.toggle("active", name === "erks");
     document.getElementById("tab-btn-analisis").classList.toggle("active", name === "analisis");
     document.getElementById("tab-btn-buku").classList.toggle("active", name === "buku");
+    rksActiveTab = name;
+    document.getElementById("rks-toolbar").classList.toggle("hidden", name === "erks");
     if (name === "analisis") rksInit();
-    if (name === "buku") dbBootBook();
+    if (name === "buku") rksOpenBuku();
   }
 
   /* ---------------- Dashboard Analisis eRKS ---------------- */
   const RKS_SHEET_ID = "1gCC26pdp5dqMwEYg6gzuGaiXhq6iA1M3gruLkkIzO5s";
-  let rksLoaded = false;
   let rksData = { database: [], kehadiran: [], rekod: [] };
 
-  async function rksFetchSheet(sheetName) {
-    const url = `https://docs.google.com/spreadsheets/d/${RKS_SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(sheetName)}`;
-    const res = await fetch(url);
-    const text = await res.text();
-    const jsonString = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
-    return JSON.parse(jsonString).table.rows;
+  /* ---------------- Segar semula data (sama macam Kehadiran Murid) ----------------
+     Butang "Segar", penanda status (MENYAMBUNG -> LANGSUNG / TERPUTUS), "Dikemaskini: masa" dan
+     segar semula automatik setiap 5 minit. Satu laluan (rksRefresh) untuk Harian, Individu & Buku. */
+  const RKS_AUTO_REFRESH_MS = 5 * 60 * 1000;
+  let rksActiveTab = "erks";
+  let rksDateSet = false;   // input tarikh harian sudah diisi
+  let rksHasData = false;   // sekurang-kurangnya satu muatan berjaya
+  let rksRefreshing = false;
+  let rksLastOk = 0;
+
+  function rksSetStatus(text, isError) {
+    const t = document.getElementById("rks-status-text"); if (t) t.textContent = text;
+    const p = document.getElementById("rks-status-pill"); if (p) p.classList.toggle("is-error", !!isError);
+  }
+  function rksShowBanner(msg) {
+    const el = document.getElementById("rks-banner-error");
+    if (!el) return;
+    if (msg) { el.textContent = msg; el.classList.add("show"); } else { el.textContent = ""; el.classList.remove("show"); }
+  }
+  function rksMarkOk() {
+    rksLastOk = Date.now();
+    rksSetStatus("LANGSUNG", false);
+    rksShowBanner(null);
+    const u = document.getElementById("rks-updated");
+    if (u) u.textContent = "Dikemaskini: " + new Date().toLocaleTimeString("ms-MY");
+  }
+  function rksMarkFail(err, hadData) {
+    console.error(err);
+    rksSetStatus("TERPUTUS", true);
+    rksShowBanner(`⚠️ Gagal menyegarkan data dari Google Sheets${hadData ? " — memaparkan data terakhir" : ""}. Pastikan Sheet dikongsi sebagai "Sesiapa yang ada pautan – Boleh Lihat". (${err && err.message ? err.message : err})`);
   }
 
-  async function rksInit() {
-    if (rksLoaded) return;
-    rksLoaded = true;
+  /** Muat Database + Kehadiran + Rekod terus dari Sheet (cache 3 minit dibuang dahulu supaya BENAR-BENAR segar),
+   *  kemudian bina senarai staf (jawatan segar) untuk Buku & Individu — fetch kali ini kena cache yang baru diisi. */
+  async function rksLoadAll() {
+    ["Database", "Kehadiran", "Rekod"].forEach(dbClearSheetCache);
+    const [db, hadir, rekod] = await Promise.all([dbFetchSheet("Database"), dbFetchSheet("Kehadiran"), dbFetchSheet("Rekod")]);
+    rksData.database = db; rksData.kehadiran = hadir; rksData.rekod = rekod;
+    await dbLoadBookRecords();
+  }
+
+  function rksEnsureDate() {
+    if (rksDateSet) return;
+    rksDateSet = true;
     const today = new Date();
-    const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, "0");
     const dd = String(today.getDate()).padStart(2, "0");
-    document.getElementById("rks-filter-date").value = `${yyyy}-${mm}-${dd}`;
+    document.getElementById("rks-filter-date").value = `${today.getFullYear()}-${mm}-${dd}`;
+  }
+
+  async function rksRefresh() {
+    if (rksRefreshing) return;
+    rksRefreshing = true;
+    const btn = document.getElementById("rks-refresh-btn");
+    if (btn) btn.classList.add("spinning");
+    rksSetStatus("MENYAMBUNG", false);
     try {
-      const [db, hadir, rekod] = await Promise.all([
-        rksFetchSheet("Database"), rksFetchSheet("Kehadiran"), rksFetchSheet("Rekod"),
-      ]);
-      rksData.database = db; rksData.kehadiran = hadir; rksData.rekod = rekod;
+      await rksLoadAll();
+      rksHasData = true;
+      rksEnsureDate();
       document.getElementById("rks-loading").classList.add("hidden");
+      document.getElementById("rks-error").classList.add("hidden");
       document.getElementById("rks-dashboard").classList.remove("hidden");
       rksProcessData();
+      if (dbBookLoaded) dbRebuildBookKeepPosition(); // Buku: kekal pada muka yang sedang dibaca
+      if (typeof indOnData === "function") indOnData();
+      rksMarkOk();
     } catch (err) {
-      document.getElementById("rks-loading").classList.add("hidden");
-      const errEl = document.getElementById("rks-error");
-      errEl.textContent = 'Ralat memuatkan data. Pastikan Sheet eRKS dikongsi sebagai "Anyone with the link" (Viewer).';
-      errEl.classList.remove("hidden");
+      if (!rksHasData) {
+        document.getElementById("rks-loading").classList.add("hidden");
+        const errEl = document.getElementById("rks-error");
+        errEl.textContent = 'Ralat memuatkan data. Pastikan Sheet eRKS dikongsi sebagai "Anyone with the link" (Viewer).';
+        errEl.classList.remove("hidden");
+      }
+      rksMarkFail(err, rksHasData);
+    } finally {
+      rksRefreshing = false;
+      if (btn) setTimeout(() => btn.classList.remove("spinning"), 600);
     }
   }
+
+  /** Buka tab Analisis: kali pertama (atau selepas gagal) muat data; selepas itu biar auto/Segar yang kemas kini. */
+  async function rksInit() {
+    rksEnsureDate();
+    if (rksHasData || rksRefreshing) return;
+    document.getElementById("rks-error").classList.add("hidden");
+    document.getElementById("rks-loading").classList.remove("hidden");
+    await rksRefresh();
+  }
+
+  /** Buka tab Buku: muat kali pertama; status mengikut hasilnya (gagal -> boleh cuba lagi bila dibuka semula). */
+  function rksOpenBuku() {
+    const first = !dbBookLoaded;
+    if (first) rksSetStatus("MENYAMBUNG", false);
+    Promise.resolve(dbBootBook())
+      .then(() => { if (first) rksMarkOk(); })
+      .catch((err) => {
+        dbBookLoaded = false;
+        document.getElementById("db-book-loading").classList.add("hidden");
+        rksMarkFail(err, false);
+      });
+  }
+
+  function rksShouldAutoRefresh() {
+    return (rksActiveTab === "analisis" && rksHasData) || (rksActiveTab === "buku" && dbBookLoaded);
+  }
+  setInterval(() => { if (!document.hidden && rksShouldAutoRefresh()) rksRefresh(); }, RKS_AUTO_REFRESH_MS);
+  // Tab dibuka semula selepas lama di latar (selang masa dilambatkan oleh peranti): segarkan kalau sudah lapuk
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && rksLastOk && Date.now() - rksLastOk > RKS_AUTO_REFRESH_MS && rksShouldAutoRefresh()) rksRefresh();
+  });
 
   function rksParseDate(cellValue) {
     if (!cellValue) return null;
@@ -553,6 +709,7 @@
   }
 
   async function renderKehadiranStaf(user) {
+    if (typeof indInit === "function") indInit(user); // sub-tab "Individu" hanya untuk Pentadbir & Admin App (fail baharu tak dimuat naik -> borang eRKS tetap berfungsi)
     await dbLoadStaff(user);
     const params = new URLSearchParams(location.search);
     if (params.get("open") === "kehadiran") {
