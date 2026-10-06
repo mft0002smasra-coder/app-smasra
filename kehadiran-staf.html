@@ -196,8 +196,12 @@
       <!-- Analisis individu (Pentadbir & Admin App) -->
       <div id="rks-view-individu" class="hidden">
         <div class="ind-filters">
-          <input type="search" class="field-input" id="ind-search" placeholder="Cari nama pegawai..." autocomplete="off">
-          <select class="field-input" id="ind-staff"><option value="">— Pilih pegawai —</option></select>
+          <!-- Carian: hasil dipaparkan sebagai senarai di bawah kotak (ketik nama untuk memilih) -->
+          <div class="ind-combo" id="ind-combo">
+            <input type="text" class="field-input" id="ind-search" placeholder="Cari atau pilih nama pegawai..." autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" role="combobox" aria-expanded="false" aria-controls="ind-results" aria-autocomplete="list">
+            <button type="button" class="ind-clear hidden" id="ind-clear" aria-label="Kosongkan pilihan">✕</button>
+            <div class="ind-results hidden" id="ind-results" role="listbox"></div>
+          </div>
           <div class="ind-period">
             <select class="field-input" id="ind-month" aria-label="Bulan"></select>
             <select class="field-input" id="ind-year" aria-label="Tahun"></select>

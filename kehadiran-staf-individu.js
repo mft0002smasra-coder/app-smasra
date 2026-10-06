@@ -106,36 +106,155 @@ function indComputeMonth(opts) {
   return res;
 }
 
-/* ---------------- Senarai pegawai (carian + pilihan) ---------------- */
+/* ---------------- Carian pegawai: hasil DIPAPARKAN sebagai senarai di bawah kotak ---------------- */
+// (Versi awal menapis pilihan dalam <select> tertutup — hasil tak kelihatan langsung kepada pengguna.)
+let indQueryDirty = false; // pengguna sedang menaip? (kalau tidak, senarai penuh dipaparkan walaupun kotak berisi nama terpilih)
+let indShown = [];         // indeks roster bagi baris yang sedang dipaparkan
+let indActive = -1;        // baris yang diserlahkan (papan kekunci)
+
 function indStaffKey(s) { return `${s.noKP}|${s.nama}`; }
+function indSelectedStaff() { return dbStaffRoster.find((s) => indStaffKey(s) === indSelKey) || null; }
 
-function indRebuildStaffOptions() {
-  const sel = document.getElementById("ind-staff");
-  if (!sel) return;
-  const q = dbNorm((document.getElementById("ind-search") || {}).value || "");
-  const tokens = q ? q.split(" ") : [];
-  const opts = ['<option value="">— Pilih pegawai —</option>'];
-  let stillThere = false;
+/** Semua token carian mesti ada dalam nama (huruf besar/kecil & susunan tak penting): "fadly othman" -> MOHD FADLY BIN OTHMAN */
+function indMatches(q) {
+  const tokens = dbNorm(q).split(" ").filter(Boolean);
+  const out = [];
   dbStaffRoster.forEach((s, i) => {
-    if (tokens.length) {
-      const n = dbNorm(s.nama);
-      if (!tokens.every((t) => n.includes(t))) return;
-    }
-    if (indStaffKey(s) === indSelKey) stillThere = true;
-    opts.push(`<option value="${i}"${indStaffKey(s) === indSelKey ? " selected" : ""}>${dbEscape(s.nama)}</option>`);
+    if (!tokens.length) { out.push(i); return; }
+    const n = dbNorm(s.nama);
+    if (tokens.every((t) => n.includes(t))) out.push(i);
   });
-  sel.innerHTML = opts.join("");
-  if (!stillThere) sel.value = "";
+  return out;
 }
 
-function indSelectedStaff() {
-  return dbStaffRoster.find((s) => indStaffKey(s) === indSelKey) || null;
+function indRenderResults() {
+  const box = document.getElementById("ind-results");
+  const input = document.getElementById("ind-search");
+  if (!box || !input) return;
+  if (!dbStaffRoster.length) { box.innerHTML = '<div class="ind-res-msg">Memuatkan senarai pegawai...</div>'; indShown = []; return; }
+  const q = indQueryDirty ? input.value : "";
+  indShown = indMatches(q);
+  if (!indShown.length) {
+    box.innerHTML = `<div class="ind-res-msg">Tiada pegawai sepadan dengan “${dbEscape(q.trim())}”.</div>`;
+    return;
+  }
+  if (indActive >= indShown.length) indActive = indShown.length - 1;
+  const count = indQueryDirty && q.trim() ? `${indShown.length} padanan` : `${indShown.length} pegawai`;
+  box.innerHTML = `<div class="ind-res-count">${count}</div>` + indShown.map((ri, k) => {
+    const st = dbStaffRoster[ri];
+    const cls = (k === indActive ? " is-active" : "") + (indStaffKey(st) === indSelKey ? " is-selected" : "");
+    return `<div class="ind-res-item${cls}" role="option" data-ri="${ri}"><span class="ind-res-name">${dbEscape(st.nama)}</span><span class="ind-res-sub">${dbEscape(st.jawatan || "-")}</span></div>`;
+  }).join("");
 }
 
-function indOnStaffChange() {
-  const v = document.getElementById("ind-staff").value;
-  indSelKey = v === "" ? "" : indStaffKey(dbStaffRoster[parseInt(v, 10)]);
+/** Had tinggi senarai = kawasan yang BENAR-BENAR kelihatan: di atas bar navigasi, atau di atas papan kekunci telefon
+ * bila ia terbuka (visualViewport mengecil). Tanpa ini senarai 260px tertutup sebahagiannya pada telefon pendek /
+ * terbenam di belakang papan kekunci. Minimum 120px (sekurang-kurangnya dua baris + kepala). */
+function indFitResults() {
+  const box = document.getElementById("ind-results");
+  const input = document.getElementById("ind-search");
+  if (!box || !input) return;
+  const vv = window.visualViewport;
+  const viewH = vv ? vv.height : window.innerHeight;
+  const keyboard = !!vv && window.innerHeight - vv.height > 120;
+  const nav = document.querySelector(".bottom-nav-wrap");
+  const reserve = keyboard ? 8 : ((nav ? nav.offsetHeight : 0) + 8);
+  const inputBottom = input.getBoundingClientRect().bottom - (vv ? vv.offsetTop : 0);
+  const avail = viewH - inputBottom - 6 - reserve;
+  box.style.maxHeight = Math.max(120, Math.min(260, Math.floor(avail))) + "px";
+}
+
+/** Naikkan kotak carian ke bahagian atas skrin (di bawah pengepala tetap) supaya senarai hasil mendapat ruang
+ * di atas papan kekunci telefon. Ruang skrol tambahan diberi sementara senarai terbuka, kerana halaman yang pendek
+ * (belum pilih pegawai) tak cukup panjang untuk diskrol sejauh itu. */
+function indRevealCombo() {
+  const view = document.getElementById("rks-view-individu");
+  if (view) view.style.paddingBottom = "320px";
+  const combo = document.getElementById("ind-combo");
+  if (combo && combo.scrollIntoView) combo.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
+function indOpenResults() {
+  const box = document.getElementById("ind-results");
+  box.classList.remove("hidden");
+  document.getElementById("ind-search").setAttribute("aria-expanded", "true");
+  indRenderResults();
+  indFitResults();
+}
+/** revert=true: batalkan taipan yang tak dipilih — kotak kembali menunjukkan pegawai terpilih (atau kosong). */
+function indCloseResults(revert) {
+  document.getElementById("ind-results").classList.add("hidden");
+  const view = document.getElementById("rks-view-individu");
+  if (view) view.style.paddingBottom = "";
+  const input = document.getElementById("ind-search");
+  input.setAttribute("aria-expanded", "false");
+  indQueryDirty = false;
+  indActive = -1;
+  if (revert) { const st = indSelectedStaff(); input.value = st ? st.nama : ""; }
+}
+function indResultsOpen() { return !document.getElementById("ind-results").classList.contains("hidden"); }
+
+function indPick(ri) {
+  const st = dbStaffRoster[ri];
+  if (!st) return;
+  indSelKey = indStaffKey(st);
+  const input = document.getElementById("ind-search");
+  input.value = st.nama;
+  indCloseResults(false);
+  document.getElementById("ind-clear").classList.remove("hidden");
+  input.blur(); // tutup papan kekunci telefon supaya keputusan kelihatan
   indRender();
+}
+function indClearSelection() {
+  indSelKey = "";
+  const input = document.getElementById("ind-search");
+  input.value = "";
+  document.getElementById("ind-clear").classList.add("hidden");
+  indQueryDirty = false;
+  indRender();
+  input.focus();
+  indOpenResults();
+}
+
+function indOnSearchFocus() { indQueryDirty = false; indActive = -1; const i = document.getElementById("ind-search"); if (i.select) i.select(); indRevealCombo(); indOpenResults(); }
+function indOnSearchInput() { indQueryDirty = true; indActive = 0; indOpenResults(); }
+function indOnSearchKey(e) {
+  if (e.key === "Escape") { if (indResultsOpen()) { indCloseResults(true); e.stopPropagation(); } return; }
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    if (!indResultsOpen()) { indOpenResults(); return; }
+    if (!indShown.length) return;
+    indActive = e.key === "ArrowDown" ? Math.min(indActive + 1, indShown.length - 1) : Math.max(indActive - 1, 0);
+    indRenderResults();
+    const el = document.querySelector("#ind-results .ind-res-item.is-active");
+    if (el && el.scrollIntoView) el.scrollIntoView({ block: "nearest" });
+    return;
+  }
+  if (e.key === "Enter") {
+    if (indResultsOpen() && indShown.length) { e.preventDefault(); indPick(indShown[indActive >= 0 ? indActive : 0]); }
+  }
+}
+function indOnResultsClick(e) {
+  const item = e.target.closest ? e.target.closest(".ind-res-item") : null;
+  if (item) indPick(parseInt(item.dataset.ri, 10));
+}
+/** Klik/sentuh di luar kotak carian menutup senarai. */
+function indOnDocPointer(e) {
+  if (!indResultsOpen()) return;
+  const combo = document.getElementById("ind-combo");
+  if (combo && !combo.contains(e.target)) indCloseResults(true);
+}
+
+/** Selepas data dimuat/disegarkan: selaraskan kotak dengan pegawai terpilih & segarkan senarai yang sedang terbuka. */
+function indSyncSearch() {
+  const input = document.getElementById("ind-search");
+  if (!input) return;
+  const st = indSelectedStaff();
+  if (indSelKey && !st && dbStaffRoster.length) { indSelKey = ""; document.getElementById("ind-clear").classList.add("hidden"); } // pegawai sudah tiada dalam senarai
+  const typing = document.activeElement === input && indQueryDirty;
+  if (!typing) input.value = st ? st.nama : "";
+  document.getElementById("ind-clear").classList.toggle("hidden", !indSelKey);
+  if (indResultsOpen()) indRenderResults();
 }
 
 /* ---------------- Paparan utama ---------------- */
@@ -293,7 +412,7 @@ function indSwitchView(name) {
 /** Dipanggil selepas data (senarai staf, kehadiran, rekod) dimuat / disegarkan. */
 function indOnData() {
   if (!indAllowed) return;
-  indRebuildStaffOptions();
+  indSyncSearch();
   indRender();
   if (indOpenKey) { if (!indFillCard(indOpenKey)) indCloseModal(); } // popup terbuka: kemas kini kandungannya
 }
@@ -315,8 +434,19 @@ function indInit(user) {
   yearSel.innerHTML = [y - 1, y].map((v) => `<option value="${v}">${v}</option>`).join("");
   yearSel.value = String(y);
 
-  document.getElementById("ind-search").addEventListener("input", indRebuildStaffOptions);
-  document.getElementById("ind-staff").addEventListener("change", indOnStaffChange);
+  const search = document.getElementById("ind-search");
+  search.addEventListener("focus", indOnSearchFocus);
+  search.addEventListener("click", () => { if (!indResultsOpen()) { indRevealCombo(); indOpenResults(); } });
+  search.addEventListener("input", indOnSearchInput);
+  search.addEventListener("keydown", indOnSearchKey);
+  document.getElementById("ind-results").addEventListener("click", indOnResultsClick);
+  document.getElementById("ind-clear").addEventListener("click", indClearSelection);
+  document.addEventListener("pointerdown", indOnDocPointer);
+  // Papan kekunci dibuka/ditutup atau skrin diputar: sesuaikan tinggi senarai yang sedang terbuka
+  const refit = () => { if (indResultsOpen()) indFitResults(); };
+  window.addEventListener("resize", refit);
+  document.body.addEventListener("scroll", refit, { passive: true });
+  if (window.visualViewport) { window.visualViewport.addEventListener("resize", refit); window.visualViewport.addEventListener("scroll", refit); }
   monthSel.addEventListener("change", indRender);
   yearSel.addEventListener("change", indRender);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && indOpenKey) indCloseModal(); });
