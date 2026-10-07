@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261006a">
+<link rel="stylesheet" href="style.css?v=20261006c">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -239,6 +239,7 @@
           </div>
           <div class="ind-note" id="ind-note"></div>
         </div>
+        <div id="ind-cuti-bar"></div>
       </div>
     </div>
 
@@ -424,7 +425,8 @@
 
 <script src="app.js"></script>
 <script src="erks-database.js?v=20261006a"></script>
-<script src="kehadiran-staf-individu.js?v=20261006a"></script>
+<script src="hari-cuti.js?v=20261006c"></script>
+<script src="kehadiran-staf-individu.js?v=20261006c"></script>
 <script>
   /* ---------------- eRKS link + tab switching ---------------- */
   document.getElementById("erks-link-btn").href = APPSHEET_ERKS_URL;
@@ -485,6 +487,7 @@
     const [db, hadir, rekod] = await Promise.all([dbFetchSheet("Database"), dbFetchSheet("Kehadiran"), dbFetchSheet("Rekod")]);
     rksData.database = db; rksData.kehadiran = hadir; rksData.rekod = rekod;
     await dbLoadBookRecords();
+    if (typeof hcLoad === "function") await hcLoad(true); // kalendar cuti (tak pernah menolak) — disegarkan bersama data lain
   }
 
   function rksEnsureDate() {

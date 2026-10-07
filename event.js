@@ -95,6 +95,12 @@ async function evRenderHomeTicker() {
   wrap.classList.remove("hidden");
 }
 
+/* ---------------- Cuti (daripada hari-cuti.js) ---------------- */
+function evHolidaysOn(fromYmd, toYmd) {
+  return typeof hcDayMap === "function" ? hcDayMap(fromYmd, toYmd) : new Map();
+}
+function evIsUmum(h) { return !(h.jenis === "Cuti Sekolah" || h.jenis === "Cuti Perayaan KPM"); }
+
 function evEventsOnDate(ymd) {
   return evEvents.filter((ev) => ymd >= ev.tarikhDari && ymd <= ev.tarikhHingga);
 }
@@ -113,6 +119,7 @@ function evRenderCalendar() {
   const daysInMonth = new Date(evViewYear, evViewMonth + 1, 0).getDate();
   const todayStr = evYmd(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
 
+  const holMap = evHolidaysOn(evYmd(evViewYear, evViewMonth, 1), evYmd(evViewYear, evViewMonth, daysInMonth));
   let cellsHtml = "";
   for (let i = 0; i < startOffset; i++) {
     cellsHtml += `<div class="event-cell other-month"></div>`;
@@ -123,12 +130,47 @@ function evRenderCalendar() {
     const units = Array.from(new Set(dayEvents.map((e) => e.unit)));
     const dots = units.map((u) => `<span class="event-dot" style="background:${evUnitColor(u)}"></span>`).join("");
     const isToday = ymd === todayStr ? " today" : "";
-    cellsHtml += `<div class="event-cell${isToday}" data-ymd="${ymd}">
-      <span class="event-daynum">${d}</span>
+    const hol = holMap.get(ymd) || [];
+    const umum = hol.some(evIsUmum);
+    const holCls = umum ? " is-cuti-umum" : (hol.length ? " is-cuti-sekolah" : "");
+    const holTitle = hol.length ? ` title="${evEscape(hol.map((h) => h.nama).join(" • "))}"` : "";
+    const holTag = umum ? `<span class="event-cuti-tag">Cuti</span>` : "";
+    cellsHtml += `<div class="event-cell${isToday}${holCls}" data-ymd="${ymd}"${holTitle}>
+      <span class="event-daynum">${d}</span>${holTag}
       <div class="event-dots">${dots}</div>
     </div>`;
   }
   document.getElementById("event-calendar-grid").innerHTML = cellsHtml;
+}
+
+/** Semakan silang Event <-> Cuti untuk BULAN yang sedang dipaparkan. */
+function evRenderCutiCheck() {
+  const box = document.getElementById("event-cuti-check");
+  if (!box) return;
+  if (typeof hcCrossCheck !== "function" || typeof hcMeta === "undefined" || !hcMeta.loaded || !hcEntries.length) { box.classList.add("hidden"); return; }
+  const first = evYmd(evViewYear, evViewMonth, 1);
+  const last = evYmd(evViewYear, evViewMonth, new Date(evViewYear, evViewMonth + 1, 0).getDate());
+  const monthEvents = evEvents.filter((ev) => ev.tarikhHingga >= first && ev.tarikhDari <= last);
+  const cc = hcCrossCheck(monthEvents);
+  const bil = cc.bertindih.length + cc.tiadaPadanan.length;
+  const title = `Semakan silang Event ↔ Cuti · ${EV_BULAN[evViewMonth]} ${evViewYear}`;
+  if (!bil) {
+    box.innerHTML = `<div class="event-cuti-check-title">${title}</div><div class="event-cuti-ok">✓ Tiada event bertindih dengan hari cuti bulan ini.</div>`;
+    box.className = "event-cuti-check is-ok";
+    return;
+  }
+  const dr = (ev) => (ev.tarikhHingga && ev.tarikhHingga !== ev.tarikhDari ? `${ev.tarikhDari} – ${ev.tarikhHingga}` : ev.tarikhDari);
+  const items = cc.bertindih.map((b) => `
+    <div class="event-cuti-item ${b.tahap === "umum" ? "is-umum" : "is-sekolah"}" data-ymd="${b.tarikh[0]}">
+      <div class="event-cuti-item-top"><span class="event-cuti-badge">${b.tahap === "umum" ? "Cuti Umum" : "Cuti Sekolah"}</span> <b>${evEscape(b.event.tajuk)}</b> <small>(${evEscape(b.event.unit)})</small></div>
+      <div class="event-cuti-item-sub">${evEscape(dr(b.event))} · bertindih: ${b.cuti.map((c) => evEscape(c.nama)).join(", ")}</div>
+    </div>`).join("") + cc.tiadaPadanan.map((t) => `
+    <div class="event-cuti-item is-semak" data-ymd="${t.event.tarikhDari}">
+      <div class="event-cuti-item-top"><span class="event-cuti-badge">Semak</span> <b>${evEscape(t.event.tajuk)}</b> <small>(${evEscape(t.event.unit)})</small></div>
+      <div class="event-cuti-item-sub">${evEscape(dr(t.event))} · tajuk menyebut "cuti" tetapi tiada cuti dalam kalendar pada tarikh ini</div>
+    </div>`).join("");
+  box.innerHTML = `<div class="event-cuti-check-title">${title} <span class="event-cuti-count">${bil}</span></div>${items}`;
+  box.className = "event-cuti-check";
 }
 
 function evChangeMonth(delta) {
@@ -136,6 +178,7 @@ function evChangeMonth(delta) {
   if (evViewMonth < 0) { evViewMonth = 11; evViewYear--; }
   if (evViewMonth > 11) { evViewMonth = 0; evViewYear++; }
   evRenderCalendar();
+  evRenderCutiCheck();
 }
 
 function evOpenDayModal(ymd) {
@@ -145,9 +188,19 @@ function evOpenDayModal(ymd) {
   const dateLabel = dateObj.toLocaleDateString("ms-MY", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
   const box = document.getElementById("event-modal-content");
+  const hol = evHolidaysOn(ymd, ymd).get(ymd) || [];
+  const holCards = hol.map((h) => `
+      <div class="event-detail-card event-cuti-card ${evIsUmum(h) ? "is-umum" : "is-sekolah"}">
+        <div class="event-detail-unit">${evEscape(h.jenis)}</div>
+        <div class="event-detail-title">${evEscape(h.nama || "Cuti")}</div>
+        <div class="event-detail-row">📅 <span>${evEscape(typeof hcFmtRange === "function" ? hcFmtRange(h) : h.mula)}</span></div>
+        ${h.skop ? `<div class="event-detail-row">📍 ${evEscape(h.skop)}</div>` : ""}
+        ${h.catatan ? `<div class="event-detail-row">ℹ️ ${evEscape(h.catatan)}</div>` : ""}
+      </div>`).join("");
+  const holWarn = hol.length ? `<div class="event-detail-row event-cuti-warn">⚠️ Event pada hari cuti: <b>${evEscape(hol.map((h) => h.nama).join(", "))}</b></div>` : "";
   if (!dayEvents.length) {
     box.innerHTML = `
-      <div class="modal-title">${dateLabel}</div>
+      <div class="modal-title">${dateLabel}</div>${holCards}
       <div class="empty-state" style="padding:20px 8px;">Tiada event untuk tarikh ini.</div>`;
   } else {
     const cards = dayEvents.map((ev) => `
@@ -158,8 +211,9 @@ function evOpenDayModal(ymd) {
         ${ev.masa ? `<div class="event-detail-row">🕐 <b>${evEscape(ev.masa)}</b></div>` : ""}
         ${ev.tempat ? `<div class="event-detail-row">📍 <b>${evEscape(ev.tempat)}</b></div>` : ""}
         <div class="event-detail-row">✍️ ${evEscape(ev.dicatatOleh || "-")}</div>
+        ${holWarn}
       </div>`).join("");
-    box.innerHTML = `<div class="modal-title">${dateLabel}</div>${cards}`;
+    box.innerHTML = `<div class="modal-title">${dateLabel}</div>${holCards}${cards}`;
   }
   document.getElementById("event-modal-overlay").classList.remove("hidden");
 }
@@ -190,6 +244,12 @@ async function evSubmitAdd(e) {
     errEl.classList.remove("hidden");
     return;
   }
+  // Event pada hari cuti: beri amaran SEBELUM dihantar (pengguna boleh meneruskan — kem/program memang kadang diadakan pada cuti)
+  const holOnDates = evHolidaysOn(tarikhDari, tarikhHingga >= tarikhDari ? tarikhHingga : tarikhDari);
+  if (holOnDates.size) {
+    const names = [...new Set([...holOnDates.values()].flat().map((h) => h.nama))].join("\n• ");
+    if (!confirm(`Tarikh ini jatuh pada cuti:\n• ${names}\n\nTeruskan tambah event?`)) return;
+  }
   const btn = document.getElementById("event-submit-btn");
   btn.disabled = true;
   btn.textContent = "Menghantar...";
@@ -199,6 +259,7 @@ async function evSubmitAdd(e) {
       evCloseAddModal();
       await evLoadEvents();
       evRenderCalendar();
+      evRenderCutiCheck();
     } else {
       errEl.textContent = data.message || "Gagal tambah event.";
       errEl.classList.remove("hidden");
@@ -218,7 +279,9 @@ function evInit(user) {
   unitSelect.innerHTML = EV_UNITS.map((u) => `<option value="${u}">${u}</option>`).join("");
 
   const legend = document.getElementById("event-legend");
-  legend.innerHTML = EV_UNITS.map((u) => `<span class="event-legend-item"><span class="event-legend-dot" style="background:${evUnitColor(u)}"></span>${u}</span>`).join("");
+  legend.innerHTML = EV_UNITS.map((u) => `<span class="event-legend-item"><span class="event-legend-dot" style="background:${evUnitColor(u)}"></span>${u}</span>`).join("") +
+    `<span class="event-legend-item"><span class="event-legend-dot is-cuti-umum"></span>Cuti Umum</span>` +
+    `<span class="event-legend-item"><span class="event-legend-dot is-cuti-sekolah"></span>Cuti Sekolah</span>`;
 
   document.getElementById("event-fab").classList.remove("hidden");
 
@@ -229,5 +292,16 @@ function evInit(user) {
 
   document.getElementById("event-add-form").addEventListener("submit", evSubmitAdd);
 
-  evLoadEvents().then(evRenderCalendar);
+  // Klik perkara dalam panel semakan silang -> buka butiran hari yang berkenaan
+  const chk = document.getElementById("event-cuti-check");
+  if (chk) chk.addEventListener("click", (e) => {
+    const it = e.target.closest(".event-cuti-item");
+    if (it && it.dataset.ymd) evOpenDayModal(it.dataset.ymd);
+  });
+
+  const afterLoad = () => { evRenderCalendar(); evRenderCutiCheck(); };
+  evRenderCalendar(); // paparkan grid serta-merta (tanpa cuti); dikemas kini selepas data dimuat
+  const holP = typeof hcLoad === "function" ? hcLoad() : Promise.resolve();
+  if (typeof hcRenderBar === "function") hcRenderBar(document.getElementById("event-cuti-bar"), user, async () => afterLoad());
+  Promise.all([evLoadEvents(), holP]).then(afterLoad);
 }

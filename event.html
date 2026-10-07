@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20261006c">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -62,9 +62,11 @@
     </div>
 
     <div class="event-legend" id="event-legend"></div>
+    <div id="event-cuti-bar"></div>
 
     <div class="event-dow-row" id="event-dow-row"></div>
     <div class="event-calendar-grid" id="event-calendar-grid"></div>
+    <div id="event-cuti-check" class="hidden"></div>
 
     <button class="event-fab hidden" id="event-fab" onclick="evOpenAddModal()" aria-label="Tambah event">+</button>
   </div>
@@ -130,7 +132,8 @@
 </div>
 
 <script src="app.js"></script>
-<script src="event.js"></script>
+<script src="hari-cuti.js?v=20261006c"></script>
+<script src="event.js?v=20261006c"></script>
 <script>
   initApp(evInit);
 </script>

@@ -2339,3 +2339,51 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
 /* Mesej "fail tidak sepadan" / ralat dalam Analisis Individu */
 .ind-broken{ text-align:left;line-height:1.7;font-size:13px;color:var(--text);padding:14px 16px;margin:0;border:1px solid rgba(255,184,77,.45);background:rgba(255,184,77,.07);border-radius:12px; }
 .ind-broken-title{ font-family:'Orbitron',sans-serif;font-weight:700;font-size:12px;letter-spacing:.5px;color:var(--amber);margin-bottom:6px; }
+
+.ind-card-foot-note{ margin-top:10px;line-height:1.5;color:#8fa3c4;font-size:10.5px; }
+
+/* ============================================================
+   Kalendar cuti (Event & Analisis Individu)
+   ============================================================ */
+.hc-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  font-size:10.5px;color:var(--text-dim);margin:0 0 var(--gap);padding:8px 10px;border:1px dashed var(--line);border-radius:10px;
+}
+.hc-bar-info{ flex:1;min-width:0;line-height:1.5; }
+.hc-bar-info b{ color:var(--text); }
+.hc-btn{
+  padding:8px 12px;border-radius:9px;border:1px solid var(--cyan);background:rgba(0,229,255,.10);color:var(--cyan);
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0;
+}
+.hc-btn:disabled{ opacity:.6;cursor:default; }
+.hc-warn{ color:var(--amber); }
+.hc-result{ margin:-6px 0 var(--gap);padding:10px 12px;border-radius:10px;font-size:11.5px;line-height:1.6;color:var(--text); }
+.hc-result-ok{ border:1px solid rgba(25,227,161,.4);background:rgba(25,227,161,.07); }
+.hc-result-err{ border:1px solid rgba(255,85,119,.45);background:rgba(255,85,119,.07); }
+.hc-warns{ margin:6px 0 4px 16px;padding:0;color:var(--amber);font-size:10.5px; }
+.hc-result small{ display:block;color:var(--text-dim);margin-top:4px; }
+
+.event-cell.is-cuti-umum{ background:rgba(255,85,119,.10);border-color:rgba(255,85,119,.45); }
+.event-cell.is-cuti-umum .event-daynum{ color:var(--danger); }
+.event-cell.is-cuti-sekolah{ background:rgba(255,184,77,.08);border-color:rgba(255,184,77,.30); }
+.event-cuti-tag{ font-size:7.5px;letter-spacing:.3px;text-transform:uppercase;color:var(--danger);font-weight:700;line-height:1;margin-top:1px; }
+.event-legend-dot.is-cuti-umum{ background:rgba(255,85,119,.45);border:1px solid var(--danger);border-radius:3px; }
+.event-legend-dot.is-cuti-sekolah{ background:rgba(255,184,77,.35);border:1px solid var(--amber);border-radius:3px; }
+.event-cuti-card.is-umum{ border-left-color:var(--danger); }
+.event-cuti-card.is-umum .event-detail-unit{ color:var(--danger); }
+.event-cuti-card.is-sekolah{ border-left-color:var(--amber); }
+.event-cuti-card.is-sekolah .event-detail-unit{ color:var(--amber); }
+.event-cuti-warn{ color:var(--amber);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line); }
+.event-cuti-warn b{ color:var(--amber); }
+
+.event-cuti-check{ margin:0 0 calc(var(--gap) + 70px);padding:10px 12px;border:1px solid rgba(255,184,77,.35);background:rgba(255,184,77,.05);border-radius:12px; }
+.event-cuti-check.is-ok{ border-color:rgba(25,227,161,.3);background:rgba(25,227,161,.04); }
+.event-cuti-check-title{ font-family:'Orbitron',sans-serif;font-size:10.5px;letter-spacing:.4px;color:var(--text);margin-bottom:6px;line-height:1.5; }
+.event-cuti-count{ display:inline-block;min-width:18px;padding:0 6px;border-radius:9px;background:var(--amber);color:#03130d;font-weight:700;text-align:center; }
+.event-cuti-ok{ font-size:11px;color:var(--mint); }
+.event-cuti-item{ padding:8px 0;border-top:1px solid var(--line);cursor:pointer;font-size:12px; }
+.event-cuti-item-top{ color:var(--text);line-height:1.45; }
+.event-cuti-item-sub{ color:var(--text-dim);font-size:10.5px;margin-top:2px;line-height:1.45; }
+.event-cuti-badge{ display:inline-block;padding:1px 7px;border-radius:6px;font-size:9px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;background:rgba(255,184,77,.18);color:var(--amber); }
+.event-cuti-item.is-umum .event-cuti-badge{ background:rgba(255,85,119,.18);color:var(--danger); }
+.event-cuti-item.is-semak .event-cuti-badge{ background:rgba(0,229,255,.15);color:var(--cyan); }

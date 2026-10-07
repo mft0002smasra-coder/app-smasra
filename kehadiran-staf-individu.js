@@ -14,9 +14,12 @@ const IND_MON = ["Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", 
 const IND_HARI = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
 const IND_SEKOLAH = "SM ARAB (JAIM) AL-ASYRAF";
 
-// "Tidak mengisi" hanya dikira pada HARI BEKERJA. Cuti umum/sekolah tiada senarai dalam app, jadi dikesan
-// automatik: hari Isnin–Jumaat di mana sekurang-kurangnya IND_MIN_PERATUS daripada staf (minimum IND_MIN_BIL
-// orang) mengisi Kehadiran. Tanpa ini, setiap cuti umum akan dikira "tidak mengisi" untuk SEMUA staf.
+// "Tidak mengisi" hanya dikira pada HARI BEKERJA. Sebuah hari BUKAN hari bekerja bila:
+//  (1) kalendar cuti (tab "Cuti", lihat hari-cuti.js) menyatakan cuti yang TERPAKAI untuk staf itu — cuti umum untuk semua;
+//      cuti sekolah / perayaan KPM untuk GURU sahaja (staf sokongan lazimnya masih bertugas semasa cuti sekolah), ATAU
+//  (2) ANGGARAN: kurang daripada IND_MIN_PERATUS staf (minimum IND_MIN_BIL orang) mengisi Kehadiran pada hari Isnin–Jumaat itu.
+// Anggaran kekal sebagai jaring keselamatan: kalau kalendar tertinggal sesuatu, lebih baik KURANG menuduh pegawai tidak mengisi.
+// Anggaran tersasar bila (a) hari cuti tetapi ramai tetap datang, atau (b) hari bekerja tetapi ramai staf tiada (kursus/gangguan).
 const IND_MIN_PERATUS = 0.10;
 const IND_MIN_BIL = 3;
 
@@ -80,16 +83,50 @@ function indDayName(key) {
   return m ? IND_HARI[new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10)).getDay()] : "";
 }
 
+/** "2026-10-09" -> "09/Okt (Jumaat)" */
+function indFmtShort(key) { return `${indFmtDate(key).slice(0, 6)} (${indDayName(key)})`; }
+
+/** Sama dengan kategori "guru" dalam paparan Harian (PENGETUA / PK / GKMP / PPP). */
+function indIsGuru(jawatan) {
+  const j = String(jawatan || "").toUpperCase();
+  return j.includes("PENGETUA") || j.includes("PK") || j.includes("GKMP") || j.includes("PPP");
+}
+function indNextWeekday(key) {
+  const [y, m, d] = key.split("-").map(Number);
+  let t = new Date(Date.UTC(y, m - 1, d + 1));
+  while (t.getUTCDay() === 0 || t.getUTCDay() === 6) t = new Date(t.getTime() + 86400000);
+  return t.toISOString().slice(0, 10);
+}
+/** Gabungkan hari bekerja BERTURUT-TURUT (Jumaat -> Isnin dikira berturut) dengan sebab yang sama -> julat ringkas. */
+function indGroupExcluded(list) {
+  const groups = [];
+  list.slice().sort((a, b) => (a.key < b.key ? -1 : 1)).forEach((x) => {
+    const g = groups[groups.length - 1];
+    if (g && g.sebab === x.sebab && g.nama === x.nama && indNextWeekday(g.to) === x.key) g.to = x.key;
+    else groups.push({ from: x.key, to: x.key, sebab: x.sebab, nama: x.nama });
+  });
+  return groups;
+}
+/** [{label, why}] — label ringkas ("09/Okt (Jumaat)" atau "07/Dis–31/Dis"), why = nama cuti atau "anggaran". */
+function indExcludedItems(r) {
+  return indGroupExcluded(r.dikecualikan).map((g) => ({
+    label: g.from === g.to ? indFmtShort(g.from) : `${indFmtDate(g.from).slice(0, 6)}–${indFmtDate(g.to).slice(0, 6)}`,
+    why: g.sebab === "kalendar" ? g.nama : `anggaran (kurang daripada ${r.ambang} staf mengisi)`,
+  }));
+}
+
 /* ---------------- Pengiraan (fungsi tulen — boleh diuji tanpa DOM) ---------------- */
 /**
  * opts: { staff:{noKP,nama,jawatan}, kehadiranRows, rekodRows, rosterSize, tahun, bulan, today?:Date }
- * Pulang: { hadir[], lewat[], belum[], rekod[], hariBekerja[], pendingHariIni, ambang, tiadaNoKP }
+ * opts tambahan: cutiMap (Map "yyyy-mm-dd" -> [entri cuti]), guru (boolean)
+ * Pulang: { hadir[], lewat[], belum[], rekod[], hariBekerja[], dikecualikan[{key,sebab:"kalendar"|"anggaran",nama}], pendingHariIni, ambang, tiadaNoKP }
  * Hanya hari Isnin–Jumaat sehingga hari ini (macam kad Home). Hari ini TIDAK dikira "tidak mengisi"
  * kalau belum ada rekod (hari belum tamat).
  */
 function indComputeMonth(opts) {
   const { staff, kehadiranRows, rekodRows, rosterSize, tahun, bulan } = opts;
   const today = opts.today || new Date();
+  const applies = typeof hcApplies === "function" ? hcApplies : () => true; // hari-cuti.js tiada -> anggaran sahaja
   const { kehadiranMap, rekodMap } = dbBuildKehadiranRekodMaps(kehadiranRows, rekodRows, tahun, bulan);
 
   // Bilangan staf (seluruh sekolah) yang mengisi Kehadiran pada setiap tarikh
@@ -102,7 +139,7 @@ function indComputeMonth(opts) {
 
   const todayKey = dbYmd(today);
   const daysInMonth = new Date(tahun, bulan, 0).getDate();
-  const res = { staff, tahun, bulan, hadir: [], lewat: [], belum: [], rekod: [], hariBekerja: [], pendingHariIni: false, ambang, tiadaNoKP: !String(staff.noKP || "").trim() };
+  const res = { staff, tahun, bulan, hadir: [], lewat: [], belum: [], rekod: [], hariBekerja: [], dikecualikan: [], pendingHariIni: false, ambang, tiadaNoKP: !String(staff.noKP || "").trim() };
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dt = new Date(tahun, bulan - 1, d);
@@ -111,8 +148,16 @@ function indComputeMonth(opts) {
     const key = dbYmd(dt);
     if (key > todayKey) break; // hari akan datang tak dikira
     const isToday = key === todayKey;
-    const hariKerja = (perDate.get(key) || 0) >= ambang;
+    const cutiHari = ((opts.cutiMap && opts.cutiMap.get(key)) || []).filter((e) => applies(e, opts.guru));
+    const anggaranOk = (perDate.get(key) || 0) >= ambang;
+    const hariKerja = !cutiHari.length && anggaranOk;
     if (hariKerja) res.hariBekerja.push(key);
+    else if (!isToday) {
+      // bukan hari bekerja — dipaparkan beserta SEBAB supaya boleh disemak
+      res.dikecualikan.push(cutiHari.length
+        ? { key, sebab: "kalendar", nama: [...new Set(cutiHari.map((e) => e.nama).filter(Boolean))].join(" / ") || cutiHari[0].jenis }
+        : { key, sebab: "anggaran", nama: "" });
+    }
 
     const c = dbClassifyDay(staff.noKP, staff.nama, staff.jawatan, key, kehadiranMap, rekodMap);
     if (c.masaMasuk) {
@@ -297,7 +342,12 @@ function indRender() {
   if (!staff) { indLast = null; indSetEmpty("Pilih pegawai untuk melihat analisis individu."); return; }
   const { bulan, tahun } = indPeriod();
   try {
-    indLast = indComputeMonth({ staff, kehadiranRows: dbBookKehadiranRows, rekodRows: dbBookRekodRows, rosterSize: dbStaffRoster.length, tahun, bulan });
+    const first = `${tahun}-${indPad2(bulan)}-01`, last = `${tahun}-${indPad2(bulan)}-${indPad2(new Date(tahun, bulan, 0).getDate())}`;
+    const cutiMap = typeof hcDayMap === "function" ? hcDayMap(first, last) : new Map();
+    indLast = indComputeMonth({ staff, kehadiranRows: dbBookKehadiranRows, rekodRows: dbBookRekodRows, rosterSize: dbStaffRoster.length, tahun, bulan, cutiMap, guru: indIsGuru(staff.jawatan) });
+    indLast.kalendarAda = typeof hcMeta !== "undefined" && hcMeta.ok && hcMeta.count > 0;
+    indLast.guru = indIsGuru(staff.jawatan);
+    indLast.adaCutiSekolah = [...cutiMap.values()].some((arr) => arr.some((e) => typeof hcIsSekolah === "function" && hcIsSekolah(e)));
   } catch (err) {
     // Ralat pengiraan dipaparkan di sini (bukan senyap / bukan sebagai "gagal segar data Sheet")
     console.error("indComputeMonth:", err);
@@ -313,7 +363,11 @@ function indRender() {
   document.getElementById("ind-who-sub").textContent = `${staff.jawatan || "-"} · ${DB_BULAN[bulan - 1]} ${tahun}`;
   Object.keys(IND_CARDS).forEach((k) => { document.getElementById("ind-val-" + k).textContent = indLast[k].length; });
 
-  const notes = [`Hari bekerja dikesan: <b>${indLast.hariBekerja.length}</b> hari (Isnin–Jumaat; cuti umum/sekolah dikecualikan automatik).`];
+  const notes = [indLast.kalendarAda
+    ? `Hari bekerja: <b>${indLast.hariBekerja.length}</b> hari — mengikut <b>kalendar cuti</b> dan anggaran kehadiran (hari yang kurang daripada ${indLast.ambang} staf mengisi).`
+    : `Hari bekerja (<b>anggaran</b>): <b>${indLast.hariBekerja.length}</b> hari. Kalendar cuti belum ada, jadi hari Isnin–Jumaat yang kurang daripada ${indLast.ambang} staf mengisi kehadiran dianggap bukan hari bekerja.`];
+  if (indLast.dikecualikan.length) notes.push(`Dianggap bukan hari bekerja: ${indExcludedItems(indLast).map((x) => `<b>${dbEscape(x.label)}</b> — ${dbEscape(x.why)}`).join("; ")}.`);
+  if (indLast.kalendarAda && !indLast.guru && indLast.adaCutiSekolah) notes.push("Cuti sekolah (penggal / perayaan KPM) dikira untuk guru sahaja; staf sokongan mengikut anggaran.");
   if (indLast.pendingHariIni) notes.push("Hari ini belum dikira sebagai “tidak mengisi”.");
   if (indLast.tiadaNoKP) notes.push('<span class="ind-warn">⚠️ No. KP pegawai ini tiada dalam Database eRKS — kehadiran tak dapat dipadankan.</span>');
   document.getElementById("ind-note").innerHTML = notes.join("<br>");
@@ -356,6 +410,7 @@ function indFillCard(key) {
     <div class="ind-card-period"><span>Bulan: <b>${DB_BULAN[r.bulan - 1]}</b></span><span>Tahun: <b>${r.tahun}</b></span></div>
     <div class="ind-card-total">Jumlah: <b>${r[key].length}</b> hari</div>
     <div class="ind-card-list">${indRowsHtml(key, r)}</div>
+    ${key === "belum" && r.dikecualikan.length ? `<div class="ind-card-foot ind-card-foot-note">Tidak termasuk hari yang bukan hari bekerja: ${indExcludedItems(r).map((x) => `${dbEscape(x.label)} — ${dbEscape(x.why)}`).join("; ")}</div>` : ""}
     <div class="ind-card-foot">Sumber: eRKS · dijana ${indFmtDate(dbYmd(dijana))} ${indPad2(dijana.getHours())}:${indPad2(dijana.getMinutes())}</div>`;
   return true;
 }
@@ -482,4 +537,6 @@ function indInit(user) {
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && indOpenKey) indCloseModal(); });
   const missing = indMissingDeps();
   if (missing.length) { console.error("kehadiran-staf-individu: fungsi tiada daripada erks-database.js:", missing.join(", ")); indShowBroken(missing); }
+  // Bar status kalendar cuti (butang "Kemaskini Cuti" hanya untuk Admin App — dirender oleh hari-cuti.js)
+  if (typeof hcRenderBar === "function") hcRenderBar(document.getElementById("ind-cuti-bar"), user, async () => indOnData());
 }
