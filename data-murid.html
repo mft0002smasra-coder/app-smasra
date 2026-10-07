@@ -205,7 +205,7 @@
       <div class="dm-page-title" style="margin-top:22px">MUAT NAIK DATA MURID</div>
       <div class="dm-card">
         <div class="dm-upload-icon">📊</div>
-        <div class="dm-upload-desc">Muat naik fail CSV atau Excel (.xlsx) untuk kemaskini pangkalan data murid secara pukal.</div>
+        <div class="dm-upload-desc">Muat naik fail CSV atau Excel (.xlsx). <b>Semua data murid sedia ada akan DIGANTI</b> dengan data dalam fail — pastikan fail mengandungi <b>SEMUA murid</b>. Data lama disandarkan dalam tab <i>DatabaseMurid_Sandaran</i>.</div>
         <div class="dm-upload-hint">Sokong fail eksport terus dari <b>sistem APDM/KPM</b> (auto-kesan header, kelas, jantina &amp; status asrama) — atau format ringkas sendiri (Nama, No KP, Kelas, Jantina, Asrama, Catatan).</div>
 
         <label class="dm-file-btn" for="dm-file-input">📂 Pilih Fail (.csv / .xlsx)</label>
@@ -251,7 +251,7 @@
 </div>
 
 <script src="app.js"></script>
-<script src="data-murid.js"></script>
+<script src="data-murid.js?v=20261007a"></script>
 <script>
   initApp(dmInit);
 </script>

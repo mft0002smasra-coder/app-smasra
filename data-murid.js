@@ -655,6 +655,22 @@ async function dmHandleFilePick(input) {
   }
 }
 
+/** Kunci pendua — SAMA dengan logik pelayan (dmPrepareRows_): KP (abjad-angka sahaja) + nama;
+ * tanpa KP: nama + kelas + tarikh lahir. KP sama tetapi nama berbeza BUKAN pendua. */
+function dmDupKey(r) {
+  const kp = String(r.noPengenalan || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const nama = dmNorm(r.nama);
+  return kp ? kp + "|" + nama : "-|" + nama + "|" + dmNorm(r.kelas) + "|" + String(r.tarikhLahir || "").trim();
+}
+function dmCountDuplicates(rows) {
+  const seen = new Set();
+  let d = 0;
+  rows.forEach((r) => { const k = dmDupKey(r); if (seen.has(k)) d++; else seen.add(k); });
+  return d;
+}
+/** KP yang dirosakkan Excel (notasi saintifik, cth "9.03E+11"). */
+function dmCountKpRosak(rows) { return rows.filter((r) => /^\d+(\.\d+)?E[+-]?\d+$/i.test(String(r.noPengenalan || "").trim())).length; }
+
 function dmRenderPreview() {
   const statusEl = document.getElementById("dm-upload-status");
   const previewBox = document.getElementById("dm-preview-box");
@@ -664,7 +680,11 @@ function dmRenderPreview() {
     document.getElementById("dm-confirm-upload-btn").classList.add("hidden");
     return;
   }
-  statusEl.textContent = `Jumpa ${dmParsedRows.length} rekod murid. Semak pratonton di bawah sebelum simpan.`;
+  const dup = dmCountDuplicates(dmParsedRows), kpRosak = dmCountKpRosak(dmParsedRows);
+  statusEl.textContent = `Jumpa ${dmParsedRows.length} rekod murid. Semak pratonton di bawah sebelum simpan.` +
+    (dup ? ` ${dup} rekod pendua dalam fail akan dibuang automatik.` : "") +
+    (kpRosak ? ` ⚠️ ${kpRosak} murid mempunyai No. Pengenalan yang rosak (notasi saintifik, cth 9.03E+11) — format lajur itu sebagai Teks dalam Excel dan muat naik semula.` : "") +
+    ` Menyimpan akan MENGGANTIKAN semua data murid sedia ada.`;
   const previewRows = dmParsedRows.slice(0, 8);
   document.getElementById("dm-preview-body").innerHTML = previewRows.map((r) => `<tr>
       <td class="dm-nama-cell">${dmEscape(r.nama)}</td><td>${dmEscape(r.noPengenalan)}</td>
@@ -678,12 +698,27 @@ function dmRenderPreview() {
 async function dmConfirmUpload() {
   const statusEl = document.getElementById("dm-upload-status");
   const btn = document.getElementById("dm-confirm-upload-btn");
+  if (btn.disabled) return; // elak klik berganda (dua permintaan serentak)
   if (!apiConfigured()) { statusEl.textContent = "API_URL belum disambung."; return; }
-  btn.disabled = true; btn.textContent = "Menyimpan...";
+  const label = "Sahkan & Simpan ke Sheet";
+  btn.disabled = true; btn.textContent = "Memeriksa data sedia ada...";
   try {
-    const result = await postToAppsScript(API_URL, { action: "uploadDataMurid", email: dmCurrentUser.email, murid: dmParsedRows });
-    if (result.success) {
-      statusEl.textContent = `Berjaya! ${result.added} rekod baharu ditambah, ${result.updated} dikemaskini${result.skipped ? `, ${result.skipped} dilangkau (data tak lengkap)` : ""}.`;
+    // Muat naik MENGGANTIKAN semua data lama — beritahu guru dengan bilangan TERKINI (bukan cache 3 minit)
+    await dmFetchStudents(true);
+    const lama = dmStudents.length, baharu = dmParsedRows.length, dupLama = dmCountDuplicates(dmStudents);
+    let msg = `Muat naik ini akan MENGGANTIKAN SEMUA data murid sedia ada${lama ? ` (${lama} rekod${dupLama ? `, termasuk ${dupLama} pendua` : ""})` : ""} dengan ${baharu} murid daripada fail.\n\nData lama disandarkan dalam tab DatabaseMurid_Sandaran.\n\nTeruskan?`;
+    if (lama >= 20 && baharu < lama * 0.7) msg = `⚠️ AMARAN: bilangan murid TURUN daripada ${lama} kepada ${baharu}. Adakah fail ini mengandungi SEMUA murid (semua tingkatan)?\n\n` + msg;
+    if (!confirm(msg)) { btn.disabled = false; btn.textContent = label; return; }
+
+    btn.textContent = "Menyimpan...";
+    const result = await postToAppsScript(API_URL, { action: "uploadDataMurid", email: dmCurrentUser.email, ganti: true, murid: dmParsedRows });
+    // postToAppsScript memulangkan {success:true,_fallbackParse:true} bila respons BUKAN JSON — itu bukan kejayaan sebenar
+    if (result && result.success && !result._fallbackParse) {
+      statusEl.textContent = (result.lama > 0 ? `Berjaya! Data lama (${result.lama} rekod) diganti dengan ${result.baharu} murid.` : `Berjaya! ${result.baharu} murid disimpan.`) +
+        (result.pendua ? ` ${result.pendua} pendua dalam fail dibuang.` : "") +
+        (result.dilangkau ? ` ${result.dilangkau} dilangkau (data tak lengkap).` : "") +
+        (result.kpRosak ? ` ⚠️ ${result.kpRosak} murid No. Pengenalan rosak (notasi saintifik).` : "") +
+        (result.sandaran ? ` Sandaran data lama: tab ${result.sandaran}.` : "");
       dmParsedRows = [];
       document.getElementById("dm-preview-box").classList.add("hidden");
       btn.classList.add("hidden");
@@ -699,13 +734,15 @@ async function dmConfirmUpload() {
           dmExtraPageRendered[key] = true;
         }
       });
+    } else if (result && result._fallbackParse) {
+      statusEl.textContent = "Respons pelayan tidak jelas — status simpanan tidak pasti. Semak tab Data Murid; mengulang muat naik adalah SELAMAT (ia menggantikan, bukan menambah).";
     } else {
-      statusEl.textContent = result.message || "Gagal simpan data murid.";
+      statusEl.textContent = (result && result.message) || "Gagal simpan data murid.";
     }
   } catch (err) {
-    statusEl.textContent = "Ralat sambungan ke server (" + err.message + ").";
+    statusEl.textContent = "Ralat sambungan ke server (" + err.message + "). Status simpanan tidak pasti — semak data dahulu; mengulang muat naik adalah SELAMAT (ia menggantikan, bukan menambah).";
   }
-  btn.disabled = false; btn.textContent = "Sahkan & Simpan ke Sheet";
+  btn.disabled = false; btn.textContent = label;
 }
 
 /* ================= Navigasi tab ================= */
