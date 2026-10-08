@@ -81,6 +81,31 @@ function jgFmtWaktuKelas(val, kelas) {
   return one === null ? parts.slice(0, 2).map(jgFmtWaktu).join("/") : jgFmtWaktu(one);
 }
 
+/* ---------------- Masa khas ikut tingkatan (SANDARAN) ----------------
+   Dipakai HANYA bila Sheet KOSONG bagi masa itu. Kes sebenar: jadual lama dimuat naik sebelum lajur masa disimpan sebagai
+   teks, jadi bacaan gviz mengosongkan sel berpecah ("10.05/ 10.25"). Nilai dalam Sheet SENTIASA diutamakan.
+   Jumaat: waktu 5 TAMAT & waktu 6 MULA — Tingkatan 1-3 = 10.05, Tingkatan 4-6 = 10.25 (rujuk jadual induk). */
+const JG_WAKTU_KHAS = {
+  Jumaat: {
+    5: { tamat: { bawah: "10.05", atas: "10.25" } },
+    6: { mula: { bawah: "10.05", atas: "10.25" } },
+  },
+};
+/** Masa paparan bagi satu rekod. jenis = "mula" | "tamat". Sheet kosong + ada masa khas -> guna masa khas ikut tingkatan kelas
+ * (tingkatan tak pasti -> kedua-dua masa). Selain itu: peraturan sel berpecah biasa. */
+function jgFmtWaktuRekod(rec, jenis) {
+  const raw = jenis === "mula" ? rec.waktuMula : rec.waktuTamat;
+  if (raw === "" || raw === null || raw === undefined) {
+    const hariKhas = JG_WAKTU_KHAS[rec.hari];
+    const khas = hariKhas && hariKhas[rec.slot] && hariKhas[rec.slot][jenis];
+    if (khas) {
+      const g = jgKumpulanTingkatan(rec.kelas);
+      return g ? jgFmtWaktu(khas[g]) : `${jgFmtWaktu(khas.bawah)}/${jgFmtWaktu(khas.atas)}`;
+    }
+  }
+  return jgFmtWaktuKelas(raw, rec.kelas);
+}
+
 /* ---------------- Akses ---------------- */
 function jgCheckAccess(user) {
   const isAdminApp = String(user.role3 || "").trim().toLowerCase() === "admin app";
@@ -171,7 +196,7 @@ function jgBuildWeeklyTable(guruName) {
       if (!rec || !rec.subjek) return `<td></td>`;
       const col = jgColorForSubjek(rec.subjek);
       const dataJson = jgEscape(JSON.stringify(rec)).replace(/'/g, "&apos;");
-      return `<td><div class="jg-cell" style="background:${col.bg};color:${col.text}" onclick='jgOpenCellDetail(${dataJson})'><span class="jg-cell-time" style="color:${col.text};opacity:.75">${jgFmtWaktuKelas(rec.waktuMula, rec.kelas)}-${jgFmtWaktuKelas(rec.waktuTamat, rec.kelas)}</span><span class="jg-cell-subj" style="color:${col.text}">${jgEscape(rec.subjek)}</span><span class="jg-cell-kelas" style="color:${col.text}">${jgEscape(rec.kelas)}</span></div></td>`;
+      return `<td><div class="jg-cell" style="background:${col.bg};color:${col.text}" onclick='jgOpenCellDetail(${dataJson})'><span class="jg-cell-time" style="color:${col.text};opacity:.75">${jgFmtWaktuRekod(rec, "mula")}-${jgFmtWaktuRekod(rec, "tamat")}</span><span class="jg-cell-subj" style="color:${col.text}">${jgEscape(rec.subjek)}</span><span class="jg-cell-kelas" style="color:${col.text}">${jgEscape(rec.kelas)}</span></div></td>`;
     }).join("");
     rows.push(`<tr><td class="jg-slot-cell">${slot}</td>${cells}</tr>`);
   }
@@ -188,7 +213,7 @@ function jgOpenCellDetail(rec) {
   const box = document.getElementById("jg-detail-overlay");
   document.getElementById("jg-detail-guru").textContent = rec.guru || "-";
   document.getElementById("jg-detail-hari").textContent = rec.hari || "-";
-  document.getElementById("jg-detail-waktu").textContent = `Waktu ${rec.slot} (${jgFmtWaktuKelas(rec.waktuMula, rec.kelas)} - ${jgFmtWaktuKelas(rec.waktuTamat, rec.kelas)})`;
+  document.getElementById("jg-detail-waktu").textContent = `Waktu ${rec.slot} (${jgFmtWaktuRekod(rec, "mula")} - ${jgFmtWaktuRekod(rec, "tamat")})`;
   document.getElementById("jg-detail-subjek").textContent = rec.subjek || "-";
   document.getElementById("jg-detail-kelas").textContent = rec.kelas || "-";
   box.classList.remove("hidden");
@@ -214,7 +239,7 @@ function jgBuildClassWeeklyTable(kelasName) {
       const col = jgColorForSubjek(rec.subjek);
       const kodPaparan = rec.kodGuru || jgGenerateKodFromName(rec.guru); // jana dari nama kalau data lama tiada kod
       const dataJson = jgEscape(JSON.stringify(rec)).replace(/'/g, "&apos;");
-      return `<td><div class="jg-cell" style="background:${col.bg};color:${col.text}" onclick='jgOpenCellDetail(${dataJson})'><span class="jg-cell-time" style="color:${col.text};opacity:.75">${jgFmtWaktuKelas(rec.waktuMula, rec.kelas)}-${jgFmtWaktuKelas(rec.waktuTamat, rec.kelas)}</span><span class="jg-cell-subj" style="color:${col.text}">${jgEscape(rec.subjek)}</span><span class="jg-cell-kelas" style="color:${col.text}">${jgEscape(kodPaparan)}</span></div></td>`;
+      return `<td><div class="jg-cell" style="background:${col.bg};color:${col.text}" onclick='jgOpenCellDetail(${dataJson})'><span class="jg-cell-time" style="color:${col.text};opacity:.75">${jgFmtWaktuRekod(rec, "mula")}-${jgFmtWaktuRekod(rec, "tamat")}</span><span class="jg-cell-subj" style="color:${col.text}">${jgEscape(rec.subjek)}</span><span class="jg-cell-kelas" style="color:${col.text}">${jgEscape(kodPaparan)}</span></div></td>`;
     }).join("");
     rows.push(`<tr><td class="jg-slot-cell">${slot}</td>${cells}</tr>`);
   }
@@ -618,7 +643,7 @@ async function jgRenderHomeCard(user) {
   listEl.innerHTML = mine.map((r) => `
     <div class="jg-home-row">
       <span class="jg-home-waktu">Waktu ${r.slot}</span>
-      <span class="jg-home-masa">${jgFmtWaktuKelas(r.waktuMula, r.kelas)}&ndash;${jgFmtWaktuKelas(r.waktuTamat, r.kelas)}</span>
+      <span class="jg-home-masa">${jgFmtWaktuRekod(r, "mula")}&ndash;${jgFmtWaktuRekod(r, "tamat")}</span>
       <span class="jg-home-subj">${jgEscape(r.subjek)}${r.kelas ? " (" + jgEscape(r.kelas) + ")" : ""}</span>
     </div>`).join("");
 }
