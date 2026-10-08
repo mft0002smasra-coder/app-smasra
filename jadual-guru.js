@@ -81,27 +81,36 @@ function jgFmtWaktuKelas(val, kelas) {
   return one === null ? parts.slice(0, 2).map(jgFmtWaktu).join("/") : jgFmtWaktu(one);
 }
 
-/* ---------------- Masa khas ikut tingkatan (SANDARAN) ----------------
-   Dipakai HANYA bila Sheet KOSONG bagi masa itu. Kes sebenar: jadual lama dimuat naik sebelum lajur masa disimpan sebagai
-   teks, jadi bacaan gviz mengosongkan sel berpecah ("10.05/ 10.25"). Nilai dalam Sheet SENTIASA diutamakan.
-   Jumaat: waktu 5 TAMAT & waktu 6 MULA — Tingkatan 1-3 = 10.05, Tingkatan 4-6 = 10.25 (rujuk jadual induk). */
+/* ---------------- Masa TETAP ikut tingkatan (DITETAPKAN SISTEM) ----------------
+   Jumaat: waktu 5 TAMAT & waktu 6 MULA — Tingkatan 1-3 = 10.05, Tingkatan 4-6 = 10.25.
+   Masa ini DITETAPKAN oleh sistem: nilai dalam fail yang diupload DIABAIKAN bagi kelas yang tingkatannya jelas
+   (cth fail hanya ada "10.25" -> kelas T1-3 tetap dipaparkan 10.05). Waktu/hari/jenis lain: ikut data upload.
+   Kelas yang tingkatannya tak dapat ditentukan (tiada nombor / bercampur "3A/4B"): guna nilai Sheet; kalau kosong,
+   paparkan kedua-dua masa. Tukar masa di sini kalau takwim berubah; buang entri untuk menghentikan penetapan. */
 const JG_WAKTU_KHAS = {
   Jumaat: {
     5: { tamat: { bawah: "10.05", atas: "10.25" } },
     6: { mula: { bawah: "10.05", atas: "10.25" } },
   },
 };
-/** Masa paparan bagi satu rekod. jenis = "mula" | "tamat". Sheet kosong + ada masa khas -> guna masa khas ikut tingkatan kelas
- * (tingkatan tak pasti -> kedua-dua masa). Selain itu: peraturan sel berpecah biasa. */
+/** Masa tetap sistem bagi kelas itu (teks "10.05"); null = tiada peraturan untuk hari+waktu+jenis ini, atau tingkatan kelas tak pasti. */
+function jgWaktuKhasUntuk(hari, slot, jenis, kelas) {
+  const hk = JG_WAKTU_KHAS[hari];
+  const khas = hk && hk[slot] && hk[slot][jenis];
+  if (!khas) return null;
+  const g = jgKumpulanTingkatan(kelas);
+  return g ? khas[g] : null;
+}
+/** Masa paparan bagi satu rekod. jenis = "mula" | "tamat". Masa tetap sistem MENANG; kalau tak terpakai: nilai Sheet
+ * (sel berpecah diselesaikan ikut kelas); Sheet kosong + ada masa tetap tetapi kelas tak pasti -> kedua-dua masa. */
 function jgFmtWaktuRekod(rec, jenis) {
+  const tetap = jgWaktuKhasUntuk(rec.hari, rec.slot, jenis, rec.kelas);
+  if (tetap !== null) return jgFmtWaktu(tetap);
   const raw = jenis === "mula" ? rec.waktuMula : rec.waktuTamat;
   if (raw === "" || raw === null || raw === undefined) {
-    const hariKhas = JG_WAKTU_KHAS[rec.hari];
-    const khas = hariKhas && hariKhas[rec.slot] && hariKhas[rec.slot][jenis];
-    if (khas) {
-      const g = jgKumpulanTingkatan(rec.kelas);
-      return g ? jgFmtWaktu(khas[g]) : `${jgFmtWaktu(khas.bawah)}/${jgFmtWaktu(khas.atas)}`;
-    }
+    const hk = JG_WAKTU_KHAS[rec.hari];
+    const khas = hk && hk[rec.slot] && hk[rec.slot][jenis];
+    if (khas) return `${jgFmtWaktu(khas.bawah)}/${jgFmtWaktu(khas.atas)}`;
   }
   return jgFmtWaktuKelas(raw, rec.kelas);
 }
@@ -380,11 +389,13 @@ function jgRowsFromAoa(aoa) {
         if (!subjek) continue;
         // Masa berpecah ("10.05/ 10.25" = T1-3 / T4-6): simpan masa yang betul bagi kelas ini. Tingkatan tak pasti -> teks asal
         // dikekalkan (paparan akan menunjukkan kedua-dua masa).
+        // Masa TETAP sistem (Jumaat waktu 5 tamat / waktu 6 mula) menimpa nilai fail bagi kelas yang tingkatannya jelas.
         const pilihMula = jgPilihWaktu(mulaRow[col], kelas), pilihTamat = jgPilihWaktu(tamatRow[col], kelas);
+        const tetapMula = jgWaktuKhasUntuk(hariMatch, slot, "mula", kelas), tetapTamat = jgWaktuKhasUntuk(hariMatch, slot, "tamat", kelas);
         rows.push({
           hari: hariMatch, guru: namaGuru, kodGuru, slot,
-          waktuMula: pilihMula === null ? mulaRow[col] : pilihMula,
-          waktuTamat: pilihTamat === null ? tamatRow[col] : pilihTamat,
+          waktuMula: tetapMula !== null ? tetapMula : (pilihMula === null ? mulaRow[col] : pilihMula),
+          waktuTamat: tetapTamat !== null ? tetapTamat : (pilihTamat === null ? tamatRow[col] : pilihTamat),
           subjek, kelas,
         });
       }
