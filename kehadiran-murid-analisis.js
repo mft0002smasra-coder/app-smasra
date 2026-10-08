@@ -10,7 +10,24 @@ const MA_AUTO_REFRESH_MS = 5 * 60 * 1000;
 
 const MA_BULAN = ["Januari","Februari","Mac","April","Mei","Jun","Julai","Ogos","September","Oktober","November","Disember"];
 const MA_HARI = ["Ahad","Isnin","Selasa","Rabu","Khamis","Jumaat","Sabtu"];
-const MA_TOTAL_KELAS_TETAP = 17;
+
+/* Jumlah kelas & bilangan murid datang daripada ENROLMEN (enrolmen-murid.js -> tab DatabaseMurid), BUKAN nombor tetap.
+   Kelas yang tak pernah menghantar rekod pun dikira & dipaparkan ("Tiada rekod"). Kalau enrolmen tak dapat dimuat,
+   jatuh ke senarai kelas daripada rekod kehadiran sahaja (dengan amaran). */
+let MA_ENROL = { ok: false, kelas: [], jumlahMurid: 0, dup: 0, segar: false }; // kelas: [{ nama, bilangan }]
+function maNormKelas(k) { return typeof emNormKelas === "function" ? emNormKelas(k) : String(k == null ? "" : k).trim().replace(/\s+/g, " ").toUpperCase(); }
+function maExpectedClasses() { return MA_ENROL.ok ? MA_ENROL.kelas.length : MA_ALL_CLASSES.length; }
+/** Bilangan kelas (dalam enrolmen) yang ada rekod; tanpa enrolmen: bilangan kelas unik dalam rekod. */
+function maCountFilled(records) {
+  const set = new Set(records.map((r) => maNormKelas(r.kelas)));
+  return MA_ENROL.ok ? MA_ENROL.kelas.filter((k) => set.has(maNormKelas(k.nama))).length : set.size;
+}
+async function maLoadEnrolment() {
+  if (typeof emLoad !== "function" || typeof emClasses !== "function") { MA_ENROL = { ok: false, kelas: [], jumlahMurid: 0, dup: 0, segar: false }; return; } // fail enrolmen tiada
+  const m = await emLoad();
+  const kelas = emClasses();
+  MA_ENROL = { ok: kelas.length > 0, kelas, jumlahMurid: kelas.reduce((a, k) => a + k.bilangan, 0), dup: m.dup || 0, segar: !!m.ok };
+}
 
 let MA_RECORDS = [];
 let MA_ALL_CLASSES = [];
@@ -91,7 +108,7 @@ async function maFetchSheetData() {
   maShowLoading(true);
   maShowError(null);
   try {
-    const res = await fetch(MA_GVIZ_URL, { cache: "no-store" });
+    const [res] = await Promise.all([fetch(MA_GVIZ_URL, { cache: "no-store" }), maLoadEnrolment()]);
     if (!res.ok) throw new Error("HTTP " + res.status);
     const text = await res.text();
     const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
@@ -129,8 +146,9 @@ async function maFetchSheetData() {
       }
       if (!tarikhDate || isNaN(tarikhDate.getTime())) continue;
 
-      const kelas = (get(1) && (get(1).v ?? get(1).f)) ? String(get(1).v ?? get(1).f).trim() : "";
-      if (!kelas) continue;
+      const kelasRaw = (get(1) && (get(1).v ?? get(1).f)) ? String(get(1).v ?? get(1).f).trim() : "";
+      if (!kelasRaw) continue;
+      const kelas = MA_ENROL.ok ? emCanonKelas(kelasRaw) : kelasRaw; // ejaan sama dengan enrolmen (abaikan huruf besar/kecil & ruang)
 
       const hadir = Number(get(2)?.v ?? 0) || 0;
       const tidakHadir = Number(get(3)?.v ?? 0) || 0;
@@ -151,7 +169,10 @@ async function maFetchSheetData() {
     }
 
     MA_RECORDS = records;
-    MA_ALL_CLASSES = Array.from(classSet).sort((a, b) => {
+    const allNames = new Map();
+    MA_ENROL.kelas.forEach((k) => allNames.set(maNormKelas(k.nama), k.nama));
+    classSet.forEach((k) => { if (!allNames.has(maNormKelas(k))) allNames.set(maNormKelas(k), k); });
+    MA_ALL_CLASSES = Array.from(allNames.values()).sort((a, b) => {
       const ta = maTingkatanOf(a), tb = maTingkatanOf(b);
       if (ta !== tb) return ta - tb;
       return a.localeCompare(b);
@@ -169,6 +190,9 @@ async function maFetchSheetData() {
     try { maRenderUtama(); } catch (e) { console.error("maRenderUtama:", e); }
     try { maRenderKelasPage(); } catch (e) { console.error("maRenderKelasPage:", e); }
     try { maRenderTahunan(); } catch (e) { console.error("maRenderTahunan:", e); }
+    if (!MA_ENROL.ok) maShowError("⚠️ Data enrolmen murid tidak dapat dimuat — jumlah kelas dikira daripada rekod kehadiran sahaja.");
+    else if (!MA_ENROL.segar) maShowError("⚠️ Data enrolmen tidak dapat disegarkan — menggunakan senarai terakhir yang berjaya dimuat.");
+    else if (MA_ENROL.dup > 0) maShowError(`⚠️ ${MA_ENROL.dup} rekod murid pendua dalam Data Murid diabaikan. Minta Guru Data Murid muat naik semula data murid.`);
   } catch (err) {
     console.error(err);
     maShowLoading(false);
@@ -247,7 +271,7 @@ function maRenderUtama() {
   const dayRecords = MA_RECORDS.filter((r) => r.tahun === year && r.tarikhKey === dateStr);
   maLastDayRecords = dayRecords;
 
-  const jumlahKelasIsi = new Set(dayRecords.map((r) => r.kelas)).size;
+  const jumlahKelasIsi = maCountFilled(dayRecords);
   const jumlahHadir = dayRecords.reduce((s, r) => s + r.hadir, 0);
   const jumlahTidakHadir = dayRecords.reduce((s, r) => s + r.tidakHadir, 0);
   const jumlahMurid = dayRecords.reduce((s, r) => s + r.jumlahMurid, 0);
@@ -259,10 +283,10 @@ function maRenderUtama() {
   maLastDayLabel = `${MA_HARI[dObj.getDay()]}, ${maFmtTarikh(dObj)}`;
 
   const kpis = [
-    { icon: "🏫", label: "Kelas Telah Isi", value: `${jumlahKelasIsi}<small> / ${MA_ALL_CLASSES.length}</small>`, sub: "Kelas menghantar rekod", accent: "--cyan" },
+    { icon: "🏫", label: "Kelas Telah Isi", value: `${jumlahKelasIsi}<small> / ${maExpectedClasses()}</small>`, sub: MA_ENROL.ok ? "Daripada kelas dalam data enrolmen" : "Kelas menghantar rekod", accent: "--cyan" },
     { icon: "✅", label: "Jumlah Hadir", value: `${jumlahHadir}<small> orang</small>`, sub: "Murid hadir ke sekolah", accent: "--mint" },
     { icon: "❌", label: "Tidak Hadir", value: `${jumlahTidakHadir}<small> orang</small>`, sub: "Ketik untuk senarai ikut kelas", accent: "--danger", onClick: "maOpenAbsentAllClassesModal()" },
-    { icon: "👥", label: "Jumlah Murid", value: `${jumlahMurid}<small> orang</small>`, sub: "Jumlah keseluruhan direkodkan", accent: "--amber" },
+    { icon: "👥", label: "Jumlah Murid", value: `${jumlahMurid}<small> orang</small>`, sub: MA_ENROL.ok ? `Kelas telah isi · enrolmen sekolah ${MA_ENROL.jumlahMurid}` : "Jumlah keseluruhan direkodkan", accent: "--amber" },
     { icon: "📊", label: "Peratus Kehadiran", value: `${peratusKeseluruhan}<small>%</small>`, sub: "Kehadiran keseluruhan", accent: "--blue" },
   ];
   const donutCardHtml = `
@@ -280,7 +304,7 @@ function maRenderUtama() {
 
   maDrawDonutChart(jumlahHadir, jumlahTidakHadir);
 
-  document.getElementById("ma-u-classcount").textContent = `${jumlahKelasIsi} / ${MA_ALL_CLASSES.length} kelas ada rekod`;
+  document.getElementById("ma-u-classcount").textContent = `${jumlahKelasIsi} / ${maExpectedClasses()} kelas ada rekod`;
 
   function buildClassCard(kName) {
     const rec = dayRecords.find((r) => r.kelas === kName);
@@ -497,7 +521,7 @@ function maRenderTahunan() {
   const peratusKeseluruhan = maPct(jumlahHadirTotal, jumlahMuridTotal);
 
   const kpis = [
-    { icon: "🏫", label: "Purata Kelas Mengisi", value: `${purataKelasIsi}<small> / ${MA_TOTAL_KELAS_TETAP}</small>`, sub: `Purata sehari (${hariDirekod} hari direkod)`, accent: "--cyan" },
+    { icon: "🏫", label: "Purata Kelas Mengisi", value: `${purataKelasIsi}<small> / ${maExpectedClasses()}</small>`, sub: `Purata sehari (${hariDirekod} hari direkod)`, accent: "--cyan" },
     { icon: "✅", label: "Purata Hadir", value: `${purataHadir}<small> orang</small>`, sub: "Purata murid hadir sehari", accent: "--mint" },
     { icon: "❌", label: "Purata Tidak Hadir", value: `${purataTidakHadir}<small> orang</small>`, sub: "Purata murid tidak hadir sehari", accent: "--danger" },
     { icon: "👥", label: "Purata Jumlah Murid", value: `${purataMurid}<small> orang</small>`, sub: "Purata direkodkan sehari", accent: "--amber" },
@@ -516,8 +540,8 @@ function maRenderTahunan() {
 
   maDrawDonutChart(jumlahHadirTotal, jumlahTidakHadirTotal, { canvas: "ma-chartDonutT", key: "donutT" });
 
-  const kelasIsiUnik = new Set(periodRecords.map((r) => r.kelas)).size;
-  document.getElementById("ma-t-classcount").textContent = `${kelasIsiUnik} / ${MA_TOTAL_KELAS_TETAP} kelas ada rekod`;
+  const kelasIsiUnik = maCountFilled(periodRecords);
+  document.getElementById("ma-t-classcount").textContent = `${kelasIsiUnik} / ${maExpectedClasses()} kelas ada rekod`;
 
   const periodAgg = {};
 

@@ -2387,3 +2387,12 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
 .event-cuti-badge{ display:inline-block;padding:1px 7px;border-radius:6px;font-size:9px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;background:rgba(255,184,77,.18);color:var(--amber); }
 .event-cuti-item.is-umum .event-cuti-badge{ background:rgba(255,85,119,.18);color:var(--danger); }
 .event-cuti-item.is-semak .event-cuti-badge{ background:rgba(0,229,255,.15);color:var(--cyan); }
+
+/* Borang Kehadiran Murid: kiraan automatik (hanya tanda murid tidak hadir) */
+.km-live{ padding:9px 12px;margin-bottom:10px;border:1px solid var(--line);border-radius:10px;background:rgba(0,229,255,.05);font-size:13.5px;color:var(--text-dim);line-height:1.5; }
+.km-live b{ color:var(--text); }
+.km-live .km-live-ok{ color:var(--mint); }
+.km-live .km-live-bad{ color:var(--danger); }
+.km-live-note{ color:var(--mint);font-size:12px; }
+.km-warn{ margin:0 0 var(--gap);padding:9px 12px;border:1px solid rgba(255,184,77,.4);background:rgba(255,184,77,.07);border-radius:10px;font-size:12px;line-height:1.5;color:var(--amber); }
+.km-extra-tag{ font-style:normal;font-size:10.5px;color:var(--amber); }

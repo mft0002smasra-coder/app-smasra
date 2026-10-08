@@ -1,6 +1,5 @@
 /* ================= Konfigurasi & fetch data ================= */
 const KM_SHEET_ID = "1ZjUjYPY5QBxOrOIDI6PixpS5ygdatAsZ4HT_uT-iMMA";
-const KM_MURID_SPREADSHEET_ID = "1EohV_hfuS6SDgiqDn--QQiM_y92_K4jvGyh87nA3HOo"; // sama Spreadsheet Data Murid
 
 // GANTI dengan URL Web App selepas deploy Code-KehadiranMurid.gs (projek Apps Script BERASINGAN)
 const KM_API_URL = "https://script.google.com/macros/s/AKfycbwNJgwaxELxNJ1jmRbqszvy_uphXhazSjTwplL2IxuVLyTJ9FZnQqe8eUNvnyPBK3p7/exec";
@@ -9,46 +8,16 @@ function kmApiConfigured() { return KM_API_URL && KM_API_URL.indexOf("PASTE_") !
 let kmData = { kelas: [], kehadiran: [] };
 let kmLoaded = false;
 let kmError = null;
-let kmMuridList = []; // { nama, kelas } — sumber sebenar Data Murid (DatabaseMurid)
+let kmEnrolWarn = ""; // amaran enrolmen (pendua / muat semula gagal) — dipaparkan di Menu
 
-/** Baca senarai murid (nama+kelas) terus dari DatabaseMurid — sumber SEBENAR
- * untuk jumlah murid & senarai nama (bukan nombor statik dalam Sheet "Kelas"). */
-async function kmFetchMuridList() {
-  try {
-    const url = `https://docs.google.com/spreadsheets/d/${KM_MURID_SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent("DatabaseMurid")}&headers=1&_ts=${Date.now()}`;
-    const res = await fetch(url, { cache: "no-store" });
-    const text = await res.text();
-    const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
-    const table = JSON.parse(jsonStr).table;
-    // Kesan lajur "Nama" & "Kelas" ikut header (bukan kedudukan tetap)
-    const cols = table.cols || [];
-    let namaIdx = -1, kelasIdx = -1;
-    cols.forEach((col, i) => {
-      const label = String(col.label || "").trim().toUpperCase();
-      if (label === "NAMA" || label === "NAMA MURID") namaIdx = i;
-      if (label === "KELAS") kelasIdx = i;
-    });
-    if (namaIdx === -1) namaIdx = 1; // fallback anggaran
-    if (kelasIdx === -1) kelasIdx = 2;
-    kmMuridList = (table.rows || []).map((r) => {
-      const c = r.c || [];
-      return {
-        nama: c[namaIdx] && c[namaIdx].v != null ? String(c[namaIdx].v).trim() : "",
-        kelas: c[kelasIdx] && c[kelasIdx].v != null ? String(c[kelasIdx].v).trim() : "",
-      };
-    }).filter((s) => s.nama && s.kelas);
-  } catch (e) {
-    kmMuridList = [];
-  }
-}
-function kmMuridDalamKelas(kelas) {
-  const target = String(kelas || "").trim().toUpperCase();
-  return kmMuridList.filter((s) => s.kelas.toUpperCase() === target).sort((a, b) => a.nama.localeCompare(b.nama));
-}
+/** Senarai kelas, bilangan & nama murid datang daripada ENROLMEN (enrolmen-murid.js) — satu sumber dengan Analisis. */
+function kmMuridDalamKelas(kelas) { return emStudentsIn(kelas); }
+function kmSameKelas(a, b) { return emNormKelas(a) === emNormKelas(b); }
+function kmTodayKey() { return new Date().toLocaleDateString("en-GB").split("/").join("/"); } // dd/mm/yyyy
 
 async function kmFetchSheet(sheetName) {
-  const url = `https://docs.google.com/spreadsheets/d/${KM_SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(sheetName)}`;
-  const res = await fetch(url);
+  const url = `https://docs.google.com/spreadsheets/d/${KM_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&_ts=${Date.now()}`;
+  const res = await fetch(url, { cache: "no-store" });
   const text = await res.text();
   const jsonString = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
   return JSON.parse(jsonString).table.rows;
@@ -69,28 +38,28 @@ function kmParseDate(cellValue) {
 }
 
 async function kmLoadAll() {
+  kmError = null;
+  kmEnrolWarn = "";
   try {
-    const [kelasRows, kehadiranRows] = await Promise.all([
-      kmFetchSheet("Kelas"),
-      kmFetchSheet("Kehadiran"),
-      kmFetchMuridList(), // senarai murid sebenar — untuk jumlah & dropdown nama
-    ]);
+    const [kehadiranRows, em] = await Promise.all([kmFetchSheet("Kehadiran"), emLoad()]);
 
-    // Kelas: kolum A = nama, kolum B = bilangan murid. Kesan header secara defensif.
-    let kelasList = kelasRows.map(r => ({
-      nama: r.c[0] && r.c[0].v ? String(r.c[0].v).trim() : "",
-      bilangan: r.c[1] && typeof r.c[1].v === "number" ? r.c[1].v : Number(r.c[1] && r.c[1].v) || 0,
-    })).filter(k => k.nama);
-    if (kelasList.length && kelasList[0].bilangan === 0 && isNaN(Number(kelasRows[0].c[1] && kelasRows[0].c[1].v))) {
-      kelasList = kelasList.slice(1); // baris pertama nampak macam header, buang
+    // Tanpa enrolmen, jumlah hadir tak dapat dikira — HENTIKAN dengan mesej jelas (jangan teka)
+    if (!emClasses().length) {
+      kmError = em.sebab === "tajuk"
+        ? "Data murid tidak sah (lajur Nama/Kelas tiada dalam tab DatabaseMurid). Hubungi Guru Data Murid."
+        : "Data murid (enrolmen) tidak dapat dimuat atau masih kosong. Borang kehadiran memerlukan data murid untuk mengira jumlah hadir.";
+      kmLoaded = false;
+      return;
     }
-    kmData.kelas = kelasList;
+    if (!em.ok) kmEnrolWarn = "⚠️ Data murid tidak dapat disegarkan — menggunakan senarai terakhir yang berjaya dimuat.";
+    else if (em.dup > 0) kmEnrolWarn = `⚠️ ${em.dup} rekod murid pendua dalam Data Murid diabaikan. Minta Guru Data Murid muat naik semula data murid.`;
+    kmData.kelas = emClasses();
 
     // Kehadiran: kolum A=Tarikh,B=Kelas,C=Hadir,D=TidakHadir,E=Nama,F=Jumlah,G=Peratus,H=DirekodOleh
     kmData.kehadiran = kehadiranRows
       .map(r => ({
         tarikh: kmParseDate(r.c[0] && r.c[0].v),
-        kelas: r.c[1] && r.c[1].v ? String(r.c[1].v).trim() : "",
+        kelas: r.c[1] && r.c[1].v ? emCanonKelas(String(r.c[1].v)) : "", // ejaan sama dengan enrolmen
         hadir: Number(r.c[2] && r.c[2].v) || 0,
         tidak: Number(r.c[3] && r.c[3].v) || 0,
         nama: (r.c[4] && r.c[4].v) || "",
@@ -101,7 +70,14 @@ async function kmLoadAll() {
     kmLoaded = true;
   } catch (e) {
     kmError = 'Gagal muat data. Pastikan Sheet dikongsi sebagai "Anyone with the link" (Viewer).';
+    kmLoaded = false;
   }
+}
+async function kmReload() {
+  kmLoaded = false; kmError = null;
+  kmRender();
+  await kmLoadAll();
+  kmRender();
 }
 
 function kmCalcPercent(hadir, tidak) {
@@ -142,16 +118,19 @@ let KM_S = {
   kelas: null,
   tarikh: null,
   bilMurid: 0,
-  hadir: null,
-  tidak: null,
+  jumlah: 0,         // jumlah murid direkod (enrolmen kelas + murid lama yang masih ditanda)
+  hadir: null,       // DIKIRA automatik daripada nama murid tidak hadir
+  tidak: null,       // DIKIRA automatik
   nama: "",
+  sel: new Set(),    // indeks murid (dalam senarai kelas) yang ditanda TIDAK HADIR
+  extras: [],        // nama dalam rekod lama yang tiada dalam senarai kelas semasa (mod edit)
+  extrasSel: new Set(),
   editingRow: null,
   tarikhPage: 0,      // untuk pilih tarikh (edit), 5/muka
 };
 
 const KM_TITLES = {
-  menu: "Menu Utama", pilihKelasBaru: "Pilih Kelas", askHadir: "Isi Kehadiran",
-  askTidak: "Isi Kehadiran", askNama: "Isi Kehadiran", ringkasan: "Ringkasan",
+  menu: "Menu Utama", pilihKelasBaru: "Pilih Kelas", askNama: "Isi Kehadiran", ringkasan: "Ringkasan",
   editPilihTarikh: "Edit — Pilih Tarikh", editPilihKelas: "Edit — Pilih Kelas",
 };
 
@@ -169,7 +148,7 @@ function kmGoBack() {
   kmGoto(prev || "menu", false);
 }
 function kmResetToMenu() {
-  KM_S = { ...KM_S, mode: null, kelas: null, tarikh: null, bilMurid: 0, hadir: null, tidak: null, nama: "", editingRow: null, history: [] };
+  KM_S = { ...KM_S, mode: null, kelas: null, tarikh: null, bilMurid: 0, jumlah: 0, hadir: null, tidak: null, nama: "", sel: new Set(), extras: [], extrasSel: new Set(), editingRow: null, history: [] };
   kmGoto("menu", false);
 }
 
@@ -181,12 +160,12 @@ function kmRender() {
     return;
   }
   if (kmError) {
-    c.innerHTML = `<div class="empty-state">❌ ${kmError}</div>`;
+    c.innerHTML = `<div class="empty-state">❌ ${kmError}</div><div class="btn-stack"><button class="btn-primary" onclick="kmReload()">🔁 Cuba Semula</button></div>`;
     return;
   }
   const renderers = {
     menu: renderMenu, pilihKelasBaru: renderPilihKelasBaru,
-    askHadir: renderAskHadir, askTidak: renderAskTidak, askNama: renderAskNama,
+    askNama: renderAskNama,
     ringkasan: renderRingkasan,
     editPilihTarikh: renderEditPilihTarikh, editPilihKelas: renderEditPilihKelas,
   };
@@ -203,9 +182,9 @@ function renderMenu(c) {
   const todayKey = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
 
   const totalKelas = kmData.kelas.length;
-  const kelasIsiSet = new Set(kmData.kehadiran.filter((r) => r.tarikh === todayKey).map((r) => r.kelas));
-  const kelasIsiCount = kmData.kelas.filter((k) => kelasIsiSet.has(k.nama)).length;
-  const kelasBelumIsi = kmData.kelas.filter((k) => !kelasIsiSet.has(k.nama));
+  const kelasIsiSet = new Set(kmData.kehadiran.filter((r) => r.tarikh === todayKey).map((r) => emNormKelas(r.kelas)));
+  const kelasIsiCount = kmData.kelas.filter((k) => kelasIsiSet.has(emNormKelas(k.nama))).length;
+  const kelasBelumIsi = kmData.kelas.filter((k) => !kelasIsiSet.has(emNormKelas(k.nama)));
   const pctIsi = totalKelas ? Math.round((kelasIsiCount / totalKelas) * 100) : 0;
 
   const belumIsiHtml = kelasBelumIsi.length
@@ -218,6 +197,7 @@ function renderMenu(c) {
       <div class="sub-dim" style="margin-bottom:0">Hari: <b style="color:var(--text)">${hari}</b> &middot; Tarikh: <b style="color:var(--text)">${tarikhFmt}</b></div>
     </div>
 
+    ${kmEnrolWarn ? `<div class="km-warn">${kmEscape(kmEnrolWarn)}</div>` : ""}
     <div class="glass card-pad km-status-card">
       <div class="km-status-row">
         <div class="km-status-num">${kelasIsiCount}<span class="km-status-of">/${totalKelas}</span></div>
@@ -239,111 +219,108 @@ function renderMenu(c) {
 }
 
 /* ================= Flow: Isi Borang ================= */
+/* Pengguna HANYA menanda murid yang TIDAK HADIR. Jumlah murid datang daripada data enrolmen kelas;
+   tidak hadir = bilangan nama ditanda; hadir = jumlah - tidak hadir; peratus dikira. Tiada nombor perlu ditaip. */
 function startIsiBorang() {
   KM_S.mode = "new";
   KM_S.kelas = null; KM_S.hadir = null; KM_S.tidak = null; KM_S.nama = ""; KM_S.editingRow = null;
+  KM_S.sel = new Set(); KM_S.extras = []; KM_S.extrasSel = new Set();
   kmGoto("pilihKelasBaru");
 }
 
 function renderPilihKelasBaru(c) {
-  const tiles = kmData.kelas.map(k => {
-    const bilSebenar = kmMuridDalamKelas(k.nama).length || k.bilangan; // utamakan Data Murid, fallback Sheet Kelas
-    return `<div class="tile" onclick="pilihKelasBaru('${kmEscape(k.nama)}', ${bilSebenar})">${kmEscape(k.nama)}<span class="tile-sub">${bilSebenar} orang</span></div>`;
-  }).join("");
-  c.innerHTML = `<div class="grid2">${tiles || '<div class="empty-state">Tiada senarai kelas dalam Sheet.</div>'}</div>`;
+  const tiles = kmData.kelas.map((k, i) =>
+    `<div class="tile" onclick="pilihKelasBaruIdx(${i})">${kmEscape(k.nama)}<span class="tile-sub">${k.bilangan} orang</span></div>`
+  ).join("");
+  c.innerHTML = `<div class="grid2">${tiles || '<div class="empty-state">Tiada kelas dalam data murid.</div>'}</div>`;
 }
-function pilihKelasBaru(kelas, bilangan) {
-  const todayKey = new Date().toLocaleDateString("en-GB").split("/").join("/"); // dd/mm/yyyy
+function pilihKelasBaruIdx(i) { const k = kmData.kelas[i]; if (k) pilihKelasBaru(k.nama); }
+function pilihKelasBaru(kelas) {
+  const todayKey = kmTodayKey();
   // Sekatan data berulang — kalau kelas ni SUDAH ada rekod hari ini, sekat & arah ke Edit
-  const sudahAda = kmData.kehadiran.some((r) => r.tarikh === todayKey && r.kelas === kelas);
+  const sudahAda = kmData.kehadiran.some((r) => r.tarikh === todayKey && kmSameKelas(r.kelas, kelas));
   if (sudahAda) {
     alert(`Data kehadiran kelas "${kelas}" telah diisi untuk hari ini.\n\nSila ke bahagian "Edit Kehadiran" untuk membuat perubahan.`);
     return;
   }
-  KM_S.kelas = kelas; KM_S.bilMurid = bilangan;
+  KM_S.kelas = kelas; KM_S.bilMurid = kmMuridDalamKelas(kelas).length;
   KM_S.tarikh = todayKey;
-  kmGoto("askHadir");
-}
-
-function renderAskHadir(c) {
-  c.innerHTML = `
-    <div class="context-chip">${kmEscape(KM_S.kelas)} · ${KM_S.bilMurid} orang</div>
-    <div class="glass card-pad">
-      <div class="sub-dim" style="margin-bottom:14px">Masukkan bilangan <b style="color:var(--text)">hadir</b> hari ini. Nombor sahaja (bukan pecahan cth 29/30).</div>
-      <input class="field-input" type="number" min="0" id="input-hadir" placeholder="Contoh: 28" value="${KM_S.hadir ?? ''}">
-    </div>
-    <div class="btn-stack">
-      <button class="btn-primary" onclick="submitHadir()">Seterusnya</button>
-      <button class="btn-danger" onclick="kmResetToMenu()">Batal</button>
-    </div>`;
-}
-function submitHadir() {
-  const v = parseInt(document.getElementById("input-hadir").value);
-  if (isNaN(v) || v < 0) return alert("Sila masukkan nombor sah.");
-  KM_S.hadir = v;
-  kmGoto("askTidak");
-}
-
-function renderAskTidak(c) {
-  c.innerHTML = `
-    <div class="context-chip">${kmEscape(KM_S.kelas)} · ${KM_S.bilMurid} orang</div>
-    <div class="glass card-pad">
-      <div class="sub-dim" style="margin-bottom:14px">Masukkan bilangan <b style="color:var(--text)">tidak hadir</b> hari ini.</div>
-      <input class="field-input" type="number" min="0" id="input-tidak" placeholder="Contoh: 2" value="${KM_S.tidak ?? ''}">
-    </div>
-    <div class="btn-stack">
-      <button class="btn-primary" onclick="submitTidak()">Seterusnya</button>
-      <button class="btn-danger" onclick="kmResetToMenu()">Batal</button>
-    </div>`;
-}
-function submitTidak() {
-  const v = parseInt(document.getElementById("input-tidak").value);
-  if (isNaN(v) || v < 0) return alert("Sila masukkan nombor sah.");
-  KM_S.tidak = v;
+  KM_S.nama = ""; KM_S.sel = new Set(); KM_S.extras = []; KM_S.extrasSel = new Set();
   kmGoto("askNama");
 }
 
-function renderAskNama(c) {
-  const muridList = kmMuridDalamKelas(KM_S.kelas);
-  const dipilih = new Set(String(KM_S.nama || "").split(",").map((s) => s.trim()).filter(Boolean));
+/* ---- Pilihan murid tidak hadir & kiraan automatik ---- */
+function kmNameKey(n) { return String(n).replace(/,/g, " ").replace(/\s+/g, " ").trim().toUpperCase(); }
 
-  if (!muridList.length) {
-    // Tiada data murid untuk kelas ni dalam Data Murid — fallback ke teks bebas
+/** Mod edit: pulihkan tanda daripada nama dalam rekod. Nama yang tiada dalam senarai kelas semasa (murid sudah keluar /
+ * ejaan lama) dikekalkan sebagai baris tambahan yang masih ditanda — jangan hilangkan data senyap-senyap. */
+function kmInitSelection(roster) {
+  const names = String(KM_S.nama || "").split(",").map((x) => x.trim()).filter(Boolean);
+  const sel = new Set(), extras = [];
+  names.forEach((n) => {
+    const k = kmNameKey(n);
+    const i = roster.findIndex((m, idx) => !sel.has(idx) && kmNameKey(m.nama) === k); // murid bernama sama: padan satu demi satu
+    if (i >= 0) sel.add(i); else extras.push(n);
+  });
+  KM_S.sel = sel; KM_S.extras = extras; KM_S.extrasSel = new Set(extras.map((_, j) => j));
+}
+
+/** Kiraan: jumlah = enrolmen kelas (+ murid lama yang masih ditanda); tidak = ditanda; hadir = enrolmen - ditanda di senarai kelas. */
+function kmCompute() {
+  const roster = kmMuridDalamKelas(KM_S.kelas);
+  const selRoster = [...KM_S.sel].filter((i) => i < roster.length).sort((a, b) => a - b);
+  const selExtras = [...KM_S.extrasSel].filter((j) => j < KM_S.extras.length).sort((a, b) => a - b);
+  const names = selRoster.map((i) => roster[i].nama).concat(selExtras.map((j) => KM_S.extras[j]));
+  return { jumlah: roster.length + selExtras.length, tidak: names.length, hadir: roster.length - selRoster.length, names };
+}
+function kmUpdateLive() {
+  const el = document.getElementById("km-live");
+  if (!el) return;
+  const c = kmCompute();
+  el.innerHTML = `Hadir <b class="km-live-ok">${c.hadir}</b> &middot; Tidak hadir <b class="km-live-bad">${c.tidak}</b> &middot; <b>${kmCalcPercent(c.hadir, c.tidak)}</b>` +
+    (c.tidak === 0 ? ` <span class="km-live-note">— semua hadir</span>` : "");
+}
+
+function renderAskNama(c) {
+  const roster = kmMuridDalamKelas(KM_S.kelas);
+  if (!roster.length) {
     c.innerHTML = `
-      <div class="context-chip">${kmEscape(KM_S.kelas)} · ${KM_S.bilMurid} orang</div>
-      <div class="glass card-pad">
-        <div class="sub-dim" style="margin-bottom:14px">⚠️ Tiada senarai murid untuk kelas ni dalam Data Murid. Taip nama secara manual (pisah guna koma).</div>
-        <textarea class="field-input" id="input-nama" placeholder="Contoh: Ali, Ahmad, Siti">${kmEscape(KM_S.nama || '')}</textarea>
-      </div>
-      <div class="btn-stack">
-        <button class="btn-primary" onclick="submitNama()">${KM_S.mode === 'edit' ? 'Kemaskini' : 'Hantar'}</button>
-        <button class="btn-danger" onclick="kmResetToMenu()">Batal</button>
-      </div>`;
+      <div class="glass card-pad"><div class="empty-state">⚠️ Kelas "${kmEscape(KM_S.kelas)}" tiada dalam data murid semasa, jadi jumlah hadir tak dapat dikira. Hubungi Guru Data Murid.</div></div>
+      <div class="btn-stack"><button class="btn-danger" onclick="kmResetToMenu()">Kembali</button></div>`;
     return;
   }
-
-  const listHtml = muridList.map((m) => `
+  const rows = roster.map((m, i) => ({ nama: m.nama, i, extra: false }))
+    .concat(KM_S.extras.map((n, j) => ({ nama: n, i: roster.length + j, extra: true })));
+  const listHtml = rows.map((r) => {
+    const checked = r.extra ? KM_S.extrasSel.has(r.i - roster.length) : KM_S.sel.has(r.i);
+    return `
     <label class="km-murid-row">
-      <input type="checkbox" value="${kmEscape(m.nama)}" ${dipilih.has(m.nama) ? "checked" : ""} onchange="kmToggleNama(this)">
-      <span>${kmEscape(m.nama)}</span>
-    </label>`).join("");
+      <input type="checkbox" data-i="${r.i}" ${checked ? "checked" : ""} onchange="kmToggleNama(this)">
+      <span>${kmEscape(r.nama)}${r.extra ? ' <em class="km-extra-tag">(tiada dalam senarai kelas semasa)</em>' : ""}</span>
+    </label>`;
+  }).join("");
 
   c.innerHTML = `
-    <div class="context-chip">${kmEscape(KM_S.kelas)} · ${KM_S.bilMurid} orang</div>
+    <div class="context-chip">${kmEscape(KM_S.kelas)} · ${roster.length} orang</div>
     <div class="glass card-pad">
-      <div class="sub-dim" style="margin-bottom:10px">Tanda nama murid <b style="color:var(--text)">tidak hadir</b>. Biar kosong jika semua hadir.</div>
+      <div class="sub-dim" style="margin-bottom:10px">Tanda nama murid <b style="color:var(--text)">tidak hadir</b> sahaja. Jumlah hadir &amp; tidak hadir dikira automatik.</div>
+      <div class="km-live" id="km-live"></div>
       <input class="field-input" type="text" id="km-murid-search" placeholder="Cari nama..." oninput="kmFilterMuridList(this.value)" style="margin-bottom:10px">
       <div id="km-murid-list" class="km-murid-list">${listHtml}</div>
     </div>
     <div class="btn-stack">
-      <button class="btn-primary" onclick="submitNama()">${KM_S.mode === 'edit' ? 'Kemaskini' : 'Hantar'}</button>
+      <button class="btn-primary" id="km-submit-btn" onclick="submitNama()">${KM_S.mode === 'edit' ? 'Kemaskini' : 'Hantar'}</button>
       <button class="btn-danger" onclick="kmResetToMenu()">Batal</button>
     </div>`;
+  kmUpdateLive();
 }
 function kmToggleNama(input) {
-  const dipilih = new Set(String(KM_S.nama || "").split(",").map((s) => s.trim()).filter(Boolean));
-  if (input.checked) dipilih.add(input.value); else dipilih.delete(input.value);
-  KM_S.nama = [...dipilih].join(", ");
+  const i = parseInt(input.dataset.i, 10);
+  const nRoster = kmMuridDalamKelas(KM_S.kelas).length;
+  const set = i >= nRoster ? KM_S.extrasSel : KM_S.sel;
+  const key = i >= nRoster ? i - nRoster : i;
+  if (input.checked) set.add(key); else set.delete(key);
+  kmUpdateLive();
 }
 function kmFilterMuridList(query) {
   const q = query.trim().toLowerCase();
@@ -352,14 +329,15 @@ function kmFilterMuridList(query) {
     row.style.display = nama.includes(q) ? "" : "none";
   });
 }
-async function submitNama() {
-  const textareaEl = document.getElementById("input-nama");
-  if (textareaEl) {
-    // Mod fallback teks bebas (kelas tiada dalam Data Murid)
-    const v = textareaEl.value.trim();
-    KM_S.nama = v.toLowerCase() === "tiada" ? "" : v;
+
+async function submitNama(skipConfirm) {
+  const calc = kmCompute();
+  KM_S.hadir = calc.hadir; KM_S.tidak = calc.tidak; KM_S.jumlah = calc.jumlah; KM_S.nama = calc.names.join(", ");
+
+  // Tiada lagi nombor ditaip sebagai semakan silang — jadi minta pengesahan bila TIADA murid ditanda (elak terlupa tanda)
+  if (calc.tidak === 0 && skipConfirm !== true) {
+    if (!confirm(`Tiada murid ditanda tidak hadir.\n\nSemua ${calc.jumlah} murid kelas ${KM_S.kelas} akan direkodkan HADIR. Teruskan?`)) return;
   }
-  // Mod checklist: KM_S.nama SUDAH dikemaskini terus oleh kmToggleNama() setiap kali tanda/nyahtanda
 
   if (!kmApiConfigured()) {
     KM_S.saveError = "API Kehadiran Murid belum disambungkan (KM_API_URL belum diisi).";
@@ -367,30 +345,39 @@ async function submitNama() {
     return;
   }
 
-  const btn = document.querySelector('#km-content button[onclick="submitNama()"]');
+  const btn = document.getElementById("km-submit-btn");
   if (btn) { btn.disabled = true; btn.textContent = "Menyimpan..."; }
 
   const user = getSavedUser();
+  const direkodOleh = (user && user.nama) || (user && user.email) || "";
   try {
+    // Pelayan MENGIRA semula daripada jumlahMurid + senarai nama. hadir/tidakHadir/namaTidakHadir turut dihantar
+    // (nilai yang sama) supaya backend lama yang belum di-deploy semula masih menyimpan nombor yang betul.
     const data = await postToAppsScript(KM_API_URL, {
       action: "saveKehadiran",
       kelas: KM_S.kelas,
       tarikh: KM_S.tarikh,
-      hadir: KM_S.hadir,
-      tidakHadir: KM_S.tidak,
+      jumlahMurid: calc.jumlah,
+      namaTidakHadirList: calc.names,
+      hadir: calc.hadir,
+      tidakHadir: calc.tidak,
       namaTidakHadir: KM_S.nama,
-      direkodOleh: (user && user.nama) || (user && user.email) || "",
+      direkodOleh,
     });
-    if (data.success) {
+    if (data && data.success && !data._fallbackParse) {
       KM_S.saveError = null;
+      // Nilai pelayan (kalau ada) ialah rujukan — sepatutnya sama dengan kiraan klien
+      if (typeof data.hadir === "number" && typeof data.tidakHadir === "number") { KM_S.hadir = data.hadir; KM_S.tidak = data.tidakHadir; }
       // Kemas kini cache tempatan supaya Menu Utama terus tepat tanpa reload
-      kmData.kehadiran = kmData.kehadiran.filter((r) => !(r.tarikh === KM_S.tarikh && r.kelas === KM_S.kelas));
+      kmData.kehadiran = kmData.kehadiran.filter((r) => !(r.tarikh === KM_S.tarikh && kmSameKelas(r.kelas, KM_S.kelas)));
       kmData.kehadiran.push({ tarikh: KM_S.tarikh, kelas: KM_S.kelas, hadir: KM_S.hadir, tidak: KM_S.tidak, nama: KM_S.nama, direkodOleh: (user && user.nama) || "" });
+    } else if (data && data._fallbackParse) {
+      KM_S.saveError = "Respons pelayan tidak jelas — status simpanan tidak pasti. Tekan \"Cuba Simpan Semula\" (selamat: rekod ditimpa, bukan berganda).";
     } else {
-      KM_S.saveError = data.message || "Gagal simpan ke Sheet.";
+      KM_S.saveError = (data && data.message) || "Gagal simpan ke Sheet.";
     }
   } catch (err) {
-    KM_S.saveError = "Ralat sambungan ke server.";
+    KM_S.saveError = "Ralat sambungan ke server. Tekan \"Cuba Simpan Semula\" (selamat: rekod ditimpa, bukan berganda).";
   }
 
   if (btn) { btn.disabled = false; btn.textContent = KM_S.mode === "edit" ? "Kemaskini" : "Hantar"; }
@@ -409,15 +396,15 @@ function renderRingkasan(c) {
       <div class="sub-dim">${kmEscape(KM_S.kelas)} (${KM_S.bilMurid} orang) — ${KM_S.tarikh}</div>
       ${KM_S.saveError ? `<div class="error-text" style="margin-bottom:0">${kmEscape(KM_S.saveError)}</div>` : ""}
       <div style="margin-top:14px">
-        <div class="summary-row"><span class="lbl">Hadir</span><span>${KM_S.hadir}/${KM_S.bilMurid}</span></div>
-        <div class="summary-row"><span class="lbl">Tidak Hadir</span><span>${KM_S.tidak}/${KM_S.bilMurid}</span></div>
+        <div class="summary-row"><span class="lbl">Hadir</span><span>${KM_S.hadir}/${KM_S.jumlah || KM_S.bilMurid}</span></div>
+        <div class="summary-row"><span class="lbl">Tidak Hadir</span><span>${KM_S.tidak}/${KM_S.jumlah || KM_S.bilMurid}</span></div>
         <div class="summary-row"><span class="lbl">Nama Tidak Hadir</span><span style="text-align:right;max-width:60%">${kmEscape(KM_S.nama || 'Tiada')}</span></div>
         <div class="summary-row"><span class="lbl">% Kehadiran</span><span class="pct-badge ${kmPctClass(pct)}">${pct}</span></div>
         <div class="summary-row"><span class="lbl">Direkod oleh</span><span>${kmEscape((user && user.nama) || 'Awak')}</span></div>
       </div>
     </div>
     <div class="btn-stack">
-      ${KM_S.saveError ? `<button class="btn-primary" onclick="submitNama()">🔁 Cuba Simpan Semula</button>` : ""}
+      ${KM_S.saveError ? `<button class="btn-primary" onclick="submitNama(true)">🔁 Cuba Simpan Semula</button>` : ""}
       <button class="btn-primary" onclick="editRingkasan()">✏️ Edit</button>
       <button class="btn-ghost" onclick="startIsiBorang()">🔙 Kembali Pilih Kelas</button>
       <button class="btn-ghost" onclick="kmResetToMenu()">🏠 Menu Utama</button>
@@ -426,7 +413,8 @@ function renderRingkasan(c) {
 }
 function editRingkasan() {
   KM_S.mode = "edit";
-  kmGoto("askHadir");
+  kmInitSelection(kmMuridDalamKelas(KM_S.kelas));
+  kmGoto("askNama");
 }
 
 /* ================= Flow: Edit Kehadiran ================= */
@@ -455,22 +443,21 @@ function pilihTarikhUntuk(nextScreen, tarikh) {
 }
 
 function renderEditPilihKelas(c) {
-  const kelasDenganData = new Set(kmData.kehadiran.filter(r => r.tarikh === KM_S.tarikh).map(r => r.kelas));
-  const list = kmData.kelas.filter(k => kelasDenganData.has(k.nama));
+  const kelasDenganData = new Set(kmData.kehadiran.filter(r => r.tarikh === KM_S.tarikh).map(r => emNormKelas(r.kelas)));
+  const list = kmData.kelas.map((k, i) => ({ k, i })).filter(({ k }) => kelasDenganData.has(emNormKelas(k.nama)));
   if (!list.length) { c.innerHTML = `<div class="empty-state">Tiada data kelas untuk ${KM_S.tarikh}.</div>`; return; }
-  const tiles = list.map(k => {
-    const bilSebenar = kmMuridDalamKelas(k.nama).length || k.bilangan;
-    return `<div class="tile" onclick="pilihKelasEdit('${kmEscape(k.nama)}', ${bilSebenar})">${kmEscape(k.nama)}<span class="tile-sub">${bilSebenar} orang</span></div>`;
-  }).join("");
+  const tiles = list.map(({ k, i }) =>
+    `<div class="tile" onclick="pilihKelasEditIdx(${i})">${kmEscape(k.nama)}<span class="tile-sub">${k.bilangan} orang</span></div>`
+  ).join("");
   c.innerHTML = `<div class="sub-dim" style="margin-bottom:10px">Tarikh: <b style="color:var(--text)">${KM_S.tarikh}</b></div><div class="grid2">${tiles}</div>`;
 }
-function pilihKelasEdit(kelas, bilangan) {
-  const rec = kmData.kehadiran.find(r => r.tarikh === KM_S.tarikh && r.kelas === kelas);
-  KM_S.mode = "edit"; KM_S.kelas = kelas; KM_S.bilMurid = bilangan;
-  KM_S.hadir = rec ? rec.hadir : 0;
-  KM_S.tidak = rec ? rec.tidak : 0;
+function pilihKelasEditIdx(i) { const k = kmData.kelas[i]; if (k) pilihKelasEdit(k.nama); }
+function pilihKelasEdit(kelas) {
+  const rec = kmData.kehadiran.find(r => r.tarikh === KM_S.tarikh && kmSameKelas(r.kelas, kelas));
+  KM_S.mode = "edit"; KM_S.kelas = kelas; KM_S.bilMurid = kmMuridDalamKelas(kelas).length;
   KM_S.nama = rec ? rec.nama : "";
-  kmGoto("askHadir");
+  kmInitSelection(kmMuridDalamKelas(kelas));
+  kmGoto("askNama");
 }
 
 
