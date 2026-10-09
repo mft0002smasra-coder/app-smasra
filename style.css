@@ -2396,3 +2396,9 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
 .km-live-note{ color:var(--mint);font-size:12px; }
 .km-warn{ margin:0 0 var(--gap);padding:9px 12px;border:1px solid rgba(255,184,77,.4);background:rgba(255,184,77,.07);border-radius:10px;font-size:12px;line-height:1.5;color:var(--amber); }
 .km-extra-tag{ font-style:normal;font-size:10.5px;color:var(--amber); }
+
+/* Event: butang Edit dalam butiran hari */
+.event-card-actions{ display:flex;justify-content:flex-end;margin-top:10px; }
+.event-edit-btn{ padding:7px 14px;border:1px solid var(--cyan);border-radius:10px;background:rgba(0,229,255,.08);color:var(--cyan);font:inherit;font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent; }
+.event-edit-btn:active{ background:rgba(0,229,255,.2); }
+.event-detail-edited{ font-size:12px;color:var(--text-dim); }

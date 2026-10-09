@@ -19,6 +19,8 @@ let evEvents = [];
 let evViewYear = new Date().getFullYear();
 let evViewMonth = new Date().getMonth(); // 0-indexed
 let evCurrentUser = null;
+let evEdit = null;   // null = mod TAMBAH; objek = mod EDIT { lama, fromYmd, masaBebas }
+let evBusy = false;  // halang hantaran berganda
 
 function evUnitColor(unit) {
   const v = EV_UNIT_COLOR_VAR[unit];
@@ -26,6 +28,18 @@ function evUnitColor(unit) {
 }
 function evPad2(n) { return String(n).padStart(2, "0"); }
 function evYmd(y, m, d) { return `${y}-${evPad2(m + 1)}-${evPad2(d)}`; }
+/** Masa -> "HH:MM". Sel berjenis nilai-masa dalam gviz ("Date(1899,11,30,8,30,0)") dan "8:30" / "8:30 PM" dinormalkan;
+ * teks bebas ("8:30 pagi") dikekalkan. SAMA dengan evMasaNorm_ di pelayan. */
+function evNormMasa(v) {
+  const s = String(v == null ? "" : v).replace(/\s+/g, " ").trim();
+  let m = s.match(/^Date\(\d+,\d+,\d+,(\d+),(\d+)/);
+  if (m) return `${evPad2(+m[1])}:${m[2]}`;
+  m = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*([AaPp][Mm])?$/);
+  if (!m) return s;
+  let h = +m[1];
+  if (m[3]) { const pm = m[3].toLowerCase() === "pm"; if (h === 12) h = pm ? 12 : 0; else if (pm) h += 12; }
+  return `${evPad2(h)}:${m[2]}`;
+}
 function evEscape(str) { return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
 async function evLoadEvents() {
@@ -49,10 +63,13 @@ async function evLoadEvents() {
         unit: get(0) || "",
         tarikhDari,
         tarikhHingga: get(2) ? gvizDateToIso(get(2)) : tarikhDari,
-        masa: get(3) || "",
+        masa: evNormMasa(get(3)),
         tajuk: get(4) || "",
         tempat: get(5) || "",
         dicatatOleh: get(6) || "",
+        emel: get(7) || "",               // H: emel pencatat (untuk hak edit)
+        dikemaskiniOleh: get(8) || "",    // I
+        dikemaskiniPada: get(9) || "",    // J
       };
     }).filter(Boolean);
   } catch (e) {
@@ -96,6 +113,17 @@ async function evRenderHomeTicker() {
 }
 
 /* ---------------- Cuti (daripada hari-cuti.js) ---------------- */
+/** Hak edit: pencatat asal event, atau Admin App / Pentadbir. (Kemasan paparan — PELAYAN yang menguatkuasakan.) */
+function evCanEdit(ev) {
+  const u = evCurrentUser;
+  if (!u) return false;
+  const low = (x) => String(x == null ? "" : x).trim().toLowerCase();
+  if (low(u.role3) === "admin app" || low(u.role2) === "pentadbir") return true;
+  const emel = low(ev.emel);
+  if (emel) return [u.email, u.emel1, u.emel2].map(low).filter(Boolean).includes(emel);
+  return !!low(ev.dicatatOleh) && low(ev.dicatatOleh) === low(u.nama); // rekod lama tanpa emel: padan nama
+}
+
 function evHolidaysOn(fromYmd, toYmd) {
   return typeof hcDayMap === "function" ? hcDayMap(fromYmd, toYmd) : new Map();
 }
@@ -211,7 +239,9 @@ function evOpenDayModal(ymd) {
         ${ev.masa ? `<div class="event-detail-row">🕐 <b>${evEscape(ev.masa)}</b></div>` : ""}
         ${ev.tempat ? `<div class="event-detail-row">📍 <b>${evEscape(ev.tempat)}</b></div>` : ""}
         <div class="event-detail-row">✍️ ${evEscape(ev.dicatatOleh || "-")}</div>
+        ${ev.dikemaskiniOleh ? `<div class="event-detail-row event-detail-edited">✏️ Dikemas kini oleh ${evEscape(ev.dikemaskiniOleh)}${ev.dikemaskiniPada ? ` · ${evEscape(ev.dikemaskiniPada)}` : ""}</div>` : ""}
         ${holWarn}
+        ${evCanEdit(ev) ? `<div class="event-card-actions"><button type="button" class="event-edit-btn" data-ev-edit="${evEvents.indexOf(ev)}" data-ymd="${ymd}">✏️ Edit</button></div>` : ""}
       </div>`).join("");
     box.innerHTML = `<div class="modal-title">${dateLabel}</div>${holCards}${cards}`;
   }
@@ -219,57 +249,127 @@ function evOpenDayModal(ymd) {
 }
 function evCloseDayModal() { document.getElementById("event-modal-overlay").classList.add("hidden"); }
 
+/** Tajuk & butang modal mengikut mod (tambah / edit) */
+function evSetModalMode() {
+  const edit = !!evEdit;
+  document.getElementById("event-add-title").textContent = edit ? "EDIT EVENT" : "TAMBAH EVENT";
+  document.getElementById("event-submit-btn").textContent = edit ? "Simpan Perubahan" : "Tambah Event";
+  const hint = document.getElementById("event-masa-hint");
+  if (edit && evEdit.masaBebas) { hint.textContent = `Masa asal: "${evEdit.masaBebas}" (biar kosong untuk mengekalkannya, atau pilih masa baharu)`; hint.classList.remove("hidden"); }
+  else { hint.textContent = ""; hint.classList.add("hidden"); }
+}
 function evOpenAddModal() {
+  evEdit = null;
+  document.getElementById("event-add-form").reset();
+  document.getElementById("event-add-error").classList.add("hidden");
+  evSetModalMode();
   document.getElementById("event-add-overlay").classList.remove("hidden");
 }
 function evCloseAddModal() {
   document.getElementById("event-add-overlay").classList.add("hidden");
   document.getElementById("event-add-form").reset();
   document.getElementById("event-add-error").classList.add("hidden");
+  evEdit = null;
+  evSetModalMode();
+}
+/** Buka borang dalam mod EDIT untuk evEvents[idx]. fromYmd = hari yang sedang dilihat (untuk dibuka semula selepas simpan). */
+function evOpenEditModal(idx, fromYmd) {
+  const ev = evEvents[idx];
+  if (!ev) return;
+  if (!evCanEdit(ev)) { alert("Anda hanya boleh mengedit event yang anda masukkan sendiri."); return; }
+  // Gambar asal event (untuk pelayan mencari baris yang sama & mengesan perubahan oleh orang lain)
+  evEdit = {
+    lama: { unit: ev.unit, tarikhDari: ev.tarikhDari, tarikhHingga: ev.tarikhHingga, masa: ev.masa, tajuk: ev.tajuk, tempat: ev.tempat, dicatatOleh: ev.dicatatOleh },
+    fromYmd: fromYmd || ev.tarikhDari,
+    masaBebas: ev.masa && !/^\d{2}:\d{2}$/.test(ev.masa) ? ev.masa : "", // masa bukan HH:MM (ditaip manual) — jangan hilangkan senyap
+  };
+  const unitSel = document.getElementById("event-unit");
+  if (![...unitSel.options].some((o) => o.value === ev.unit)) { // unit lama di luar senarai: kekalkan, jangan tukar senyap
+    const opt = document.createElement("option"); opt.value = ev.unit; opt.textContent = ev.unit; unitSel.appendChild(opt);
+  }
+  unitSel.value = ev.unit;
+  document.getElementById("event-tarikh-dari").value = ev.tarikhDari;
+  document.getElementById("event-tarikh-hingga").value = ev.tarikhHingga !== ev.tarikhDari ? ev.tarikhHingga : "";
+  document.getElementById("event-masa").value = /^\d{2}:\d{2}$/.test(ev.masa) ? ev.masa : "";
+  document.getElementById("event-tajuk").value = ev.tajuk;
+  document.getElementById("event-tempat").value = ev.tempat;
+  document.getElementById("event-add-error").classList.add("hidden");
+  evSetModalMode();
+  evCloseDayModal();
+  document.getElementById("event-add-overlay").classList.remove("hidden");
 }
 
 async function evSubmitAdd(e) {
   e.preventDefault();
+  if (evBusy) return;
   const unit = document.getElementById("event-unit").value;
   const tarikhDari = document.getElementById("event-tarikh-dari").value;
   const tarikhHingga = document.getElementById("event-tarikh-hingga").value || tarikhDari;
-  const masa = document.getElementById("event-masa").value;
+  let masa = document.getElementById("event-masa").value;
   const tajuk = document.getElementById("event-tajuk").value.trim();
   const tempat = document.getElementById("event-tempat").value.trim();
   const errEl = document.getElementById("event-add-error");
   errEl.classList.add("hidden");
+  const showErr = (msg) => { errEl.textContent = msg; errEl.classList.remove("hidden"); };
 
-  if (!unit || !tarikhDari || !tajuk) {
-    errEl.textContent = "Sila lengkapkan unit, tarikh dari, dan tajuk.";
-    errEl.classList.remove("hidden");
-    return;
+  if (!unit || !tarikhDari || !tajuk) { showErr("Sila lengkapkan unit, tarikh dari, dan tajuk."); return; }
+  if (tarikhHingga < tarikhDari) { showErr("Tarikh hingga tidak boleh sebelum tarikh dari."); return; }
+  if (evEdit && !masa && evEdit.masaBebas) masa = evEdit.masaBebas; // masa teks bebas yang tak diubah dikekalkan
+
+  const edit = evEdit;
+  if (edit) {
+    const l = edit.lama;
+    if (unit === l.unit && tarikhDari === l.tarikhDari && tarikhHingga === l.tarikhHingga && masa === l.masa && tajuk === l.tajuk && tempat === l.tempat) {
+      showErr("Tiada perubahan untuk disimpan."); return;
+    }
   }
-  // Event pada hari cuti: beri amaran SEBELUM dihantar (pengguna boleh meneruskan — kem/program memang kadang diadakan pada cuti)
-  const holOnDates = evHolidaysOn(tarikhDari, tarikhHingga >= tarikhDari ? tarikhHingga : tarikhDari);
-  if (holOnDates.size) {
-    const names = [...new Set([...holOnDates.values()].flat().map((h) => h.nama))].join("\n• ");
-    if (!confirm(`Tarikh ini jatuh pada cuti:\n• ${names}\n\nTeruskan tambah event?`)) return;
+  // Event pada hari cuti: beri amaran SEBELUM dihantar (pengguna boleh meneruskan — kem/program memang kadang diadakan pada cuti).
+  // Semasa edit, hanya bila TARIKH diubah (mengubah tajuk event yang sudah sedia di hari cuti tak perlu diamaran lagi).
+  if (!edit || tarikhDari !== edit.lama.tarikhDari || tarikhHingga !== edit.lama.tarikhHingga) {
+    const holOnDates = evHolidaysOn(tarikhDari, tarikhHingga);
+    if (holOnDates.size) {
+      const names = [...new Set([...holOnDates.values()].flat().map((h) => h.nama))].join("\n• ");
+      if (!confirm(`Tarikh ini jatuh pada cuti:\n• ${names}\n\n${edit ? "Teruskan simpan perubahan?" : "Teruskan tambah event?"}`)) return;
+    }
   }
   const btn = document.getElementById("event-submit-btn");
+  evBusy = true;
   btn.disabled = true;
-  btn.textContent = "Menghantar...";
+  btn.textContent = edit ? "Menyimpan..." : "Menghantar...";
+  let reloadAnyway = false;
   try {
-    const data = await postToAppsScript(API_URL, { action: "addEvent", email: evCurrentUser.email, unit, tarikhDari, tarikhHingga, masa, tajuk, tempat });
-    if (data.success) {
+    const payload = edit
+      ? { action: "editEvent", email: evCurrentUser.email, lama: edit.lama, unit, tarikhDari, tarikhHingga, masa, tajuk, tempat }
+      : { action: "addEvent", email: evCurrentUser.email, unit, tarikhDari, tarikhHingga, masa, tajuk, tempat };
+    const data = await postToAppsScript(API_URL, payload);
+    evBusy = false; // permintaan selesai — pengawal hanya melindungi permintaan yang sedang berjalan (bukan muat semula data selepas itu)
+    if (data && data.success && !data._fallbackParse) {
       evCloseAddModal();
       await evLoadEvents();
-      evRenderCalendar();
-      evRenderCutiCheck();
+      if (edit) {
+        // Tunjukkan hasilnya: buka semula hari yang sedang dilihat (kalau masih dalam julat baharu), kalau tidak tarikh mula baharu
+        const showYmd = edit.fromYmd >= tarikhDari && edit.fromYmd <= tarikhHingga ? edit.fromYmd : tarikhDari;
+        const [sy, sm] = showYmd.split("-").map(Number);
+        evViewYear = sy; evViewMonth = sm - 1;
+        evRenderCalendar(); evRenderCutiCheck();
+        evOpenDayModal(showYmd);
+      } else {
+        evRenderCalendar(); evRenderCutiCheck();
+      }
+    } else if (data && data._fallbackParse) {
+      showErr("Respons pelayan tidak jelas — status tidak pasti. Semak kalendar sebelum mencuba lagi.");
+      reloadAnyway = true;
     } else {
-      errEl.textContent = data.message || "Gagal tambah event.";
-      errEl.classList.remove("hidden");
+      showErr((data && data.message) || (edit ? "Gagal mengemas kini event." : "Gagal tambah event."));
+      if (edit && data && /diubah atau dipadam/.test(data.message || "")) reloadAnyway = true; // paparkan data terkini di belakang
     }
   } catch (err) {
-    errEl.textContent = "Ralat sambungan ke server.";
-    errEl.classList.remove("hidden");
+    showErr("Ralat sambungan ke server.");
   }
+  if (reloadAnyway) { await evLoadEvents(); evRenderCalendar(); evRenderCutiCheck(); }
+  evBusy = false;
   btn.disabled = false;
-  btn.textContent = "Tambah Event";
+  btn.textContent = evEdit ? "Simpan Perubahan" : "Tambah Event";
 }
 
 function evInit(user) {
@@ -291,6 +391,12 @@ function evInit(user) {
   });
 
   document.getElementById("event-add-form").addEventListener("submit", evSubmitAdd);
+
+  // Butang "Edit" dalam butiran hari (delegasi — butiran dijana semula setiap kali dibuka)
+  document.getElementById("event-modal-content").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-ev-edit]");
+    if (b) evOpenEditModal(parseInt(b.dataset.evEdit, 10), b.dataset.ymd);
+  });
 
   // Klik perkara dalam panel semakan silang -> buka butiran hari yang berkenaan
   const chk = document.getElementById("event-cuti-check");

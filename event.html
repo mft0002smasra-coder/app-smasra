@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261006c">
+<link rel="stylesheet" href="style.css?v=20261007f">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -99,7 +99,7 @@
   <!-- Modal: tambah event (Pentadbir sahaja) -->
   <div class="modal-overlay hidden" id="event-add-overlay">
     <div class="glass modal-sheet">
-      <div class="modal-title">TAMBAH EVENT</div>
+      <div class="modal-title" id="event-add-title">TAMBAH EVENT</div>
       <form id="event-add-form">
         <label class="field-label" for="event-unit">Unit</label>
         <select class="field-input" id="event-unit" required></select>
@@ -112,6 +112,7 @@
 
         <label class="field-label" for="event-masa" style="margin-top:14px">Masa (pilihan)</label>
         <input class="field-input" type="time" id="event-masa">
+        <div class="sub-dim hidden" id="event-masa-hint" style="font-size:12px;margin-top:4px"></div>
 
         <label class="field-label" for="event-tajuk" style="margin-top:14px">Tajuk Event</label>
         <input class="field-input" type="text" id="event-tajuk" placeholder="Contoh: Mesyuarat Kurikulum Suku Tahun 1" required>
@@ -133,7 +134,7 @@
 
 <script src="app.js"></script>
 <script src="hari-cuti.js?v=20261006c"></script>
-<script src="event.js?v=20261006c"></script>
+<script src="event.js?v=20261007f"></script>
 <script>
   initApp(evInit);
 </script>
