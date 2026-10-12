@@ -768,6 +768,7 @@ function dbSizeHomeAnalysisCard() {
   const card = document.getElementById("db-home-analysis-wrap");
   const card2 = document.getElementById("jg-home-wrap");
   const card3 = document.getElementById("home-hebahan-wrap");
+  const card4 = document.getElementById("home-atm-wrap");
   const outerWrap = document.getElementById("home-swipe-wrap");
   if (!card || !outerWrap || outerWrap.classList.contains("hidden")) return;
   const bottomNav = document.querySelector(".bottom-nav-wrap");
@@ -778,6 +779,7 @@ function dbSizeHomeAnalysisCard() {
   card.style.height = finalHeight;
   if (card2) card2.style.height = finalHeight;
   if (card3) card3.style.height = finalHeight;
+  if (card4) card4.style.height = finalHeight;
   // Ruang di bawah kad = TEPAT tinggi bar navigasi + jarak. Bekas halaman (.wrap) ada padding-bawah 96px untuk
   // semua halaman — di Home ia melebihi keperluan lalu mencipta skrol 20-26px walaupun kad sudah muat. Kita
   // ganti dengan ruang tepat: bila semua muat, tinggi halaman SAMA dengan skrin (tiada skrol); bila tak muat

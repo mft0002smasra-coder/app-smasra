@@ -2402,3 +2402,55 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
 .event-edit-btn{ padding:7px 14px;border:1px solid var(--cyan);border-radius:10px;background:rgba(0,229,255,.08);color:var(--cyan);font:inherit;font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent; }
 .event-edit-btn:active{ background:rgba(0,229,255,.2); }
 .event-detail-edited{ font-size:12px;color:var(--text-dim); }
+
+/* Input tarikh/masa (Event): kawasan sentuh jelas + ikon pemilih kelihatan pada tema gelap; tidak "terkunci" pada peranti tertentu */
+.field-input[type="date"], .field-input[type="time"]{
+  color-scheme:dark; min-height:50px; line-height:1.2; cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.field-input[type="date"]::-webkit-calendar-picker-indicator,
+.field-input[type="time"]::-webkit-calendar-picker-indicator{ opacity:1; cursor:pointer; padding:4px; }
+.field-input[type="date"]::-webkit-date-and-time-value, .field-input[type="time"]::-webkit-date-and-time-value{ text-align:left; min-height:1.2em; }
+
+/* ---------- Aturcara Minggu (kad Home) ---------- */
+.atm-head-l{ min-width:0;flex:1; }
+.atm-range{ display:block;margin-top:2px;font-size:11px;line-height:1.3;white-space:normal; }
+.atm-manage-btn{
+  flex-shrink:0;border:1px solid var(--line-strong);background:rgba(43,232,208,0.08);color:var(--cyan);
+  border-radius:9px;padding:6px 10px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:.5px;cursor:pointer;
+}
+.atm-tabs{ display:flex;gap:4px;margin:8px 0 6px; }
+.atm-tab{
+  flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 0;
+  border:1px solid var(--line);border-radius:9px;background:rgba(3,11,18,0.5);color:var(--text-dim);
+  font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;cursor:pointer;
+}
+.atm-tab-d{ font-size:12px;color:var(--text); }
+.atm-tab.empty{ opacity:.45; }
+.atm-tab.today{ border-color:var(--cyan); }
+.atm-tab.active{ background:linear-gradient(135deg,rgba(43,232,208,.22),rgba(60,140,255,.18));border-color:var(--line-strong);color:var(--cyan);opacity:1; }
+.atm-tab-info{ justify-content:center; }
+.atm-day-title{ font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:1px;color:var(--cyan);margin:6px 0 8px; }
+.atm-item{ padding:8px 0;border-bottom:1px solid var(--line); }
+.atm-item:last-child{ border-bottom:none; }
+.atm-item-t{ font-size:13.5px;font-weight:700;color:var(--text);line-height:1.3; }
+.atm-no{ color:var(--text-dim);font-weight:600; }
+.atm-sub{ font-size:12.5px;color:var(--text-dim);margin:2px 0 0 16px;line-height:1.3; }
+.atm-actions{ margin:6px 0 0 16px;display:flex;flex-wrap:wrap;gap:6px; }
+.atm-add-btn{
+  border:1px solid var(--line-strong);background:rgba(43,232,208,0.1);color:var(--cyan);border-radius:8px;
+  padding:5px 10px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;cursor:pointer;
+}
+.atm-added{ font-size:12px;color:var(--mint);font-weight:700; }
+.atm-info-block{ margin-bottom:10px; }
+.atm-info-h{ font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:3px; }
+.atm-info-t{ font-size:13px;color:var(--text);line-height:1.35; }
+.atm-ev-date{ font-size:15px;font-weight:700;color:var(--text);padding:2px 0; }
+.atm-pv{ margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(3,11,18,.45); }
+.atm-pv-h{ font-weight:700;font-size:14px;color:var(--cyan); }
+.atm-pv-sub{ font-size:12px;color:var(--text-dim);margin:2px 0 6px; }
+.atm-pv-row{ display:flex;justify-content:space-between;font-size:12.5px;padding:2px 0; }
+.atm-pv-warn{ margin-top:8px;font-size:12px;color:var(--amber); }
+.atm-pv-warn ul{ margin:4px 0 0 16px;padding:0; }
+#home-atm-wrap{ padding:14px 14px; }
+#home-atm-wrap .db-my-header{ display:flex;align-items:center;gap:8px;text-align:left;margin-bottom:4px; }
+#home-atm-wrap .db-my-subtitle{ min-width:0; }

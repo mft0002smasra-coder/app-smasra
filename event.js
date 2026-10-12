@@ -299,19 +299,58 @@ function evOpenEditModal(idx, fromYmd) {
   document.getElementById("event-add-overlay").classList.remove("hidden");
 }
 
+
+/** Input tarikh/masa: (1) ketik di mana-mana bahagian medan terus buka pemilih; (2) jika pelayar TIDAK menyokong type=date/time
+ * (WebView lama, pelayar dalam-aplikasi), tukar kepada taip manual dengan panduan format — supaya pengguna tidak "terkunci". */
+function evSetupDateTimeInputs() {
+  [["event-tarikh-dari", "date"], ["event-tarikh-hingga", "date"], ["event-masa", "time"]].forEach(([id, type]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.type !== type) { // tidak disokong -> jatuh balik teks
+      el.type = "text";
+      el.inputMode = type === "date" ? "numeric" : "numeric";
+      el.placeholder = type === "date" ? "HH/BB/TTTT cth 25/03/2026" : "JJ:MM cth 08:30";
+      el.dataset.evTyped = type;
+      return;
+    }
+    el.addEventListener("click", () => { try { if (el.showPicker) el.showPicker(); } catch (_) { /* sudah terbuka / tidak dibenarkan */ } });
+  });
+}
+/** Nilai medan -> format piawai ("yyyy-MM-dd" / "HH:MM"); "" jika kosong; null jika tidak sah (hanya untuk medan jatuh-balik teks) */
+function evReadDT(id) {
+  const el = document.getElementById(id);
+  const v = (el.value || "").trim();
+  if (!el.dataset.evTyped || !v) return v;
+  if (el.dataset.evTyped === "date") {
+    let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/), y, mo, d;
+    if (m) { y = +m[1]; mo = +m[2]; d = +m[3]; }
+    else if ((m = v.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/))) { d = +m[1]; mo = +m[2]; y = +m[3]; }
+    else return null;
+    const dt = new Date(Date.UTC(y, mo - 1, d));
+    if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return null;
+    return evYmd(y, mo - 1, d);
+  }
+  const m = v.match(/^(\d{1,2})[:.](\d{2})$/);
+  if (!m || +m[1] > 23 || +m[2] > 59) return null;
+  return `${evPad2(+m[1])}:${m[2]}`;
+}
+
 async function evSubmitAdd(e) {
   e.preventDefault();
   if (evBusy) return;
   const unit = document.getElementById("event-unit").value;
-  const tarikhDari = document.getElementById("event-tarikh-dari").value;
-  const tarikhHingga = document.getElementById("event-tarikh-hingga").value || tarikhDari;
-  let masa = document.getElementById("event-masa").value;
+  const rawDari = evReadDT("event-tarikh-dari"), rawHingga = evReadDT("event-tarikh-hingga"), rawMasa = evReadDT("event-masa");
+  const tarikhDari = rawDari || "";
+  const tarikhHingga = rawHingga || tarikhDari;
+  let masa = rawMasa || "";
   const tajuk = document.getElementById("event-tajuk").value.trim();
   const tempat = document.getElementById("event-tempat").value.trim();
   const errEl = document.getElementById("event-add-error");
   errEl.classList.add("hidden");
   const showErr = (msg) => { errEl.textContent = msg; errEl.classList.remove("hidden"); };
 
+  if (rawDari === null || rawHingga === null) { showErr("Format tarikh tidak sah. Guna HH/BB/TTTT, contoh 25/03/2026."); return; }
+  if (rawMasa === null) { showErr("Format masa tidak sah. Guna JJ:MM, contoh 08:30."); return; }
   if (!unit || !tarikhDari || !tajuk) { showErr("Sila lengkapkan unit, tarikh dari, dan tajuk."); return; }
   if (tarikhHingga < tarikhDari) { showErr("Tarikh hingga tidak boleh sebelum tarikh dari."); return; }
   if (evEdit && !masa && evEdit.masaBebas) masa = evEdit.masaBebas; // masa teks bebas yang tak diubah dikekalkan
@@ -390,6 +429,8 @@ function evInit(user) {
     if (cell && cell.dataset.ymd) evOpenDayModal(cell.dataset.ymd);
   });
 
+  document.getElementById("event-add-form").setAttribute("novalidate", ""); // semakan dibuat sendiri (mesej Melayu; jatuh-balik teks)
+  evSetupDateTimeInputs();
   document.getElementById("event-add-form").addEventListener("submit", evSubmitAdd);
 
   // Butang "Edit" dalam butiran hari (delegasi — butiran dijana semula setiap kali dibuka)

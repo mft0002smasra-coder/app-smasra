@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20261011a">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -111,6 +111,22 @@
           </div>
         </div>
 
+        <div class="home-swipe-page" id="home-atm-page">
+          <div class="glass card-pad" id="home-atm-wrap">
+            <div class="db-my-header">
+              <div class="atm-head-l">
+                <div class="db-my-title" id="atm-title">ATURCARA MINGGU</div>
+                <div class="db-my-subtitle atm-range" id="atm-range"></div>
+              </div>
+              <button type="button" class="atm-manage-btn hidden" id="atm-manage-btn" onclick="atmOpenPaste()">📋 Tampal</button>
+            </div>
+            <div class="atm-tabs" id="atm-tabs"></div>
+            <div class="db-my-scroll">
+              <div id="atm-body"></div>
+            </div>
+          </div>
+        </div>
+
         <div class="home-swipe-page" id="home-kb-page">
           <div class="glass card-pad" id="home-kb-wrap">
             <div class="db-my-header">
@@ -178,6 +194,47 @@
   </div>
 
   <!-- ============ POPUP: Borang To Do List (Kad Jadual Waktu Saya gantian) ============ -->
+  <!-- Aturcara Minggu: tampal teks & pratonton (Pentadbir / Admin App) -->
+  <div class="modal-overlay hidden" id="atm-paste-overlay">
+    <div class="glass modal-sheet">
+      <div class="modal-title">TAMPAL ATURCARA MINGGU</div>
+      <div class="sub-dim" style="font-size:12px;margin-bottom:8px">Tampal teks aturcara (cth dari WhatsApp), tekan <b>Semak</b>, kemudian <b>Simpan</b>. Aturcara sedia ada akan diganti.</div>
+      <textarea class="field-input" id="atm-paste-text" style="min-height:170px;font-size:14px" placeholder="Minggu 36&#10;12 OKT – 17 OKT 2026&#10;Guru Bertugas&#10;1. ...&#10;Isnin 12 Okt 2026&#10;i. ..."></textarea>
+      <div id="atm-preview"></div>
+      <div class="error-text hidden" id="atm-paste-error"></div>
+      <div class="modal-actions" style="flex-wrap:wrap">
+        <button type="button" class="btn-ghost" onclick="atmClosePaste()">Batal</button>
+        <button type="button" class="btn-ghost hidden" id="atm-del-btn" onclick="atmDeleteAll()">Padam</button>
+        <button type="button" class="btn-ghost" onclick="atmCheckPaste()">Semak</button>
+        <button type="button" class="btn-primary hidden" id="atm-save-btn" style="margin-top:0" onclick="atmSavePaste()">Simpan Aturcara</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aturcara Minggu: tambah butiran ke Event -->
+  <div class="modal-overlay hidden" id="atm-ev-overlay">
+    <div class="glass modal-sheet">
+      <div class="modal-title">TAMBAH KE EVENT</div>
+      <form id="atm-ev-form" novalidate>
+        <label class="field-label" for="atm-ev-unit">Unit</label>
+        <select class="field-input" id="atm-ev-unit"></select>
+        <div class="field-label" style="margin-top:14px">Tarikh</div>
+        <div class="atm-ev-date" id="atm-ev-tarikh"></div>
+        <label class="field-label" for="atm-ev-masa" style="margin-top:14px">Masa (pilihan, JJ:MM)</label>
+        <input class="field-input" type="text" inputmode="numeric" id="atm-ev-masa" placeholder="cth 15:15" autocomplete="off">
+        <label class="field-label" for="atm-ev-tajuk" style="margin-top:14px">Tajuk Event</label>
+        <input class="field-input" type="text" id="atm-ev-tajuk" autocomplete="off">
+        <label class="field-label" for="atm-ev-tempat" style="margin-top:14px">Tempat (pilihan)</label>
+        <input class="field-input" type="text" id="atm-ev-tempat" autocomplete="off">
+        <div class="error-text hidden" id="atm-ev-error"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost" onclick="atmCloseEvModal()">Batal</button>
+          <button type="submit" class="btn-primary" id="atm-ev-submit" style="margin-top:0">Tambah Event</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div class="modal-overlay hidden" id="todo-modal-overlay">
     <div class="glass modal-sheet">
       <div class="modal-title" id="todo-form-title">Tambah Tugasan</div>
@@ -204,7 +261,8 @@
 
 <script src="app.js"></script>
 <script src="event.js"></script>
-<script src="erks-database.js"></script>
+<script src="aturcara-minggu.js?v=20261011a"></script>
+<script src="erks-database.js?v=20261011a"></script>
 <script src="jadual-guru.js?v=20261007e"></script>
 <script src="keberadaan-murid.js"></script>
 <script src="solat.js"></script>
@@ -217,6 +275,7 @@
     jgRenderHomeCard(user);
     renderHomeHebahanCard();
     solatInit();
+    await atmRenderHomeCard(user); // mesti siap dulu (kad dibuang kalau tiada aturcara & bukan pentadbir) sebelum swipe disediakan
     await kbRenderHomeCard(); // mesti siap dulu (mungkin buang kad) sebelum swipe disediakan
     setTimeout(initHomeSwipe, 300);
     setTimeout(dbSizeHomeAnalysisCard, 400);
