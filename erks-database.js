@@ -774,9 +774,12 @@ function dbSizeHomeAnalysisCard() {
   if (!card || !outerWrap || outerWrap.classList.contains("hidden")) return;
   const bottomNav = document.querySelector(".bottom-nav-wrap");
   const navHeight = bottomNav ? bottomNav.offsetHeight : 60;
-  const cardTop = card.getBoundingClientRect().top;
-  const available = window.innerHeight - cardTop - navHeight - 10;
-  const finalHeight = Math.max(140, available) + "px"; // senarai dalam kad boleh diskrol sendiri
+  // Kedudukan atas kad dalam DOKUMEN (tolak skrol semasa) — kalau halaman sempat terskrol, kiraan tak tersasar
+  const cardTop = card.getBoundingClientRect().top + (window.pageYOffset || 0);
+  const vh = (window.visualViewport && window.visualViewport.height) ? Math.min(window.innerHeight, window.visualViewport.height) : window.innerHeight;
+  const available = vh - cardTop - navHeight - 10;
+  const MIN_H = 90;
+  const finalHeight = Math.max(MIN_H, available) + "px"; // senarai dalam kad boleh diskrol sendiri
   card.style.height = finalHeight;
   if (card2) card2.style.height = finalHeight;
   if (card3) card3.style.height = finalHeight;
@@ -789,6 +792,15 @@ function dbSizeHomeAnalysisCard() {
   const pageWrap = outerWrap.closest(".wrap");
   if (pageWrap) pageWrap.style.paddingBottom = "0px";
   outerWrap.style.marginBottom = (navHeight + 10) + "px";
+  // PERATURAN HOME: halaman Home MESTI tetap (fix), TIDAK boleh diskrol. Jika masih ada lebihan, kecilkan kad;
+  // dan kunci skrol halaman (senarai dalam kad tetap boleh diskrol sendiri).
+  const over = document.documentElement.scrollHeight - window.innerHeight;
+  if (over > 0) {
+    const h2 = Math.max(60, card.offsetHeight - over) + "px";
+    [card, card2, card3, card4, card5].forEach((c) => { if (c) c.style.height = h2; });
+  }
+  document.documentElement.style.overflowY = "hidden";
+  document.body.style.overflowY = "hidden";
 }
 window.addEventListener("resize", dbSizeHomeAnalysisCard);
 // Kira semula bila susun atur DI ATAS kad berubah (ticker acara muncul lewat selepas rangkaian, kad solat
