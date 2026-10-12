@@ -76,39 +76,63 @@ async function kbFetchRecords() {
 }
 
 const KB_KAUNSELING_SHEET_ID = "17WFKbOCBOLzp7BRHy4DVDmqSI8H5RxkKH5opS1ZvOB0";
+// SAMA dengan KN_API_URL (tempahan-kaunseling.js) — Apps Script Kaunseling. Dibaca melalui skrip (bukan gviz) kerana Spreadsheet PSK
+// ialah fail BERASINGAN: gviz hanya berfungsi jika fail itu dikongsi "sesiapa dengan pautan", dan gagal DIAM-DIAM jika tidak.
+const KB_KAUNSELING_API_URL = "https://script.google.com/macros/s/AKfycbyZuruVgM_cKNdeHltzRIFbTXWOTnemNNFT9SaUZ0DvgFCgl9ursgFO2z7NbfI_73mc/exec";
+
+/** Pelbagai bentuk tarikh -> "yyyy-MM-dd" ("" jika tidak dikenali): "2026-10-14", "'2026-10-14", "14/10/2026", "Date(2026,9,14)" */
+function kbNormDate(v) {
+  const s = String(v == null ? "" : v).trim().replace(/^'/, "");
+  const pad = (n) => String(n).padStart(2, "0");
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return `${m[1]}-${pad(m[2])}-${pad(m[3])}`;
+  m = s.match(/^Date\((\d+),(\d+),(\d+)/);
+  if (m) return `${m[1]}-${pad(+m[2] + 1)}-${pad(m[3])}`;
+  m = s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/);
+  if (m) return `${m[3]}-${pad(m[2])}-${pad(m[1])}`;
+  return "";
+}
+
+/** Semua rekod PSK mentah. 1) Apps Script (dipercayai); 2) gviz (sandaran, jika fail PSK dikongsi awam). Pulangkan null jika kedua-duanya gagal. */
+async function kbLoadKaunselingRaw() {
+  try {
+    const res = await fetch(`${KB_KAUNSELING_API_URL}?action=list`);
+    const json = await res.json();
+    if (json && json.status === "success" && Array.isArray(json.data)) {
+      return json.data.map((r) => ({
+        tarikhMula: kbNormDate(r.TARIKH_MULA), tarikhTamat: kbNormDate(r.TARIKH_TAMAT),
+        jenis: String(r.JENIS || "").trim(), perkara: String(r.PERKARA || "").trim(), nama: String(r.MURID || "").trim(),
+        tingkatan: String(r.TINGKATAN || "").trim(), kaunselor: String(r.KAUNSELOR || "").trim(),
+      }));
+    }
+    console.warn("[Keberadaan] API Kaunseling tidak memulangkan data:", json && json.message);
+  } catch (e) { console.warn("[Keberadaan] API Kaunseling gagal:", e && e.message); }
+  try {
+    const { rows } = await gvizFetch(KB_KAUNSELING_SHEET_ID, "PSK");
+    return rows.map((r) => {
+      const c = r.c || [];
+      const get = (idx) => (c[idx] && c[idx].v != null ? String(c[idx].v).trim() : "");
+      return { tarikhMula: kbNormDate(get(0)), tarikhTamat: kbNormDate(get(1)), jenis: get(4), perkara: get(5), nama: get(6), tingkatan: get(7), kaunselor: get(8) };
+    });
+  } catch (e) { console.warn("[Keberadaan] gviz PSK gagal:", e && e.message); }
+  return null;
+}
 
 /** Rujuk-silang Tempahan Kaunseling — murid yang terlibat sesi/program
  * kaunseling PADA TARIKH hari ini (dalam julat TarikhMula-TarikhTamat)
- * turut dipapar dalam kad Keberadaan Murid Hari Ini di Home. Guna gviz terus. */
+ * turut dipapar dalam kad Keberadaan Murid Hari Ini di Home.
+ * Sel Nama Murid boleh mengandungi beberapa murid (satu nama setiap baris) — setiap murid dipapar sebagai satu baris. */
 async function kbFetchTodayKaunseling(todayStr) {
-  try {
-    const { rows } = await gvizFetch(KB_KAUNSELING_SHEET_ID, "PSK");
-    const list = rows.map((r) => {
-      const c = r.c || [];
-      const get = (idx) => (c[idx] && c[idx].v != null ? String(c[idx].v).trim() : "");
-      const gvizDateStr = (raw) => {
-        if (!raw) return "";
-        const m = raw.match(/Date\((\d+),(\d+),(\d+)/);
-        if (!m) return raw.replace(/^'/, "").slice(0, 10);
-        const y = parseInt(m[1]), mo = parseInt(m[2]) + 1, d = parseInt(m[3]);
-        return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-      };
-      const tarikhMula = gvizDateStr(get(0));
-      const tarikhTamat = gvizDateStr(get(1)) || tarikhMula;
-      return {
-        tarikhMula, tarikhTamat,
-        jenis: get(4), perkara: get(5), nama: get(6), tingkatan: get(7), kaunselor: get(8),
-      };
-    }).filter((b) => b.nama && b.tarikhMula && todayStr >= b.tarikhMula && todayStr <= b.tarikhTamat);
-
-    return list.map((b) => ({
-      nama: b.nama, tingkatan: b.tingkatan,
-      tempat: `${b.jenis || "Kaunseling"}${b.kaunselor ? " · " + b.kaunselor : ""}`,
-      catatan: b.perkara || "",
-    }));
-  } catch (e) {
-    return [];
-  }
+  const raw = await kbLoadKaunselingRaw();
+  if (!raw) return [];
+  const out = [];
+  raw.forEach((b) => {
+    const tamat = b.tarikhTamat || b.tarikhMula;
+    if (!b.nama || !b.tarikhMula || todayStr < b.tarikhMula || todayStr > tamat) return;
+    const tempat = `${b.jenis || "Kaunseling"}${b.kaunselor ? " · " + b.kaunselor : ""}`;
+    b.nama.split(/\r?\n/).map((n) => n.trim()).filter(Boolean).forEach((nama) => out.push({ nama, tingkatan: b.tingkatan, tempat, catatan: b.perkara || "" }));
+  });
+  return out;
 }
 
 /* ---------------- Kad Home: Keberadaan Murid (hari ini sahaja, bersyarat) ---------------- */
