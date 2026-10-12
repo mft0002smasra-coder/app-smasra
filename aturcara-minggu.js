@@ -361,12 +361,12 @@ function atmRenderCard() {
   rangeEl.textContent = `${meta.tema ? meta.tema + " · " : ""}${atmFmt(meta.dari)} – ${atmFmt(meta.hingga)}`;
   infoBtn.classList.remove("hidden");
   infoBtn.classList.toggle("active", atmInfoOpen);
-  if (atmInfoOpen) { bodyEl.innerHTML = atmInfoHtml(manage); return; }
+  if (atmInfoOpen) { bodyEl.innerHTML = atmInfoHtml(false); return; }
   const day = atmData.hari.find((h) => h.tarikh === atmCardDay);
   const isToday = atmCardDay === todayIso();
   const heading = `<div class="atm-day-title">${ATM_HARI[atmWeekday(atmCardDay)]} · ${atmFmt(atmCardDay)}${isToday ? " · HARI INI" : ""}</div>`;
   if (!day || !day.items.length) { bodyEl.innerHTML = heading + `<div class="empty-state" style="padding:14px 4px;font-size:12px">Tiada aturcara untuk hari ini.<br>Ketik kad untuk lihat aturcara seminggu.</div>`; return; }
-  bodyEl.innerHTML = heading + day.items.map((it, ii) => atmItemHtml(it, ii, day.tarikh, manage)).join("");
+  bodyEl.innerHTML = heading + day.items.map((it, ii) => atmItemHtml(it, ii, day.tarikh, false)).join(""); // butang Tambah ke Event hanya dalam popup
 }
 
 function atmEventExists(en) {
