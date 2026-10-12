@@ -101,6 +101,7 @@ async function kbLoadKaunselingRaw() {
     if (json && json.status === "success" && Array.isArray(json.data)) {
       return json.data.map((r) => ({
         tarikhMula: kbNormDate(r.TARIKH_MULA), tarikhTamat: kbNormDate(r.TARIKH_TAMAT),
+        waktuMula: String(r.WAKTU_MULA || "").trim(), waktuTamat: String(r.WAKTU_TAMAT || "").trim(),
         jenis: String(r.JENIS || "").trim(), perkara: String(r.PERKARA || "").trim(), nama: String(r.MURID || "").trim(),
         tingkatan: String(r.TINGKATAN || "").trim(), kaunselor: String(r.KAUNSELOR || "").trim(),
       }));
@@ -112,15 +113,31 @@ async function kbLoadKaunselingRaw() {
     return rows.map((r) => {
       const c = r.c || [];
       const get = (idx) => (c[idx] && c[idx].v != null ? String(c[idx].v).trim() : "");
-      return { tarikhMula: kbNormDate(get(0)), tarikhTamat: kbNormDate(get(1)), jenis: get(4), perkara: get(5), nama: get(6), tingkatan: get(7), kaunselor: get(8) };
+      return { tarikhMula: kbNormDate(get(0)), tarikhTamat: kbNormDate(get(1)), waktuMula: get(2), waktuTamat: get(3), jenis: get(4), perkara: get(5), nama: get(6), tingkatan: get(7), kaunselor: get(8) };
     });
   } catch (e) { console.warn("[Keberadaan] gviz PSK gagal:", e && e.message); }
   return null;
 }
 
+// Slot waktu kaunseling — SAMA dengan KN_SLOTS_WEEKDAY / KN_SLOTS_FRIDAY dalam tempahan-kaunseling.js (kemas kini kedua-duanya jika slot berubah).
+const KB_SLOTS_WEEKDAY = ["7.30 - 8.10","8.10 - 8.50","8.50 - 9.30","9.30 - 10.10","10.10 - 10.50","10.50 - 11.10","11.10 - 11.50","11.50 - 12.30","12.30 - 13.10","13.10 - 13.50","13.50 - 14.30","15.10 - 15.50","15.50 - 16.30","16.30 - 17.10"];
+const KB_SLOTS_FRIDAY = ["7.30 - 7.45","7.45 - 8.25","8.25 - 9.05","9.05 - 9.45","9.45 - 10.05","10.05 - 10.45","10.45 - 11.25","11.25 - 12.05"];
+/** "SLOT 1" + "SLOT 2" pada tarikh tertentu -> { teks: "7.30 - 8.50 (Slot 1–2)", mula: 1 }. Jumaat guna slot Jumaat. Tak dikenali -> teks mentah. */
+function kbSlotText(waktuMula, waktuTamat, ymd) {
+  const num = (v) => { const n = parseInt(String(v || "").replace(/[^0-9]/g, ""), 10); return isFinite(n) ? n : 0; };
+  const a = num(waktuMula), b = num(waktuTamat) || a;
+  const m = String(ymd || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const slots = m && new Date(+m[1], +m[2] - 1, +m[3]).getDay() === 5 ? KB_SLOTS_FRIDAY : KB_SLOTS_WEEKDAY;
+  const raw = [waktuMula, waktuTamat].filter(Boolean).join(" – ");
+  if (!a || a > slots.length) return { teks: raw, mula: a || 999 };
+  const lo = Math.min(a, b), hi = Math.min(Math.max(a, b), slots.length);
+  const start = slots[lo - 1].split(" - ")[0], end = slots[hi - 1].split(" - ")[1];
+  return { teks: `${start} - ${end} (Slot ${lo === hi ? lo : lo + "–" + hi})`, mula: lo };
+}
+
 /** Rujuk-silang Tempahan Kaunseling — murid yang terlibat sesi/program
  * kaunseling PADA TARIKH hari ini (dalam julat TarikhMula-TarikhTamat)
- * turut dipapar dalam kad Keberadaan Murid Hari Ini di Home.
+ * turut dipapar dalam kad Keberadaan Murid Hari Ini di Home, BERSAMA masa (slot).
  * Sel Nama Murid boleh mengandungi beberapa murid (satu nama setiap baris) — setiap murid dipapar sebagai satu baris. */
 async function kbFetchTodayKaunseling(todayStr) {
   const raw = await kbLoadKaunselingRaw();
@@ -129,13 +146,39 @@ async function kbFetchTodayKaunseling(todayStr) {
   raw.forEach((b) => {
     const tamat = b.tarikhTamat || b.tarikhMula;
     if (!b.nama || !b.tarikhMula || todayStr < b.tarikhMula || todayStr > tamat) return;
+    const slot = kbSlotText(b.waktuMula, b.waktuTamat, todayStr);
     const tempat = `${b.jenis || "Kaunseling"}${b.kaunselor ? " · " + b.kaunselor : ""}`;
-    b.nama.split(/\r?\n/).map((n) => n.trim()).filter(Boolean).forEach((nama) => out.push({ nama, tingkatan: b.tingkatan, tempat, catatan: b.perkara || "" }));
+    b.nama.split(/\r?\n/).map((n) => n.trim()).filter(Boolean).forEach((nama) => out.push({ nama, tingkatan: b.tingkatan, tempat, catatan: b.perkara || "", waktu: slot.teks, _urut: slot.mula }));
   });
-  return out;
+  return out.sort((x, y) => x._urut - y._urut || x.nama.localeCompare(y.nama));
 }
 
 /* ---------------- Kad Home: Keberadaan Murid (hari ini sahaja, bersyarat) ---------------- */
+let kbHomeGroups = null;   // { kategori: [rekod] } — dikongsi kad & popup
+let kbHomeDateLabel = "";
+
+/** Satu baris murid. detail=true (popup) menambah "dicatat oleh". */
+function kbRowHtml(r, detail) {
+  return `
+        <div class="home-kb-row">
+          <div class="home-kb-row-top">
+            <span class="home-kb-nama">${kbEscape(r.nama)}</span>
+            <span class="home-kb-kelas">${kbEscape(r.tingkatan)}</span>
+          </div>
+          ${r.waktu ? `<div class="home-kb-tempat">🕐 ${kbEscape(r.waktu)}</div>` : ""}
+          <div class="home-kb-tempat">📍 ${kbEscape(r.tempat || "-")}</div>
+          ${r.catatan ? `<div class="home-kb-catatan">📝 ${kbEscape(r.catatan)}</div>` : ""}
+          ${detail && r.dicatatOleh ? `<div class="home-kb-catatan">✍️ ${kbEscape(r.dicatatOleh)}</div>` : ""}
+        </div>`;
+}
+function kbGroupsHtml(groups, detail) {
+  return Object.keys(groups).map((kategori) => `
+    <div class="home-kb-group">
+      <div class="home-kb-group-title">${kbEscape(kategori)} <span class="home-kb-count">${groups[kategori].length}</span></div>
+      ${groups[kategori].map((r) => kbRowHtml(r, detail)).join("")}
+    </div>`).join("");
+}
+
 async function kbRenderHomeCard() {
   const pageEl = document.getElementById("home-kb-page");
   if (!pageEl) return;
@@ -151,30 +194,35 @@ async function kbRenderHomeCard() {
   }
 
   const dateEl = document.getElementById("home-kb-date");
-  if (dateEl) {
-    const today = new Date();
-    const hariNames = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
-    dateEl.textContent = `${hariNames[today.getDay()]}, ${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
-  }
+  const today = new Date();
+  const hariNames = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
+  kbHomeDateLabel = `${hariNames[today.getDay()]}, ${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
+  if (dateEl) dateEl.textContent = kbHomeDateLabel;
 
   const groups = {};
   todayItems.forEach((r) => { if (!groups[r.kategori]) groups[r.kategori] = []; groups[r.kategori].push(r); });
   if (todayKaunseling.length) groups["Kaunseling"] = todayKaunseling;
+  kbHomeGroups = groups;
 
-  const listEl = document.getElementById("home-kb-list");
-  listEl.innerHTML = Object.keys(groups).map((kategori) => `
-    <div class="home-kb-group">
-      <div class="home-kb-group-title">${kbEscape(kategori)} <span class="home-kb-count">${groups[kategori].length}</span></div>
-      ${groups[kategori].map((r) => `
-        <div class="home-kb-row">
-          <div class="home-kb-row-top">
-            <span class="home-kb-nama">${kbEscape(r.nama)}</span>
-            <span class="home-kb-kelas">${kbEscape(r.tingkatan)}</span>
-          </div>
-          <div class="home-kb-tempat">📍 ${kbEscape(r.tempat || "-")}</div>
-          ${r.catatan ? `<div class="home-kb-catatan">📝 ${kbEscape(r.catatan)}</div>` : ""}
-        </div>`).join("")}
-    </div>`).join("");
+  document.getElementById("home-kb-list").innerHTML = kbGroupsHtml(groups, false);
+}
+
+/* ---------------- Popup: senarai & butiran keberadaan murid hari ini (ketik kad) ---------------- */
+function kbOpenHomeRead() {
+  if (!kbHomeGroups) return;
+  const total = Object.keys(kbHomeGroups).reduce((n, k) => n + kbHomeGroups[k].length, 0);
+  document.getElementById("kb-read-date").textContent = `${kbHomeDateLabel} · ${total} murid`;
+  const body = document.getElementById("kb-read-body");
+  body.innerHTML = kbGroupsHtml(kbHomeGroups, true);
+  body.scrollTop = 0;
+  document.getElementById("kb-read-overlay").classList.remove("hidden");
+}
+function kbCloseHomeRead() { const ov = document.getElementById("kb-read-overlay"); if (ov) ov.classList.add("hidden"); }
+if (typeof document !== "undefined") {
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("#home-kb-wrap") && !e.target.closest("button, a")) kbOpenHomeRead();
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") kbCloseHomeRead(); });
 }
 
 /* ================= Navigasi tab ================= */

@@ -2471,3 +2471,4 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
 
 .kn-hint{ font-size:10.5px;color:#7a7f89;margin-top:3px;line-height:1.3; }
 .kn-hint:empty{ display:none; }
+#home-kb-wrap .db-my-scroll{ cursor:pointer; }

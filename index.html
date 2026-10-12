@@ -193,6 +193,20 @@
   </div>
 
   <!-- ============ POPUP: Borang To Do List (Kad Jadual Waktu Saya gantian) ============ -->
+  <!-- Keberadaan Murid: popup senarai & butiran hari ini (ketik kad Home) -->
+  <div class="modal-overlay-center hidden" id="kb-read-overlay" onclick="if(event.target===this)kbCloseHomeRead()">
+    <div class="glass modal-sheet atm-read-sheet">
+      <div class="atm-read-top">
+        <div>
+          <div class="modal-title" style="margin-bottom:2px">KEBERADAAN MURID</div>
+          <div class="atm-read-range" id="kb-read-date"></div>
+        </div>
+        <button type="button" class="atm-read-close" onclick="kbCloseHomeRead()" aria-label="Tutup">✕</button>
+      </div>
+      <div class="atm-read-body" id="kb-read-body"></div>
+    </div>
+  </div>
+
   <!-- Aturcara Minggu: popup bacaan (ketik kad di Home) -->
   <div class="modal-overlay-center hidden" id="atm-read-overlay" onclick="if(event.target===this)atmCloseRead()">
     <div class="glass modal-sheet atm-read-sheet">
@@ -282,7 +296,7 @@
 <script src="aturcara-minggu.js?v=20261012b"></script>
 <script src="erks-database.js?v=20261011a"></script>
 <script src="jadual-guru.js?v=20261007e"></script>
-<script src="keberadaan-murid.js?v=20261012d"></script>
+<script src="keberadaan-murid.js?v=20261012e"></script>
 <script src="solat.js"></script>
 <script>
   async function renderHome(user) {
