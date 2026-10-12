@@ -2463,3 +2463,8 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
 .atm-read-body .atm-item-t{ font-size:14px; }
 .atm-rd-day{ margin-bottom:14px; }
 .atm-rd-day.is-today .atm-day-title{ color:var(--mint); }
+.atm-manage-btn.active{ background:linear-gradient(135deg,rgba(43,232,208,.3),rgba(60,140,255,.25));color:var(--text); }
+.atm-read-actions{ display:flex;gap:8px;margin:2px 0 8px;flex-shrink:0; }
+.atm-read-actions .atm-add-btn{ flex:1;padding:8px 10px;font-size:13px; }
+.atm-danger-btn{ border-color:rgba(255,111,111,.7);background:rgba(255,80,80,.1);color:#ff8f8f; }
+.atm-read-tabs{ margin:2px 0 8px;flex-shrink:0; }

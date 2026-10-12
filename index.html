@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261012a">
+<link rel="stylesheet" href="style.css?v=20261012b">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -118,9 +118,8 @@
                 <div class="db-my-title" id="atm-title">ATURCARA MINGGU</div>
                 <div class="db-my-subtitle atm-range" id="atm-range"></div>
               </div>
-              <button type="button" class="atm-manage-btn hidden" id="atm-manage-btn" onclick="atmOpenPaste()">📋 Tampal</button>
+              <button type="button" class="atm-manage-btn hidden" id="atm-info-btn" data-atm-info="1">Info</button>
             </div>
-            <div class="atm-tabs" id="atm-tabs"></div>
             <div class="db-my-scroll">
               <div id="atm-body"></div>
             </div>
@@ -204,6 +203,12 @@
         </div>
         <button type="button" class="atm-read-close" onclick="atmCloseRead()" aria-label="Tutup">✕</button>
       </div>
+      <div class="atm-read-actions hidden" id="atm-read-actions">
+        <button type="button" class="atm-add-btn" onclick="atmReadUpdate()">✏️ Kemaskini</button>
+        <button type="button" class="atm-add-btn atm-danger-btn" id="atm-read-del" onclick="atmDeleteWeek()">🗑 Padam</button>
+      </div>
+      <div class="error-text hidden" id="atm-read-error"></div>
+      <div class="atm-tabs atm-read-tabs" id="atm-read-tabs"></div>
       <div class="atm-read-body" id="atm-read-body"></div>
     </div>
   </div>
@@ -218,7 +223,6 @@
       <div class="error-text hidden" id="atm-paste-error"></div>
       <div class="modal-actions" style="flex-wrap:wrap">
         <button type="button" class="btn-ghost" onclick="atmClosePaste()">Batal</button>
-        <button type="button" class="btn-ghost hidden" id="atm-del-btn" onclick="atmDeleteAll()">Padam</button>
         <button type="button" class="btn-ghost" onclick="atmCheckPaste()">Semak</button>
         <button type="button" class="btn-primary hidden" id="atm-save-btn" style="margin-top:0" onclick="atmSavePaste()">Simpan Aturcara</button>
       </div>
@@ -275,7 +279,7 @@
 
 <script src="app.js"></script>
 <script src="event.js"></script>
-<script src="aturcara-minggu.js?v=20261012a"></script>
+<script src="aturcara-minggu.js?v=20261012b"></script>
 <script src="erks-database.js?v=20261011a"></script>
 <script src="jadual-guru.js?v=20261007e"></script>
 <script src="keberadaan-murid.js"></script>

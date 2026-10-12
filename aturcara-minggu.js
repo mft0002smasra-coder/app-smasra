@@ -277,7 +277,9 @@ function atmEntries(item, tarikh) {
 /* ---------------- Keadaan & akses ---------------- */
 let atmData = null;      // { meta, hari:[{tarikh, hari, items}] } dari Sheet
 let atmUser = null;
-let atmTab = null;       // tarikh yang dipilih atau "info"
+let atmCardDay = null;   // tarikh yang dipaparkan pada kad Home (hari ini / hari pertama)
+let atmInfoOpen = false; // kad Home: tunjuk maklumat minggu (butang Info)
+let atmReadDay = null;   // tab hari aktif dalam popup bacaan
 let atmParsed = null;    // hasil tampal yang sedang dipratonton
 let atmBusy = false;
 let atmEvTarget = null;  // entri yang sedang ditambah ke Event
@@ -308,61 +310,63 @@ async function atmFetch() {
 function atmWeekEnd(d) { return atmAddDays(atmMondayOf(d.meta.dari), 6); }
 
 /* ---------------- Kad Home ---------------- */
+/** Hari yang dipaparkan: hari ini jika dalam minggu itu; kalau tidak (cth aturcara dimasukkan lebih awal) hari pertama yang ada data */
+function atmDefaultDay() {
+  const today = todayIso(), mon = atmMondayOf(atmData.meta.dari);
+  if (today >= mon && today <= atmAddDays(mon, 6)) return today;
+  return atmData.hari[0] ? atmData.hari[0].tarikh : mon;
+}
 async function atmRenderHomeCard(user) {
   atmUser = user || atmUser;
   const page = document.getElementById("home-atm-page");
   if (!page) return;
   const manage = atmCanManage(atmUser);
   atmData = await atmFetch();
-  if (atmData && atmWeekEnd(atmData) < todayIso()) atmData = null; // minggu sudah berlalu
+  if (atmData && atmWeekEnd(atmData) < todayIso()) atmData = null; // minggu sudah berlalu — data lama TIDAK dipaparkan
   if (!atmData && !manage) { page.remove(); return; }
   if (typeof evEvents !== "undefined" && !evEvents.length && typeof evLoadEvents === "function") { try { await evLoadEvents(); } catch (e) { /* abaikan */ } }
-  const btn = document.getElementById("atm-manage-btn");
-  if (btn) btn.classList.toggle("hidden", !manage);
-  if (!atmData) { atmTab = null; }
-  else {
-    const today = todayIso(), mon = atmMondayOf(atmData.meta.dari);
-    atmTab = today >= mon && today <= atmAddDays(mon, 6) ? today : (atmData.hari[0] ? atmData.hari[0].tarikh : mon);
-  }
+  atmInfoOpen = false;
+  atmCardDay = atmData ? atmDefaultDay() : null;
   atmRenderCard();
+}
+
+/** Satu baris item (nombor, tajuk, sub-baris, butang Tambah ke Event untuk pengurus) — dikongsi kad & popup */
+function atmItemHtml(it, ii, tarikh, manage) {
+  const subs = (it.subs || []).map((s) => `<div class="atm-sub">${atmEsc(s.t)}</div>`).join("");
+  let btns = "";
+  if (manage) {
+    const ents = atmEntries(it, tarikh);
+    btns = `<div class="atm-actions">` + ents.map((en, ei) => {
+      const label = ents.length > 1 ? `Tambah ke Event (${atmEsc(en.masa || ei + 1)})` : "Tambah ke Event";
+      return atmEventExists(en) ? `<span class="atm-added">✓ Sudah dalam Event</span>` : `<button type="button" class="atm-add-btn" data-atm-add="${atmEsc(tarikh)}|${ii}|${ei}">＋ ${label}</button>`;
+    }).join("") + `</div>`;
+  }
+  return `<div class="atm-item"><div class="atm-item-t"><span class="atm-no">${ii + 1}.</span> ${atmEsc(it.t)}</div>${subs}${btns}</div>`;
 }
 
 function atmRenderCard() {
   const titleEl = document.getElementById("atm-title"), rangeEl = document.getElementById("atm-range");
-  const tabsEl = document.getElementById("atm-tabs"), bodyEl = document.getElementById("atm-body");
+  const infoBtn = document.getElementById("atm-info-btn"), bodyEl = document.getElementById("atm-body");
   if (!bodyEl) return;
   const manage = atmCanManage(atmUser);
   if (!atmData) {
     titleEl.textContent = "ATURCARA MINGGU"; rangeEl.textContent = "";
-    tabsEl.innerHTML = "";
-    bodyEl.innerHTML = `<div class="empty-state" style="padding:18px 6px;font-size:12px">Tiada aturcara minggu ini.<br>Tekan <b>Tampal</b> untuk memasukkan teks aturcara.</div>`;
+    infoBtn.classList.add("hidden");
+    bodyEl.innerHTML = `<div class="empty-state" style="padding:18px 6px;font-size:12px">Tiada aturcara minggu ini.</div>` +
+      (manage ? `<div style="text-align:center"><button type="button" class="atm-add-btn" data-atm-paste="1">📋 Tampal Aturcara</button></div>` : "");
     return;
   }
-  const meta = atmData.meta, mon = atmMondayOf(meta.dari), today = todayIso();
+  const meta = atmData.meta;
   titleEl.textContent = meta.minggu ? `ATURCARA MINGGU ${meta.minggu}` : "ATURCARA MINGGU";
   rangeEl.textContent = `${meta.tema ? meta.tema + " · " : ""}${atmFmt(meta.dari)} – ${atmFmt(meta.hingga)}`;
-  const days = Array.from({ length: 7 }, (_, i) => atmAddDays(mon, i));
-  const has = (d) => atmData.hari.some((h) => h.tarikh === d);
-  tabsEl.innerHTML = days.map((d) => `<button type="button" class="atm-tab${d === atmTab ? " active" : ""}${has(d) ? "" : " empty"}${d === today ? " today" : ""}" data-atm-tab="${d}">${ATM_HARI_PENDEK[atmWeekday(d)]}<span class="atm-tab-d">${+d.slice(8)}</span></button>`).join("") +
-    `<button type="button" class="atm-tab atm-tab-info${atmTab === "info" ? " active" : ""}" data-atm-tab="info">Info</button>`;
-
-  if (atmTab === "info") { bodyEl.innerHTML = atmInfoHtml(manage); return; }
-  const day = atmData.hari.find((h) => h.tarikh === atmTab);
-  const heading = `<div class="atm-day-title">${ATM_HARI[atmWeekday(atmTab)]} · ${atmFmt(atmTab)}</div>`;
-  if (!day || !day.items.length) { bodyEl.innerHTML = heading + `<div class="empty-state" style="padding:14px 4px;font-size:12px">Tiada aturcara untuk hari ini.</div>`; return; }
-  bodyEl.innerHTML = heading + day.items.map((it, ii) => {
-    const subs = (it.subs || []).map((s) => `<div class="atm-sub">${atmEsc(s.t)}</div>`).join("");
-    let btns = "";
-    if (manage) {
-      const ents = atmEntries(it, day.tarikh);
-      btns = `<div class="atm-actions">` + ents.map((en, ei) => {
-        const exists = atmEventExists(en);
-        const label = ents.length > 1 ? `Tambah ke Event (${atmEsc(en.masa || ei + 1)})` : "Tambah ke Event";
-        return exists ? `<span class="atm-added">✓ Sudah dalam Event</span>` : `<button type="button" class="atm-add-btn" data-atm-add="${atmEsc(day.tarikh)}|${ii}|${ei}">＋ ${label}</button>`;
-      }).join("") + `</div>`;
-    }
-    return `<div class="atm-item"><div class="atm-item-t"><span class="atm-no">${ii + 1}.</span> ${atmEsc(it.t)}</div>${subs}${btns}</div>`;
-  }).join("");
+  infoBtn.classList.remove("hidden");
+  infoBtn.classList.toggle("active", atmInfoOpen);
+  if (atmInfoOpen) { bodyEl.innerHTML = atmInfoHtml(manage); return; }
+  const day = atmData.hari.find((h) => h.tarikh === atmCardDay);
+  const isToday = atmCardDay === todayIso();
+  const heading = `<div class="atm-day-title">${ATM_HARI[atmWeekday(atmCardDay)]} · ${atmFmt(atmCardDay)}${isToday ? " · HARI INI" : ""}</div>`;
+  if (!day || !day.items.length) { bodyEl.innerHTML = heading + `<div class="empty-state" style="padding:14px 4px;font-size:12px">Tiada aturcara untuk hari ini.<br>Ketik kad untuk lihat aturcara seminggu.</div>`; return; }
+  bodyEl.innerHTML = heading + day.items.map((it, ii) => atmItemHtml(it, ii, day.tarikh, manage)).join("");
 }
 
 function atmEventExists(en) {
@@ -433,6 +437,7 @@ async function atmSubmitEvent(e) {
       if (typeof evLoadEvents === "function") { try { await evLoadEvents(); } catch (x) { /* abaikan */ } }
       if (typeof evRenderHomeTicker === "function") evRenderHomeTicker();
       atmRenderCard();
+      if (atmReadIsOpen()) atmRenderRead();
     } else if (data && data._fallbackParse) {
       showErr("Respons pelayan tidak jelas — status tidak pasti. Semak Event sebelum mencuba lagi.");
     } else {
@@ -450,7 +455,6 @@ function atmOpenPaste() {
   document.getElementById("atm-preview").innerHTML = "";
   document.getElementById("atm-paste-error").classList.add("hidden");
   document.getElementById("atm-save-btn").classList.add("hidden");
-  document.getElementById("atm-del-btn").classList.toggle("hidden", !atmData);
   document.getElementById("atm-paste-overlay").classList.remove("hidden");
 }
 function atmClosePaste() { document.getElementById("atm-paste-overlay").classList.add("hidden"); atmParsed = null; }
@@ -488,50 +492,80 @@ async function atmSavePaste() {
   } catch (err) { errEl.textContent = "Ralat sambungan ke server."; errEl.classList.remove("hidden"); }
   atmBusy = false; btn.disabled = false; btn.textContent = "Simpan Aturcara";
 }
-async function atmDeleteAll() {
-  if (atmBusy || !atmCanManage(atmUser)) return;
-  if (!confirm("Padam aturcara minggu ini daripada Home?")) return;
-  const errEl = document.getElementById("atm-paste-error");
-  atmBusy = true;
+/** Padam aturcara minggu (butang dalam popup bacaan; Pentadbir/Admin App). */
+async function atmDeleteWeek() {
+  if (atmBusy || !atmCanManage(atmUser) || !atmData) return;
+  const m = atmData.meta;
+  if (!confirm(`Padam aturcara ${m.minggu ? "Minggu " + m.minggu + " " : ""}(${atmFmt(m.dari)} – ${atmFmt(m.hingga)}) daripada Home?\n\nTindakan ini tidak boleh dibatalkan.`)) return;
+  const errEl = document.getElementById("atm-read-error"), btn = document.getElementById("atm-read-del");
+  errEl.classList.add("hidden");
+  atmBusy = true; btn.disabled = true;
   try {
     const data = await postToAppsScript(API_URL, { action: "padamAturcaraMinggu", email: atmUser.email });
-    if (data && data.success) { atmBusy = false; atmClosePaste(); await atmRenderHomeCard(atmUser); }
-    else { errEl.textContent = (data && data.message) || "Gagal memadam."; errEl.classList.remove("hidden"); }
+    if (data && data.success && !data._fallbackParse) { atmBusy = false; atmCloseRead(); await atmRenderHomeCard(atmUser); }
+    else { errEl.textContent = data && data._fallbackParse ? "Respons pelayan tidak jelas — semak kad sebelum mencuba lagi." : ((data && data.message) || "Gagal memadam."); errEl.classList.remove("hidden"); }
   } catch (err) { errEl.textContent = "Ralat sambungan ke server."; errEl.classList.remove("hidden"); }
-  atmBusy = false;
+  atmBusy = false; btn.disabled = false;
 }
 
 /* ---------------- Popup bacaan (ketik kad) ---------------- */
+function atmReadHtml() {
+  const manage = atmCanManage(atmUser), today = todayIso(), mon = atmMondayOf(atmData.meta.dari);
+  return Array.from({ length: 7 }, (_, i) => atmAddDays(mon, i)).map((d) => {
+    const day = atmData.hari.find((h) => h.tarikh === d);
+    const items = day && day.items.length ? day.items.map((it, ii) => atmItemHtml(it, ii, d, manage)).join("") : `<div class="atm-sub" style="margin-left:0">Tiada aturcara.</div>`;
+    return `<div class="atm-rd-day${d === today ? " is-today" : ""}" id="atm-rd-${d}"><div class="atm-day-title">${ATM_HARI[atmWeekday(d)]} · ${atmFmt(d)}${d === today ? " · HARI INI" : ""}</div>${items}</div>`;
+  }).join("") + `<div class="atm-rd-day" id="atm-rd-info">${atmInfoHtml(manage)}</div>`;
+}
+function atmRenderReadTabs() {
+  const mon = atmMondayOf(atmData.meta.dari), today = todayIso();
+  const has = (d) => atmData.hari.some((h) => h.tarikh === d && h.items.length);
+  document.getElementById("atm-read-tabs").innerHTML = Array.from({ length: 7 }, (_, i) => atmAddDays(mon, i)).map((d) =>
+    `<button type="button" class="atm-tab${d === atmReadDay ? " active" : ""}${has(d) ? "" : " empty"}${d === today ? " today" : ""}" data-atm-rtab="${d}">${ATM_HARI_PENDEK[atmWeekday(d)]}<span class="atm-tab-d">${+d.slice(8)}</span></button>`
+  ).join("");
+}
+/** Bina semula kandungan popup (kekalkan kedudukan skrol) — dipanggil selepas buka & selepas Tambah ke Event */
+function atmRenderRead() {
+  const body = document.getElementById("atm-read-body"), keep = body.scrollTop;
+  body.innerHTML = atmReadHtml();
+  atmRenderReadTabs();
+  body.scrollTop = keep;
+}
 function atmOpenRead() {
   if (!atmData) return;
-  const m = atmData.meta, today = todayIso();
+  const m = atmData.meta, manage = atmCanManage(atmUser);
   document.getElementById("atm-read-title").textContent = m.minggu ? `ATURCARA MINGGU ${m.minggu}` : "ATURCARA MINGGU";
   document.getElementById("atm-read-range").textContent = `${m.tema ? m.tema + " · " : ""}${atmFmt(m.dari)} – ${atmFmt(m.hingga)}`;
-  const info = (m.pentadbir || (m.guru || []).length) ? atmInfoHtml(false) : "";
-  const days = atmData.hari.map((d) => {
-    const items = (d.items || []).map((it, ii) => `
-      <div class="atm-item"><div class="atm-item-t"><span class="atm-no">${ii + 1}.</span> ${atmEsc(it.t)}</div>${(it.subs || []).map((x) => `<div class="atm-sub">${atmEsc(x.t)}</div>`).join("")}</div>`).join("") || `<div class="atm-sub" style="margin-left:0">Tiada aturcara.</div>`;
-    return `<div class="atm-rd-day${d.tarikh === today ? " is-today" : ""}" id="atm-rd-${d.tarikh}"><div class="atm-day-title">${ATM_HARI[atmWeekday(d.tarikh)]} · ${atmFmt(d.tarikh)}${d.tarikh === today ? " · HARI INI" : ""}</div>${items}</div>`;
-  }).join("");
-  document.getElementById("atm-read-body").innerHTML = days + info;
-  const ov = document.getElementById("atm-read-overlay");
-  ov.classList.remove("hidden");
-  const body = document.getElementById("atm-read-body");
-  body.scrollTop = 0;
-  const target = document.getElementById(`atm-rd-${atmTab}`);
-  if (target && atmTab !== "info") body.scrollTop = Math.max(0, target.offsetTop - 4);
-  else if (atmTab === "info") body.scrollTop = body.scrollHeight;
+  document.getElementById("atm-read-actions").classList.toggle("hidden", !manage);
+  document.getElementById("atm-read-error").classList.add("hidden");
+  atmReadDay = atmCardDay;
+  document.getElementById("atm-read-body").scrollTop = 0;
+  atmRenderRead();
+  document.getElementById("atm-read-overlay").classList.remove("hidden");
+  atmScrollToDay(atmReadDay, false);
+}
+function atmScrollToDay(ymd, smooth) {
+  const body = document.getElementById("atm-read-body"), target = document.getElementById(`atm-rd-${ymd}`);
+  if (!target) return;
+  const top = Math.max(0, target.offsetTop - 4);
+  if (smooth && body.scrollTo) body.scrollTo({ top, behavior: "smooth" }); else body.scrollTop = top;
 }
 function atmCloseRead() { const ov = document.getElementById("atm-read-overlay"); if (ov) ov.classList.add("hidden"); }
+function atmReadIsOpen() { const ov = document.getElementById("atm-read-overlay"); return !!ov && !ov.classList.contains("hidden"); }
+/** Butang Kemaskini dalam popup: tutup popup, buka tampal aturcara baharu */
+function atmReadUpdate() { atmCloseRead(); atmOpenPaste(); }
 
 /* ---------------- Pendengar acara (delegasi) ---------------- */
 if (typeof document !== "undefined") {
 document.addEventListener("click", (e) => {
-  // Ketik mana-mana bahagian kad (selain tab/butang) -> popup bacaan
-  if (e.target.closest("#home-atm-wrap") && !e.target.closest("[data-atm-tab], [data-atm-add], [data-atm-addprog], #atm-manage-btn, button, a")) { atmOpenRead(); return; }
-  const tab = e.target.closest("[data-atm-tab]");
-  if (tab && atmData) { atmTab = tab.dataset.atmTab; atmRenderCard(); return; }
-  const add = e.target.closest("[data-atm-add]");
+  const t = e.target;
+  // Ketik mana-mana bahagian kad Home (selain butang) -> popup bacaan
+  if (t.closest("#home-atm-wrap") && !t.closest("button, a")) { atmOpenRead(); return; }
+  if (t.closest("[data-atm-info]")) { if (atmData) { atmInfoOpen = !atmInfoOpen; atmRenderCard(); } return; }
+  if (t.closest("[data-atm-paste]")) { atmOpenPaste(); return; }
+  const rt = t.closest("[data-atm-rtab]");
+  if (rt && atmData) { atmReadDay = rt.dataset.atmRtab; atmRenderReadTabs(); atmScrollToDay(atmReadDay, true); return; }
+  const add = t.closest("[data-atm-add]");
   if (add && atmData && atmCanManage(atmUser)) {
     const [tarikh, ii, ei] = add.dataset.atmAdd.split("|");
     const day = atmData.hari.find((h) => h.tarikh === tarikh), it = day && day.items[+ii];
@@ -539,7 +573,7 @@ document.addEventListener("click", (e) => {
     if (en) atmOpenEvModal(en);
     return;
   }
-  const ap = e.target.closest("[data-atm-addprog]");
+  const ap = t.closest("[data-atm-addprog]");
   if (ap && atmData && atmCanManage(atmUser)) {
     const p = (atmData.meta.program || [])[+ap.dataset.atmAddprog];
     if (p) atmOpenEvModal({ tajuk: p.t, tarikhDari: p.dari, tarikhHingga: p.hingga, masa: "", tempat: "", unit: atmGuessUnit(p.t) });
