@@ -2468,3 +2468,6 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
 .atm-read-actions .atm-add-btn{ flex:1;padding:8px 10px;font-size:13px; }
 .atm-danger-btn{ border-color:rgba(255,111,111,.7);background:rgba(255,80,80,.1);color:#ff8f8f; }
 .atm-read-tabs{ margin:2px 0 8px;flex-shrink:0; }
+
+.kn-hint{ font-size:10.5px;color:#7a7f89;margin-top:3px;line-height:1.3; }
+.kn-hint:empty{ display:none; }

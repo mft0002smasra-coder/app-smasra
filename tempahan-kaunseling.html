@@ -145,9 +145,10 @@
           <label class="kn-field-label" for="kn-f-kaunselor">Nama Kaunselor *</label>
           <select class="kn-field" id="kn-f-kaunselor"><option value="">Memuatkan senarai...</option></select>
 
-          <label class="kn-field-label" style="margin-top:9px" for="kn-f-tingkatan">Tingkatan Murid *</label>
-          <input class="kn-field" type="text" id="kn-f-tingkatan" list="kn-tingkatan-list" placeholder="Pilih atau taip tingkatan" autocomplete="off">
+          <label class="kn-field-label" style="margin-top:9px" for="kn-f-tingkatan">Kelas Murid *</label>
+          <input class="kn-field" type="text" id="kn-f-tingkatan" list="kn-tingkatan-list" placeholder="Pilih atau taip kelas" autocomplete="off" oninput="knRefreshMuridPicker('form')">
           <datalist id="kn-tingkatan-list"></datalist>
+          <div class="kn-hint" id="kn-f-kelas-hint"></div>
 
           <label class="kn-field-label" style="margin-top:9px" for="kn-f-tarikh-mula">Tarikh Mula *</label>
           <input class="kn-field" type="date" id="kn-f-tarikh-mula" onchange="knOnFormDateChange()">
@@ -169,8 +170,9 @@
           <label class="kn-field-label" style="margin-top:9px" for="kn-f-perkara">Perkara/Tajuk *</label>
           <input class="kn-field" type="text" id="kn-f-perkara" placeholder="Cth: Masalah Disiplin / Motivasi Peperiksaan">
 
-          <label class="kn-field-label" style="margin-top:9px" for="kn-f-murid">Nama Murid *</label>
-          <textarea class="kn-field" id="kn-f-murid" placeholder="Nama murid (boleh lebih daripada satu, satu nama satu baris)"></textarea>
+          <label class="kn-field-label" style="margin-top:9px" for="kn-f-murid-pick">Nama Murid *</label>
+          <select class="kn-field" id="kn-f-murid-pick" onchange="knOnMuridPick('form')" disabled><option value="">Pilih kelas dahulu</option></select>
+          <textarea class="kn-field" id="kn-f-murid" style="margin-top:6px" placeholder="Murid yang dipilih akan muncul di sini (boleh taip/ubah sendiri; satu nama satu baris)"></textarea>
 
           <div class="kn-msg-error" id="kn-form-error"></div>
           <button class="kn-submit-btn" id="kn-submit-btn" onclick="knSubmitBooking()">Hantar Tempahan</button>
@@ -197,8 +199,8 @@
       <label class="field-label" for="kn-d-kaunselor-view">Nama Kaunselor</label>
       <select class="field-input" id="kn-d-kaunselor-view"></select>
 
-      <label class="field-label" style="margin-top:12px" for="kn-d-tingkatan-view">Tingkatan Murid</label>
-      <input class="field-input" type="text" id="kn-d-tingkatan-view" list="kn-d-tingkatan-list" autocomplete="off">
+      <label class="field-label" style="margin-top:12px" for="kn-d-tingkatan-view">Kelas Murid</label>
+      <input class="field-input" type="text" id="kn-d-tingkatan-view" list="kn-d-tingkatan-list" autocomplete="off" oninput="knRefreshMuridPicker('detail')">
       <datalist id="kn-d-tingkatan-list"></datalist>
 
       <label class="field-label" style="margin-top:12px" for="kn-d-tarikh-mula-view">Tarikh Mula</label>
@@ -221,8 +223,9 @@
       <label class="field-label" style="margin-top:12px" for="kn-d-perkara-view">Perkara/Tajuk</label>
       <input class="field-input" type="text" id="kn-d-perkara-view">
 
-      <label class="field-label" style="margin-top:12px" for="kn-d-murid-view">Nama Murid</label>
-      <textarea class="field-input" id="kn-d-murid-view"></textarea>
+      <label class="field-label" style="margin-top:12px" for="kn-d-murid-pick">Nama Murid</label>
+      <select class="field-input" id="kn-d-murid-pick" onchange="knOnMuridPick('detail')" disabled><option value="">Pilih kelas dahulu</option></select>
+      <textarea class="field-input" id="kn-d-murid-view" style="margin-top:6px"></textarea>
 
       <div class="error-text hidden" id="kn-d-error"></div>
       <div class="modal-actions">
@@ -235,7 +238,8 @@
 </div>
 
 <script src="app.js"></script>
-<script src="tempahan-kaunseling.js"></script>
+<script src="enrolmen-murid.js?v=20261012c"></script>
+<script src="tempahan-kaunseling.js?v=20261012c"></script>
 <script>
   initApp(knInit);
 </script>

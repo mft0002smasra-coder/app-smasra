@@ -114,6 +114,53 @@ async function knFetchBookings() {
   return knBookings;
 }
 
+
+/* ---------------- Pilihan murid ikut kelas (data murid — enrolmen-murid.js) ----------------
+   Kelas ditaip/dipilih -> dropdown murid kelas itu. Kotak teks nama murid kekal boleh disunting (murid baharu / data tak termuat).
+   Sesi = seorang murid (pilihan menggantikan); Program = beberapa murid (pilihan ditambah; beberapa kelas dipisahkan koma). */
+const KN_PICKER = {
+  form:   { kelas: "kn-f-tingkatan",      sel: "kn-f-murid-pick", ta: "kn-f-murid",      list: "kn-tingkatan-list",   single: () => knCurrentJenis === "Sesi Kaunseling" },
+  detail: { kelas: "kn-d-tingkatan-view", sel: "kn-d-murid-pick", ta: "kn-d-murid-view", list: "kn-d-tingkatan-list", single: () => document.getElementById("kn-d-jenis").textContent === "Sesi Kaunseling" },
+};
+/** Muat data murid sekali (cuba semula jika sebelum ini gagal). Tidak pernah menolak. */
+async function knEnsureMurid() {
+  if (typeof emLoad !== "function") return;
+  if (!emMeta.loaded || !emMeta.ok) await emLoad();
+}
+function knMuridReady() { return typeof emMeta !== "undefined" && emMeta.ok && emStudents.length > 0; }
+/** "3 ar-razi , 4 AL-FARABI" -> ["3 AR-RAZI", "4 AL-FARABI"] (ejaan ikut data murid) */
+function knKelasTokens(raw) { return String(raw || "").split(/[,;]/).map((x) => x.trim()).filter(Boolean); }
+function knCanonKelasList(raw) { return knKelasTokens(raw).map((k) => (knMuridReady() ? emCanonKelas(k) : k)).join(", "); }
+function knBuildKelasList(listId) {
+  const el = document.getElementById(listId);
+  if (!el) return;
+  if (knMuridReady()) el.innerHTML = emClasses().map((c) => `<option value="${knEscape(c.nama)}" label="${c.bilangan} murid">`).join("");
+  else el.innerHTML = KN_CLASS_LIST.map((c) => `<option value="${c}">`).join(""); // data murid tak tersedia — senarai tetap
+}
+function knRefreshMuridPicker(which) {
+  const cfg = KN_PICKER[which], sel = document.getElementById(cfg.sel), raw = document.getElementById(cfg.kelas).value;
+  const classes = knMuridReady() ? knKelasTokens(raw).map((k) => emCanonKelas(k)).filter((k, i, a) => a.indexOf(k) === i && emStudentsIn(k).length) : [];
+  if (!classes.length) {
+    sel.disabled = true;
+    sel.innerHTML = `<option value="">${!knMuridReady() ? "Senarai murid tiada — taip nama di bawah" : (knKelasTokens(raw).length ? "Tiada murid kelas ini — taip di bawah" : "Pilih kelas dahulu")}</option>`;
+    return;
+  }
+  const opt = (s) => `<option value="${knEscape(s.nama)}">${knEscape(s.nama)}</option>`;
+  const body = classes.length === 1
+    ? emStudentsIn(classes[0]).map(opt).join("")
+    : classes.map((k) => `<optgroup label="${knEscape(k)}">${emStudentsIn(k).map(opt).join("")}</optgroup>`).join("");
+  sel.innerHTML = `<option value="">Pilih murid (${classes.map((k) => emCount(k)).reduce((a, b) => a + b, 0)} murid)</option>` + body;
+  sel.disabled = which === "detail" && !knCanEdit; // paparan butiran sahaja-baca untuk yang tiada kebenaran edit
+}
+function knOnMuridPick(which) {
+  const cfg = KN_PICKER[which], sel = document.getElementById(cfg.sel), ta = document.getElementById(cfg.ta), nama = sel.value;
+  if (!nama) return;
+  const lines = ta.value.split("\n").map((x) => x.trim()).filter(Boolean);
+  if (cfg.single()) ta.value = nama;
+  else if (!lines.some((l) => l.toUpperCase() === nama.toUpperCase())) { lines.push(nama); ta.value = lines.join("\n"); }
+  sel.value = "";
+}
+
 /* ---------------- Borang tempahan ---------------- */
 function knOpenForm(jenis) {
   knCurrentJenis = jenis;
@@ -136,11 +183,10 @@ function knOpenForm(jenis) {
   document.getElementById("kn-f-waktu-tamat").innerHTML = '<option value="">Pilih tarikh dahulu</option>';
   document.getElementById("kn-form-error").classList.remove("show");
 
-  const tingkatanList = document.getElementById("kn-tingkatan-list");
-  if (!tingkatanList.dataset.built) {
-    tingkatanList.innerHTML = KN_CLASS_LIST.map((c) => `<option value="${c}">`).join("");
-    tingkatanList.dataset.built = "1";
-  }
+  document.getElementById("kn-f-kelas-hint").textContent = isSesi ? "" : "Program: boleh lebih daripada satu kelas — pisahkan dengan koma (cth 3 AR-RAZI, 4 AL-FARABI).";
+  knBuildKelasList("kn-tingkatan-list");
+  knRefreshMuridPicker("form");
+  knEnsureMurid().then(() => { knBuildKelasList("kn-tingkatan-list"); knRefreshMuridPicker("form"); });
 
   knFetchStaff();
   const overlay = document.getElementById("kn-booking-overlay");
@@ -165,7 +211,7 @@ function knOnFormDateChange() {
 
 async function knSubmitBooking() {
   const kaunselor = document.getElementById("kn-f-kaunselor").value;
-  const tingkatan = document.getElementById("kn-f-tingkatan").value.trim();
+  const tingkatan = knCanonKelasList(document.getElementById("kn-f-tingkatan").value);
   const tarikhMula = document.getElementById("kn-f-tarikh-mula").value;
   const tarikhTamat = document.getElementById("kn-f-tarikh-tamat").value;
   const waktuMula = document.getElementById("kn-f-waktu-mula").value;
@@ -393,7 +439,7 @@ function knRenderAllTimetables() {
     knBuildTimetable(mine, `kn-tt-individual-${idx}`);
   });
 }
-function knEscape(str) { return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+function knEscape(str) { return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 
 /* ---------------- Popup butiran + EDIT terus ---------------- */
 let knEditingRowId = null;
@@ -418,11 +464,9 @@ function knOpenDetail(data) {
   document.getElementById("kn-d-murid-view").value = data.murid;
   document.getElementById("kn-d-error").classList.add("hidden");
 
-  const tingkatanList = document.getElementById("kn-d-tingkatan-list");
-  if (!tingkatanList.dataset.built) {
-    tingkatanList.innerHTML = KN_CLASS_LIST.map((c) => `<option value="${c}">`).join("");
-    tingkatanList.dataset.built = "1";
-  }
+  knBuildKelasList("kn-d-tingkatan-list");
+  knRefreshMuridPicker("detail");
+  knEnsureMurid().then(() => { knBuildKelasList("kn-d-tingkatan-list"); knRefreshMuridPicker("detail"); });
 
   knFetchStaff().then(() => {
     const sel = document.getElementById("kn-d-kaunselor-view");
@@ -446,7 +490,7 @@ async function knSaveDetailEdit() {
     rowId: knEditingRowId,
     jenis: document.getElementById("kn-d-jenis").textContent,
     kaunselor: document.getElementById("kn-d-kaunselor-view").value,
-    tingkatan: document.getElementById("kn-d-tingkatan-view").value.trim(),
+    tingkatan: knCanonKelasList(document.getElementById("kn-d-tingkatan-view").value),
     tarikhMula: document.getElementById("kn-d-tarikh-mula-view").value,
     tarikhTamat: document.getElementById("kn-d-tarikh-tamat-view").value,
     waktuMula: document.getElementById("kn-d-waktu-mula-view").value,
@@ -520,6 +564,7 @@ function knInit(user) {
 
   knUpdateWeekBadge();
   knInitImages();
+  knEnsureMurid(); // muat data murid lebih awal (tidak menghalang paparan)
 }
 
 function knShowNoPermission() {
