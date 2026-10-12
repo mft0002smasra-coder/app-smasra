@@ -501,9 +501,34 @@ async function atmDeleteAll() {
   atmBusy = false;
 }
 
+/* ---------------- Popup bacaan (ketik kad) ---------------- */
+function atmOpenRead() {
+  if (!atmData) return;
+  const m = atmData.meta, today = todayIso();
+  document.getElementById("atm-read-title").textContent = m.minggu ? `ATURCARA MINGGU ${m.minggu}` : "ATURCARA MINGGU";
+  document.getElementById("atm-read-range").textContent = `${m.tema ? m.tema + " · " : ""}${atmFmt(m.dari)} – ${atmFmt(m.hingga)}`;
+  const info = (m.pentadbir || (m.guru || []).length) ? atmInfoHtml(false) : "";
+  const days = atmData.hari.map((d) => {
+    const items = (d.items || []).map((it, ii) => `
+      <div class="atm-item"><div class="atm-item-t"><span class="atm-no">${ii + 1}.</span> ${atmEsc(it.t)}</div>${(it.subs || []).map((x) => `<div class="atm-sub">${atmEsc(x.t)}</div>`).join("")}</div>`).join("") || `<div class="atm-sub" style="margin-left:0">Tiada aturcara.</div>`;
+    return `<div class="atm-rd-day${d.tarikh === today ? " is-today" : ""}" id="atm-rd-${d.tarikh}"><div class="atm-day-title">${ATM_HARI[atmWeekday(d.tarikh)]} · ${atmFmt(d.tarikh)}${d.tarikh === today ? " · HARI INI" : ""}</div>${items}</div>`;
+  }).join("");
+  document.getElementById("atm-read-body").innerHTML = days + info;
+  const ov = document.getElementById("atm-read-overlay");
+  ov.classList.remove("hidden");
+  const body = document.getElementById("atm-read-body");
+  body.scrollTop = 0;
+  const target = document.getElementById(`atm-rd-${atmTab}`);
+  if (target && atmTab !== "info") body.scrollTop = Math.max(0, target.offsetTop - 4);
+  else if (atmTab === "info") body.scrollTop = body.scrollHeight;
+}
+function atmCloseRead() { const ov = document.getElementById("atm-read-overlay"); if (ov) ov.classList.add("hidden"); }
+
 /* ---------------- Pendengar acara (delegasi) ---------------- */
 if (typeof document !== "undefined") {
 document.addEventListener("click", (e) => {
+  // Ketik mana-mana bahagian kad (selain tab/butang) -> popup bacaan
+  if (e.target.closest("#home-atm-wrap") && !e.target.closest("[data-atm-tab], [data-atm-add], [data-atm-addprog], #atm-manage-btn, button, a")) { atmOpenRead(); return; }
   const tab = e.target.closest("[data-atm-tab]");
   if (tab && atmData) { atmTab = tab.dataset.atmTab; atmRenderCard(); return; }
   const add = e.target.closest("[data-atm-add]");
@@ -520,6 +545,7 @@ document.addEventListener("click", (e) => {
     if (p) atmOpenEvModal({ tajuk: p.t, tarikhDari: p.dari, tarikhHingga: p.hingga, masa: "", tempat: "", unit: atmGuessUnit(p.t) });
   }
 });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") atmCloseRead(); });
 document.addEventListener("DOMContentLoaded", () => {
   const f = document.getElementById("atm-ev-form");
   if (f) f.addEventListener("submit", atmSubmitEvent);

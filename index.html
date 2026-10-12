@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261011a">
+<link rel="stylesheet" href="style.css?v=20261012a">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -194,6 +194,20 @@
   </div>
 
   <!-- ============ POPUP: Borang To Do List (Kad Jadual Waktu Saya gantian) ============ -->
+  <!-- Aturcara Minggu: popup bacaan (ketik kad di Home) -->
+  <div class="modal-overlay-center hidden" id="atm-read-overlay" onclick="if(event.target===this)atmCloseRead()">
+    <div class="glass modal-sheet atm-read-sheet">
+      <div class="atm-read-top">
+        <div>
+          <div class="modal-title" id="atm-read-title" style="margin-bottom:2px">ATURCARA MINGGU</div>
+          <div class="atm-read-range" id="atm-read-range"></div>
+        </div>
+        <button type="button" class="atm-read-close" onclick="atmCloseRead()" aria-label="Tutup">✕</button>
+      </div>
+      <div class="atm-read-body" id="atm-read-body"></div>
+    </div>
+  </div>
+
   <!-- Aturcara Minggu: tampal teks & pratonton (Pentadbir / Admin App) -->
   <div class="modal-overlay hidden" id="atm-paste-overlay">
     <div class="glass modal-sheet">
@@ -261,7 +275,7 @@
 
 <script src="app.js"></script>
 <script src="event.js"></script>
-<script src="aturcara-minggu.js?v=20261011a"></script>
+<script src="aturcara-minggu.js?v=20261012a"></script>
 <script src="erks-database.js?v=20261011a"></script>
 <script src="jadual-guru.js?v=20261007e"></script>
 <script src="keberadaan-murid.js"></script>
