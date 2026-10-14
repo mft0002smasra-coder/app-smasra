@@ -332,16 +332,16 @@ async function atmRenderHomeCard(user) {
 
 /** Satu baris item (nombor, tajuk, sub-baris, butang Tambah ke Event untuk pengurus) — dikongsi kad & popup */
 function atmItemHtml(it, ii, tarikh, manage) {
-  const subs = (it.subs || []).map((s) => `<div class="atm-sub">${atmEsc(s.t)}</div>`).join("");
+  const subs = (it.subs || []).map((s, si) => `<div class="atm-sub atm-sub-${si % 3}">${atmEsc(s.t)}</div>`).join("");
   let btns = "";
   if (manage) {
     const ents = atmEntries(it, tarikh);
-    btns = `<div class="atm-actions">` + ents.map((en, ei) => {
-      const label = ents.length > 1 ? `Tambah ke Event (${atmEsc(en.masa || ei + 1)})` : "Tambah ke Event";
-      return atmEventExists(en) ? `<span class="atm-added">✓ Sudah dalam Event</span>` : `<button type="button" class="atm-add-btn" data-atm-add="${atmEsc(tarikh)}|${ii}|${ei}">＋ ${label}</button>`;
+    btns = `<div class="atm-side">` + ents.map((en, ei) => {
+      const m = ents.length > 1 && en.masa ? `<small>${atmEsc(en.masa)}</small>` : "";
+      return atmEventExists(en) ? `<span class="atm-added" title="Sudah dalam Event">✓ Event</span>` : `<button type="button" class="atm-add-btn atm-add-mini" title="Tambah ke Event" data-atm-add="${atmEsc(tarikh)}|${ii}|${ei}">＋ EVENT${m}</button>`;
     }).join("") + `</div>`;
   }
-  return `<div class="atm-item"><div class="atm-item-t"><span class="atm-no">${ii + 1}.</span> ${atmEsc(it.t)}</div>${subs}${btns}</div>`;
+  return `<div class="atm-item${manage ? " atm-item-row" : ""}"><div class="atm-item-main"><div class="atm-item-t"><span class="atm-no">${ii + 1}.</span> ${atmEsc(it.t)}</div>${subs}</div>${btns}</div>`;
 }
 
 function atmRenderCard() {
@@ -514,7 +514,7 @@ function atmReadHtml() {
   return Array.from({ length: 7 }, (_, i) => atmAddDays(mon, i)).map((d) => {
     const day = atmData.hari.find((h) => h.tarikh === d);
     const items = day && day.items.length ? day.items.map((it, ii) => atmItemHtml(it, ii, d, manage)).join("") : `<div class="atm-sub" style="margin-left:0">Tiada aturcara.</div>`;
-    return `<div class="atm-rd-day${d === today ? " is-today" : ""}" id="atm-rd-${d}"><div class="atm-day-title">${ATM_HARI[atmWeekday(d)]} · ${atmFmt(d)}${d === today ? " · HARI INI" : ""}</div>${items}</div>`;
+    return `<div class="atm-rd-day${d === today ? " is-today" : ""}" id="atm-rd-${d}"><div class="atm-day-title atm-wd-${atmWeekday(d)}">${ATM_HARI[atmWeekday(d)]} · ${atmFmt(d)}${d === today ? " · HARI INI" : ""}</div>${items}</div>`;
   }).join("") + `<div class="atm-rd-day" id="atm-rd-info">${atmInfoHtml(manage)}</div>`;
 }
 function atmRenderReadTabs() {
