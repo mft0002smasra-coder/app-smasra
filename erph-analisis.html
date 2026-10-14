@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20261015a">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -53,9 +53,10 @@
     </div>
 
     <div class="tab-switch">
-      <button class="tab-btn active" id="er-nav-hantar" onclick="erSwitchTab('hantar')">Penghantaran</button>
-      <button class="tab-btn" id="er-nav-saya" onclick="erSwitchTab('saya')">Prestasi Saya</button>
-      <button class="tab-btn hidden" id="er-nav-semak" onclick="erSwitchTab('semak')">Semakan Saya</button>
+      <button class="tab-btn er-tab active" id="er-nav-hantar" onclick="erSwitchTab('hantar')">Penghantaran</button>
+      <button class="tab-btn er-tab" id="er-nav-saya" onclick="erSwitchTab('saya')">Prestasi Saya</button>
+      <button class="tab-btn er-tab hidden" id="er-nav-individu" onclick="erSwitchTab('individu')">Prestasi Individu</button>
+      <button class="tab-btn er-tab hidden" id="er-nav-semak" onclick="erSwitchTab('semak')">Semakan Saya</button>
     </div>
 
     <div class="er-filters">
@@ -103,7 +104,7 @@
 </div>
 
 <script src="app.js"></script>
-<script src="erph-analisis.js"></script>
+<script src="erph-analisis.js?v=20261015a"></script>
 <script>
   initApp(erInit);
 </script>

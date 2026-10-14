@@ -38,6 +38,8 @@ let erF = { tahun: "", bulan: "__ALL__", minggu: "__ALL__" };
 let erTab = "hantar";
 let erLast = null; // hasil pengiraan terkini — dipakai popup senarai
 let erExcluded = new Set(); // nama (dinormalkan) yang dikecualikan dari senarai guru
+let erStaff = [];            // senarai GURU rasmi dari DatabaseSTAFF: { key, nama, jawatan } (staf tolak AKP, Pengetua, Kaunselor sepenuh masa)
+let erAlias = { dups: [], unmatched: [] }; // hasil padanan nama Sheet e-RPH -> senarai guru
 
 /* ================= Utiliti ================= */
 function erEsc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
@@ -79,25 +81,27 @@ function erSimilarity(a, b) {
 /** Cari pasangan nama (selepas normalisasi BIN/BINTI/gelaran) yang SANGAT HAMPIR tapi
  * TAK IDENTIK — berkemungkinan salah eja/nama sama ganda. Ambang 85% supaya tak terlalu
  * longgar (elak cadangkan 2 guru BERLAINAN sebagai sama). */
-let erDupCache = { tahun: null, result: null };
 function erFindPossibleDuplicates() {
-  const tahun = erF.tahun || new Date().getFullYear();
-  // Hasil tak bergantung pada bulan/minggu — cache ikut TAHUN sahaja, elak kira
-  // semula O(n²) Levenshtein setiap kali render (punca lambat bila banyak guru).
-  if (erDupCache.tahun === tahun) return erDupCache.result;
+  const tahun = String(erF.tahun || new Date().getFullYear());
+  if (erStaff.length) {
+    // Nama dalam Sheet e-RPH yang TAK SAMA tepat dengan DatabaseSTAFF tapi sangat hampir — dikira guru yang sama (digabung) + diberi amaran
+    return erAlias.dups.filter((d) => d.years.has(tahun)).map((d) => ({ namaA: d.namaData, namaB: d.namaRoster, sim: d.sim })).sort((x, y) => y.sim - x.sim);
+  }
   const names = [...erRosterFor(tahun).entries()]; // [key, namaAsal]
   const pairs = [];
   for (let i = 0; i < names.length; i++) {
     for (let j = i + 1; j < names.length; j++) {
       const [keyA, namaA] = names[i], [keyB, namaB] = names[j];
-      if (keyA === keyB) continue; // sudah sepadan (dikira guru sama)
+      if (keyA === keyB) continue;
       const sim = erSimilarity(keyA, keyB);
       if (sim >= 0.85) pairs.push({ namaA, namaB, sim: Math.round(sim * 100) });
     }
   }
-  const result = pairs.sort((a, b) => b.sim - a.sim);
-  erDupCache = { tahun, result };
-  return result;
+  return pairs.sort((a, b) => b.sim - a.sim);
+}
+function erUnmatchedNames() {
+  const tahun = String(erF.tahun || new Date().getFullYear());
+  return erAlias.unmatched.filter((u) => u.years.has(tahun)).map((u) => u.nama).sort((a, b) => a.localeCompare(b, "ms"));
 }
 function erNormStatus(text) {
   const t = String(text || "").toLowerCase().trim();
@@ -128,7 +132,9 @@ function erText(row, i) {
   const c = erCell(row, i);
   if (!c || c.v === null || c.v === undefined) return "";
   const s = c.f !== undefined && c.f !== null && c.f !== "" ? c.f : c.v;
-  return String(s).trim();
+  const t = String(s).trim();
+  // Sel ralat Sheet (#REF!, #N/A, #VALUE! …) diabaikan sepenuhnya dalam pengiraan
+  return /^#(REF|N\/A|VALUE|DIV\/0|NAME|NULL|NUM|ERROR)/i.test(t) ? "" : t;
 }
 /** Sel tarikh gviz datang sebagai "Date(2026,0,16)" (bulan 0-berasaskan). */
 function erDate(row, i) {
@@ -162,10 +168,19 @@ async function erLoadExcluded() {
       const res = await fetch(url, { cache: "no-store" });
       const text = await res.text();
       const parsed = JSON.parse(text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1));
+      const staff = [], seen = new Set();
       ((parsed.table && parsed.table.rows) || []).forEach((r) => {
         // DatabaseSTAFF: B=Nama, C=Jawatan
-        if (erText(r, 2).toUpperCase().startsWith("PENGETUA") && erText(r, 1)) set.add(erNormName(erText(r, 1)));
+        const nama = erText(r, 1), jawatan = erText(r, 2), J = jawatan.toUpperCase();
+        if (!nama) return;
+        const key = erNormName(nama);
+        if (J.startsWith("PENGETUA")) { set.add(key); return; }
+        if (J.includes("PEMBANTU")) return;                 // AKP
+        if (J.includes("KAUNSELOR SEPENUH MASA")) return;   // kaunselor sepenuh masa tak hantar e-RPH
+        if (seen.has(key)) return;
+        seen.add(key); staff.push({ key, nama, jawatan });
       });
+      erStaff = staff.filter((st) => !set.has(st.key));
     }
   } catch (e) { /* guna senarai tetap sahaja */ }
   erExcluded = set;
@@ -203,7 +218,49 @@ function erBuild(rawErph, rawSem) {
       status: erNormStatus(erText(r, 4)), statusText: erText(r, 4),
     });
   });
-  return { erph, sem };
+  return erApplyRoster(erph, sem);
+}
+
+/** Padankan nama dalam Sheet e-RPH dengan senarai guru rasmi (DatabaseSTAFF). Nama yang sangat hampir
+ * (salah eja / bin-binti tak konsisten, >=85%) digabungkan ke guru berkenaan — dikira SEBAGAI guru itu, bukan
+ * guru tambahan — dan masih diberi amaran. Nama yang tiada padanan langsung diabaikan dalam pengiraan. */
+function erApplyRoster(erph, sem) {
+  erAlias = { dups: [], unmatched: [] };
+  if (!erStaff.length) return { erph, sem };
+  const byKey = new Map(erStaff.map((s) => [s.key, s]));
+  const cache = new Map();
+  const dupMap = new Map(), unMap = new Map();
+  const resolve = (key) => {
+    if (cache.has(key)) return cache.get(key);
+    let res = null;
+    if (byKey.has(key)) res = { s: byKey.get(key), sim: 1 };
+    else if (!erExcluded.has(key)) {
+      let best = null, bestSim = 0;
+      erStaff.forEach((st) => { const sim = erSimilarity(key, st.key); if (sim > bestSim) { bestSim = sim; best = st; } });
+      if (best && bestSim >= 0.85) res = { s: best, sim: bestSim };
+    }
+    cache.set(key, res);
+    return res;
+  };
+  const apply = (r) => {
+    if (erExcluded.has(r.key)) return null;
+    const hit = resolve(r.key);
+    const yr = String(r.tahun);
+    if (!hit) {
+      if (!unMap.has(r.key)) unMap.set(r.key, { nama: r.nama, years: new Set() });
+      unMap.get(r.key).years.add(yr);
+      return null;
+    }
+    if (hit.sim < 1) {
+      if (!dupMap.has(r.key)) dupMap.set(r.key, { namaData: r.nama, namaRoster: hit.s.nama, sim: Math.round(hit.sim * 100), years: new Set() });
+      dupMap.get(r.key).years.add(yr);
+    }
+    return Object.assign({}, r, { key: hit.s.key, nama: hit.s.nama });
+  };
+  const e2 = erph.map(apply).filter(Boolean);
+  const s2 = sem.map(apply).filter(Boolean);
+  erAlias = { dups: [...dupMap.values()], unmatched: [...unMap.values()] };
+  return { erph: e2, sem: s2 };
 }
 
 /* ================= Pengiraan ================= */
@@ -250,6 +307,7 @@ function erEffectiveSem(tahun, filterFn) {
 /** Senarai guru = semua nama yang muncul dalam data tahun itu (tab "Senarai Nama" tiada dalam Sheet ini). */
 function erRosterFor(tahun) {
   const m = new Map();
+  if (erStaff.length) { erStaff.forEach((st) => m.set(st.key, st.nama)); return m; } // 44 guru rasmi dari DatabaseSTAFF
   ER.erph.filter(erInYear(tahun)).forEach((r) => { if (!erExcluded.has(r.key) && !m.has(r.key)) m.set(r.key, r.nama); });
   ER.sem.filter(erInYear(tahun)).forEach((r) => { if (!erExcluded.has(r.key) && !m.has(r.key)) m.set(r.key, r.nama); });
   return m;
@@ -445,11 +503,13 @@ function erOpenList(type) {
   let title = "", body = "";
   if (type === "duplikat") {
     title = "Nama Guru Berpotensi Sama";
+    const unm = erStaff.length ? erUnmatchedNames() : [];
     body = erLastDups.length ? erLastDups.map((p) => `
       <div class="er-li">
-        <div class="er-dup-pair"><b>${erEsc(p.namaA)}</b><span class="er-dup-vs">atau</span><b>${erEsc(p.namaB)}</b></div>
+        <div class="er-dup-pair"><b>${erEsc(p.namaA)}</b><span class="er-dup-vs">${erStaff.length ? "dikira sebagai" : "atau"}</span><b>${erEsc(p.namaB)}</b></div>
         <div class="er-dup-sim">${p.sim}% sepadan — semak ejaan/singkatan bin-binti dalam Sheet</div>
       </div>`).join("") : `<div class="er-empty-ok">Tiada nama berpotensi sama dikesan</div>`;
+    if (unm.length) body += `<div class="er-sec-head er-sec-red">Tiada dalam senarai guru (diabaikan) <span>${unm.length} nama</span></div>` + unm.map((n) => `<div class="er-li"><div class="er-li-head"><b>${erEsc(n)}</b></div></div>`).join("");
     document.getElementById("er-popup-title").textContent = title;
     document.getElementById("er-popup-sub").textContent = "Semak Sheet DATA eRPH / DATA SEMAKAN";
     document.getElementById("er-popup-body").innerHTML = body;
@@ -509,6 +569,7 @@ function erRenderHantar() {
         <div class="er-mini">Belum Hantar<b style="color:var(--pink)">${belumHantarJum}</b></div>
         <div class="er-mini">Belum Semak<b style="color:var(--violet)">${belumSemakJum}</b></div>
       </div>
+      ${erStaff.length ? `<div class="er-note">Bilangan guru ikut DatabaseSTAFF (tolak AKP, Pengetua dan Kaunselor sepenuh masa).</div>` : ""}
     </div>
     <div class="er-donut-grid">
       <div class="er-donut-card" onclick="erOpenList('belumHantar')">
@@ -537,12 +598,13 @@ function erRenderHantar() {
  * — hanya papar kalau jumpa, bukan "no-op" senyap kalau data bersih. */
 function erRenderDuplicateWarning() {
   const dups = erFindPossibleDuplicates();
-  if (!dups.length) return "";
+  const unm = erStaff.length ? erUnmatchedNames() : [];
+  if (!dups.length && !unm.length) return "";
   erLastDups = dups;
   return `
     <div class="er-card er-dup-card" onclick="erOpenList('duplikat')">
-      <div class="er-dup-head">⚠️ ${dups.length} Pasangan Nama Berpotensi Sama</div>
-      <div class="er-dup-sub">Kemungkinan salah eja atau singkatan "bin/binti" tak konsisten — ketik untuk semak</div>
+      <div class="er-dup-head">⚠️ ${dups.length ? dups.length + " Nama Berpotensi Sama" : unm.length + " Nama Tiada Dalam Senarai Guru"}</div>
+      <div class="er-dup-sub">${dups.length ? 'Nama dalam Sheet e-RPH hampir sama dengan guru dalam DatabaseSTAFF (digabung dikira guru yang sama)' : "Diabaikan dalam pengiraan"}${dups.length && unm.length ? ` · ${unm.length} nama tiada dalam senarai guru (diabaikan)` : ""} — ketik untuk semak</div>
     </div>`;
 }
 let erLastDups = [];
@@ -557,18 +619,21 @@ function erPillFor(sem, hantar) {
   return hantar ? `<span class="er-pill er-pill-belumdisemak">Belum Disemak</span>` : `<span class="er-pill er-pill-belumhantar">Belum Hantar</span>`;
 }
 
-function erRenderSaya() {
-  const myKey = erNormName(erUser.nama);
+function erRenderSaya() { return erRenderPerson(erNormName(erUser.nama), erUser.nama, false); }
+
+/** Prestasi SATU guru (Prestasi Saya, atau Prestasi Individu bila Pentadbir/Admin App pilih guru). */
+function erRenderPerson(myKey, nama, withBack) {
+  const back = withBack ? `<button type="button" class="er-ind-back" onclick="erCloseGuru()">‹ Senarai guru</button>` : "";
   if (erExcluded.has(myKey)) {
-    return `<div class="er-card"><div class="er-card-title">Prestasi Saya <span class="er-card-sub">${erEsc(erUser.nama)}</span></div>
-      <div class="empty-state">Anda menghantar e-RPH di tempat lain, jadi tiada analisis penghantaran e-RPH untuk anda di sini.</div></div>`;
+    return back + `<div class="er-card"><div class="er-card-title">${withBack ? "Prestasi" : "Prestasi Saya"} <span class="er-card-sub">${erEsc(nama)}</span></div>
+      <div class="empty-state">Menghantar e-RPH di tempat lain, jadi tiada analisis penghantaran e-RPH di sini.</div></div>`;
   }
   const A = erCompute(erF.tahun, erF.bulan, erF.minggu, myKey);
   erLast = A;
   if (!A.totalGuru) {
-    return `<div class="er-card"><div class="empty-state">Nama anda (<b>${erEsc(erUser.nama)}</b>) tidak dijumpai dalam data e-RPH tahun ${erEsc(erF.tahun)}.<br><span style="font-size:11px">Pastikan nama dalam Sheet e-RPH sama dengan nama dalam DatabaseSTAFF.</span></div></div>`;
+    return back + `<div class="er-card"><div class="empty-state">Nama (<b>${erEsc(nama)}</b>) tidak dijumpai dalam data e-RPH tahun ${erEsc(erF.tahun)}.<br><span style="font-size:11px">Pastikan nama dalam Sheet e-RPH sama dengan nama dalam DatabaseSTAFF.</span></div></div>`;
   }
-  if (!A.weeks.length) return `<div class="empty-state">Tiada data e-RPH untuk pilihan ini.</div>`;
+  if (!A.weeks.length) return back + `<div class="empty-state">Tiada data e-RPH untuk pilihan ini.</div>`;
 
   const rows = [...A.weeks].reverse().map((w) => {
     const k = myKey + "|" + w;
@@ -580,9 +645,9 @@ function erRenderSaya() {
     </div>`;
   }).join("");
 
-  return `
+  return back + `
     <div class="er-card">
-      <div class="er-card-title">Prestasi Saya <span class="er-card-sub">${erEsc(erUser.nama)}</span></div>
+      <div class="er-card-title">${withBack ? "Prestasi" : "Prestasi Saya"} <span class="er-card-sub">${erEsc(nama)}</span></div>
       ${erRadar(erRadarAxes(A))}
     </div>
     <div class="er-donut-grid">
@@ -604,6 +669,69 @@ function erRenderSaya() {
     </div>
     <div class="er-card"><div class="er-card-title">Rekod Mingguan</div>${rows}</div>`;
 }
+
+/* ================= Prestasi Individu (Pentadbir & Admin App) ================= */
+let erSelGuru = null, erIndRows = [], erIndQ = "", erIndSort = "nama";
+function erCanIndividu(u) {
+  return String(u.role2 || "").trim().toLowerCase() === "pentadbir" || String(u.role3 || "").trim().toLowerCase() === "admin app";
+}
+function erIndBuildRows() {
+  const A = erCompute(erF.tahun, erF.bulan, erF.minggu);
+  erLast = A;
+  erIndRows = A.roster.map((g) => {
+    let h = 0, d = 0, sl = 0, pr = 0, bs = 0;
+    A.weeks.forEach((w) => {
+      const k = g.key + "|" + w, hantar = A.subMap.get(k), sem = A.semMap.get(k);
+      if (hantar) { h++; if (sem) d++; }
+      if (sem) { if (sem.status === "selesai") sl++; else if (sem.status === "proses") pr++; else if (sem.status === "belumSiap") bs++; }
+    });
+    const n = A.weeks.length;
+    return { key: g.key, nama: g.nama, h, d, n, sl, pr, bs, pH: n ? Math.round(h / n * 100) : 0, pS: h ? Math.round(d / h * 100) : 0 };
+  });
+  return A;
+}
+function erIndListHtml() {
+  const q = erIndQ.trim().toUpperCase();
+  let rows = erIndRows.map((r, i) => ({ r, i })).filter((x) => !q || x.r.nama.toUpperCase().includes(q));
+  const cmp = { nama: (a, b) => a.r.nama.localeCompare(b.r.nama, "ms"), hantar: (a, b) => a.r.pH - b.r.pH || a.r.nama.localeCompare(b.r.nama, "ms"), semak: (a, b) => a.r.pS - b.r.pS || a.r.nama.localeCompare(b.r.nama, "ms") }[erIndSort];
+  rows.sort(cmp);
+  if (!rows.length) return `<div class="empty-state">Tiada guru sepadan.</div>`;
+  const col = (p) => (p >= 90 ? "var(--mint)" : p >= 60 ? "var(--amber)" : "var(--pink)");
+  return rows.map(({ r, i }) => `
+    <div class="er-ind-row" onclick="erOpenGuru(${i})">
+      <div class="er-ind-top"><b>${erEsc(r.nama)}</b><span class="er-ind-go">›</span></div>
+      <div class="er-ind-bars">
+        <div class="er-ind-bar"><span>Hantar ${r.h}/${r.n}</span><div class="er-ind-track"><div style="width:${r.pH}%;background:${col(r.pH)}"></div></div><em style="color:${col(r.pH)}">${r.pH}%</em></div>
+        <div class="er-ind-bar"><span>Semak ${r.d}/${r.h}</span><div class="er-ind-track"><div style="width:${r.pS}%;background:${col(r.pS)}"></div></div><em style="color:${col(r.pS)}">${r.pS}%</em></div>
+      </div>
+      <div class="er-chips">${r.sl ? `<span class="er-chip er-chip-green">Selesai ${r.sl}</span>` : ""}${r.pr ? `<span class="er-chip er-chip-amber">Proses ${r.pr}</span>` : ""}${r.bs ? `<span class="er-chip er-chip-red">Belum Siap ${r.bs}</span>` : ""}</div>
+    </div>`).join("");
+}
+function erRenderIndividu() {
+  if (erSelGuru) return erRenderPerson(erSelGuru.key, erSelGuru.nama, true);
+  const A = erIndBuildRows();
+  if (!A.totalGuru || !A.weeks.length) return `<div class="empty-state">Tiada data e-RPH untuk pilihan ini.</div>`;
+  return `
+    <div class="er-card">
+      <div class="er-card-title">Prestasi Individu <span class="er-card-sub">${A.totalGuru} guru · ${A.weeks.length} minggu</span></div>
+      <div class="er-ind-ctl">
+        <input type="search" class="er-select" id="er-ind-q" placeholder="Cari nama guru…" value="${erEsc(erIndQ)}" oninput="erIndFilter()">
+        <select class="er-select" id="er-ind-sort" onchange="erIndFilter()">
+          <option value="nama"${erIndSort === "nama" ? " selected" : ""}>Susun: Nama</option>
+          <option value="hantar"${erIndSort === "hantar" ? " selected" : ""}>Hantar terendah</option>
+          <option value="semak"${erIndSort === "semak" ? " selected" : ""}>Semak terendah</option>
+        </select>
+      </div>
+    </div>
+    <div id="er-ind-list">${erIndListHtml()}</div>`;
+}
+function erIndFilter() {
+  erIndQ = document.getElementById("er-ind-q").value;
+  erIndSort = document.getElementById("er-ind-sort").value;
+  document.getElementById("er-ind-list").innerHTML = erIndListHtml();
+}
+function erOpenGuru(i) { const r = erIndRows[i]; if (!r) return; erSelGuru = { key: r.key, nama: r.nama }; erRender(); window.scrollTo(0, 0); }
+function erCloseGuru() { erSelGuru = null; erRender(); }
 
 function erRenderSemak() {
   const S = erComputeSemak(erF.tahun, erF.bulan, erF.minggu, erNormName(erUser.nama));
@@ -639,6 +767,7 @@ function erRender() {
   try {
     if (erTab === "hantar") box.innerHTML = erRenderHantar();
     else if (erTab === "saya") box.innerHTML = erRenderSaya();
+    else if (erTab === "individu") box.innerHTML = erRenderIndividu();
     else box.innerHTML = erRenderSemak();
   } catch (e) {
     box.innerHTML = `<div class="empty-state">Ralat memaparkan analisis (${erEsc(e.message)}).</div>`;
@@ -647,8 +776,9 @@ function erRender() {
 
 /* ================= Tab & penapis ================= */
 function erSwitchTab(tab) {
+  if (tab === "individu" && erTab !== "individu") erSelGuru = null;
   erTab = tab;
-  ["hantar", "saya", "semak"].forEach((t) => document.getElementById("er-nav-" + t).classList.toggle("active", t === tab));
+  ["hantar", "saya", "individu", "semak"].forEach((t) => document.getElementById("er-nav-" + t).classList.toggle("active", t === tab));
   erRender();
 }
 function erFillBulan() {
@@ -708,6 +838,7 @@ function erOnFilter(which) {
 async function erInit(user) {
   erUser = user;
   if (erIsPentadbir(user)) document.getElementById("er-nav-semak").classList.remove("hidden");
+  if (erCanIndividu(user)) document.getElementById("er-nav-individu").classList.remove("hidden");
   const banner = document.getElementById("er-banner");
   try {
     const [rawErph, rawSem] = await Promise.all([erFetchSheet(ER_SHEET_ERPH), erFetchSheet(ER_SHEET_SEMAKAN), erLoadExcluded()]);
