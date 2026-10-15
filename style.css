@@ -2502,3 +2502,51 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
 .er-ind-track div{ height:100%; }
 .er-ind-back{ border:1px solid var(--line-strong);background:rgba(43,232,208,.08);color:var(--cyan);border-radius:9px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px; }
 .er-tab{ font-size:12.5px !important;padding:10px 2px !important; }
+
+/* Kad Home "Jadual Waktu Saya": slot RELIEF (guru ganti) — warna lain daripada jadual biasa */
+.jg-home-row.jg-relief{ background:rgba(255,179,71,.10);border-left:3px solid #ffb347;padding-left:8px;border-radius:6px; }
+.jg-home-waktu.jg-relief-tag{ color:#ffb347;letter-spacing:.5px;font-size:10px; }
+.jg-home-row.jg-relief .jg-home-masa{ color:#ffd08a; }
+.jg-relief-note{ display:block;font-size:10.5px;font-weight:500;color:var(--text-dim);margin-top:2px; }
+
+/* Halaman Jadual Guru Ganti */
+.gg-scope{ padding:4px 0 24px; }
+.gg-page-title{ font-family:'Orbitron',sans-serif;font-size:14px;letter-spacing:1px;color:var(--cyan);margin:6px 2px 12px; }
+.gg-manage{ background:var(--panel-a);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px; }
+.gg-manage-title{ font-weight:700;font-size:14px;color:var(--text); }
+.gg-manage-sub{ font-size:11.5px;color:var(--text-dim);margin:2px 0 10px;line-height:1.4; }
+.gg-upload-btn{ display:inline-block;border:1px solid var(--line-strong);background:rgba(43,232,208,.1);color:var(--cyan);border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer; }
+.gg-status{ font-size:12px;margin-top:8px;color:var(--text-dim);line-height:1.4; }
+.gg-status:empty{ display:none; }
+.gg-status-ok{ color:var(--mint); } .gg-status-err{ color:var(--danger,#ff6f6f); }
+.gg-pv-head{ font-weight:700;color:var(--cyan);margin:12px 0 6px;font-size:13px;letter-spacing:.5px; }
+.gg-pv-date{ display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--text-dim); }
+.gg-pv-date input{ background:rgba(3,11,18,.55);border:1px solid var(--line);border-radius:8px;color:var(--text);padding:7px 9px;font-size:14px; }
+.gg-pv-hint{ font-size:12px;color:var(--amber,#ffb347);margin:6px 0; }
+.gg-pv-hint:empty{ display:none; }
+.gg-pv-warn{ font-size:12px;color:var(--amber,#ffb347);margin:6px 0;line-height:1.4; }
+.gg-pv-rows{ margin-top:8px;display:flex;flex-direction:column;gap:8px; }
+.gg-pv-row{ border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:rgba(3,11,18,.4); }
+.gg-pv-top{ display:flex;justify-content:space-between;align-items:center;font-size:13px; }
+.gg-pv-x{ border:none;background:rgba(255,80,80,.12);color:#ff8f8f;border-radius:7px;width:30px;height:30px;cursor:pointer; }
+.gg-pv-line{ font-size:12.5px;color:var(--text);margin-top:2px; }
+.gg-lbl{ display:inline-block;min-width:74px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim); }
+.gg-pv-actions{ display:flex;gap:8px;margin-top:12px; }
+.gg-btn-primary{ flex:1;border:none;border-radius:10px;padding:11px;font-weight:700;font-size:14px;color:#03121a;background:linear-gradient(135deg,var(--cyan),var(--mint,#39ffb0));cursor:pointer; }
+.gg-btn-primary:disabled{ opacity:.6; }
+.gg-btn-ghost{ border:1px solid var(--line);background:transparent;color:var(--text);border-radius:10px;padding:11px 16px;font-weight:700;cursor:pointer; }
+.gg-datebar{ display:flex;gap:8px;align-items:center;margin-bottom:6px; }
+.gg-arrow{ width:44px;height:44px;border:1px solid var(--line);background:var(--panel-a);color:var(--cyan);border-radius:10px;font-size:22px;cursor:pointer;flex-shrink:0; }
+.gg-date-select{ flex:1;min-width:0;height:44px;border:1px solid var(--line);background:var(--panel-a);color:var(--text);border-radius:10px;padding:0 10px;font-size:14px;font-weight:600; }
+.gg-day-label{ font-size:12px;color:var(--text-dim);margin:2px 2px 10px; }
+.gg-card{ display:flex;gap:12px;background:var(--panel-a);border:1px solid var(--line);border-left:3px solid #ffb347;border-radius:12px;padding:12px;margin-bottom:10px; }
+.gg-card.gg-mine{ border-color:var(--cyan);border-left-color:var(--cyan);background:rgba(43,232,208,.08); }
+.gg-time{ width:74px;flex-shrink:0;font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:#ffd08a;line-height:1.4; }
+.gg-time span{ display:block;font-size:11px;color:var(--text-dim);font-weight:600; }
+.gg-main{ min-width:0;flex:1; }
+.gg-kelas{ font-size:14px;color:var(--text);margin-bottom:4px; }
+.gg-line{ font-size:12.5px;color:var(--text);margin-top:2px;line-height:1.35; }
+.gg-ganti b{ color:var(--cyan); }
+.gg-me{ margin-left:6px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:12px;background:var(--cyan);color:#03121a; }
+.gg-del-wrap{ margin-top:16px;text-align:center; }
+.gg-del-btn{ border:1px solid rgba(255,111,111,.6);background:rgba(255,80,80,.08);color:#ff8f8f;border-radius:10px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer; }

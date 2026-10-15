@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jadual Guru Ganti — SM Arab (Jaim) Al-Asyraf</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#030b12">
+<link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20261015b">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+<div class="bg-fx"></div>
+
+<div id="login-screen" class="hidden">
+  <img class="logo-plain school-logo-img" alt="Logo Sekolah">
+  <div class="brand-title">SM ARAB (JAIM) AL-ASYRAF</div>
+  <div class="brand-sub">Sistem Pengurusan Sekolah</div>
+  <div class="glass">
+    <div class="gsi-wrap" id="google-btn-container"></div>
+    <div class="divider">Atau</div>
+    <form id="login-form">
+      <label class="field-label" for="login-email">Emel Rasmi</label>
+      <input class="field-input" type="email" id="login-email" placeholder="nama@moe-dl.edu.my" autocomplete="email" required>
+      <button class="btn-primary" type="submit" id="login-btn">Log Masuk</button>
+      <div class="error-text hidden" id="login-error"></div>
+    </form>
+  </div>
+</div>
+
+<div id="app-content" class="hidden">
+
+  <div class="site-header-wrap">
+    <header class="site-header">
+      <div class="site-header-row1">
+        <button class="hamburger-btn" onclick="toggleDrawer()" aria-label="Buka menu"><span data-icon="menu"></span></button>
+        <img class="header-logo school-logo-img" alt="Logo Sekolah">
+        <div class="header-title-block">
+          <div class="header-school-name">SM ARAB (JAIM) AL-ASYRAF</div>
+          <div class="header-school-sub">Jadual Guru Ganti</div>
+        </div>
+      </div>
+      <div class="site-header-row2">
+        <span class="header-greet">Selamat Datang, <span id="header-greet-name">-</span></span>
+        <span class="header-status"><span class="status-dot"></span>Sistem Aktif <span id="live-clock">--:--:-- --</span></span>
+      </div>
+    </header>
+  </div>
+
+  <div id="gg-content" class="gg-scope">
+    <div class="gg-page-title">JADUAL GURU GANTI</div>
+
+    <div class="gg-manage hidden" id="gg-manage">
+      <div class="gg-manage-head">
+        <div>
+          <div class="gg-manage-title">Muat naik jadual (PDF)</div>
+          <div class="gg-manage-sub">Pentadbir &amp; Admin App sahaja. Sistem membaca PDF dan anda semak sebelum simpan.</div>
+        </div>
+      </div>
+      <label class="gg-upload-btn" for="gg-file">📄 Pilih fail PDF</label>
+      <input type="file" id="gg-file" accept="application/pdf,.pdf" class="hidden" onchange="ggOnFile(this)">
+      <div class="gg-status" id="gg-status"></div>
+      <div id="gg-preview" class="hidden"></div>
+    </div>
+
+    <div class="gg-datebar">
+      <button type="button" class="gg-arrow" onclick="ggStep(-1)" aria-label="Tarikh sebelum">&lsaquo;</button>
+      <select class="gg-date-select" id="gg-date-select" onchange="ggOnSelect()"></select>
+      <button type="button" class="gg-arrow" onclick="ggStep(1)" aria-label="Tarikh seterusnya">&rsaquo;</button>
+    </div>
+    <div class="gg-day-label" id="gg-day-label"></div>
+    <div id="gg-list"><div class="empty-state">Memuatkan...</div></div>
+    <div class="gg-del-wrap hidden" id="gg-del-wrap"><button type="button" class="gg-del-btn" onclick="ggDeleteDay()">🗑 Padam jadual hari ini</button></div>
+  </div>
+
+</div>
+
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<nav class="drawer" id="drawer">
+  <div class="drawer-logo-row"><img class="school-logo-img" alt=""><span>SMASRA</span></div>
+  <a class="drawer-item" href="index.html"><span data-icon="home"></span><span class="drawer-label">Laman Utama</span></a>
+  <div id="drawer-menu-body"></div>
+  <div class="drawer-spacer"></div>
+  <a class="drawer-item drawer-logout" href="#" onclick="logout();return false;"><span data-icon="power"></span><span class="drawer-label">Log Keluar</span></a>
+</nav>
+
+<div class="bottom-nav-wrap">
+  <nav class="bottom-nav">
+    <a class="bn-item" href="kehadiran-staf.html?open=kehadiran" aria-label="Kehadiran"><span data-icon="calendar"></span><span class="bn-label">Kehadiran</span></a>
+    <a class="bn-item" href="event.html" aria-label="Event"><span data-icon="event"></span><span class="bn-label">Event</span></a>
+    <a class="bn-item" href="index.html" aria-label="Home"><span data-icon="home"></span><span class="bn-label">Home</span></a>
+    <a class="bn-item" href="laporan-pentadbir.html" aria-label="Laporan"><span data-icon="clipboard"></span><span class="bn-label">Laporan</span></a>
+    <a class="bn-item" href="profile.html" aria-label="Profil"><span data-icon="profile"></span><span class="bn-label">Profil</span></a>
+  </nav>
+</div>
+
+<script src="app.js"></script>
+<script src="guru-ganti.js?v=20261015a"></script>
+<script src="jadual-guru-ganti.js?v=20261015a"></script>
+<script>
+  initApp(ggInit);
+</script>
+</body>
+</html>

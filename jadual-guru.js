@@ -646,17 +646,37 @@ async function jgRenderHomeCard(user) {
     .filter((r) => jgNorm(r.guru) === nameNorm && r.hari === hariIni && r.subjek)
     .sort((a, b) => a.slot - b.slot);
 
-  if (!mine.length) {
+  // Relief (guru ganti) hari ini — dibaca dari halaman Jadual Guru Ganti; kegagalan TIDAK menjejaskan jadual biasa
+  const ymd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  let relief = [];
+  try { if (typeof ggReliefForUser === "function") relief = await ggReliefForUser(user, ymd); } catch (e) { relief = []; }
+
+  if (!mine.length && !relief.length) {
     listEl.innerHTML = `<div class="empty-state" style="padding:14px 2px;font-size:11px">Tiada jadual waktu untuk hari ini.</div>`;
     return;
   }
 
-  listEl.innerHTML = mine.map((r) => `
+  // Kunci susunan (minit): waktu mula; jam 1-6 dianggap petang (cth "1:10" = 13:10)
+  const minsOf = (txt) => { const m = String(txt).match(/(\d{1,2}):(\d{2})/); if (!m) return 0; let h = +m[1]; if (h < 7) h += 12; return h * 60 + +m[2]; };
+  const rows = mine.map((r) => ({
+    min: minsOf(jgFmtWaktuRekod(r, "mula")),
+    html: `
     <div class="jg-home-row">
       <span class="jg-home-waktu">Waktu ${r.slot}</span>
       <span class="jg-home-masa">${jgFmtWaktuRekod(r, "mula")}&ndash;${jgFmtWaktuRekod(r, "tamat")}</span>
       <span class="jg-home-subj">${jgEscape(r.subjek)}${r.kelas ? " (" + jgEscape(r.kelas) + ")" : ""}</span>
-    </div>`).join("");
+    </div>`,
+  })).concat(relief.map((r) => ({
+    min: (typeof ggMinutes === "function" ? ggMinutes(r.mula) : 0) || 0,
+    html: `
+    <div class="jg-home-row jg-relief">
+      <span class="jg-home-waktu jg-relief-tag">RELIEF</span>
+      <span class="jg-home-masa">${ggFmtShort(r.mula)}&ndash;${ggFmtShort(r.tamat)}</span>
+      <span class="jg-home-subj">${jgEscape(r.subjek)}${r.kelas ? " (" + jgEscape(r.kelas) + ")" : ""}${r.guruTidakHadir ? `<small class="jg-relief-note">ganti ${jgEscape(r.guruTidakHadir)}</small>` : ""}</span>
+    </div>`,
+  })));
+  rows.sort((a, b) => a.min - b.min);
+  listEl.innerHTML = rows.map((r) => r.html).join("");
 }
 
 /* ================= Init ================= */
