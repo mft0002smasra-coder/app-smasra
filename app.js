@@ -65,6 +65,7 @@ const ICONS = {
   back: '<path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>',
   power: '<path d="M12 3.5v8"/><path d="M6.7 6.7a8 8 0 1 0 10.6 0"/>',
   menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
 };
 
 function iconSvg(name) {
@@ -306,7 +307,10 @@ function renderDrawerMenu() {
   if (!box) return;
   const currentPage = location.pathname.split("/").pop();
 
-  box.innerHTML = MENU_STRUCTURE.map((group) => {
+  const ntActive = currentPage === "notifikasi.html" ? " active" : "";
+  const notifItem = `<a class="drawer-item${ntActive}" href="notifikasi.html"><span data-icon="bell"></span><span class="drawer-label">Notifikasi</span><span class="nt-drawer-badge hidden" id="nt-drawer-badge"></span></a>`;
+
+  box.innerHTML = notifItem + MENU_STRUCTURE.map((group) => {
     const hasActive = group.children.some((c) => c.href === currentPage);
     const childrenHtml = group.children.map((c) => {
       if (!c.href || c.soon) {
@@ -507,6 +511,17 @@ function checkModuleAccess(user, moduleKey) {
   return !!(matchJawatan || matchRole || matchRole2);
 }
 
+/** Muat modul Notifikasi (loceng, badge, pop-up urgent) selepas log masuk — tidak menyekat halaman. */
+function ntBoot(user) {
+  try {
+    if (typeof ntInit === "function") { ntInit(user); return; }
+    const sc = document.createElement("script");
+    sc.src = "notifikasi.js?v=20261016a";
+    sc.onload = () => { try { ntInit(user); } catch (e) { /* abaikan */ } };
+    document.head.appendChild(sc);
+  } catch (e) { /* notifikasi tidak kritikal */ }
+}
+
 async function initApp(onReady) {
   renderIcons();
   document.querySelectorAll(".school-logo-img").forEach((img) => { img.src = SCHOOL_LOGO_URL; });
@@ -532,6 +547,7 @@ async function initApp(onReady) {
     appContent.classList.remove("hidden");
     renderHeader(user);
     renderDrawerMenu();
+    ntBoot(user);
     await fetchAccessSettings(); // sedia SEBELUM onReady, supaya modul boleh guna checkModuleAccess() terus
     if (typeof onReady === "function") onReady(user);
     refreshUserInBackground(user);
