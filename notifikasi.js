@@ -45,6 +45,7 @@ function ntSafeLink(l) { return NT_LINK_RE.test(String(l || "")) ? l : ""; }
 function ntBellSvg(size) {
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>`;
 }
+const NT_REPLY_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right:8px"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v3"/></svg>`;
 const NT_PERSON_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>`;
 function ntAvatar(it, cls) {
   const img = it.dariGambar ? `<img src="${ntEsc(it.dariGambar)}" alt="" onerror="this.remove()">` : "";
@@ -60,10 +61,18 @@ function ntKind(it) {
 function ntLabel(it) {
   if (it.kategori === "GURU_GANTI") return it.jenis === "URGENT" ? "URGENT · GURU GANTI · UNTUK ANDA" : "GURU GANTI · UNTUK ANDA";
   const dari = String(it.dariNama || "PENTADBIR").toUpperCase();
+  if (it.kategori === "BALASAN") return `BALASAN · ${dari}`;
   const sasaran = it.semua ? "SEMUA" : "UNTUK ANDA";
   return `${it.jenis === "URGENT" ? "URGENT · " : ""}${dari} · ${sasaran}`;
 }
 function ntFind(id) { return ntItems.find((i) => i.id === id); }
+function ntMyKeys() { return [ntUser && ntUser.emel1, ntUser && ntUser.emel2, ntUser && ntUser.email].map((x) => String(x || "").trim().toLowerCase()).filter(Boolean); }
+/** Boleh dibalas: mesej Pentadbir / balasan yang dihantar oleh orang lain (bukan mesej automatik Guru Ganti, bukan mesej sendiri). */
+function ntCanReply(it) {
+  if (!it || (it.kategori !== "MESEJ" && it.kategori !== "BALASAN")) return false;
+  const from = String(it.dariEmel || "").toLowerCase();
+  return !!from && ntMyKeys().indexOf(from) === -1;
+}
 
 /* ---------------- Rangkaian ---------------- */
 async function ntFetch() {
@@ -143,7 +152,7 @@ function ntRenderBadge() {
 function ntItemHtml(it) {
   const k = ntKind(it);
   const msg = String(it.mesej || "").split("\n")[0];
-  return `<button type="button" class="nt-item nt-${k}${it.dibaca ? " nt-read" : ""}" data-id="${ntEsc(it.id)}" onclick="ntOpenDetail(this.getAttribute('data-id'))">
+  return `<button type="button" class="nt-item nt-${k}${it.dibaca ? " nt-read" : ""}" data-id="${ntEsc(it.id)}" onclick="ntOpenItem(this.getAttribute('data-id'))">
     <span class="nt-dot"></span>
     <span class="nt-item-body">
       <span class="nt-item-top"><span class="nt-item-label">${ntEsc(ntLabel(it))}</span><span class="nt-item-when">${ntEsc(ntWhen(it.dibuat))}</span></span>
@@ -215,6 +224,7 @@ function ntShowModal(it, opt) {
       </div>
       <div class="nt-modal-actions">
         <button type="button" class="nt-btn-main" onclick="ntCloseModal()">${urgent ? "Faham" : "Tutup"}</button>
+        ${ntCanReply(it) ? `<button type="button" class="nt-btn-alt" data-id="${ntEsc(it.id)}" onclick="ntReplyFrom(this.getAttribute('data-id'))">${NT_REPLY_SVG}Balas</button>` : ""}
         ${link ? `<a class="nt-btn-alt" href="${ntEsc(link)}" onclick="ntMarkRead(['${ntEsc(it.id)}'])">Buka halaman berkaitan</a>` : ""}
       </div>
     </div>`;
@@ -240,6 +250,111 @@ function ntOpenDetail(id) {
   ntClosePanel();
   ntShowModal(it, { urgent: false });
   ntMarkRead([id]);
+}
+
+function ntOpenItem(id) {
+  const it = ntFind(id);
+  if (!it) return;
+  if (ntCanReply(it)) { ntClosePanel(); ntOpenChat(it.threadId, it.dariEmel); return; }
+  ntOpenDetail(id);
+}
+function ntReplyFrom(id) {
+  const it = ntFind(id);
+  if (!it) return;
+  ntCloseModal();
+  ntClosePanel();
+  ntOpenChat(it.threadId, it.dariEmel);
+}
+
+/* ---------------- Perbualan (balas mesej) ---------------- */
+const ntChat = { threadId: "", peer: "", info: null, msgs: [], timer: null, busy: false };
+async function ntOpenChat(threadId, peer) {
+  ntChat.threadId = threadId; ntChat.peer = peer; ntChat.info = null; ntChat.msgs = []; ntChat.busy = false;
+  const layer = ntEnsureLayer("nt-chat", "nt-layer nt-layer-chat");
+  layer.classList.add("open");
+  document.body.classList.add("nt-lock");
+  layer.innerHTML = `<div class="nt-chat-wrap"><div class="nt-chat-head"><button type="button" class="nt-x nt-back" onclick="ntCloseChat()" aria-label="Kembali">←</button><span class="nt-chat-name">Memuatkan...</span></div></div>`;
+  await ntChatLoad(true);
+  clearInterval(ntChat.timer);
+  ntChat.timer = setInterval(() => { if (!document.hidden) ntChatLoad(false); }, 15000);
+}
+function ntCloseChat() {
+  clearInterval(ntChat.timer); ntChat.timer = null;
+  const layer = document.getElementById("nt-chat");
+  if (layer) { layer.classList.remove("open"); layer.innerHTML = ""; }
+  const panel = document.getElementById("nt-panel");
+  if (!ntModalOpen && (!panel || !panel.classList.contains("open"))) document.body.classList.remove("nt-lock");
+  ntRefresh();
+}
+async function ntChatLoad(first) {
+  try {
+    const res = await fetch(`${API_URL}?action=getPerbualan&email=${encodeURIComponent(ntUser.email)}&threadId=${encodeURIComponent(ntChat.threadId)}&peer=${encodeURIComponent(ntChat.peer)}`, { cache: "no-store" });
+    const json = await res.json();
+    if (!json || !json.success) throw new Error((json && json.message) || "Gagal memuatkan perbualan.");
+    const changed = json.mesej.length !== ntChat.msgs.length;
+    ntChat.info = json; ntChat.msgs = json.mesej;
+    if (first) ntRenderChat(); else if (changed) ntRenderChatMsgs(true);
+    // tandakan mesej daripada pihak lawan dalam perbualan ini sebagai dibaca
+    const ids = ntItems.filter((i) => i.threadId === ntChat.threadId && String(i.dariEmel || "").toLowerCase() === String(ntChat.peer).toLowerCase() && !i.dibaca).map((i) => i.id);
+    if (ids.length) ntMarkRead(ids);
+  } catch (e) {
+    if (first) {
+      const layer = document.getElementById("nt-chat");
+      if (layer) layer.innerHTML = `<div class="nt-chat-wrap"><div class="nt-chat-head"><button type="button" class="nt-x nt-back" onclick="ntCloseChat()" aria-label="Kembali">←</button><span class="nt-chat-name">Perbualan</span></div><div class="nt-empty">${ntEsc(e.message)}</div></div>`;
+    }
+  }
+}
+function ntBubbleTime(dibuat) {
+  const [d, t] = String(dibuat || "").split(" ");
+  return d === ntTodayIso() ? (t || "") : `${ntWhen(dibuat)} · ${t || ""}`;
+}
+function ntChatMsgsHtml() {
+  let html = "", last = "";
+  ntChat.msgs.forEach((m) => {
+    const g = ntGroupLabel(m.dibuat);
+    if (g !== last) { html += `<div class="nt-chat-day">${ntEsc(g)}</div>`; last = g; }
+    html += `<div class="nt-bub-row ${m.saya ? "me" : "them"}"><div class="nt-bub">${m.root ? `<b>${ntEsc((ntChat.info && ntChat.info.tajuk) || "")}</b>` : ""}${ntEsc(m.teks)}</div><span class="nt-bub-time">${ntEsc(ntBubbleTime(m.dibuat))}${m.saya ? " · Anda" : ""}</span></div>`;
+  });
+  return html;
+}
+function ntRenderChatMsgs(scroll) {
+  const box = document.getElementById("nt-chat-msgs");
+  if (!box) return;
+  const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+  box.innerHTML = ntChatMsgsHtml();
+  if (scroll || nearBottom) box.scrollTop = box.scrollHeight;
+}
+function ntRenderChat() {
+  const layer = document.getElementById("nt-chat");
+  if (!layer) return;
+  const info = ntChat.info || { peer: { nama: "" }, tajuk: "" };
+  layer.innerHTML = `<div class="nt-chat-wrap" role="dialog" aria-label="Perbualan">
+    <div class="nt-chat-head">
+      <button type="button" class="nt-x nt-back" onclick="ntCloseChat()" aria-label="Kembali">←</button>
+      ${ntAvatar({ dariGambar: info.peer.gambar }, "")}
+      <span class="nt-chat-title"><b>${ntEsc(String(info.peer.nama || "").toUpperCase())}</b><span>${ntEsc(info.tajuk)}</span></span>
+    </div>
+    <div class="nt-chat-msgs" id="nt-chat-msgs"></div>
+    <div class="nt-chat-err" id="nt-chat-err"></div>
+    <div class="nt-chat-compose">
+      <textarea class="nt-chat-input" id="nt-chat-input" rows="1" maxlength="500" placeholder="Tulis balasan..." aria-label="Tulis balasan"></textarea>
+      <button type="button" class="nt-chat-send" id="nt-chat-send" onclick="ntChatSend()" aria-label="Hantar balasan"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg></button>
+    </div>
+  </div>`;
+  ntRenderChatMsgs(true);
+}
+async function ntChatSend() {
+  if (ntChat.busy) return;
+  const inp = document.getElementById("nt-chat-input"), err = document.getElementById("nt-chat-err"), btn = document.getElementById("nt-chat-send");
+  const teks = (inp.value || "").trim();
+  if (!teks) return;
+  ntChat.busy = true; btn.disabled = true; err.textContent = "";
+  try {
+    const res = await postToAppsScript(API_URL, { action: "balasNotifikasi", email: ntUser.email, threadId: ntChat.threadId, peer: ntChat.peer, teks });
+    if (res && res.success) { inp.value = ""; await ntChatLoad(false); ntRenderChatMsgs(true); }
+    else err.textContent = (res && res.message) || "Gagal menghantar balasan.";
+  } catch (e) { err.textContent = "Ralat sambungan: " + e.message; }
+  ntChat.busy = false; btn.disabled = false;
 }
 
 /* ---------------- Pop-up urgent automatik ---------------- */
@@ -302,7 +417,7 @@ function ntRenderPage() {
   if (!box) return;
   const unread = ntItems.filter((i) => !i.dibaca && ntIsActive(i)).length;
   const f = ntFilter;
-  const list = ntItems.filter((i) => f === "belum" ? (!i.dibaca && ntIsActive(i)) : f === "guruganti" ? i.kategori === "GURU_GANTI" : f === "mesej" ? i.kategori === "MESEJ" : true);
+  const list = ntItems.filter((i) => f === "belum" ? (!i.dibaca && ntIsActive(i)) : f === "guruganti" ? i.kategori === "GURU_GANTI" : f === "mesej" ? (i.kategori === "MESEJ" || i.kategori === "BALASAN") : true);
   let html = "", last = "";
   list.forEach((i) => {
     const g = ntGroupLabel(i.dibuat);

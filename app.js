@@ -516,7 +516,7 @@ function ntBoot(user) {
   try {
     if (typeof ntInit === "function") { ntInit(user); return; }
     const sc = document.createElement("script");
-    sc.src = "notifikasi.js?v=20261016a";
+    sc.src = "notifikasi.js?v=20261016b";
     sc.onload = () => { try { ntInit(user); } catch (e) { /* abaikan */ } };
     document.head.appendChild(sc);
   } catch (e) { /* notifikasi tidak kritikal */ }
