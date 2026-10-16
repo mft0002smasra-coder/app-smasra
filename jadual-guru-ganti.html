@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261015b">
+<link rel="stylesheet" href="style.css?v=20261016a">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -61,7 +61,10 @@
           <div class="gg-manage-sub">Pentadbir &amp; Admin App sahaja. Sistem membaca PDF dan anda semak sebelum simpan.</div>
         </div>
       </div>
-      <label class="gg-upload-btn" for="gg-file">📄 Pilih fail PDF</label>
+      <div class="gg-btn-row">
+        <label class="gg-upload-btn" for="gg-file">📄 Pilih fail PDF</label>
+        <span class="gg-del-wrap hidden" id="gg-del-wrap"><button type="button" class="gg-del-btn" onclick="ggDeleteDay()">🗑 Padam jadual hari ini</button></span>
+      </div>
       <input type="file" id="gg-file" accept="application/pdf,.pdf" class="hidden" onchange="ggOnFile(this)">
       <div class="gg-status" id="gg-status"></div>
       <div id="gg-preview" class="hidden"></div>
@@ -74,7 +77,6 @@
     </div>
     <div class="gg-day-label" id="gg-day-label"></div>
     <div id="gg-list"><div class="empty-state">Memuatkan...</div></div>
-    <div class="gg-del-wrap hidden" id="gg-del-wrap"><button type="button" class="gg-del-btn" onclick="ggDeleteDay()">🗑 Padam jadual hari ini</button></div>
   </div>
 
 </div>
