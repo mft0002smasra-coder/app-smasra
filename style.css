@@ -418,10 +418,12 @@ body{
 }
 
 /* ---------- Kad ID Profil ---------- */
-.id-card{ border-radius:16px;overflow:hidden;background:var(--panel-a);border:1px solid var(--line);margin-bottom:var(--gap); }
-.id-card-top{ background:linear-gradient(90deg,var(--cyan),var(--blue));padding:12px 14px;display:flex;align-items:center;gap:10px; }
-.id-card-top img{ height:32px;width:auto;object-fit:contain; }
-.id-card-top-text{ font-family:var(--font-display);font-size:10px;letter-spacing:1px;color:var(--on-accent);font-weight:700;line-height:1.4; }
+.id-card{ position:relative;border-radius:16px;overflow:hidden;background:var(--panel-a);border:1px solid var(--line);margin-bottom:var(--gap);cursor:pointer;-webkit-tap-highlight-color:transparent; }
+.id-card-top{ background:linear-gradient(90deg,var(--cyan),var(--blue));padding:12px 14px;display:flex;align-items:center;gap:12px; }
+.id-card-top img{ height:54px;width:auto;max-width:64px;object-fit:contain;flex-shrink:0; }
+.id-card-top-text{ font-family:var(--font-display);font-size:clamp(9px,3.3vw,13px);letter-spacing:.2px;color:var(--on-accent);font-weight:700;line-height:1.45;white-space:nowrap;min-width:0; }
+.id-card-sub{ display:block;font-size:11px;font-weight:600;letter-spacing:1px;opacity:.8; }
+.id-card-expand{ position:absolute;top:8px;right:8px;width:14px;height:14px;color:var(--on-accent);opacity:.75;pointer-events:none; }
 .id-card-body{ display:flex;gap:14px;padding:18px;align-items:flex-start; }
 .id-photo{ width:80px;height:100px;object-fit:cover;border-radius:8px;flex-shrink:0;background:#08211c; }
 .id-fields{ flex:1;min-width:0; }
@@ -2959,3 +2961,32 @@ html[data-tema="ilustrasi"] .header-greet,
 html[data-tema="ilustrasi"] .header-status,
 html[data-tema="ilustrasi"] .header-school-sub{ color:#3a2a1c; }
 html[data-tema="ilustrasi"] .bottom-nav{ background:#ffffff; border-top:2px solid #f0dcc0; }
+
+/* ---------- Pop-up Kad ID ---------- */
+.idm-overlay{
+  position:fixed;inset:0;z-index:5200;background:rgba(2,6,12,.78);display:none;align-items:center;justify-content:center;padding:18px;
+}
+.idm-overlay.open{ display:flex; }
+.idm-card{
+  position:relative;width:100%;max-width:380px;max-height:92vh;overflow-y:auto;border-radius:20px;
+  background:var(--surface);border:1px solid var(--line-strong);box-shadow:0 24px 60px -10px rgba(0,0,0,.55);color:var(--text);
+}
+.idm-close{
+  position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,.35);
+  background:rgba(0,0,0,.25);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;
+}
+.idm-top{
+  background:linear-gradient(90deg,var(--cyan),var(--blue));color:var(--on-accent);display:flex;flex-direction:column;align-items:center;
+  gap:10px;padding:22px 16px 16px;text-align:center;
+}
+.idm-top img{ height:78px;width:auto;max-width:96px;object-fit:contain; }
+.idm-school{ font-family:var(--font-display);font-weight:700;font-size:clamp(11px,3.7vw,14.5px);letter-spacing:.4px;white-space:nowrap; }
+.idm-sub{ font-size:11.5px;font-weight:600;letter-spacing:2px;opacity:.8; }
+.idm-body{ display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 18px 8px; }
+.idm-photo{ width:128px;height:160px;object-fit:cover;border-radius:12px;background:#08211c;border:1px solid var(--line); }
+.idm-name{ font-family:var(--font-display);font-weight:700;font-size:16px;line-height:1.3;text-align:center;margin-top:6px; }
+.idm-rows{ padding:6px 18px 14px; }
+.idm-row{ display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px; }
+.idm-row:last-child{ border-bottom:none; }
+.idm-row span{ color:var(--text-dim);flex-shrink:0; }
+.idm-row b{ text-align:right;min-width:0;word-break:break-all; }

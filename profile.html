@@ -10,8 +10,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261019u">
-<script src="tema-init.js?v=20261019u"></script>
+<link rel="stylesheet" href="style.css?v=20261019v">
+<script src="tema-init.js?v=20261019v"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -57,10 +57,11 @@
     <div class="section-label">Profil Saya</div>
 
     <!-- Kad ID -->
-    <div class="id-card">
+    <div class="id-card" id="id-card" role="button" tabindex="0" aria-label="Buka kad ID penuh" onclick="openIdModal()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openIdModal();}">
+      <svg class="id-card-expand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
       <div class="id-card-top">
         <img class="school-logo-img" alt="">
-        <div class="id-card-top-text">SM ARAB (JAIM) AL-ASYRAF<br>KAD ID STAF</div>
+        <div class="id-card-top-text">SM ARAB (JAIM) AL-ASYRAF<span class="id-card-sub">KAD ID STAF</span></div>
       </div>
       <div class="id-card-body">
         <img class="id-photo user-avatar-img" alt="">
@@ -88,6 +89,29 @@
 
   </div>
 
+  <div class="idm-overlay" id="id-modal" onclick="if(event.target===this)closeIdModal()">
+    <div class="idm-card" role="dialog" aria-modal="true" aria-label="Kad ID Staf">
+      <button type="button" class="idm-close" onclick="closeIdModal()" aria-label="Tutup">&times;</button>
+      <div class="idm-top">
+        <img class="school-logo-img" alt="">
+        <div class="idm-school">SM ARAB (JAIM) AL-ASYRAF</div>
+        <div class="idm-sub">KAD ID STAF</div>
+      </div>
+      <div class="idm-body">
+        <img class="idm-photo user-avatar-img" alt="">
+        <div class="idm-name" id="idm-nama">-</div>
+        <span class="id-role-chip" id="idm-role" style="margin-top:0">Staf</span>
+      </div>
+      <div class="idm-rows">
+        <div class="idm-row"><span>Jawatan</span><b id="idm-jawatan">-</b></div>
+        <div class="idm-row"><span>Tel</span><b id="idm-telefon">-</b></div>
+        <div class="idm-row"><span>Emel</span><b id="idm-emel1">-</b></div>
+        <div class="idm-row hidden" id="idm-emel2-row"><span>Emel 2</span><b id="idm-emel2">-</b></div>
+      </div>
+      <div class="id-card-strip"></div>
+    </div>
+  </div>
+
   <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
   <nav class="drawer" id="drawer">
     <div class="drawer-logo-row"><img class="school-logo-img" alt=""><span>SMASRA</span></div>
@@ -111,8 +135,11 @@
 </div>
 
 <script src="app.js"></script>
-<script src="tema.js?v=20261019u"></script>
+<script src="tema.js?v=20261019v"></script>
 <script>
+  function openIdModal() { document.getElementById("id-modal").classList.add("open"); }
+  function closeIdModal() { document.getElementById("id-modal").classList.remove("open"); }
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeIdModal(); });
   function renderProfile(user) {
     document.getElementById("profile-nama").textContent = user.nama || user.email;
     document.getElementById("profile-jawatan").textContent = user.jawatan || "";
@@ -122,6 +149,17 @@
       document.getElementById("profile-emel2").textContent = user.emel2;
       document.getElementById("profile-emel2-row").classList.remove("hidden");
     }
+    document.getElementById("idm-nama").textContent = user.nama || user.email;
+    document.getElementById("idm-jawatan").textContent = user.jawatan || "-";
+    document.getElementById("idm-telefon").textContent = user.telefon || "-";
+    document.getElementById("idm-emel1").textContent = user.emel1 || user.email;
+    if (user.emel2) {
+      document.getElementById("idm-emel2").textContent = user.emel2;
+      document.getElementById("idm-emel2-row").classList.remove("hidden");
+    }
+    const mrole = document.getElementById("idm-role");
+    mrole.textContent = user.role === "Admin" ? "Admin" : "Staf";
+    mrole.classList.toggle("role-admin", user.role === "Admin");
     const badge = document.getElementById("profile-role-badge");
     badge.textContent = user.role === "Admin" ? "Admin" : "Staf";
     badge.classList.toggle("role-admin", user.role === "Admin");
