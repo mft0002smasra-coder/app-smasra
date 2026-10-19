@@ -10,7 +10,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20261019t">
+<script src="tema-init.js?v=20261019t"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -75,6 +76,8 @@
       <div class="id-card-strip"></div>
     </div>
 
+    <div id="tema-section"></div>
+
     <div class="glass card-pad admin-app-card hidden" id="profile-admin-app-card">
       <div class="admin-app-card-title">🛡️ Panel Kawalan Akses</div>
       <div class="admin-app-card-desc">Anda dilantik sebagai <b>Admin App</b> — boleh kemaskini Jawatan, Role, Role2 &amp; Role3 untuk semua staf dalam sistem.</div>
@@ -108,6 +111,7 @@
 </div>
 
 <script src="app.js"></script>
+<script src="tema.js?v=20261019t"></script>
 <script>
   function renderProfile(user) {
     document.getElementById("profile-nama").textContent = user.nama || user.email;
@@ -126,7 +130,7 @@
       document.getElementById("profile-admin-app-card").classList.remove("hidden");
     }
   }
-  initApp(renderProfile);
+  initApp(function (user) { renderProfile(user); if (window.temaProfilInit) window.temaProfilInit(user); });
 </script>
 </body>
 </html>

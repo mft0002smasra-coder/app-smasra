@@ -51,6 +51,7 @@ const USER_KEY = "smasra_user";
 const ICONS = {
   home: '<path d="M4 11.5L12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/>',
   profile: '<circle cx="12" cy="8" r="3.2"/><path d="M6 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   announce: '<path d="M3 10v4a1 1 0 0 0 1 1h2l5 3V6L6 9H4a1 1 0 0 0-1 1z"/><path d="M15 8.3a4 4 0 0 1 0 7.4"/><path d="M18 5.7a7.5 7.5 0 0 1 0 12.6"/>',
   calendar: '<rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M3.5 9.5h17"/><path d="M8 3v4M16 3v4"/><path d="M9 14.3l2 2 4-4.1"/>',
   folder: '<path d="M3.5 7.5a1.5 1.5 0 0 1 1.5-1.5h3.6l2 2H19a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 19.5H5A1.5 1.5 0 0 1 3.5 18z"/>',
@@ -522,6 +523,53 @@ function ntBoot(user) {
   } catch (e) { /* notifikasi tidak kritikal */ }
 }
 
+/* ---------------- Tema & reward ---------------- */
+function smToast(msg, ms) {
+  try {
+    let el = document.getElementById("sm-toast");
+    if (!el) { el = document.createElement("div"); el.id = "sm-toast"; el.className = "sm-toast"; document.body.appendChild(el); }
+    el.textContent = msg;
+    void el.offsetWidth;
+    el.classList.add("show");
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove("show"), ms || 3200);
+  } catch (e) { /* senyap */ }
+}
+
+/** Selaraskan tema tempatan dengan data reward dari server (tema belum dibuka -> kembali ke asal). */
+function temaSelaras(res) {
+  try {
+    if (!window.smTema || !res || !res.success || !res.tahap) return;
+    const T = window.smTema.TEMA, cur = window.smTema.current();
+    if (!window.smTema.hasSaved() && res.tema && T[res.tema]) window.smTema.apply(res.tema); // peranti baharu: ikut tema akaun
+    else if (!res.admin && T[cur] && T[cur].t > res.tahap) window.smTema.apply("deck");
+  } catch (e) { /* senyap */ }
+}
+
+/** Sekali sehari setiap peranti: catat mata "buka app" (server kuatkuasa sekali sehari & tentukan mata). */
+function temaBoot(user) {
+  try {
+    if (!apiConfigured() || !window.smTema || !user || !user.email) return;
+    const d = new Date();
+    const hari = d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+    const uk = "smasra_buka_" + String(user.email).toLowerCase();
+    if (localStorage.getItem(uk) === hari) return;
+    postToAppsScript(API_URL, { action: "catatMata", email: user.email, jenis: "BUKA" }).then((res) => {
+      if (!res || !res.success || !res.tahap) return;
+      localStorage.setItem(uk, hari);
+      localStorage.setItem("smasra_reward", JSON.stringify(res));
+      temaSelaras(res);
+      if (res.naikTahap) {
+        const T = window.smTema.TEMA;
+        const baru = Object.keys(T).filter((k) => T[k].t === res.tahap).map((k) => T[k].n);
+        smToast("Tahap " + res.tahap + " dicapai!" + (baru.length ? " Tema " + baru.join(", ") + " dibuka." : ""), 4500);
+      } else if (res.mataDapat) {
+        smToast("+" + res.mataDapat + " mata" + (res.bonusStreak ? " (bonus streak 7 hari!)" : "") + " · Streak " + res.streak + " hari");
+      }
+    }).catch(() => {});
+  } catch (e) { /* tema/reward tidak kritikal */ }
+}
+
 async function initApp(onReady) {
   renderIcons();
   document.querySelectorAll(".school-logo-img").forEach((img) => { img.src = SCHOOL_LOGO_URL; });
@@ -548,6 +596,7 @@ async function initApp(onReady) {
     renderHeader(user);
     renderDrawerMenu();
     ntBoot(user);
+    temaBoot(user);
     await fetchAccessSettings(); // sedia SEBELUM onReady, supaya modul boleh guna checkModuleAccess() terus
     if (typeof onReady === "function") onReady(user);
     refreshUserInBackground(user);

@@ -1,4 +1,4 @@
-const CACHE_NAME = "smasra-cache-v3";
+const CACHE_NAME = "smasra-cache-v4";
 const CORE_ASSETS = [
   "index.html",
   "pengumuman.html",
@@ -13,6 +13,8 @@ const CORE_ASSETS = [
   "keberadaan-murid.html",
   "style.css",
   "app.js",
+  "tema-init.js",
+  "tema.js",
   "kehadiran-murid-borang.js",
   "kehadiran-murid-analisis.js",
   "event.js",
