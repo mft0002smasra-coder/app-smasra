@@ -2510,7 +2510,7 @@ textarea.lgb-field{ min-height:130px;resize:vertical; }
 .jg-relief-note{ display:block;font-size:10.5px;font-weight:500;color:var(--text-dim);margin-top:2px; }
 
 /* Halaman Jadual Guru Ganti */
-.gg-scope{ padding:4px 0 24px; }
+.gg-scope{ padding:4px 0 calc(96px + env(safe-area-inset-bottom,0px)); }
 .gg-page-title{ font-family:'Orbitron',sans-serif;font-size:14px;letter-spacing:1px;color:var(--cyan);margin:6px 2px 12px; }
 .gg-manage{ background:var(--panel-a);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px; }
 .gg-manage-title{ font-weight:700;font-size:14px;color:var(--text); }
