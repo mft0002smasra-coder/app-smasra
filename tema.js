@@ -30,7 +30,7 @@
       '<div class="tm-bar"><i style="width:' + peratus + '%"></i></div>' +
       '<div class="tm-note">' + nota + '</div>' + admin +
       '<div class="tm-rules">Streak: <b>' + (rw.streak || 0) + ' hari</b> · Mata hari ini: ' + (rw.mataHariIni || 0) +
-      '<br>Buka app hari ini +10 · Baca notifikasi +5 (maks 15 sehari) · Streak 7 hari berturut +50</div>';
+      '<br>Buka app hari ini +10 · Baca notifikasi +5 (maks 15 sehari) · Streak 7 hari berturut +50<br>Setiap <b>20 mata</b> = naik 1 tahap dan buka 1 tema baharu.</div>';
   }
 
   function pratonton(t) {

@@ -1,4 +1,4 @@
-const CACHE_NAME = "smasra-cache-v4";
+const CACHE_NAME = "smasra-cache-v5";
 const CORE_ASSETS = [
   "index.html",
   "pengumuman.html",

@@ -2762,7 +2762,7 @@ body.nt-lock{ overflow:hidden; }
 .nt-chat-send:disabled{ opacity:.5; }
 
 /* ============================================================
-   TEMA PILIHAN (8 tema) — dikawal oleh tema-init.js (html[data-tema])
+   TEMA PILIHAN (12 tema) — dikawal oleh tema-init.js (html[data-tema])
    Tema asal "Command Deck" = nilai :root di atas (tiada atribut perlu).
    Warna semantik (merah urgent #ff4d4d, kuning RELIEF/Guru Ganti) TIDAK diubah.
    html[data-lite="1"] = mod jimat prestasi (tanpa kabur).
@@ -2780,16 +2780,16 @@ html[data-tema="terang"]{
 }
 html[data-tema="aurora"]{
   --font-display:'Outfit', sans-serif; --font-body:'Outfit', sans-serif;
-  --void:#150d3d; --void-2:#0b2e52; --panel-a:rgba(255,255,255,.12); --panel-b:rgba(24,16,78,.55);
-  --cyan:#7df9e0; --blue:#a78bfa; --mint:#5ef0b8; --amber:#ffc15e; --pink:#ff7ab8; --violet:#b69cff;
-  --text:#ffffff; --text-dim:rgba(255,255,255,.72); --line:rgba(255,255,255,.26); --line-strong:rgba(255,255,255,.5);
-  --accent-rgb:125,249,224; --ink-rgb:21,13,61; --on-accent:#062a2a; --blur:14px;
-  --surface:#1c1560; --surface-2:#251c70; --surface-3:#30277f; --grab:#5a4fb0;
-  --card-shadow:0 8px 24px rgba(0,0,0,.25);
+  --void:#0d0838; --void-2:#10205a; --panel-a:rgba(255,255,255,.07); --panel-b:rgba(12,8,48,.72);
+  --cyan:#9db8ff; --blue:#a78bfa; --mint:#c4a8ff; --amber:#ffc15e; --pink:#ff7ab8; --violet:#b69cff;
+  --text:#ffffff; --text-dim:rgba(255,255,255,.78); --line:rgba(255,255,255,.22); --line-strong:rgba(255,255,255,.45);
+  --accent-rgb:157,184,255; --ink-rgb:13,8,56; --on-accent:#0b0830; --blur:14px;
+  --surface:#150f48; --surface-2:#1d1660; --surface-3:#28207a; --grab:#4a40a8;
+  --card-shadow:0 8px 24px rgba(0,0,0,.3);
   --bg-fx:
-    radial-gradient(circle at 20% 10%, #5b3fd6 0%, rgba(91,63,214,0) 45%),
-    radial-gradient(circle at 90% 60%, #0fb5a5 0%, rgba(15,181,165,0) 50%),
-    linear-gradient(160deg,#150d3d 0%,#0b2e52 100%);
+    radial-gradient(circle at 20% 10%, #4a30c0 0%, rgba(74,48,192,0) 45%),
+    radial-gradient(circle at 90% 60%, #2347c9 0%, rgba(35,71,201,0) 50%),
+    linear-gradient(160deg,#0d0838 0%,#10205a 100%);
 }
 html[data-tema="madani"]{
   --font-display:'Amiri', serif; --font-body:'Cairo', sans-serif;
@@ -2809,17 +2809,6 @@ html[data-tema="laut"]{
   --surface:#06283f; --surface-2:#0a3552; --surface-3:#10496c; --grab:#2a6f98;
   --bg-fx:linear-gradient(170deg,#04203c 0%,#0a4a7a 100%);
 }
-html[data-tema="amoled"]{
-  --font-display:'Sora', sans-serif; --font-body:'DM Sans', sans-serif;
-  --void:#000000; --void-2:#07070a; --panel-a:#101015; --panel-b:#07070a;
-  --cyan:#b794ff; --blue:#8fa8ff; --mint:#5ef0b8; --amber:#ffc15e; --pink:#ff7a9e; --violet:#c9a8ff;
-  --text:#f1f1f6; --text-dim:#8b8b9a; --line:#25252e; --line-strong:#4a4a5c;
-  --accent-rgb:183,148,255; --ink-rgb:0,0,0; --on-accent:#14002e; --blur:0px;
-  --surface:#07070a; --surface-2:#101015; --surface-3:#1c1c25; --grab:#3a3a48;
-  --bg-fx:#000000;
-}
-html[data-tema="amoled"] .bg-fx::before,
-html[data-tema="amoled"] .bg-fx::after{ display:none; }
 html[data-tema="brutal"]{
   --font-display:'Space Grotesk', sans-serif; --font-body:'Space Grotesk', sans-serif;
   color-scheme:light;
@@ -2842,6 +2831,104 @@ html[data-tema="ilustrasi"]{
   --card-shadow:0 4px 14px rgba(120,80,30,.1);
   --bg-fx:linear-gradient(180deg,#fff8ec 0%,#fdeccd 100%);
 }
+
+/* ---------- Tema baharu: Cyberpunk, Futuristik HUD, Ais Kristal, Y2K, Songket ---------- */
+html[data-tema="cyberpunk"]{
+  --font-display:'Orbitron', sans-serif; --font-body:'Rajdhani', sans-serif;
+  --void:#0b0614; --void-2:#120824; --panel-a:rgba(24,10,42,.94); --panel-b:rgba(18,8,34,.96);
+  --cyan:#05d9e8; --blue:#7b8cff; --mint:#f9f002; --amber:#f9f002; --pink:#ff2a6d; --violet:#b967ff;
+  --text:#f6eaff; --text-dim:#b49ad6; --line:rgba(255,42,109,.5); --line-strong:#ff2a6d; --danger:#ff4d6d;
+  --accent-rgb:5,217,232; --ink-rgb:11,6,20; --on-accent:#05060f; --blur:0px; --radius:2px;
+  --surface:#120824; --surface-2:#1b0d33; --surface-3:#2a1248; --grab:#ff2a6d;
+  --bg-fx:
+    radial-gradient(circle at 15% 0%, rgba(255,42,109,.28) 0%, rgba(255,42,109,0) 45%),
+    radial-gradient(circle at 95% 70%, rgba(5,217,232,.2) 0%, rgba(5,217,232,0) 50%),
+    linear-gradient(180deg,#0b0614 0%,#12081f 100%);
+}
+html[data-tema="cyberpunk"] .glass,
+html[data-tema="cyberpunk"] .id-card,
+html[data-tema="cyberpunk"] .er-card{
+  clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));
+  border-color:rgba(255,42,109,.6);
+}
+html[data-tema="cyberpunk"] .site-header-wrap{ border-bottom:2px solid #ff2a6d; box-shadow:0 2px 14px rgba(255,42,109,.45); }
+html[data-tema="cyberpunk"] .bottom-nav{ border-top:2px solid #05d9e8; box-shadow:0 -2px 14px rgba(5,217,232,.35); }
+
+html[data-tema="futuristikhud"]{
+  --font-display:'Chakra Petch', sans-serif; --font-body:'Rajdhani', sans-serif;
+  --void:#02060f; --void-2:#04101f; --panel-a:rgba(6,20,38,.86); --panel-b:rgba(4,14,28,.92);
+  --cyan:#ffaa00; --blue:#00e5ff; --mint:#ffd166; --amber:#ffaa00; --pink:#ff5577; --violet:#8b9bff;
+  --text:#dff6ff; --text-dim:#7fb0c8; --line:rgba(255,170,0,.4); --line-strong:rgba(255,170,0,.75);
+  --accent-rgb:255,170,0; --ink-rgb:2,6,15; --on-accent:#1a0f00; --blur:0px; --radius:3px;
+  --surface:#04101f; --surface-2:#071a30; --surface-3:#0d2a48; --grab:#8a6a1a;
+  --bg-fx:
+    radial-gradient(circle at 50% -10%, rgba(0,229,255,.2) 0%, rgba(0,229,255,0) 55%),
+    linear-gradient(180deg,#02060f 0%,#04101f 100%);
+}
+html[data-tema="futuristikhud"] .glass,
+html[data-tema="futuristikhud"] .id-card,
+html[data-tema="futuristikhud"] .er-card{
+  clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,0 100%);
+  border-color:rgba(255,170,0,.55);
+}
+html[data-tema="futuristikhud"] .site-header-wrap{ border-bottom:1px solid rgba(255,170,0,.7); }
+html[data-tema="futuristikhud"] .bottom-nav{ border-top:1px solid rgba(255,170,0,.7); }
+
+html[data-tema="aiskristal"]{
+  --font-display:'Lexend', sans-serif; --font-body:'Inter', sans-serif;
+  color-scheme:light;
+  --void:#e8f8ff; --void-2:#cfeeff; --panel-a:rgba(255,255,255,.72); --panel-b:rgba(244,251,255,.86);
+  --cyan:#1aa6d9; --blue:#0a7fb0; --mint:#4cc9ee; --amber:#c77700; --pink:#d6336c; --violet:#6b4fd8;
+  --text:#0d3b52; --text-dim:#4f7f95; --line:rgba(120,200,235,.7); --line-strong:#6fbfe3; --danger:#d63a3a;
+  --accent-rgb:26,166,217; --ink-rgb:232,248,255; --on-accent:#ffffff; --blur:12px; --radius:16px;
+  --surface:#ffffff; --surface-2:#eaf8ff; --surface-3:#d4eefb; --grab:#9fd3ea;
+  --card-shadow:0 6px 18px rgba(26,166,217,.16);
+  --bg-fx:linear-gradient(160deg,#e8f8ff 0%,#cfeeff 55%,#f4fbff 100%);
+}
+html[data-tema="aiskristal"] .glass,
+html[data-tema="aiskristal"] .id-card,
+html[data-tema="aiskristal"] .er-card{ border-radius:16px; box-shadow:var(--card-shadow), inset 0 1px 0 rgba(255,255,255,.9); }
+html[data-tema="aiskristal"] .site-header-wrap{ background:rgba(255,255,255,.75); border-bottom:1px solid rgba(120,200,235,.65); }
+html[data-tema="aiskristal"] .bottom-nav{ background:rgba(255,255,255,.88); border-top:1px solid rgba(120,200,235,.65); }
+html[data-tema="aiskristal"] .bg-fx::before{ display:none; }
+
+html[data-tema="y2k"]{
+  --font-display:'Quicksand', sans-serif; --font-body:'Quicksand', sans-serif;
+  color-scheme:light;
+  --void:#ead9ff; --void-2:#d6e4ff; --panel-a:rgba(255,255,255,.72); --panel-b:rgba(255,250,255,.86);
+  --cyan:#b84dff; --blue:#3d8bff; --mint:#ff4da6; --amber:#c77700; --pink:#e0328a; --violet:#8a3de0;
+  --text:#3a2a5c; --text-dim:#6e5e96; --line:rgba(184,77,255,.35); --line-strong:#b84dff; --danger:#d63a3a;
+  --accent-rgb:184,77,255; --ink-rgb:234,217,255; --on-accent:#ffffff; --blur:10px; --radius:18px;
+  --surface:#ffffff; --surface-2:#f6ecff; --surface-3:#ead9ff; --grab:#c9a8f0;
+  --card-shadow:0 6px 18px rgba(184,77,255,.18);
+  --bg-fx:linear-gradient(160deg,#ffd6f0 0%,#d6e4ff 50%,#d9fff3 100%);
+}
+html[data-tema="y2k"] .glass,
+html[data-tema="y2k"] .id-card,
+html[data-tema="y2k"] .er-card{ border:2px solid #fff; border-radius:18px; box-shadow:var(--card-shadow), 0 0 0 1px rgba(184,77,255,.25); }
+html[data-tema="y2k"] .site-header-wrap{ background:linear-gradient(90deg,#f7c6ff,#c6e6ff); border-bottom:2px solid #fff; }
+html[data-tema="y2k"] .bottom-nav{ background:rgba(255,255,255,.9); border-top:2px solid #fff; }
+html[data-tema="y2k"] .bg-fx::before{ display:none; }
+
+html[data-tema="songket"]{
+  --font-display:'Amiri', serif; --font-body:'Amiri', serif;
+  --void:#2a070d; --void-2:#3a0b15; --panel-a:rgba(255,215,130,.08); --panel-b:rgba(58,11,21,.95);
+  --cyan:#f0c060; --blue:#ffe3a3; --mint:#d4a24a; --amber:#ffb84d; --pink:#ff8a9a; --violet:#d3b8ff;
+  --text:#fff1d6; --text-dim:#d7b98a; --line:rgba(212,162,74,.5); --line-strong:#d4a24a;
+  --accent-rgb:240,192,96; --ink-rgb:42,7,13; --on-accent:#2a0a00; --blur:0px; --radius:6px;
+  --surface:#3a0b15; --surface-2:#4a1220; --surface-3:#5c1a2a; --grab:#8a5a2a;
+  --bg-fx:
+    repeating-linear-gradient(45deg, rgba(212,162,74,.09) 0 1px, transparent 1px 22px),
+    repeating-linear-gradient(-45deg, rgba(212,162,74,.09) 0 1px, transparent 1px 22px),
+    linear-gradient(170deg,#5a1020 0%,#2a070d 100%);
+}
+html[data-tema="songket"] .glass,
+html[data-tema="songket"] .id-card,
+html[data-tema="songket"] .er-card{ border:1px solid #d4a24a; box-shadow:inset 0 0 0 3px #3a0b15, inset 0 0 0 4px rgba(212,162,74,.55); }
+html[data-tema="songket"] .site-header-wrap{ border-bottom:3px double #d4a24a; }
+html[data-tema="songket"] .bottom-nav{ border-top:3px double #d4a24a; }
+html[data-tema="songket"] .bg-fx::before,
+html[data-tema="songket"] .bg-fx::after{ display:none; }
 
 /* Tema cerah: grid/imbasan latar dilembutkan, kad ada bayang */
 html[data-cerah="1"] .bg-fx::before{ opacity:.5; }
@@ -2880,7 +2967,9 @@ html[data-lite="1"] *,
 html[data-lite="1"] *::before,
 html[data-lite="1"] *::after{ backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
 html[data-lite="1"] .bg-fx::after{ animation:none; }
-html[data-lite="1"][data-tema="aurora"]{ --panel-a:rgba(40,32,112,.9); --panel-b:rgba(26,19,84,.96); }
+html[data-lite="1"][data-tema="aurora"]{ --panel-a:rgba(30,22,96,.92); --panel-b:rgba(18,12,64,.97); }
+html[data-lite="1"][data-tema="aiskristal"]{ --panel-a:rgba(255,255,255,.94); --panel-b:rgba(244,251,255,.97); }
+html[data-lite="1"][data-tema="y2k"]{ --panel-a:rgba(255,255,255,.94); --panel-b:rgba(255,250,255,.97); }
 html[data-lite="1"][data-tema="deck"]{ --panel-a:rgba(12,20,36,.92); --panel-b:rgba(8,13,26,.96); }
 html[data-lite="1"]:not([data-tema]){ --panel-a:rgba(12,20,36,.92); --panel-b:rgba(8,13,26,.96); }
 
