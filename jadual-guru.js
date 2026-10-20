@@ -225,10 +225,52 @@ function jgOpenCellDetail(rec) {
   document.getElementById("jg-detail-waktu").textContent = `Waktu ${rec.slot} (${jgFmtWaktuRekod(rec, "mula")} - ${jgFmtWaktuRekod(rec, "tamat")})`;
   document.getElementById("jg-detail-subjek").textContent = rec.subjek || "-";
   document.getElementById("jg-detail-kelas").textContent = rec.kelas || "-";
+  const rb = document.getElementById("jg-detail-relief");
+  if (rb) {
+    const r = rec.relief;
+    if (r) {
+      const f = typeof ggFmtShort === "function" ? ggFmtShort : (x) => x;
+      const row = (l, v) => `<div class="jg-detail-row"><span class="jg-detail-label">${l}</span><span>${jgEscape(v || "-")}</span></div>`;
+      rb.innerHTML = `<div class="jg-detail-relief-title">RELIEF HARI INI</div>` +
+        row("Guru tidak hadir", r.guruTidakHadir) + row("Guru ganti", r.guruGanti) +
+        row("Masa", `${f(r.mula)} - ${f(r.tamat)}`) + row("Kelas", r.kelas) + row("Subjek", r.subjek);
+      rb.classList.remove("hidden");
+    } else { rb.innerHTML = ""; rb.classList.add("hidden"); }
+  }
   box.classList.remove("hidden");
 }
 function jgCloseCellDetail() {
   document.getElementById("jg-detail-overlay").classList.add("hidden");
+}
+
+/* ---------------- Relief hari ini (dari Jadual Guru Ganti) untuk paparan Jadual Kelas ---------------- */
+let jgReliefToday = [];
+function jgTodayYmd() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+async function jgLoadReliefToday() {
+  try {
+    if (typeof ggFetch !== "function") { jgReliefToday = []; return; }
+    const ymd = jgTodayYmd();
+    const rows = await ggFetch(ymd);
+    jgReliefToday = rows.filter((r) => r.tarikh === ymd);
+  } catch (e) { jgReliefToday = []; }
+}
+function jgMinsOf(txt) { const m = String(txt).match(/(\d{1,2}):(\d{2})/); if (!m) return null; let h = +m[1]; if (h < 7) h += 12; return h * 60 + +m[2]; }
+function jgKelasKey(k) { return String(k || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
+/** Relief hari ini yang bertindih dengan slot rekod ini (kelas sama + masa bertindih >= 10 minit). Hanya untuk lajur hari ini. */
+function jgReliefForRecord(rec) {
+  if (!jgReliefToday.length || !rec) return null;
+  if (rec.hari !== JG_DAY_BY_GETDAY[new Date().getDay()]) return null;
+  const s0 = jgMinsOf(jgFmtWaktuRekod(rec, "mula")), s1 = jgMinsOf(jgFmtWaktuRekod(rec, "tamat"));
+  if (s0 == null || s1 == null) return null;
+  const ck = jgKelasKey(rec.kelas);
+  if (!ck) return null;
+  return jgReliefToday.find((r) => {
+    const rk = jgKelasKey(r.kelas);
+    if (!rk || (rk !== ck && rk.indexOf(ck) === -1 && ck.indexOf(rk) === -1)) return false;
+    const a = typeof ggMinutes === "function" ? ggMinutes(r.mula) : null, b = typeof ggMinutes === "function" ? ggMinutes(r.tamat) : null;
+    if (a == null || b == null) return false;
+    return Math.min(s1, b) - Math.max(s0, a) >= 10;
+  }) || null;
 }
 
 /* ---------------- Jadual Kelas: guru+subjek per slot untuk satu kelas ---------------- */
@@ -247,8 +289,10 @@ function jgBuildClassWeeklyTable(kelasName) {
       if (!rec || !rec.subjek) return `<td></td>`;
       const col = jgColorForSubjek(rec.subjek);
       const kodPaparan = rec.kodGuru || jgGenerateKodFromName(rec.guru); // jana dari nama kalau data lama tiada kod
-      const dataJson = jgEscape(JSON.stringify(rec)).replace(/'/g, "&apos;");
-      return `<td><div class="jg-cell" style="background:${col.bg};color:${col.text}" onclick='jgOpenCellDetail(${dataJson})'><span class="jg-cell-time" style="color:${col.text};opacity:.75">${jgFmtWaktuRekod(rec, "mula")}-${jgFmtWaktuRekod(rec, "tamat")}</span><span class="jg-cell-subj" style="color:${col.text}">${jgEscape(rec.subjek)}</span><span class="jg-cell-kelas" style="color:${col.text}">${jgEscape(kodPaparan)}</span></div></td>`;
+      const rel = jgReliefForRecord(rec);
+      const dataJson = jgEscape(JSON.stringify(rel ? Object.assign({}, rec, { relief: rel }) : rec)).replace(/'/g, "&apos;");
+      const badge = rel ? `<span class="jg-relief-badge">RELIEF</span>` : "";
+      return `<td><div class="jg-cell${rel ? " jg-cell-relief" : ""}" style="background:${col.bg};color:${col.text}" onclick='jgOpenCellDetail(${dataJson})'>${badge}<span class="jg-cell-time" style="color:${col.text};opacity:.75">${jgFmtWaktuRekod(rec, "mula")}-${jgFmtWaktuRekod(rec, "tamat")}</span><span class="jg-cell-subj" style="color:${col.text}">${jgEscape(rec.subjek)}</span><span class="jg-cell-kelas" style="color:${col.text}">${jgEscape(kodPaparan)}</span></div></td>`;
     }).join("");
     rows.push(`<tr><td class="jg-slot-cell">${slot}</td>${cells}</tr>`);
   }
@@ -701,6 +745,8 @@ async function jgInit(user) {
   const classSel = document.getElementById("jg-class-select");
   classSel.innerHTML = kelasList.map((k) => `<option value="${k}">${k}</option>`).join("");
   if (kelasList.length) document.getElementById("jg-kelas-table").innerHTML = jgBuildClassWeeklyTable(kelasList[0]);
+  // Relief hari ini dimuat di latar; bila siap, jadual kelas dilukis semula dengan lencana RELIEF (kegagalan tidak menjejaskan jadual)
+  jgLoadReliefToday().then(() => { if (jgReliefToday.length && classSel.value) document.getElementById("jg-kelas-table").innerHTML = jgBuildClassWeeklyTable(classSel.value); });
 
   document.getElementById("jg-nav-semua").classList.toggle("hidden", !jgIsPentadbir);
   document.getElementById("jg-nav-analisis").classList.toggle("hidden", !jgIsPentadbir);

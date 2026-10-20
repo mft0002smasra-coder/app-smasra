@@ -468,9 +468,10 @@ async function indDownloadPng() {
     host.style.cssText = "position:fixed;left:-10000px;top:0;width:440px;";
     const clone = src.cloneNode(true);
     clone.removeAttribute("id");
+    clone.classList.add("ind-print"); // PNG: latar putih, header kelabu cerah (cetak hitam putih)
     host.appendChild(clone);
     document.body.appendChild(host);
-    const canvas = await html2canvas(clone, { backgroundColor: "#0a1228", scale: 2, useCORS: true });
+    const canvas = await html2canvas(clone, { backgroundColor: "#ffffff", scale: 2, useCORS: true });
     const link = document.createElement("a");
     link.download = indPngFileName();
     link.href = canvas.toDataURL("image/png");
