@@ -2771,9 +2771,9 @@ html[data-tema="terang"]{
   --font-display:'Plus Jakarta Sans', sans-serif; --font-body:'Inter', sans-serif;
   color-scheme:light;
   --void:#eef3f8; --void-2:#e4ebf3; --panel-a:#ffffff; --panel-b:rgba(255,255,255,.97);
-  --cyan:#0a8f86; --blue:#1f6fd1; --mint:#12905a; --amber:#c77700; --pink:#d6336c; --violet:#6b4fd8;
-  --text:#14213d; --text-dim:#5a6b85; --line:#d6e0ea; --line-strong:#9db3c8; --danger:#d63a3a;
-  --accent-rgb:10,143,134; --ink-rgb:238,243,248; --on-accent:#ffffff; --blur:0px;
+  --cyan:#076f68; --blue:#1f6fd1; --mint:#0d6e43; --amber:#c77700; --pink:#d6336c; --violet:#6b4fd8;
+  --text:#14213d; --text-dim:#1a1a1a; --line:#d6e0ea; --line-strong:#9db3c8; --danger:#d63a3a;
+  --accent-rgb:7,111,104; --ink-rgb:238,243,248; --on-accent:#ffffff; --blur:0px;
   --surface:#ffffff; --surface-2:#f1f5fa; --surface-3:#dde7f0; --grab:#c3cfdb;
   --card-shadow:0 4px 14px rgba(20,33,61,.08);
   --bg-fx:linear-gradient(180deg,#eef3f8 0%,#e4ebf3 100%);
@@ -2813,8 +2813,8 @@ html[data-tema="brutal"]{
   --font-display:'Space Grotesk', sans-serif; --font-body:'Space Grotesk', sans-serif;
   color-scheme:light;
   --void:#fff4d6; --void-2:#ffe9a8; --panel-a:#ffffff; --panel-b:#ffd23f;
-  --cyan:#d6226f; --blue:#1f5fd6; --mint:#0f8a4c; --amber:#c76a00; --pink:#e11d74; --violet:#6d3de0;
-  --text:#111111; --text-dim:#444444; --line:#111111; --line-strong:#111111; --danger:#d22b2b;
+  --cyan:#a8104f; --blue:#1f5fd6; --mint:#0a6a39; --amber:#c76a00; --pink:#e11d74; --violet:#6d3de0;
+  --text:#111111; --text-dim:#1a1a1a; --line:#111111; --line-strong:#111111; --danger:#d22b2b;
   --accent-rgb:255,95,162; --ink-rgb:255,244,214; --on-accent:#111111; --blur:0px; --radius:4px;
   --surface:#ffffff; --surface-2:#fff4d6; --surface-3:#ffe9a8; --grab:#111111;
   --card-shadow:4px 4px 0 #111;
@@ -2824,9 +2824,9 @@ html[data-tema="ilustrasi"]{
   --font-display:'Baloo 2', cursive; --font-body:'Nunito', sans-serif;
   color-scheme:light;
   --void:#fff8ec; --void-2:#fdeccd; --panel-a:#ffffff; --panel-b:#bfe6f5;
-  --cyan:#e76f51; --blue:#2a8f9e; --mint:#2f8f55; --amber:#c77700; --pink:#d6456f; --violet:#7a5ad8;
-  --text:#3a2a1c; --text-dim:#6b5a47; --line:#f0dcc0; --line-strong:#e3c79a; --danger:#d63a3a;
-  --accent-rgb:231,111,81; --ink-rgb:255,248,236; --on-accent:#ffffff; --blur:0px; --radius:18px;
+  --cyan:#b9411f; --blue:#2a8f9e; --mint:#1f6e3d; --amber:#c77700; --pink:#d6456f; --violet:#7a5ad8;
+  --text:#3a2a1c; --text-dim:#1a1a1a; --line:#f0dcc0; --line-strong:#e3c79a; --danger:#d63a3a;
+  --accent-rgb:185,65,31; --ink-rgb:255,248,236; --on-accent:#ffffff; --blur:0px; --radius:18px;
   --surface:#ffffff; --surface-2:#fff6e6; --surface-3:#f6e7d0; --grab:#e3c79a;
   --card-shadow:0 4px 14px rgba(120,80,30,.1);
   --bg-fx:linear-gradient(180deg,#fff8ec 0%,#fdeccd 100%);
@@ -2878,9 +2878,9 @@ html[data-tema="aiskristal"]{
   --font-display:'Lexend', sans-serif; --font-body:'Inter', sans-serif;
   color-scheme:light;
   --void:#e8f8ff; --void-2:#cfeeff; --panel-a:rgba(255,255,255,.72); --panel-b:rgba(244,251,255,.86);
-  --cyan:#1aa6d9; --blue:#0a7fb0; --mint:#4cc9ee; --amber:#c77700; --pink:#d6336c; --violet:#6b4fd8;
-  --text:#0d3b52; --text-dim:#4f7f95; --line:rgba(120,200,235,.7); --line-strong:#6fbfe3; --danger:#d63a3a;
-  --accent-rgb:26,166,217; --ink-rgb:232,248,255; --on-accent:#ffffff; --blur:12px; --radius:16px;
+  --cyan:#0a6f9c; --blue:#0a7fb0; --mint:#0a7fae; --amber:#c77700; --pink:#d6336c; --violet:#6b4fd8;
+  --text:#0d3b52; --text-dim:#1a1a1a; --line:rgba(120,200,235,.7); --line-strong:#6fbfe3; --danger:#d63a3a;
+  --accent-rgb:10,111,156; --ink-rgb:232,248,255; --on-accent:#ffffff; --blur:12px; --radius:16px;
   --surface:#ffffff; --surface-2:#eaf8ff; --surface-3:#d4eefb; --grab:#9fd3ea;
   --card-shadow:0 6px 18px rgba(26,166,217,.16);
   --bg-fx:linear-gradient(160deg,#e8f8ff 0%,#cfeeff 55%,#f4fbff 100%);
@@ -2896,9 +2896,9 @@ html[data-tema="y2k"]{
   --font-display:'Quicksand', sans-serif; --font-body:'Quicksand', sans-serif;
   color-scheme:light;
   --void:#ead9ff; --void-2:#d6e4ff; --panel-a:rgba(255,255,255,.72); --panel-b:rgba(255,250,255,.86);
-  --cyan:#b84dff; --blue:#3d8bff; --mint:#ff4da6; --amber:#c77700; --pink:#e0328a; --violet:#8a3de0;
-  --text:#3a2a5c; --text-dim:#6e5e96; --line:rgba(184,77,255,.35); --line-strong:#b84dff; --danger:#d63a3a;
-  --accent-rgb:184,77,255; --ink-rgb:234,217,255; --on-accent:#ffffff; --blur:10px; --radius:18px;
+  --cyan:#7a1fd1; --blue:#1f5fd6; --mint:#c2185b; --amber:#c77700; --pink:#e0328a; --violet:#8a3de0;
+  --text:#3a2a5c; --text-dim:#1a1a1a; --line:rgba(184,77,255,.35); --line-strong:#b84dff; --danger:#d63a3a;
+  --accent-rgb:122,31,209; --ink-rgb:234,217,255; --on-accent:#ffffff; --blur:10px; --radius:18px;
   --surface:#ffffff; --surface-2:#f6ecff; --surface-3:#ead9ff; --grab:#c9a8f0;
   --card-shadow:0 6px 18px rgba(184,77,255,.18);
   --bg-fx:linear-gradient(160deg,#ffd6f0 0%,#d6e4ff 50%,#d9fff3 100%);
@@ -3039,11 +3039,10 @@ html[data-cerah="1"] .gg-pv-x,
 html[data-cerah="1"] .gg-del-btn{ color:#c0392b; }
 html[data-cerah="1"] .jg-home-row.jg-relief .jg-home-masa,
 html[data-cerah="1"] .jg-home-waktu.jg-relief-tag,
-html[data-cerah="1"] .gg-time{ color:#a86400; }
+html[data-cerah="1"] .gg-time{ color:#7a4600; }
 html[data-cerah="1"] .nt-item-msg{ color:var(--text-dim); }
 html[data-cerah="1"] .nt-modal-msg{ color:var(--text); }
 html[data-cerah="1"] .nt-head-ganti{ color:#8a5200; }
-html[data-cerah="1"] .kn-ph-fallback{ color:rgba(20,33,61,.35); }
 
 /* Illustrative: kontras header (langit/bukit) & bar navigasi */
 html[data-tema="ilustrasi"] .header-greet,
@@ -3098,3 +3097,14 @@ html[data-tema="ilustrasi"] .bottom-nav{ background:#ffffff; border-top:2px soli
 .jg-detail-relief-title{ font-family:var(--font-display);font-weight:800;font-size:10.5px;letter-spacing:.8px;color:#ffb347;margin-bottom:2px; }
 html[data-cerah="1"] .jg-detail-relief-title{ color:#8a5200; }
 html[data-cerah="1"] .jg-scope .jg-page-title,html[data-cerah="1"] .jg-scope table.jg-table thead th,html[data-cerah="1"] .jg-scope .jg-detail-guru{ text-shadow:none; }
+
+/* ---------- Tema cerah: teks kelabu / pudar -> hitam ---------- */
+html[data-cerah="1"] .kn-modal-right h4,
+html[data-cerah="1"] .kn-field-label,
+html[data-cerah="1"] .kn-hint,
+html[data-cerah="1"] .kn-tt-empty-note,
+html[data-cerah="1"] .nt-chat-day,
+html[data-cerah="1"] .nt-item-msg,
+html[data-cerah="1"] .gg-lbl{ color:#111; }
+html[data-cerah="1"] .atm-item-t,
+html[data-cerah="1"] .nt-modal-msg{ color:#111; }
