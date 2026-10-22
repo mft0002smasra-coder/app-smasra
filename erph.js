@@ -11,7 +11,7 @@
 
 const ERP_SHEET_ID = "1u5sK1oy179PI8Lc0x8eWBQ_SR_W8qWMUXVAhDEhgo7w";
 // Tampal URL Web App (.../exec) projek Apps Script e-RPH di sini selepas Deploy (lihat Code-eRPH.gs)
-const ERP_API_URL = "PASTE_ERPH_API_URL_HERE";
+const ERP_API_URL = "https://script.google.com/macros/s/AKfycbz1guqEIMvyhlCPuKV5V33nntli3CKEsrEr5wIuSWJJi2eSDMBXG8nEsu9zjmTgwEc6/exec";
 
 const ERP_HARI = ["Isnin", "Selasa", "Rabu", "Khamis", "Jumaat"];
 const ERP_ELEMEN = ["Penyayang", "Berdaya Tahan", "Berupaya Memimpin", "Warganegara Aktif"];
