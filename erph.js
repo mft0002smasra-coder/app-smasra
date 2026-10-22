@@ -306,6 +306,10 @@ function vSenarai() {
 }
 
 /* ================= Borang harian ================= */
+function pickBox(f, lbl, val) {
+  const has = norm(val) !== "";
+  return `<div class="erp-f">${`<label class="erp-lbl">${lbl}</label>`}<div class="erp-pickbox" data-act="pick" data-f="${f}" role="button" tabindex="0"><div class="pv ${has ? "" : "ph"}">${has ? E(val) : "Klik untuk pilih atau taip sendiri…"}</div><span class="arr">▾</span></div></div>`;
+}
 function dirty() { if (S.cur) S.cur.dirty = true; }
 function vBorang() {
   const d = S.cur; if (!d) return "";
@@ -331,9 +335,7 @@ function vBorang() {
   const kelasList = allKelas().map((k) => `<option value="${A(k)}">`).join("");
   const subjList = allSubjek().map((k) => `<option value="${A(k)}">`).join("");
   const fieldsHtml = ERP_K.map(([f, lbl]) => {
-    const multi = f === "stdKandungan" || f === "ringkasan";
-    const rows = f === "ringkasan" ? 4 : multi ? 3 : 2;
-    return `<div class="erp-f"><label class="erp-lbl">${lbl}</label><textarea class="erp-ta" rows="${rows}" data-f="${f}">${E(s[f])}</textarea><button class="erp-pick" data-act="pick" data-f="${f}" type="button">▾ Pilih daripada senarai</button></div>`;
+    return pickBox(f, lbl, s[f]);
   }).join("");
   const pent = ["Pemerhatian", "Lisan", "Penulisan"].map((x) => `<label class="erp-chk"><input type="checkbox" data-pt="${x}" ${s.pentaksiran.indexOf(x) !== -1 ? "checked" : ""}>${x}</label>`).join("");
   const kar = d.karakter;
@@ -360,7 +362,7 @@ function vBorang() {
     <div class="erp-hint" style="margin:-4px 0 10px">Tingkatan ${s.tingkatan || "?"} · ${E(s.subjek || "subjek belum diisi")}. <button class="erp-pick" style="display:inline;margin:0" data-act="salin-slot" type="button">⧉ Salin daripada RPH lama saya</button></div>
     ${fieldsHtml}
     <div class="erp-f"><label class="erp-lbl">Pentaksiran</label><div>${pent}</div></div></div>
-  <div class="erp-card"><h3>Impak / Refleksi</h3><div class="erp-f" style="margin:0"><textarea class="erp-ta" rows="3" data-f="refleksi">${E(s.refleksi)}</textarea><button class="erp-pick" data-act="pick" data-f="refleksi" type="button">▾ Pilih daripada senarai</button></div></div>
+  <div class="erp-card"><h3>Impak / Refleksi</h3>${pickBox("refleksi", "", s.refleksi).replace('<label class="erp-lbl"></label>', "").replace('class="erp-f"', 'class="erp-f" style="margin:0"')}</div>
   <div class="erp-card"><h3>Program Pembentukan Karakter (15 minit)</h3>
     <label class="erp-chk"><input type="checkbox" data-kar="ada" ${kar.ada ? "checked" : ""}>Pelaksanaan Aktiviti: ADA</label>${kar.ada ? `<div class="erp-sub">${karBody}</div>` : ""}</div>
   <div class="erp-right"><button class="erp-btn" data-act="cetak" type="button">Cetak / PDF</button><button class="erp-btn warn" data-act="cuti" type="button">Tandakan cuti</button><button class="erp-btn" data-act="simpan" type="button">${siapKept ? "Simpan perubahan" : "Simpan draf"}</button>${siapKept ? "" : `<button class="erp-btn solid" data-act="siap" type="button">Tanda hari ini siap</button>`}</div>
@@ -470,11 +472,16 @@ function openPicker(field) {
   let note = "";
   if (o.none) note = `<div class="erp-hint" style="margin-bottom:8px">Tiada senarai untuk subjek/tingkatan ini dalam tab RPT. Taip sendiri; isian anda akan dicadangkan ke RPT_Cadangan bila Hantar.</div>`;
   else if (o.relaxed) note = `<div class="erp-hint" style="margin-bottom:8px">Tiada padanan penuh dengan pilihan sebelum ini; menunjukkan semua pilihan untuk subjek ini.</div>`;
-  modal(`<h4>${lbl}</h4>${note}<input class="erp-in" id="erp-q" placeholder="Cari…" style="margin-bottom:8px"><div id="erp-opts">${optList(o.vals, "")}</div><div class="erp-right" style="margin-top:8px"><button class="erp-btn" data-act="close" type="button">Tutup</button></div>`);
+  modal(`<h4>${lbl}</h4>${note}<input class="erp-in" id="erp-q" placeholder="Cari, atau taip teks sendiri…" style="margin-bottom:8px"><button class="erp-btn solid hidden" id="erp-own" data-act="pick-own" type="button" style="margin-bottom:8px;width:100%"></button><div id="erp-opts">${optList(o.vals, "")}</div><div class="erp-right" style="margin-top:8px"><button class="erp-btn" data-act="close" type="button">Tutup</button></div>`);
 }
 function optList(vals, q) {
   q = norm(q); const shown = vals.map((v, i) => [v, i]).filter(([v]) => !q || norm(v).indexOf(q) !== -1).slice(0, 80);
   return shown.length ? shown.map(([v, i]) => `<button class="erp-opt" data-act="pick-val" data-i="${i}" type="button">${E(v)}</button>`).join("") : `<div class="erp-hint">Tiada padanan.</div>`;
+}
+function pickOwn() {
+  const q = (document.getElementById("erp-q") || {}).value || "";
+  const p = S._pick, d = S.cur, s = d.slots[d.idx]; if (!p || !q.trim()) return;
+  s[p.field] = q.trim(); dirty(); closeModal(); S._keepScroll = true; render();
 }
 function pickValue(i) {
   const p = S._pick, d = S.cur, s = d.slots[d.idx]; if (!p) return;
@@ -716,6 +723,7 @@ async function onClick(e) {
   if (a === "buang-slot") { if (!confirm("Buang Kelas " + (S.cur.idx + 1) + "?")) return; S.cur.slots.splice(S.cur.idx, 1); S.cur.idx = Math.max(0, S.cur.idx - 1); dirty(); return render(); }
   if (a === "pick") return openPicker(b.dataset.f);
   if (a === "pick-val") return pickValue(+b.dataset.i);
+  if (a === "pick-own") return pickOwn();
   if (a === "pilih-jadual") return openJadualPicker();
   if (a === "jd-val") return applyJadual(+b.dataset.i);
   if (a === "salin-slot") return openCopySlot();
@@ -763,10 +771,16 @@ async function erpInit(user) {
   const root = document.getElementById("erp-root");
   root.addEventListener("click", onClick);
   root.addEventListener("input", onInput);
+  root.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.classList && e.target.classList.contains("erp-pickbox")) { e.preventDefault(); e.target.click(); } });
   root.addEventListener("change", onChange);
   const mb = document.getElementById("erp-modal");
   mb.addEventListener("click", (e) => { if (e.target === mb) closeModal(); else onClick(e); });
-  mb.addEventListener("input", (e) => { if (e.target.id === "erp-q" && S._pick) document.getElementById("erp-opts").innerHTML = optList(S._pick.vals, e.target.value); });
+  mb.addEventListener("input", (e) => {
+    if (e.target.id !== "erp-q" || !S._pick) return;
+    document.getElementById("erp-opts").innerHTML = optList(S._pick.vals, e.target.value);
+    const own = document.getElementById("erp-own"), v = e.target.value.trim();
+    own.classList.toggle("hidden", !v); own.textContent = "Guna teks saya: " + (v.length > 60 ? v.slice(0, 60) + "…" : v);
+  });
   try {
     erpInitTabs();
     await Promise.all([erpLoadCommon(), erpLoadJadual()]);
