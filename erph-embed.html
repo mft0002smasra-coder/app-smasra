@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>e-RPH — SM Arab (Jaim) Al-Asyraf</title>
+<meta name="theme-color" content="#1d4fb8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20261022a">
+<link rel="stylesheet" href="erph.css?v=20261022b">
+<script src="tema-init.js?v=20261022a"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body class="erp-body">
+<div class="wrap erp-wrap">
+
+  <div id="login-screen" class="hidden">
+    <img class="logo-plain school-logo-img" alt="Logo Sekolah">
+    <div class="brand-title">SM ARAB (JAIM) AL-ASYRAF</div>
+    <div class="brand-sub">e-RPH</div>
+    <div class="glass">
+      <div class="gsi-wrap" id="google-btn-container"></div>
+      <div class="divider">Atau</div>
+      <form id="login-form">
+        <label class="field-label" for="login-email">Emel Rasmi</label>
+        <input class="field-input" type="email" id="login-email" placeholder="nama@moe-dl.edu.my" autocomplete="email" required>
+        <button class="btn-primary" type="submit" id="login-btn">Log Masuk</button>
+        <div class="error-text hidden" id="login-error"></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="app-content" class="hidden">
+    <div class="erp-scope" id="erp-root"><div class="erp-loading">Memuatkan e-RPH…</div></div>
+  </div>
+</div>
+
+<div class="erp-modal hidden" id="erp-modal"><div class="erp-modal-sheet" id="erp-modal-body"></div></div>
+<div id="erp-print-area"></div>
+<div class="erp-toast hidden" id="erp-toast"></div>
+
+<script src="app.js?v=20261022a"></script>
+<script src="jadual-guru.js?v=20261022a"></script>
+<script src="erph.js?v=20261022b"></script>
+<script>
+  initApp(erpInit);
+</script>
+</body>
+</html>
