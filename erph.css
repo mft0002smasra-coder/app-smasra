@@ -138,7 +138,7 @@ body.erp-body[data-erp="gelap"] .erp-head .out { background: rgba(0,0,0,.25); }
   .erp-tabs-h { gap: 8px; }
   .erp-tabs-h button { flex: none; width: 150px; }
   .erp-bcols { flex-direction: row; align-items: flex-start; gap: 20px; }
-  .erp-bl { width: 220px; flex-shrink: 0; }
+  .erp-bl { width: 340px; flex-shrink: 0; }
   .erp-br { flex: 1; gap: 14px; }
   .erp-bl .erp-chips.slots { flex-direction: column; align-items: stretch; gap: 8px; }
   .erp-chips.slots .cnt { order: -1; margin-left: 0; font-size: 12px; letter-spacing: .6px; }
