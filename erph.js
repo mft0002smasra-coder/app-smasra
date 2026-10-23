@@ -151,12 +151,13 @@ function jadualDay(hariNo) {
       if (tamat !== null) last.akhir = fromMin(tamat);
       last._slot = +r.slot;
     } else {
-      out.push({ kelas: String(r.kelas || ""), subjek: String(r.subjek || ""), mula: mula === null ? "" : fromMin(mula), akhir: tamat === null ? "" : fromMin(tamat), _slot: +r.slot });
+      out.push({ kelas: typeof emCanonKelas === "function" ? emCanonKelas(r.kelas) : String(r.kelas || ""), subjek: String(r.subjek || ""), mula: mula === null ? "" : fromMin(mula), akhir: tamat === null ? "" : fromMin(tamat), _slot: +r.slot });
     }
   });
   return out;
 }
 function allKelas() {
+  if (typeof emClasses === "function") { const em = emClasses().map((k) => k.nama); if (em.length) return em; }
   const set = new Set();
   if (typeof jgRecords !== "undefined") jgRecords.forEach((r) => { if (norm(r.kelas)) set.add(String(r.kelas).trim()); });
   return [...set].sort((a, b) => a.localeCompare(b, "ms", { numeric: true }));
@@ -244,9 +245,12 @@ function erpTemaToggle() { erpTemaApply(erpTemaGet() === "gelap" ? "cerah" : "ge
 /* ================= Render: kerangka ================= */
 function head() {
   const g = erpTemaGet() === "gelap";
-  return `<div class="erp-head">
-    <div class="erp-head-tools"><button class="out" data-act="tema" type="button">${g ? "☀ Cerah" : "☾ Gelap"}</button><button class="out" data-act="logout" type="button">Log keluar</button></div>
-    <div class="t">SM ARAB (JAIM) AL-ASYRAF</div><div class="t">e-RPH</div><div class="n">${E(S.user.nama)}</div></div>
+  const bor = S.tab === "saya" && S.view === "borang" && S.cur;
+  const tools = `<div class="erp-head-tools"><button class="out" data-act="tema" type="button">${g ? "☀ Cerah" : "☾ Gelap"}</button><button class="out" data-act="logout" type="button">Log keluar</button></div>`;
+  const inner = bor
+    ? `<div class="hl bor"><span class="t">e-RPH</span><span class="wk"><span>Minggu ${S.cur.minggu}</span><span>${E(dmyHari(S.cur.tarikh, S.cur.hariNo))}</span></span></div>`
+    : `<div class="hl"><span class="t">e-RPH</span><span class="t sch">SM ARAB (JAIM) AL-ASYRAF</span></div><div class="n">${E(S.user.nama)}</div>`;
+  return `<div class="erp-head">${inner}${tools}</div>
     ${S.isPny ? `<div class="erp-tabs"><button class="erp-tab ${S.tab === "saya" ? "on" : ""}" data-act="tab" data-t="saya" type="button">RPH Saya</button><button class="erp-tab g ${S.tab === "semak" ? "on" : ""}" data-act="tab" data-t="semak" type="button">Semakan</button></div>` : ""}`;
 }
 function render() {
@@ -291,18 +295,18 @@ function vSenarai() {
   const wkBadge = wk ? { Draf: "s-draf", Dihantar: "s-belum", Disemak: "s-siap", Dipulang: "s-pulang" }[wk.status] || "s-draf" : "";
   const pulangBox = pulang.length ? `<div class="erp-card" style="border-color:#e3a0a0"><h3 style="color:#a12020">Dipulangkan untuk pembetulan</h3>${pulang.map((r) => `<div class="erp-hint"><b>H${r.hariNo} ${ERP_HARI[r.hariNo - 1]}</b>: ${E(r.ulasan || "(tiada ulasan)")}</div>`).join("")}</div>` : "";
   const can = siap === 5;
-  return `
-  <div class="erp-card"><div class="erp-f" style="margin:0"><label class="erp-lbl" for="erp-wk">Pilih minggu</label><select id="erp-wk" class="erp-sel" data-act-change="minggu">${opts}</select></div>
+  return `<div class="erp-senarai">
+  <div class="a-week"><div class="erp-card"><div class="erp-f" style="margin:0"><label class="erp-lbl" for="erp-wk">Pilih minggu</label><select id="erp-wk" class="erp-sel" data-act-change="minggu">${opts}</select></div>
     <div class="erp-between" style="margin-top:12px"><span style="font-weight:600">Kemajuan RPH minggu ini</span><span style="font-weight:700;color:var(--acc)">${siap} / 5 hari siap</span></div>
     <div class="erp-bar" style="margin-top:8px"><i style="width:${siap * 20}%"></i></div>
     ${wk ? `<div class="erp-hint" style="margin-top:8px">Status minggu: ${pill(wkBadge, wk.status)}${wk.tarikhHantar ? " · dihantar " + E(wk.tarikhHantar.slice(0, 16)) : ""}</div>` : ""}</div>
-  ${pulangBox}
-  <div style="display:flex;flex-direction:column;gap:10px">${days}</div>
-  <div class="erp-card dash"><button class="erp-btn ${can ? "ok" : ""}" style="width:100%;height:48px" data-act="hantar" type="button" ${can ? "" : "disabled"}>Hantar RPH Minggu ${n}</button>
+  ${pulangBox}</div>
+  <div class="a-days" style="display:flex;flex-direction:column;gap:10px">${days}</div>
+  <div class="a-hantar erp-card dash"><button class="erp-btn ${can ? "ok" : ""}" style="width:100%;height:48px" data-act="hantar" type="button" ${can ? "" : "disabled"}>Hantar RPH Minggu ${n}</button>
     <div class="erp-hint" style="text-align:center;margin-top:8px">${can ? "Semua hari siap." : "Butang aktif selepas H1–H5 semuanya ditanda siap. Belum siap: <b>" + E(belum.join(", ")) + "</b>."}</div></div>
-  <div class="erp-card"><button class="erp-btn" style="width:100%" data-act="salin-minggu" type="button">⧉ Salin daripada RPH lama saya</button>
+  <div class="a-salin erp-card"><button class="erp-btn" style="width:100%" data-act="salin-minggu" type="button">⧉ Salin daripada RPH lama saya</button>
     <div class="erp-hint" style="margin-top:6px">Hanya RPH anda sendiri. Kandungan disalin bila tingkatan dan subjek sama; kelas dan waktu ikut Jadual Guru semasa.</div></div>
-  <div class="erp-right"><button class="erp-btn sm" data-act="muat" type="button">↻ Muat semula</button></div>`;
+  <div class="a-muat erp-right"><button class="erp-btn sm" data-act="muat" type="button">↻ Muat semula</button></div></div>`;
 }
 
 /* ================= Borang harian ================= */
@@ -320,20 +324,16 @@ function vBorang() {
     const sub = h === d.hariNo ? "dibuka" : st === "Siap" ? "siap" : st === "Cuti" ? "cuti" : st === "Draf" ? "draf" : "belum";
     return `<button class="${cls}" data-act="goto-day" data-h="${h}" type="button">H${h}<small>${sub}</small></button>`;
   }).join("");
-  const top = `<div class="erp-tabs-h">${tabs}</div>
-    <div class="erp-right"><button class="erp-btn sm" data-act="kembali" type="button">‹ Kembali ke senarai</button></div>
-    <div class="erp-title2">Minggu ${n}<br>${E(dmyHari(d.tarikh, d.hariNo))}</div>`;
+  const top = `<div class="erp-trow"><div class="erp-tabs-h">${tabs}</div>
+    <div class="erp-right kem"><button class="erp-btn sm" data-act="kembali" type="button">‹ Kembali ke senarai</button></div></div>`;
   if (d.status === "Cuti") {
     return top + `<div class="erp-card"><h3>Hari cuti / tiada RPH</h3><div class="erp-hint">Hari ini ditandakan cuti. Tidak perlu RPH untuk hari ini.</div><div class="erp-right" style="margin-top:10px"><button class="erp-btn solid" data-act="batal-cuti" type="button">Batal cuti</button></div></div>`;
   }
   const ret = d.semakan === "Dipulang" ? `<div class="erp-card" style="border-color:#e3a0a0"><h3 style="color:#a12020">Dipulangkan oleh ${E(d.semakOleh || "penyemak")}</h3><div>${E(d.ulasan || "(tiada ulasan)")}</div></div>` : "";
-  const chips = d.slots.map((s, i) => `<button class="erp-chip ${i === d.idx ? "on" : ""}" data-act="slot" data-i="${i}" type="button">Kelas ${i + 1}</button>`).join("")
-    + (d.slots.length < ERP_MAX_SLOT ? `<button class="erp-chip add" data-act="tambah-slot" type="button">+ Tambah kelas</button>` : "")
-    + `<span class="erp-hint" style="margin-left:auto">${d.slots.length} / ${ERP_MAX_SLOT} kelas</span>`;
+  const chips = `<span class="erp-hint cnt">SLOT KELAS · ${d.slots.length} / ${ERP_MAX_SLOT}</span>` + d.slots.map((s, i) => `<button class="erp-chip ${i === d.idx ? "on" : ""}" data-act="slot" data-i="${i}" type="button"><b>Kelas ${i + 1}</b><small>${E(s.kelas || "—")}${s.mula ? " · " + t12(s.mula) : ""}</small></button>`).join("")
+    + (d.slots.length < ERP_MAX_SLOT ? `<button class="erp-chip add" data-act="tambah-slot" type="button">+ Tambah kelas</button>` : "");
   const i = d.idx, s = d.slots[i];
   const jd = jadualDay(d.hariNo);
-  const kelasList = allKelas().map((k) => `<option value="${A(k)}">`).join("");
-  const subjList = allSubjek().map((k) => `<option value="${A(k)}">`).join("");
   const fieldsHtml = ERP_K.map(([f, lbl]) => {
     return pickBox(f, lbl, s[f]);
   }).join("");
@@ -347,16 +347,14 @@ function vBorang() {
     <div class="erp-f"><label class="erp-lbl">Catatan Aktiviti</label><textarea class="erp-ta" rows="3" data-kf="catatan" placeholder="Contoh: Murid lelaki meletakkan tangan pada dada semasa bertegur sapa dengan rakan atau guru perempuan…">${E(kar.catatan)}</textarea></div>` : "";
   const siapKept = d.status === "Siap";
   return top + ret + `
-  <datalist id="dl-kelas">${kelasList}</datalist><datalist id="dl-subjek">${subjList}</datalist>
-  <div class="erp-chips">${chips}</div>
+  <div class="erp-bcols"><div class="erp-bl"><div class="erp-chips slots">${chips}</div></div><div class="erp-br">
   <div><div class="erp-slothead"><span>MASA / KELAS : ${i + 1}</span><span>${d.slots.length > 1 ? `<button data-act="buang-slot" type="button">Buang</button>` : ""}</span></div>
     <div class="erp-slotbody">
       ${jd.length ? `<button class="erp-pick" style="margin:0 0 10px" data-act="pilih-jadual" type="button">▾ Pilih kelas &amp; waktu daripada Jadual Guru (${jd.length})</button>` : `<div class="erp-hint" style="margin-bottom:10px">Tiada Jadual Guru untuk ${ERP_HARI[d.hariNo - 1]}. Isi kelas dan waktu sendiri.</div>`}
-      <div class="erp-row"><div class="erp-f"><label class="erp-lbl">Kelas</label><input class="erp-in" list="dl-kelas" data-f="kelas" value="${A(s.kelas)}"></div>
-        <div class="erp-f"><label class="erp-lbl">Subjek</label><input class="erp-in" list="dl-subjek" data-f="subjek" value="${A(s.subjek)}"></div></div>
-      <div class="erp-row"><div class="erp-f"><label class="erp-lbl">Masa mula</label><input class="erp-in" type="time" data-f="mula" value="${A(s.mula)}"></div>
-        <div class="erp-f"><label class="erp-lbl">Hingga</label><input class="erp-in" type="time" data-f="akhir" value="${A(s.akhir)}"></div></div>
-      <div><label class="erp-chk"><input type="checkbox" data-c="ujian" ${s.ujian ? "checked" : ""}>Ada Ujian</label><label class="erp-chk"><input type="checkbox" data-c="pentakAda" ${s.pentakAda ? "checked" : ""}>Ada Pentaksiran</label></div>
+      <div class="erp-slotrow">${pickBox("kelas", "Kelas", s.kelas)}${pickBox("subjek", "Subjek", s.subjek)}
+        <div class="erp-f"><label class="erp-lbl">Masa mula</label><input class="erp-in" type="time" data-f="mula" value="${A(s.mula)}"></div>
+        <div class="erp-f"><label class="erp-lbl">Hingga</label><input class="erp-in" type="time" data-f="akhir" value="${A(s.akhir)}"></div>
+      <div class="erp-checks"><label class="erp-chk"><input type="checkbox" data-c="ujian" ${s.ujian ? "checked" : ""}>Ada Ujian</label><label class="erp-chk"><input type="checkbox" data-c="pentakAda" ${s.pentakAda ? "checked" : ""}>Ada Pentaksiran</label></div></div>
     </div></div>
   <div class="erp-card"><h3>Kandungan Pembelajaran</h3>
     <div class="erp-hint" style="margin:-4px 0 10px">Tingkatan ${s.tingkatan || "?"} · ${E(s.subjek || "subjek belum diisi")}. <button class="erp-pick" style="display:inline;margin:0" data-act="salin-slot" type="button">⧉ Salin daripada RPH lama saya</button></div>
@@ -366,7 +364,8 @@ function vBorang() {
   <div class="erp-card"><h3>Program Pembentukan Karakter (15 minit)</h3>
     <label class="erp-chk"><input type="checkbox" data-kar="ada" ${kar.ada ? "checked" : ""}>Pelaksanaan Aktiviti: ADA</label>${kar.ada ? `<div class="erp-sub">${karBody}</div>` : ""}</div>
   <div class="erp-right"><button class="erp-btn" data-act="cetak" type="button">Cetak / PDF</button><button class="erp-btn warn" data-act="cuti" type="button">Tandakan cuti</button><button class="erp-btn" data-act="simpan" type="button">${siapKept ? "Simpan perubahan" : "Simpan draf"}</button>${siapKept ? "" : `<button class="erp-btn solid" data-act="siap" type="button">Tanda hari ini siap</button>`}</div>
-  <div class="erp-hint" style="text-align:center">“Hantar” hanya aktif di halaman senarai bila H1–H5 siap.</div>`;
+  <div class="erp-hint" style="text-align:center">“Hantar” hanya aktif di halaman senarai bila H1–H5 siap.</div>
+  </div></div>`;
 }
 
 /* ================= Aksi borang ================= */
@@ -466,9 +465,10 @@ function modal(html) { const m = document.getElementById("erp-modal"), b = docum
 function closeModal() { document.getElementById("erp-modal").classList.add("hidden"); S._pick = null; }
 function openPicker(field) {
   const d = S.cur, s = d.slots[d.idx];
-  const o = optionsFor(s, field);
+  const simple = field === "kelas" || field === "subjek";
+  const o = simple ? { vals: field === "kelas" ? allKelas() : allSubjek(), relaxed: false, none: false } : optionsFor(s, field);
   S._pick = { field, vals: o.vals };
-  const lbl = field === "refleksi" ? "Impak / Refleksi" : ERP_K.find((k) => k[0] === field)[1];
+  const lbl = field === "refleksi" ? "Impak / Refleksi" : field === "kelas" ? "Kelas" : field === "subjek" ? "Subjek" : ERP_K.find((k) => k[0] === field)[1];
   let note = "";
   if (o.none) note = `<div class="erp-hint" style="margin-bottom:8px">Tiada senarai untuk subjek/tingkatan ini dalam tab RPT. Taip sendiri; isian anda akan dicadangkan ke RPT_Cadangan bila Hantar.</div>`;
   else if (o.relaxed) note = `<div class="erp-hint" style="margin-bottom:8px">Tiada padanan penuh dengan pilihan sebelum ini; menunjukkan semua pilihan untuk subjek ini.</div>`;
@@ -481,12 +481,13 @@ function optList(vals, q) {
 function pickOwn() {
   const q = (document.getElementById("erp-q") || {}).value || "";
   const p = S._pick, d = S.cur, s = d.slots[d.idx]; if (!p || !q.trim()) return;
-  s[p.field] = q.trim(); dirty(); closeModal(); S._keepScroll = true; render();
+  s[p.field] = q.trim(); if (p.field === "kelas") s.tingkatan = tingOf(s.kelas); dirty(); closeModal(); S._keepScroll = true; render();
 }
 function pickValue(i) {
   const p = S._pick, d = S.cur, s = d.slots[d.idx]; if (!p) return;
   s[p.field] = p.vals[i];
-  if (p.field !== "refleksi") autoFillAfter(s, p.field);
+  if (p.field === "kelas") s.tingkatan = tingOf(s[p.field]);
+  else if (p.field !== "refleksi" && p.field !== "subjek") autoFillAfter(s, p.field);
   dirty(); closeModal(); S._keepScroll = true; render();
 }
 function openJadualPicker() {
@@ -783,7 +784,7 @@ async function erpInit(user) {
   });
   try {
     erpInitTabs();
-    await Promise.all([erpLoadCommon(), erpLoadJadual()]);
+    await Promise.all([erpLoadCommon(), erpLoadJadual(), typeof emLoad === "function" ? emLoad().catch(() => {}) : null]);
     await erpLoadMine();
     S.minggu = currentWeekNo();
     render();
