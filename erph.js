@@ -82,7 +82,7 @@ async function erpGviz(sheet, tq, sid) {
   return ((parsed.table && parsed.table.rows) || []).map((r) => (r.c || []).map((c) => (c && c.v != null ? String(c.f != null && /^Date\(/.test(String(c.v)) ? c.f : c.v) : "")));
 }
 function rowObj(arr, cols) { const o = {}; cols.forEach((k, i) => { o[k] = arr[i] == null ? "" : String(arr[i]); }); return o; }
-async function erpGvizSafe(sheet, tq) { try { return await erpGviz(sheet, tq); } catch (e) { return []; } }
+async function erpGvizSafe(sheet, tq, sid) { try { return await erpGviz(sheet, tq, sid); } catch (e) { return []; } }
 
 async function erpPost(payload) {
   if (!erpConfigured()) throw new Error("API e-RPH belum dipasang (ERP_API_URL belum diisi dalam erph.js).");
