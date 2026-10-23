@@ -53,10 +53,11 @@ function dm(iso) { const d = dateOf(iso); return d ? pad(d.getDate()) + "/" + pa
 function toMin(t) { const m = String(t || "").match(/^(\d{1,2}):(\d{2})/); return m ? +m[1] * 60 + +m[2] : null; }
 function fromMin(n) { n = ((n % 1440) + 1440) % 1440; return pad(Math.floor(n / 60)) + ":" + pad(n % 60); }
 function t12(t) { const m = toMin(t); if (m === null) return ""; const h = Math.floor(m / 60), mm = m % 60; return (h % 12 || 12) + ":" + pad(mm) + " " + (h < 12 ? "AM" : "PM"); }
-function toast(msg, err) {
+function toast(msg, err, sticky) {
   const el = document.getElementById("erp-toast"); if (!el) return;
-  el.textContent = msg; el.classList.toggle("err", !!err); el.classList.remove("hidden");
-  clearTimeout(el._t); el._t = setTimeout(() => el.classList.add("hidden"), err ? 5000 : 2600);
+  el.textContent = msg; el.classList.toggle("err", !!err); el.classList.toggle("busy", !!sticky); el.classList.remove("hidden");
+  el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop");
+  clearTimeout(el._t); if (!sticky) el._t = setTimeout(() => el.classList.add("hidden"), err ? 6500 : 3000);
 }
 function tingOf(kelas) {
   const m = String(kelas || "").match(/(?:^|[^0-9])([1-6])(?![0-9])/);
@@ -497,16 +498,22 @@ function applySaved(d, statusHari, resp) {
   S.mine.slot[k] = statusHari === "Cuti" ? [] : d.slots.map((s, i) => ({ key: "", emel: S.user.email, nama: S.user.nama, minggu: String(n), tarikh: d.tarikh, hariNo: String(h), slotNo: String(i + 1), kelas: s.kelas, tingkatan: s.tingkatan, subjek: s.subjek, mula: s.mula, akhir: s.akhir, ujian: s.ujian ? "YA" : "", pentakAda: s.pentakAda ? "YA" : "", tema: s.tema, tajuk: s.tajuk, stdKandungan: s.stdKandungan, stdPembelajaran: s.stdPembelajaran, objektif: s.objektif, ringkasan: s.ringkasan, pentaksiran: s.pentaksiran.join(", "), refleksi: s.refleksi, kehadiran: s.kehadiran, kemaskini: now }));
   d.saved = true; d.dirty = false; d.status = statusHari; d.semakan = semakan;
 }
-async function saveCur(statusHari, quiet) {
-  const d = S.cur; if (S.busy) return false;
-  S.busy = true;
-  try {
-    const resp = await erpPost(payloadOf(d, statusHari));
-    applySaved(d, statusHari, resp);
-    if (!quiet) toast(statusHari === "Siap" ? "Hari ini ditanda siap." : statusHari === "Cuti" ? "Hari ditandakan cuti." : "Disimpan.");
+let _saveQ = Promise.resolve();
+function queuePost(payload) { const p = _saveQ.then(() => erpPost(payload)); _saveQ = p.catch(() => {}); return p; }
+const saveMsg = (st) => (st === "Siap" ? "Hari ini ditanda siap." : st === "Cuti" ? "Hari ditandakan cuti." : "Disimpan.");
+/** bg=true: kemas kini paparan serta-merta dan hantar ke Sheet di latar (queue, ikut turutan); ralat dipaparkan di atas. */
+async function saveCur(statusHari, quiet, bg) {
+  const d = S.cur; if (!d) return false;
+  const payload = payloadOf(d, statusHari);
+  if (!quiet) toast("Menyimpan…", false, true);
+  const run = queuePost(payload);
+  if (bg) {
+    applySaved(d, statusHari, null);
+    run.then(() => { if (!quiet) toast(saveMsg(statusHari)); }).catch((err) => { toast("Gagal menyimpan: " + (err.message || "ralat rangkaian") + ". Cuba simpan semula.", true); });
     return true;
-  } catch (err) { toast(err.message || "Gagal menyimpan.", true); return false; }
-  finally { S.busy = false; }
+  }
+  try { const resp = await run; applySaved(d, statusHari, resp); if (!quiet) toast(saveMsg(statusHari)); return true; }
+  catch (err) { toast(err.message || "Gagal menyimpan.", true); return false; }
 }
 async function openDay(h) {
   S.cur = loadDay(S.minggu, h); S.cur.idx = 0; S.cur.dirty = false; S.view = "borang"; render(); window.scrollTo(0, 0);
@@ -514,9 +521,8 @@ async function openDay(h) {
 async function leaveDay() { // auto-simpan draf bila ada perubahan sebelum keluar/tukar hari
   const d = S.cur;
   if (d && d.dirty && d.status !== "Cuti") {
-    const ok = await saveCur(d.status === "Siap" ? (validateDay(d).length ? "Draf" : "Siap") : "Draf", true);
-    if (!ok) return false;
-    toast("Draf disimpan automatik.");
+    await saveCur(d.status === "Siap" ? (validateDay(d).length ? "Draf" : "Siap") : "Draf", true, true);
+    toast("Draf disimpan.");
   }
   return true;
 }
@@ -667,8 +673,9 @@ async function hantarMinggu() {
   if (S.busy) return;
   const n = S.minggu;
   if (!confirm("Hantar RPH Minggu " + n + " kepada penyemak dan simpan ke pangkalan data?\n(RPH tidak dikunci; anda masih boleh mengemas kini.)")) return;
-  S.busy = true;
+  S.busy = true; toast("Menghantar…", false, true);
   try {
+    await _saveQ;
     const r = await erpPost({ action: "hantarMinggu", emel: S.user.email, nama: S.user.nama, minggu: n });
     const wk = S.mine.minggu[n]; if (wk) { wk.status = "Dihantar"; wk.tarikhHantar = new Date().toISOString().slice(0, 19).replace("T", " "); }
     for (let h = 1; h <= 5; h++) { const x = S.mine.hari[n + "|" + h]; if (x && x.semakan !== "Disemak") { x.semakan = "Menunggu"; } }
@@ -837,7 +844,8 @@ async function onClick(e) {
   if (a === "simpan") {
     const d = S.cur, st = d.status === "Siap" ? "Siap" : "Draf";
     if (st === "Siap") { const er = validateDay(d); if (er.length) { toast(er[0], true); return; } }
-    if (await saveCur(st)) render(); return;
+    if (st === "Siap") { if (await saveCur(st)) render(); return; }
+    await saveCur(st, false, true); render(); return;
   }
   if (a === "siap") {
     const er = validateDay(S.cur); if (er.length) { toast(er[0], true); return; }
@@ -850,7 +858,7 @@ async function onClick(e) {
     cetak(d, { nama: S.user.nama, status: d.status, semakOleh: d.semakan === "Disemak" ? d.semakOleh : "" }); return;
   }
   if (a === "hantar") return hantarMinggu();
-  if (a === "muat") { toast("Memuatkan semula…"); await erpLoadMine(); render(); return; }
+  if (a === "muat") { toast("Memuatkan semula…", false, true); await _saveQ; await erpLoadMine(); render(); return; }
   // ---- semakan
   if (a === "rev-filter") { S.rev.filter = b.dataset.f; return render(); }
   if (a === "rev-muat") { S.rev.loaded = false; render(); await loadReviewList(); return render(); }
