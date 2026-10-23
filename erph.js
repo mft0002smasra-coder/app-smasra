@@ -41,6 +41,7 @@ const E = (s) => escapeHtml(s == null ? "" : String(s));
 const A = (s) => escapeAttr(s == null ? "" : String(s));
 const norm = (s) => String(s == null ? "" : s).toUpperCase().replace(/\s+/g, " ").trim();
 const pad = (n) => String(n).padStart(2, "0");
+const isPC = () => window.matchMedia("(min-width:760px)").matches;
 const erpConfigured = () => ERP_API_URL && ERP_API_URL.indexOf("PASTE_") !== 0;
 
 function isoOf(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
@@ -245,7 +246,7 @@ function erpTemaToggle() { erpTemaApply(erpTemaGet() === "gelap" ? "cerah" : "ge
 /* ================= Render: kerangka ================= */
 function head() {
   const g = erpTemaGet() === "gelap";
-  const bor = S.tab === "saya" && S.view === "borang" && S.cur;
+  const bor = S.tab === "saya" && S.view === "borang" && S.cur && !isPC();
   const tools = `<div class="erp-head-tools"><button class="out" data-act="tema" type="button">${g ? "☀ Cerah" : "☾ Gelap"}</button><button class="out" data-act="logout" type="button">Log keluar</button></div>`;
   const inner = bor
     ? `<div class="hl bor"><span class="t">e-RPH</span><span class="wk"><span>Minggu ${S.cur.minggu}</span><span>${E(dmyHari(S.cur.tarikh, S.cur.hariNo))}</span></span></div>`
@@ -258,11 +259,12 @@ function render() {
   root.classList.toggle("erp-semak", S.tab === "semak");
   let body = "";
   if (S.tab === "semak") body = vSemak();
-  else body = S.view === "borang" ? vBorang() : vSenarai();
+  else body = S.view === "borang" ? vBorang() : S.view === "dash" && isPC() ? vDash() : vSenarai();
   const y = window.scrollY;
   root.innerHTML = head() + `<div class="erp-main">${body}</div>`;
   if (S._keepScroll) window.scrollTo(0, y);
   S._keepScroll = false;
+  S._dd = null; ddFitAll();
 }
 const pill = (cls, t) => `<span class="erp-pill ${cls}">${E(t)}</span>`;
 function dayPill(n, h) {
@@ -273,6 +275,54 @@ function dayPill(n, h) {
   if (r.status === "Cuti") return { cls: "s-belum", t: "Cuti", aksi: "Buka" };
   if (r.status === "Siap") return { cls: "s-siap", t: wk && wk.status === "Dihantar" ? "Dihantar" : "Siap", aksi: "Buka" };
   return { cls: "s-draf", t: "Draf", aksi: "Sambung" };
+}
+
+/* ================= Dashboard (PC) ================= */
+const ERP_DN_C = 2 * Math.PI * 40;
+function erpDonut(p, c, label, sub) {
+  p = Math.max(0, Math.min(100, Math.round(p)));
+  return `<div class="erp-dn"><svg width="88" height="88" viewBox="0 0 100 100" role="img" aria-label="${A(label)}"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--bar)" stroke-width="12"/><circle cx="50" cy="50" r="40" fill="none" stroke="${c}" stroke-width="12" stroke-dasharray="${(ERP_DN_C * p / 100).toFixed(1)} ${ERP_DN_C.toFixed(1)}" transform="rotate(-90 50 50)"/><text x="50" y="56" text-anchor="middle" font-size="20" font-weight="700" fill="var(--text)" font-family="Source Sans 3, sans-serif">${p}%</text></svg><b>${E(label)}</b><span>${E(sub)}</span></div>`;
+}
+function erpWeekInfo(n) {
+  const wk = S.mine.minggu[n]; let siap = 0, pulang = null;
+  for (let h = 1; h <= 5; h++) { const r = S.mine.hari[n + "|" + h]; if (!r) continue; if (r.status === "Siap" || r.status === "Cuti") siap++; if (r.semakan === "Dipulang") pulang = r; }
+  let st = wk ? wk.status || "Draf" : "Draf";
+  if (pulang) st = "Dipulang";
+  const cls = { Draf: "s-draf", Dihantar: "s-belum", Disemak: "s-siap", Dipulang: "s-pulang" }[st] || "s-draf";
+  const pny = st === "Dipulang" ? (pulang.semakOleh || "Penyemak") + " (perlu pembetulan)" : st === "Disemak" ? (wk && wk.penyemak) || "—" : st === "Dihantar" ? "Menunggu semakan" : "—";
+  const aksi = st === "Dipulang" ? "Betulkan" : st === "Draf" ? "Sambung" : "Buka";
+  return { n, siap, st, cls, pny, aksi };
+}
+function vDash() {
+  const cur = currentWeekNo();
+  const nums = [...new Set(Object.keys(S.mine.minggu).map(Number).concat(Object.keys(S.mine.hari).map((k) => +k.split("|")[0])))].filter((x) => x > 0).sort((a, b) => b - a);
+  const infos = nums.map(erpWeekInfo);
+  const adaCur = nums.indexOf(cur) !== -1;
+  const rows = infos.slice(0, 20).map((w) => `<div class="erp-dr" data-act="buka-minggu" data-n="${w.n}"><span class="c1">Minggu ${w.n}</span><span class="c2">${E(dm(weekStart(w.n)) + " – " + dmy(weekEnd(w.n)))}</span><span class="c3">${w.siap} / 5</span><span class="c4">${pill(w.cls, w.st)}</span><span class="c5">${E(w.pny)}</span><span class="c6">${w.aksi} ›</span></div>`).join("");
+  const total = infos.length, hantar = infos.filter((w) => w.st === "Dihantar" || w.st === "Disemak").length, semak = infos.filter((w) => w.st === "Disemak").length;
+  const proses = infos.filter((w) => w.st === "Dihantar").length, draf = infos.filter((w) => w.st === "Draf" || w.st === "Dipulang").length;
+  const pct = (a, b) => (b ? (a * 100) / b : 0);
+  return `<div class="erp-dash">
+    <div class="erp-card erp-dwk"><div><div class="lb">MINGGU SEMASA</div><div class="bg">Minggu ${cur} · ${E(weekRangeTxt(cur))}</div><div class="erp-hint">${adaCur ? "RPH minggu ini sudah dimulakan." : "RPH untuk minggu ini belum diwujudkan."}</div></div>
+      <button class="erp-btn solid" style="height:54px;padding:0 28px;font-size:16px" data-act="buka-minggu" data-n="${cur}" type="button">${adaCur ? "Buka RPH Minggu " + cur : "+ Wujudkan RPH Minggu " + cur}</button></div>
+    <div class="erp-dcols"><div class="erp-card erp-dlist"><h3>Rekod RPH saya</h3>
+        <div class="erp-dr hd"><span class="c1">MINGGU</span><span class="c2">TEMPOH</span><span class="c3">HARI SIAP</span><span class="c4">STATUS</span><span class="c5">PENYEMAK</span><span class="c6">TINDAKAN</span></div>
+        ${rows || `<div class="erp-empty">Belum ada RPH. Tekan butang di atas untuk memulakan.</div>`}</div>
+      <div class="erp-card"><h3>Prestasi saya</h3><div class="erp-dns">${erpDonut(pct(hantar, total), "#1e8e5a", "Kadar Hantar", hantar + " / " + total + " minggu")}${erpDonut(pct(semak, hantar), "#1d7fa8", "Kadar Semak", semak + " / " + hantar)}${erpDonut(pct(semak, total), "#b7791f", "Selesai · Proses", semak + " · " + proses + " · " + draf)}</div>
+        <div class="erp-hint" style="margin-top:10px">Belum hantar <b style="color:#c23b6a">${draf}</b> · Belum semak <b style="color:#6a4bd8">${proses}</b></div></div></div></div>`;
+}
+function revStatsHtml() {
+  const L = S.rev.list, me = norm(S.user.nama);
+  const done = L.filter((x) => x.status === "Disemak" && norm(x.penyemak) === me), tunggu = L.filter((x) => x.status === "Dihantar"), pulang = L.filter((x) => x.status === "Dipulang");
+  const guru = new Set(done.map((x) => norm(x.nama))).size;
+  const byW = {}; done.forEach((x) => { byW[+x.minggu] = (byW[+x.minggu] || 0) + 1; });
+  const ws = Object.keys(byW).map(Number).sort((a, b) => b - a).slice(0, 6), mx = Math.max(1, ...ws.map((w) => byW[w]));
+  const bars = ws.map((w) => `<div class="erp-bw"><span>M${w}</span><div class="erp-bar"><i style="width:${(byW[w] * 100) / mx}%"></i></div><b>${byW[w]}</b></div>`).join("") || `<div class="erp-hint">Belum ada semakan.</div>`;
+  const tot = done.length + tunggu.length + pulang.length;
+  return `<div class="erp-card erp-rstats"><h3>Prestasi semakan saya</h3>
+    <div class="erp-kpis"><div><span>Jumlah disemak</span><b>${done.length}</b></div><div><span>Guru</span><b>${guru}</b></div><div><span>Menunggu</span><b style="color:#6a4bd8">${tunggu.length}</b></div></div>
+    <div class="erp-dns" style="margin:10px 0">${erpDonut(tot ? (done.length * 100) / tot : 0, "#1e8e5a", "Selesai", done.length + " daripada " + tot)}${erpDonut(tot ? (tunggu.length * 100) / tot : 0, "#b7791f", "Proses", String(tunggu.length))}${erpDonut(tot ? (pulang.length * 100) / tot : 0, "#c23b4a", "Dipulang", String(pulang.length))}</div>
+    <h3 style="margin-top:6px">Semakan mengikut minggu</h3>${bars}</div>`;
 }
 
 /* ================= Senarai minggu ================= */
@@ -306,11 +356,17 @@ function vSenarai() {
     <div class="erp-hint" style="text-align:center;margin-top:8px">${can ? "Semua hari siap." : "Butang aktif selepas H1–H5 semuanya ditanda siap. Belum siap: <b>" + E(belum.join(", ")) + "</b>."}</div></div>
   <div class="a-salin erp-card"><button class="erp-btn" style="width:100%" data-act="salin-minggu" type="button">⧉ Salin daripada RPH lama saya</button>
     <div class="erp-hint" style="margin-top:6px">Hanya RPH anda sendiri. Kandungan disalin bila tingkatan dan subjek sama; kelas dan waktu ikut Jadual Guru semasa.</div></div>
-  <div class="a-muat erp-right"><button class="erp-btn sm" data-act="muat" type="button">↻ Muat semula</button></div></div>`;
+  <div class="a-muat erp-right">${isPC() ? `<button class="erp-btn sm" data-act="dash" type="button">‹ Dashboard</button>` : ""}<button class="erp-btn sm" data-act="muat" type="button">↻ Muat semula</button></div></div>`;
 }
 
 /* ================= Borang harian ================= */
+function ddBox(f, lbl, val) {
+  const ph = "Klik atau taip di sini…", simple = f === "kelas" || f === "subjek";
+  const fld = simple ? `<input class="erp-dd-in" data-dd="${f}" value="${A(val)}" placeholder="${ph}" autocomplete="off">` : `<textarea class="erp-dd-in" data-dd="${f}" rows="1" placeholder="${ph}" autocomplete="off">${E(val)}</textarea>`;
+  return `<div class="erp-f erp-ddf"><label class="erp-lbl">${lbl}</label><div class="erp-ddbox">${fld}<span class="arr" data-act="dd-arr" data-f="${f}">▾</span></div><div class="erp-ddlist hidden" id="erp-dd-${f}"></div></div>`;
+}
 function pickBox(f, lbl, val) {
+  if (isPC()) return ddBox(f, lbl, val);
   const has = norm(val) !== "";
   return `<div class="erp-f">${`<label class="erp-lbl">${lbl}</label>`}<div class="erp-pickbox" data-act="pick" data-f="${f}" role="button" tabindex="0"><div class="pv ${has ? "" : "ph"}">${has ? E(val) : "Klik untuk pilih atau taip sendiri…"}</div><span class="arr">▾</span></div></div>`;
 }
@@ -347,7 +403,7 @@ function vBorang() {
     <div class="erp-f"><label class="erp-lbl">Catatan Aktiviti</label><textarea class="erp-ta" rows="3" data-kf="catatan" placeholder="Contoh: Murid lelaki meletakkan tangan pada dada semasa bertegur sapa dengan rakan atau guru perempuan…">${E(kar.catatan)}</textarea></div>` : "";
   const siapKept = d.status === "Siap";
   return top + ret + `
-  <div class="erp-bcols"><div class="erp-bl"><div class="erp-chips slots">${chips}</div></div><div class="erp-br">
+  <div class="erp-bcols"><div class="erp-bl">${isPC() ? `<div class="erp-card erp-wkcard"><div class="lb">MINGGU</div><div class="b">Minggu ${d.minggu}</div><div class="dt">${E(dmyHari(d.tarikh, d.hariNo))}</div></div>` : ""}<div class="erp-chips slots">${chips}</div></div><div class="erp-br">
   <div><div class="erp-slothead"><span>MASA / KELAS : ${i + 1}</span><span>${d.slots.length > 1 ? `<button data-act="buang-slot" type="button">Buang</button>` : ""}</span></div>
     <div class="erp-slotbody">
       ${jd.length ? `<button class="erp-pick" style="margin:0 0 10px" data-act="pilih-jadual" type="button">▾ Pilih kelas &amp; waktu daripada Jadual Guru (${jd.length})</button>` : `<div class="erp-hint" style="margin-bottom:10px">Tiada Jadual Guru untuk ${ERP_HARI[d.hariNo - 1]}. Isi kelas dan waktu sendiri.</div>`}
@@ -357,7 +413,7 @@ function vBorang() {
       <div class="erp-checks"><label class="erp-chk"><input type="checkbox" data-c="ujian" ${s.ujian ? "checked" : ""}>Ada Ujian</label><label class="erp-chk"><input type="checkbox" data-c="pentakAda" ${s.pentakAda ? "checked" : ""}>Ada Pentaksiran</label></div></div>
     </div></div>
   <div class="erp-card"><h3>Kandungan Pembelajaran</h3>
-    <div class="erp-hint" style="margin:-4px 0 10px">Tingkatan ${s.tingkatan || "?"} · ${E(s.subjek || "subjek belum diisi")}. <button class="erp-pick" style="display:inline;margin:0" data-act="salin-slot" type="button">⧉ Salin daripada RPH lama saya</button></div>
+    <div class="erp-hint" style="margin:-4px 0 10px"><span id="erp-ts">Tingkatan ${s.tingkatan || "?"} · ${E(s.subjek || "subjek belum diisi")}.</span> <button class="erp-pick" style="display:inline;margin:0" data-act="salin-slot" type="button">⧉ Salin daripada RPH lama saya</button></div>
     ${fieldsHtml}
     <div class="erp-f"><label class="erp-lbl">Pentaksiran</label><div>${pent}</div></div></div>
   <div class="erp-card"><h3>Impak / Refleksi</h3>${pickBox("refleksi", "", s.refleksi).replace('<label class="erp-lbl"></label>', "").replace('class="erp-f"', 'class="erp-f" style="margin:0"')}</div>
@@ -377,7 +433,12 @@ function syncKarAkhir() {
 function onInput(e) {
   const t = e.target; if (!S.cur || S.view !== "borang") return;
   const s = S.cur.slots[S.cur.idx];
-  if (t.dataset.f !== undefined) {
+  if (t.dataset.dd !== undefined) {
+    const f = t.dataset.dd; s[f] = t.value;
+    if (f === "kelas") s.tingkatan = tingOf(t.value);
+    dirty(); ddFit(t); ddRefresh(f, t.value);
+    if (f === "kelas" || f === "subjek") { const ts = document.getElementById("erp-ts"); if (ts) ts.textContent = "Tingkatan " + (s.tingkatan || "?") + " · " + (s.subjek || "subjek belum diisi") + "."; }
+  } else if (t.dataset.f !== undefined) {
     s[t.dataset.f] = t.value;
     if (t.dataset.f === "kelas") { s.tingkatan = tingOf(t.value); }
     dirty();
@@ -458,6 +519,43 @@ async function leaveDay() { // auto-simpan draf bila ada perubahan sebelum kelua
     toast("Draf disimpan automatik.");
   }
   return true;
+}
+
+/* ================= Dropdown dalam kotak (PC): taip, tampal, atau pilih daripada senarai ================= */
+function ddFit(el) { if (!el || el.tagName !== "TEXTAREA") return; el.style.height = "auto"; el.style.height = Math.max(46, el.scrollHeight + 2) + "px"; }
+function ddFitAll() { document.querySelectorAll("textarea.erp-dd-in").forEach(ddFit); }
+function ddCloseAll() { S._dd = null; document.querySelectorAll(".erp-ddlist").forEach((l) => { l.classList.add("hidden"); l.innerHTML = ""; }); }
+function ddValsFor(f) {
+  const s = S.cur.slots[S.cur.idx];
+  if (f === "kelas" || f === "subjek") return { vals: f === "kelas" ? allKelas() : allSubjek(), relaxed: false, none: false };
+  return optionsFor(s, f);
+}
+function ddOptList(vals, q) {
+  q = norm(q); const shown = vals.map((v, i) => [v, i]).filter(([v]) => !q || norm(v).indexOf(q) !== -1).slice(0, 80);
+  return shown.length ? shown.map(([v, i]) => `<button class="erp-opt" data-act="dd-pick" data-i="${i}" type="button">${E(v)}</button>`).join("") : `<div class="erp-hint" style="padding:9px 12px">Tiada padanan. Teks anda dalam kotak akan digunakan.</div>`;
+}
+function ddRender(f, q) {
+  const l = document.getElementById("erp-dd-" + f), p = S._dd; if (!l || !p) return;
+  let note = "Senarai ditapis semasa menaip. Boleh taip dan tampal (paste) teks sendiri dalam kotak.";
+  if (p.none) note = "Tiada senarai untuk subjek/tingkatan ini dalam tab RPT. Taip atau tampal sendiri; ia akan dicadangkan ke RPT_Cadangan bila Hantar.";
+  else if (p.relaxed) note = "Tiada padanan penuh dengan pilihan sebelum ini; menunjukkan semua pilihan untuk subjek ini. " + note;
+  l.innerHTML = ddOptList(p.vals, q) + `<div class="erp-ddnote">${E(note)}</div>`;
+  l.classList.remove("hidden");
+}
+function ddOpen(f) {
+  if (!S.cur || S.view !== "borang") return;
+  if (S._dd && S._dd.f === f) return;
+  ddCloseAll();
+  const o = ddValsFor(f); S._dd = { f, vals: o.vals, relaxed: o.relaxed, none: o.none };
+  ddRender(f, "");
+}
+function ddRefresh(f, q) { if (!S._dd || S._dd.f !== f) ddOpen(f); if (S._dd) ddRender(f, q); }
+function ddPick(i) {
+  const p = S._dd, s = S.cur.slots[S.cur.idx]; if (!p) return;
+  s[p.f] = p.vals[i];
+  if (p.f === "kelas") s.tingkatan = tingOf(s.kelas);
+  else if (p.f !== "refleksi" && p.f !== "subjek") autoFillAfter(s, p.f);
+  dirty(); S._dd = null; S._keepScroll = true; render();
 }
 
 /* ================= Modal ================= */
@@ -644,7 +742,8 @@ function vSemak() {
     const st = x.status === "Dihantar" ? "Menunggu" : x.status;
     return `<div class="erp-day" data-act="rev-open" data-i="${r.list.indexOf(x)}" style="cursor:pointer"><div class="k ${cls}" style="font-size:13px">M${E(x.minggu)}</div><div class="m"><b>${E(x.nama)}</b><span>Minggu ${E(x.minggu)} · ${E(dmy(x.awal))} – ${E(dmy(x.akhir))}${x.tarikhHantar ? " · dihantar " + E(x.tarikhHantar.slice(0, 10).split("-").reverse().join("/")) : ""}</span></div>${pill(cls, st)}</div>`;
   }).join("");
-  return `<div class="erp-card"><h3>Semakan RPH</h3>${chips}</div>${items || `<div class="erp-empty">Tiada RPH yang menunggu semakan.</div>`}`;
+  const listHtml = `<div class="erp-card"><h3>Semakan RPH</h3>${chips}</div>${items || `<div class="erp-empty">Tiada RPH yang menunggu semakan.</div>`}`;
+  return isPC() ? `<div class="erp-rcols"><div class="erp-rside">${revStatsHtml()}</div><div class="erp-rmain">${listHtml}</div></div>` : listHtml;
 }
 function vSemakPanel() {
   const v = S.rev.sel, h = v.hari, d = v.days[h];
@@ -722,6 +821,10 @@ async function onClick(e) {
     S.cur.slots.push(blankSlot(nx || {})); S.cur.idx = S.cur.slots.length - 1; dirty(); return render();
   }
   if (a === "buang-slot") { if (!confirm("Buang Kelas " + (S.cur.idx + 1) + "?")) return; S.cur.slots.splice(S.cur.idx, 1); S.cur.idx = Math.max(0, S.cur.idx - 1); dirty(); return render(); }
+  if (a === "dd-pick") return ddPick(+b.dataset.i);
+  if (a === "dd-arr") { const f = b.dataset.f; if (S._dd && S._dd.f === f) return ddCloseAll(); const el = document.querySelector('[data-dd="' + f + '"]'); if (el) el.focus(); return ddOpen(f); }
+  if (a === "dash") { if (S.view === "borang" && !(await leaveDay())) return; S.view = "dash"; S.cur = null; render(); window.scrollTo(0, 0); return; }
+  if (a === "buka-minggu") { S.minggu = +b.dataset.n; S.view = "senarai"; render(); window.scrollTo(0, 0); return; }
   if (a === "pick") return openPicker(b.dataset.f);
   if (a === "pick-val") return pickValue(+b.dataset.i);
   if (a === "pick-own") return pickOwn();
@@ -774,6 +877,11 @@ async function erpInit(user) {
   root.addEventListener("input", onInput);
   root.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.classList && e.target.classList.contains("erp-pickbox")) { e.preventDefault(); e.target.click(); } });
   root.addEventListener("change", onChange);
+  root.addEventListener("focusin", (e) => { const f = e.target.dataset && e.target.dataset.dd; if (f) ddOpen(f); });
+  root.addEventListener("focusout", () => setTimeout(() => { const a = document.activeElement; if (!a || !a.closest || !a.closest(".erp-ddf")) ddCloseAll(); }, 150));
+  root.addEventListener("mousedown", (e) => { if (e.target.closest(".erp-ddlist") || e.target.closest("[data-act=dd-arr]")) e.preventDefault(); });
+  root.addEventListener("keydown", (e) => { if (e.key === "Escape") ddCloseAll(); });
+  let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (S._pc !== isPC() && S.user && !S.busy) { S._pc = isPC(); if (S.view === "dash" && !S._pc) S.view = "senarai"; S._keepScroll = true; render(); } }, 200); });
   const mb = document.getElementById("erp-modal");
   mb.addEventListener("click", (e) => { if (e.target === mb) closeModal(); else onClick(e); });
   mb.addEventListener("input", (e) => {
@@ -787,6 +895,7 @@ async function erpInit(user) {
     await Promise.all([erpLoadCommon(), erpLoadJadual(), typeof emLoad === "function" ? emLoad().catch(() => {}) : null]);
     await erpLoadMine();
     S.minggu = currentWeekNo();
+    S.view = isPC() ? "dash" : "senarai"; S._pc = isPC();
     render();
   } catch (err) {
     root.innerHTML = `<div class="erp-empty">Ralat memuatkan e-RPH: ${E(err.message || err)}<br>Semak Sheet dikongsi “Anyone with the link – Viewer”.</div>`;
