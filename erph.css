@@ -134,7 +134,7 @@ body.erp-body[data-erp="gelap"] .erp-head .out { background: rgba(0,0,0,.25); }
   .erp-main { padding: 10px 16px 0; }
   .erp-tabs { padding: 10px 16px 0; }
   .erp-senarai { grid-template-columns: 340px minmax(0, 1fr); gap: 12px 20px; grid-template-areas: "week days" "hantar days" "salin days" "muat days"; grid-template-rows: auto auto auto 1fr; align-items: start; }
-  .erp-trow { flex-direction: row; align-items: flex-end; justify-content: space-between; }
+  .erp-trow { flex-direction: row; align-items: flex-end; justify-content: flex-end; gap: 14px; }
   .erp-tabs-h { gap: 8px; }
   .erp-tabs-h button { flex: none; width: 150px; }
   .erp-bcols { flex-direction: row; align-items: flex-start; gap: 20px; }
@@ -212,3 +212,12 @@ input.erp-dd-in { height: 46px; padding-top: 0; padding-bottom: 0; }
 .erp-kpis b { display: block; font-size: 26px; color: var(--text); }
 .erp-bw { display: flex; align-items: center; gap: 10px; font-size: 13px; margin: 6px 0; } .erp-bw span { width: 34px; color: var(--dim); } .erp-bw .erp-bar { flex: 1; } .erp-bw b { width: 24px; text-align: right; }
 @media (max-width: 759px) { .erp-ddlist { max-height: 220px; } }
+
+/* ---- Tetapan (Admin App) ---- */
+.erp-tcols { display: flex; flex-direction: column; gap: 12px; }
+@media (min-width: 760px) { .erp-tcols { flex-direction: row; align-items: flex-start; } .erp-tcols > .erp-card { flex: 1; min-width: 0; } }
+.erp-trw { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.erp-trw > .erp-in, .erp-trw > .erp-sel { flex: 1; min-width: 0; }
+.erp-trw .nm { flex: 1; min-width: 0; line-height: 1.25; } .erp-trw .nm span { display: block; font-size: 12px; color: var(--dim); }
+.erp-trw .erp-sel { max-width: 46%; }
+#tet-glist { max-height: 560px; overflow-y: auto; }

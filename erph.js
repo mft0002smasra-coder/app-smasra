@@ -33,6 +33,7 @@ let S = {
   user: null, isPny: false, tab: "saya", view: "senarai", minggu: 0, weeks1: null,
   mine: { minggu: {}, hari: {}, slot: {} }, // minggu[n] ; hari["n|h"] ; slot["n|h"] = [..]
   rpt: [], cad: [], pnyMap: [], jadual: [], cur: null, busy: false,
+  tet: { loaded: false, rows: [], staff: [], pnyList: [], asg: {}, q: "" },
   rev: { list: [], sel: null, days: {}, slots: {}, hari: 1, filter: "tunggu", loaded: false },
 };
 
@@ -71,8 +72,8 @@ function isPentadbir(u) {
 const isAdminApp = (u) => String(u.role3 || "").trim().toLowerCase() === "admin app";
 
 /* ================= gviz ================= */
-async function erpGviz(sheet, tq) {
-  let url = `https://docs.google.com/spreadsheets/d/${ERP_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheet)}&headers=1&_ts=${Date.now()}`;
+async function erpGviz(sheet, tq, sid) {
+  let url = `https://docs.google.com/spreadsheets/d/${sid || ERP_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheet)}&headers=1&_ts=${Date.now()}`;
   if (tq) url += "&tq=" + encodeURIComponent(tq);
   const res = await fetch(url, { cache: "no-store" });
   const text = await res.text();
@@ -253,13 +254,14 @@ function head() {
     ? `<div class="hl bor"><span class="t">e-RPH</span><span class="wk"><span>Minggu ${S.cur.minggu}</span><span>${E(dmyHari(S.cur.tarikh, S.cur.hariNo))}</span></span></div>`
     : `<div class="hl"><span class="t">e-RPH</span><span class="t sch">SM ARAB (JAIM) AL-ASYRAF</span></div><div class="n">${E(S.user.nama)}</div>`;
   return `<div class="erp-head">${inner}${tools}</div>
-    ${S.isPny ? `<div class="erp-tabs"><button class="erp-tab ${S.tab === "saya" ? "on" : ""}" data-act="tab" data-t="saya" type="button">RPH Saya</button><button class="erp-tab g ${S.tab === "semak" ? "on" : ""}" data-act="tab" data-t="semak" type="button">Semakan</button></div>` : ""}`;
+    ${S.isPny ? `<div class="erp-tabs"><button class="erp-tab ${S.tab === "saya" ? "on" : ""}" data-act="tab" data-t="saya" type="button">RPH Saya</button><button class="erp-tab g ${S.tab === "semak" ? "on" : ""}" data-act="tab" data-t="semak" type="button">Semakan</button>${isAdminApp(S.user) ? `<button class="erp-tab g ${S.tab === "tetapan" ? "on" : ""}" data-act="tab" data-t="tetapan" type="button">Tetapan</button>` : ""}</div>` : ""}`;
 }
 function render() {
   const root = document.getElementById("erp-root"); if (!root) return;
-  root.classList.toggle("erp-semak", S.tab === "semak");
+  root.classList.toggle("erp-semak", S.tab === "semak" || S.tab === "tetapan");
   let body = "";
   if (S.tab === "semak") body = vSemak();
+  else if (S.tab === "tetapan") body = vTetapan();
   else body = S.view === "borang" ? vBorang() : S.view === "dash" && isPC() ? vDash() : vSenarai();
   const y = window.scrollY;
   root.innerHTML = head() + `<div class="erp-main">${body}</div>`;
@@ -432,7 +434,14 @@ function syncKarAkhir() {
   const el = document.querySelector("[data-kakhir]"); if (el) el.value = t12(k.akhir);
 }
 function onInput(e) {
-  const t = e.target; if (!S.cur || S.view !== "borang") return;
+  const t = e.target;
+  if (S.tab === "tetapan") {
+    if (t.dataset.tk !== undefined) S.tet.rows[+t.dataset.tk].k = t.value;
+    else if (t.dataset.tv !== undefined) S.tet.rows[+t.dataset.tv].v = t.value;
+    else if (t.dataset.tq !== undefined) { S.tet.q = t.value; document.getElementById("tet-glist").innerHTML = tetGuruHtml(); }
+    return;
+  }
+  if (!S.cur || S.view !== "borang") return;
   const s = S.cur.slots[S.cur.idx];
   if (t.dataset.dd !== undefined) {
     const f = t.dataset.dd; s[f] = t.value;
@@ -451,6 +460,7 @@ function onInput(e) {
 }
 function onChange(e) {
   const t = e.target;
+  if (t.dataset.tg !== undefined) { const k = norm(t.dataset.tg); if (t.value) S.tet.asg[k] = t.value; else delete S.tet.asg[k]; return; }
   if (t.dataset.actChange === "minggu") { S.minggu = +t.value; render(); return; }
   if (S.view !== "borang" || !S.cur || S.tab !== "saya") return;
   const s = S.cur.slots[S.cur.idx];
@@ -712,6 +722,48 @@ function cetak(d, meta) {
   setTimeout(() => { window.print(); setTimeout(done, 1500); }, 60);
 }
 
+/* ================= Tetapan (Admin App sahaja) ================= */
+async function loadTetapan() {
+  try {
+    const [tet, pny, st] = await Promise.all([erpGvizSafe("eRPH_Tetapan"), erpGvizSafe("eRPH_Penyemak"), erpGvizSafe("DatabaseSTAFF", "", SPREADSHEET_ID)]);
+    const T = S.tet;
+    T.rows = tet.filter((r) => String(r[0] || "").trim()).map((r) => ({ k: String(r[0]).trim(), v: String(r[1] == null ? "" : r[1]).trim() }));
+    // DatabaseSTAFF: A=Gambar B=Nama C=Jawatan D=Telefon E=Emel1 F=Emel2 G=Role H=Role2 I=Role3
+    T.staff = st.map((r) => ({ nama: String(r[1] || "").trim(), jawatan: String(r[2] || "").trim(), role2: String(r[7] || "").trim(), role3: String(r[8] || "").trim() })).filter((x) => x.nama);
+    T.pnyList = T.staff.filter((x) => x.role2.toLowerCase() === "pentadbir" || isPentadbir(x)).map((x) => x.nama).sort((a, b) => a.localeCompare(b, "ms"));
+    T.asg = {}; pny.forEach((r) => { if (norm(r[0]) && String(r[1] || "").trim()) T.asg[norm(r[0])] = String(r[1]).trim(); });
+    T.loaded = true;
+  } catch (e) { toast("Gagal memuatkan tetapan.", true); }
+  render();
+}
+function tetGuruHtml() {
+  const T = S.tet, q = norm(T.q);
+  const list = T.staff.filter((x) => !q || norm(x.nama).indexOf(q) !== -1).sort((a, b) => a.nama.localeCompare(b.nama, "ms"));
+  return list.map((x) => {
+    const cur = T.asg[norm(x.nama)] || "", opts = T.pnyList.slice();
+    if (cur && opts.indexOf(cur) === -1) opts.push(cur);
+    return `<div class="erp-trw"><div class="nm"><b>${E(x.nama)}</b><span>${E(x.jawatan)}</span></div><select class="erp-sel" data-tg="${A(x.nama)}"><option value="">(semua pentadbir)</option>${opts.map((o) => `<option value="${A(o)}" ${o === cur ? "selected" : ""}>${E(o)}</option>`).join("")}</select></div>`;
+  }).join("") || `<div class="erp-hint">Tiada nama.</div>`;
+}
+function vTetapan() {
+  const T = S.tet;
+  if (!T.loaded) return `<div class="erp-loading">Memuatkan tetapan…</div>`;
+  const rows = T.rows.map((r, i) => `<div class="erp-trw"><input class="erp-in" data-tk="${i}" value="${A(r.k)}" placeholder="KUNCI" ${r.k === "MINGGU1_MULA" ? "readonly" : ""}><input class="erp-in" data-tv="${i}" ${r.k === "MINGGU1_MULA" ? 'type="date"' : ""} value="${A(r.v)}" placeholder="Nilai">${r.k === "MINGGU1_MULA" ? "<span></span>" : `<button class="erp-btn sm" data-act="tet-del" data-i="${i}" type="button">Buang</button>`}</div>`).join("");
+  return `<div class="erp-tcols"><div class="erp-card"><h3>Tetapan e-RPH (eRPH_Tetapan)</h3>
+      <div class="erp-hint" style="margin-bottom:10px">Kunci dan nilai. <b>MINGGU1_MULA</b> = tarikh Isnin bagi Minggu 1 (menentukan nombor minggu).</div>
+      ${rows}<div class="erp-right" style="margin-top:10px"><button class="erp-btn" data-act="tet-add" type="button">+ Tambah tetapan</button><button class="erp-btn solid" data-act="tet-save" type="button">Simpan tetapan</button></div></div>
+    <div class="erp-card"><h3>Guru dan penyemak (eRPH_Penyemak)</h3>
+      <div class="erp-hint" style="margin-bottom:10px">Nama diambil daripada DatabaseSTAFF. Penyemak ialah staf berperanan Pentadbir (${T.pnyList.length}). Guru tanpa penyemak dipilih boleh disemak oleh semua pentadbir.</div>
+      <input class="erp-in" data-tq placeholder="Cari nama guru…" value="${A(T.q)}" style="margin-bottom:10px"><div id="tet-glist">${tetGuruHtml()}</div>
+      <div class="erp-right" style="margin-top:10px"><button class="erp-btn solid" data-act="pny-save" type="button">Simpan penyemak</button></div></div></div>`;
+}
+async function tetSave(action, items, ok) {
+  if (S.busy) return; S.busy = true; toast("Menyimpan…", false, true);
+  try { await erpPost({ action, emel: S.user.email, items }); toast(ok); return true; }
+  catch (err) { toast(err.message || "Gagal menyimpan.", true); return false; }
+  finally { S.busy = false; }
+}
+
 /* ================= Semakan (Pentadbir) ================= */
 function canSee(rowNama) {
   if (isAdminApp(S.user)) return true;
@@ -817,7 +869,7 @@ async function onClick(e) {
   if (a === "tema") return erpTemaToggle();
   if (a === "logout") { if (confirm("Log keluar?")) logout(); return; }
   if (a === "close") return closeModal();
-  if (a === "tab") { if (S.view === "borang" && !(await leaveDay())) return; S.tab = b.dataset.t; if (S.tab === "semak" && !S.rev.loaded) { render(); await loadReviewList(); } render(); return; }
+  if (a === "tab") { if (S.view === "borang" && !(await leaveDay())) return; S.tab = b.dataset.t; if (S.tab === "semak" && !S.rev.loaded) { render(); await loadReviewList(); } if (S.tab === "tetapan" && !S.tet.loaded) { render(); await loadTetapan(); } render(); return; }
   if (a === "open-day") return openDay(+b.dataset.h);
   if (a === "goto-day") { if (+b.dataset.h === S.cur.hariNo) return; if (!(await leaveDay())) return; return openDay(+b.dataset.h); }
   if (a === "kembali") { if (!(await leaveDay())) return; S.view = "senarai"; S.cur = null; render(); window.scrollTo(0, 0); return; }
@@ -828,6 +880,20 @@ async function onClick(e) {
     S.cur.slots.push(blankSlot(nx || {})); S.cur.idx = S.cur.slots.length - 1; dirty(); return render();
   }
   if (a === "buang-slot") { if (!confirm("Buang Kelas " + (S.cur.idx + 1) + "?")) return; S.cur.slots.splice(S.cur.idx, 1); S.cur.idx = Math.max(0, S.cur.idx - 1); dirty(); return render(); }
+  if (a === "tet-add") { S.tet.rows.push({ k: "", v: "" }); return render(); }
+  if (a === "tet-del") { S.tet.rows.splice(+b.dataset.i, 1); return render(); }
+  if (a === "tet-save") {
+    const items = S.tet.rows.filter((r) => r.k.trim()).map((r) => ({ kunci: r.k.trim(), nilai: r.v.trim() }));
+    const w = items.find((x) => x.kunci === "MINGGU1_MULA");
+    if (w && !/^\d{4}-\d{2}-\d{2}$/.test(w.nilai)) { toast("MINGGU1_MULA mesti tarikh (hh/bb/tttt).", true); return; }
+    if (await tetSave("saveTetapan", items, "Tetapan disimpan.") && w) { ERP_W1 = w.nilai; }
+    return;
+  }
+  if (a === "pny-save") {
+    const items = S.tet.staff.map((x) => ({ guru: x.nama, penyemak: S.tet.asg[norm(x.nama)] || "" })).filter((x) => x.penyemak);
+    if (await tetSave("savePenyemak", items, "Guru dan penyemak disimpan (" + items.length + " pemetaan).")) S.pnyMap = items.map((x) => ({ guru: norm(x.guru), pny: norm(x.penyemak) }));
+    return;
+  }
   if (a === "dd-pick") return ddPick(+b.dataset.i);
   if (a === "dd-arr") { const f = b.dataset.f; if (S._dd && S._dd.f === f) return ddCloseAll(); const el = document.querySelector('[data-dd="' + f + '"]'); if (el) el.focus(); return ddOpen(f); }
   if (a === "dash") { if (S.view === "borang" && !(await leaveDay())) return; S.view = "dash"; S.cur = null; render(); window.scrollTo(0, 0); return; }
