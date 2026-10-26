@@ -31,6 +31,7 @@
 .tr-sub{font-size:13px;color:var(--text-dim)}
 .tr-arrow{width:34px;height:34px;border-radius:50%;border:1px solid var(--line-strong);background:rgba(var(--accent-rgb),.1);color:var(--cyan);font-size:18px;line-height:1;cursor:pointer;transition:transform .2s}.tr-arrow.open{transform:rotate(180deg)}
 .tr-hero-top{align-items:center}
+.tr-srchead{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
 .tr-hero p{margin:10px 0 0;font-size:14px;line-height:1.5;color:var(--text)}
 .tr-bias{font-size:12px;font-weight:700;padding:5px 11px;border-radius:20px;border:1px solid currentColor}
 .tr-bias.amber{color:var(--amber);background:rgba(255,184,77,.1)}.tr-bias.mint{color:var(--mint);background:rgba(25,227,161,.1)}.tr-bias.pink{color:var(--pink);background:rgba(255,85,119,.1)}
@@ -83,9 +84,6 @@
 .tr-sc{font-size:13px;line-height:1.45;margin-bottom:8px}.tr-sc em{color:var(--text-dim);font-size:12px}
 .tr-warn{font-size:12px;color:var(--amber);line-height:1.45;margin-top:10px}
 .tr-warn.big{border:1px solid rgba(255,184,77,.45);border-radius:10px;padding:12px;background:rgba(255,184,77,.07);margin-bottom:var(--gap)}
-.tr-calc-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.tr-calc-out{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
-.tr-calc-out div{border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column}.tr-calc-out span{font-size:11px;color:var(--text-dim)}.tr-calc-out b{font-family:var(--font-mono);font-size:16px}.tr-calc-out b.g{color:var(--mint)}
 @media(min-width:900px){#tr-body{display:grid;grid-template-columns:1fr 1fr;gap:0 var(--gap);align-items:start}#tr-body>*{grid-column:1/-1}}
 </style>
 </head>
@@ -170,9 +168,9 @@
   </nav>
 </div>
 
-<script src="app.js?v=20261026e"></script>
-<script src="trader-data.js?v=20261026e"></script>
-<script src="trader.js?v=20261026e"></script>
+<script src="app.js?v=20261026f"></script>
+<script src="trader-data.js?v=20261026f"></script>
+<script src="trader.js?v=20261026f"></script>
 <script>
   initApp(trInit);
 </script>

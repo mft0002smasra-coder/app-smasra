@@ -106,29 +106,13 @@ function elliottHtml(P, key) {
 function bulletsHtml(title, arr) {
   return `<div class="glass card-pad"><div class="tr-h">${title}</div><ul class="tr-ul">${arr.map((x) => `<li>${trEsc(x)}</li>`).join("")}</ul></div>`;
 }
-function calcHtml(P, key) {
-  const saved = (() => { try { return JSON.parse(localStorage.getItem("tr_calc") || "{}"); } catch (e) { return {}; } })();
-  return `<div class="glass card-pad tr-calc"><div class="tr-h">Kalkulator Saiz Lot</div>
-    <div class="tr-calc-row"><div><label class="field-label">Modal akaun (USD)</label><input class="field-input" id="tr-bal" type="number" inputmode="decimal" min="0" value="${saved.bal || 1000}" oninput="trCalc()"></div>
-    <div><label class="field-label">Risiko setiap dagangan (%)</label><input class="field-input" id="tr-rsk" type="number" inputmode="decimal" min="0.1" step="0.1" value="${saved.rsk || 1}" oninput="trCalc()"></div></div>
-    <label class="field-label">Pelan</label><select class="field-input" id="tr-plan" onchange="trCalc()">${P.pelan.map((p, i) => `<option value="${i}">${trEsc(p.arah === "BUY" ? "Beli" : "Jual")} · ${trEsc(p.tajuk)}</option>`).join("")}</select>
-    <div class="tr-calc-out" id="tr-calc-out"></div></div>`;
-}
-function trCalc() {
-  const P = trPair(trTab), p = P.pelan[+document.getElementById("tr-plan").value || 0];
-  const bal = parseFloat(document.getElementById("tr-bal").value) || 0, rsk = parseFloat(document.getElementById("tr-rsk").value) || 0;
-  try { localStorage.setItem("tr_calc", JSON.stringify({ bal, rsk })); } catch (e) { /* senyap */ }
-  const m = planMetrics(p, P), usdRisk = (bal * rsk) / 100, perLot = (P.unit === "pip" ? m.risk * P.faktor : m.risk) * P.nilaiLot;
-  const lot = perLot > 0 ? usdRisk / perLot : 0;
-  const g = (i) => lot * (P.unit === "pip" ? Math.abs(p.tp[i] - p.ref) * P.faktor : Math.abs(p.tp[i] - p.ref)) * P.nilaiLot;
-  document.getElementById("tr-calc-out").innerHTML = `<div><span>Wang berisiko</span><b>USD ${usdRisk.toFixed(2)}</b></div><div><span>Saiz lot (anggaran)</span><b>${lot.toFixed(lot < 0.1 ? 3 : 2)}</b></div><div><span>Untung di Sasaran 1</span><b class="g">USD ${g(0).toFixed(2)}</b></div><div><span>Untung di Sasaran 2</span><b class="g">USD ${g(1).toFixed(2)}</b></div>${lot > 0 && lot < 0.01 ? `<div style="grid-column:1/-1"><span>Lot kurang daripada 0.01 (minimum kebanyakan broker): risiko sebenar akan lebih tinggi daripada ${rsk}%. Kecilkan jarak SL atau tambah modal.</span></div>` : ""}`;
-}
 function autoBadge(P) {
   if (!P.auto) return `<div class="tr-auto off">Pelan auto 4H belum aktif — memaparkan pelan manual (${trEsc(TR().kemaskini)}). Pasang Code-Trader.gs untuk kemas kini automatik.</div>`;
   const h = trAge(P.autoInfo), old = h !== null && h > 9;
   return `<div class="tr-auto ${old ? "old" : ""}">${old ? "⚠ Data auto sudah lama" : "⟳ Pelan auto setiap 4 jam"} · dikemas kini ${trEsc(P.autoInfo.kemaskini)} (MYT)${h !== null ? " · " + (h < 1 ? Math.round(h * 60) + " minit" : h.toFixed(1) + " jam") + " lalu" : ""}</div>`;
 }
-let trPanel = null, trHero = false;
+let trPanel = null, trHero = false, trSrc = false;
+function trToggleSrc() { trSrc = !trSrc; trRender(); }
 function trToggleHero() { trHero = !trHero; trRender(); }
 function trOpen(k) { trPanel = trPanel === k ? null : k; trRender(); }
 function panelHtml(P, key) {
@@ -147,10 +131,8 @@ function trRender() {
     ${P.pelan.map((p, i) => planHtml(p, P, i)).join("")}
     <div class="tr-abtns">${btn("sr", "Support &amp; Resistant")}${btn("ell", "Analisis Elliott Wave")}${btn("fun", "Analisis Fundamental")}</div>
     ${panelHtml(P, trTab)}
-    ${calcHtml(P, trTab)}
-    <div class="glass card-pad"><div class="tr-h">Sumber rujukan</div><ul class="tr-ul">${D.sumber.map((s) => `<li><a href="${trEsc(s[1])}" target="_blank" rel="noopener">${trEsc(s[0])}</a></li>`).join("")}</ul></div>
+    <div class="glass card-pad"><div class="tr-srchead" onclick="trToggleSrc()"><div class="tr-h" style="margin:0">Sumber rujukan</div><button class="tr-arrow ${trSrc ? "open" : ""}" type="button" aria-label="${trSrc ? "Sembunyi" : "Papar"} sumber" aria-expanded="${trSrc}">▾</button></div>${trSrc ? `<ul class="tr-ul" style="margin-top:10px">${D.sumber.map((s) => `<li><a href="${trEsc(s[1])}" target="_blank" rel="noopener">${trEsc(s[0])}</a></li>`).join("")}</ul>` : ""}</div>
     <div class="tr-warn big">Maklumat ini untuk tujuan pendidikan dan bukan nasihat pelaburan. Dagangan forex dan emas berleveraj berisiko tinggi dan boleh menyebabkan kerugian melebihi modal. Pelan ialah senario bersyarat, bukan jaminan; harga berubah pantas dan data di sini bukan masa nyata. Sentiasa guna stop-loss dan hanya risikokan wang yang anda sanggup rugi.</div>`;
-  trCalc();
 }
 
 /* ---- Amaran acara: papar hanya 1 jam sebelum acara (sehingga 15 minit selepas) ---- */
