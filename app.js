@@ -90,6 +90,32 @@ function getSavedUser() {
   }
 }
 function saveUser(user) { localStorage.setItem(USER_KEY, JSON.stringify(user)); }
+/* ---------------- Role 4 (lajur J DatabaseSTAFF) — "Trader" ---------------- */
+const isTrader = (u) => !!u && String(u.role4 || "").trim().toLowerCase() === "trader";
+/** Baca Role 4 (lajur J = indeks 9) daripada DatabaseSTAFF ikut emel; null jika gagal dibaca. */
+async function fetchRole4(user) {
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent("DatabaseSTAFF")}&headers=1&_ts=${Date.now()}`;
+    const res = await fetch(url, { cache: "no-store" });
+    const text = await res.text();
+    const rows = JSON.parse(text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1)).table.rows || [];
+    const em = String(user.email || "").trim().toLowerCase();
+    const get = (c, i) => (c[i] && c[i].v != null ? String(c[i].v).trim() : "");
+    for (const r of rows) {
+      const c = r.c || [];
+      if (get(c, 4).toLowerCase() === em || get(c, 5).toLowerCase() === em) return get(c, 9);
+    }
+    return "";
+  } catch (e) { return null; }
+}
+/** Semak Role 4 di latar; jika berubah, simpan dan lukis semula menu (tanpa reload). */
+async function refreshRole4(user) {
+  const r = await fetchRole4(user);
+  if (r === null || r === String(user.role4 || "")) return;
+  user.role4 = r; saveUser(user);
+  renderDrawerMenu();
+  if (document.getElementById("home-module-grid") && !document.querySelector("#home-module-grid .module-back")) renderHomeMenu(null);
+}
 function logout() { localStorage.removeItem(USER_KEY); location.href = "index.html"; }
 function apiConfigured() { return API_URL && API_URL.indexOf("PASTE_") !== 0; }
 function googleConfigured() { return GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID.indexOf("PASTE_") !== 0; }
@@ -311,7 +337,8 @@ function renderDrawerMenu() {
   const ntActive = currentPage === "notifikasi.html" ? " active" : "";
   const notifItem = `<a class="drawer-item${ntActive}" href="notifikasi.html"><span data-icon="bell"></span><span class="drawer-label">Notifikasi</span><span class="nt-drawer-badge hidden" id="nt-drawer-badge"></span></a>`;
 
-  box.innerHTML = notifItem + MENU_STRUCTURE.map((group) => {
+  const trItem = isTrader(getSavedUser()) ? `<a class="drawer-item${currentPage === "trader.html" ? " active" : ""}" href="trader.html"><span data-icon="chart"></span><span class="drawer-label">Trader</span></a>` : "";
+  box.innerHTML = notifItem + trItem + MENU_STRUCTURE.map((group) => {
     const hasActive = group.children.some((c) => c.href === currentPage);
     const childrenHtml = group.children.map((c) => {
       if (!c.href || c.soon) {
@@ -348,7 +375,8 @@ function renderHomeMenu(groupKey) {
   if (!groupKey) {
     grid.innerHTML = MENU_STRUCTURE.map((g) =>
       `<div class="module-tile" onclick="renderHomeMenu('${g.key}')"><span data-icon="${g.icon}"></span><span class="module-tile-label">${g.label}</span></div>`
-    ).join("") + `<a class="module-tile" href="kehadiran-staf.html"><span data-icon="calendar"></span><span class="module-tile-label">Kehadiran Staf</span></a>`;
+    ).join("") + `<a class="module-tile" href="kehadiran-staf.html"><span data-icon="calendar"></span><span class="module-tile-label">Kehadiran Staf</span></a>`
+      + (isTrader(getSavedUser()) ? `<a class="module-tile" href="trader.html"><span data-icon="chart"></span><span class="module-tile-label">Trader</span></a>` : "");
     renderIcons();
     return;
   }
@@ -595,6 +623,7 @@ async function initApp(onReady) {
     appContent.classList.remove("hidden");
     renderHeader(user);
     renderDrawerMenu();
+    refreshRole4(user);
     ntBoot(user);
     temaBoot(user);
     await fetchAccessSettings(); // sedia SEBELUM onReady, supaya modul boleh guna checkModuleAccess() terus
@@ -619,7 +648,7 @@ async function refreshUserInBackground(cachedUser) {
     if (changed) {
       saveUser({
         email: cachedUser.email, nama: data.nama, jawatan: data.jawatan, gambar: data.gambar,
-        role: data.role || "", role2: data.role2 || "", role3: data.role3 || "", telefon: data.telefon, emel1: data.emel1, emel2: data.emel2,
+        role: data.role || "", role2: data.role2 || "", role3: data.role3 || "", role4: cachedUser.role4 || "", telefon: data.telefon, emel1: data.emel1, emel2: data.emel2,
       });
       location.reload();
     }
