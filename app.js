@@ -114,7 +114,6 @@ async function refreshRole4(user) {
   if (r === null || r === String(user.role4 || "")) return;
   user.role4 = r; saveUser(user);
   renderDrawerMenu();
-  if (document.getElementById("home-module-grid") && !document.querySelector("#home-module-grid .module-back")) renderHomeMenu(null);
 }
 function logout() { localStorage.removeItem(USER_KEY); location.href = "index.html"; }
 function apiConfigured() { return API_URL && API_URL.indexOf("PASTE_") !== 0; }
@@ -375,8 +374,7 @@ function renderHomeMenu(groupKey) {
   if (!groupKey) {
     grid.innerHTML = MENU_STRUCTURE.map((g) =>
       `<div class="module-tile" onclick="renderHomeMenu('${g.key}')"><span data-icon="${g.icon}"></span><span class="module-tile-label">${g.label}</span></div>`
-    ).join("") + `<a class="module-tile" href="kehadiran-staf.html"><span data-icon="calendar"></span><span class="module-tile-label">Kehadiran Staf</span></a>`
-      + (isTrader(getSavedUser()) ? `<a class="module-tile" href="trader.html"><span data-icon="chart"></span><span class="module-tile-label">Trader</span></a>` : "");
+    ).join("") + `<a class="module-tile" href="kehadiran-staf.html"><span data-icon="calendar"></span><span class="module-tile-label">Kehadiran Staf</span></a>`;
     renderIcons();
     return;
   }
