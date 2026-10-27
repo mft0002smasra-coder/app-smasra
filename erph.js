@@ -33,7 +33,9 @@ let S = {
   user: null, isPny: false, tab: "saya", view: "senarai", minggu: 0, weeks1: null,
   mine: { minggu: {}, hari: {}, slot: {} }, // minggu[n] ; hari["n|h"] ; slot["n|h"] = [..]
   rpt: [], cad: [], pnyMap: [], jadual: [], cur: null, busy: false,
-  tet: { loaded: false, rows: [], staff: [], pnyList: [], asg: {}, q: "" },
+  cal: { rows: [], ok: false }, cuti: [],
+  hd: { loaded: false, busy: false, staff: [], rows: [], tahun: 0, minggu: 0, guru: "", at: "" },
+  tet: { loaded: false, rows: [], staff: [], pnyList: [], asg: {}, q: "", cal: { tahun: 0, rows: [], dirty: false } },
   rev: { list: [], sel: null, days: {}, slots: {}, hari: 1, filter: "tunggu", loaded: false },
 };
 
@@ -82,6 +84,23 @@ async function erpGviz(sheet, tq, sid) {
   return ((parsed.table && parsed.table.rows) || []).map((r) => (r.c || []).map((c) => (c && c.v != null ? String(c.f != null && /^Date\(/.test(String(c.v)) ? c.f : c.v) : "")));
 }
 function rowObj(arr, cols) { const o = {}; cols.forEach((k, i) => { o[k] = arr[i] == null ? "" : String(arr[i]); }); return o; }
+/** Seperti erpGviz tetapi pulang {cols, rows} dengan nilai mentah (tarikh "Date(y,m,d)") — untuk tab yang perlu disahkan tajuk lajurnya. */
+async function erpGvizTable(sheet, sid) {
+  const url = `https://docs.google.com/spreadsheets/d/${sid || ERP_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheet)}&headers=1&_ts=${Date.now()}`;
+  const res = await fetch(url, { cache: "no-store" });
+  const text = await res.text();
+  const parsed = JSON.parse(text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1));
+  if (parsed.status === "error") throw new Error("Tab '" + sheet + "' tidak dapat dibaca");
+  const t = parsed.table || {};
+  return { cols: (t.cols || []).map((c) => String(c.label || "").trim().toUpperCase()), rows: (t.rows || []).map((r) => (r.c || []).map((c) => (c && c.v != null ? String(c.v) : ""))) };
+}
+function normDate(v) {
+  const s = String(v == null ? "" : v).trim(); let m;
+  if ((m = s.match(/^Date\((\d+),(\d+),(\d+)/))) return m[1] + "-" + pad(+m[2] + 1) + "-" + pad(+m[3]);
+  if ((m = s.match(/^(\d{4})-(\d{2})-(\d{2})/))) return m[1] + "-" + m[2] + "-" + m[3];
+  if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/))) return m[3] + "-" + pad(+m[2]) + "-" + pad(+m[1]);
+  return "";
+}
 async function erpGvizSafe(sheet, tq, sid) { try { return await erpGviz(sheet, tq, sid); } catch (e) { return []; } }
 
 async function erpPost(payload) {
@@ -96,18 +115,105 @@ async function erpInitTabs() {
   try { await fetch(ERP_API_URL + "?action=init"); } catch (e) { /* senyap */ }
 }
 
-/* ================= Minggu ================= */
+/* ================= Minggu (ikut Kalendar Akademik; lalai ke MINGGU1_MULA jika kalendar tahun itu belum dimuat naik) =================
+ * ID minggu disimpan dalam Sheet: tahun asas (2026) = 1..53 (sama seperti data sedia ada); tahun lain = (tahun-2026)*100 + nombor
+ * (cth 2027 Minggu 1 = 100+1 = 101) supaya kunci data tidak bertindih antara tahun. */
 let ERP_W1 = "2026-02-09"; // lalai; diganti oleh eRPH_Tetapan MINGGU1_MULA
-function weekStart(n) { return addDays(ERP_W1, (n - 1) * 7); }
+const ERP_BASE_Y = 2026;
+let ERP_WK = { list: [], byId: {}, years: [] };
+const wkId = (y, no) => (y === ERP_BASE_Y ? no : (y - ERP_BASE_Y) * 100 + no);
+const wkYear = (id) => (id >= 100 ? ERP_BASE_Y + Math.floor(id / 100) : ERP_BASE_Y);
+const wkNo = (id) => (id >= 100 ? id % 100 : id);
+const wkLbl = (id) => "Minggu " + wkNo(id);
+function monOf(iso) { const d = dateOf(iso); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return isoOf(d); }
+/** Senarai Isnin bagi minggu persekolahan: minggu yang ada sekurang-kurangnya satu hari Isn-Jum dalam [mula,tamat] yang BUKAN cuti penggal. */
+function calWeeks(mula, tamat, cuti) {
+  const out = []; let m = monOf(mula);
+  for (let i = 0; i < 70 && m <= tamat; i++, m = addDays(m, 7)) {
+    let sekolah = false;
+    for (let h = 0; h < 5 && !sekolah; h++) {
+      const d = addDays(m, h);
+      if (d >= mula && d <= tamat && !cuti.some((c) => d >= c.mula && d <= (c.akhir || c.mula))) sekolah = true;
+    }
+    if (sekolah) out.push(m);
+  }
+  return out;
+}
+function calYearRows(rows) {
+  const by = {}; rows.forEach((r) => { (by[r.tahun] = by[r.tahun] || []).push(r); }); return by;
+}
+function calSpan(rs) {
+  const mula = rs.filter((r) => r.jenis === "Mula Sesi" && r.mula).map((r) => r.mula).sort()[0];
+  const tamat = rs.filter((r) => r.jenis === "Tamat Sesi" && (r.akhir || r.mula)).map((r) => r.akhir || r.mula).sort().pop();
+  return mula && tamat && mula <= tamat ? { mula, tamat, cuti: rs.filter((r) => r.jenis === "Cuti Penggal" && r.mula) } : null;
+}
+function calBuild() {
+  const by = calYearRows(S.cal.rows), list = [], years = [];
+  Object.keys(by).map(Number).sort().forEach((y) => {
+    const sp = calSpan(by[y]); if (!sp) return;
+    years.push(y); calWeeks(sp.mula, sp.tamat, sp.cuti).forEach((w, i) => list.push({ id: wkId(y, i + 1), no: i + 1, year: y, start: w }));
+  });
+  ERP_WK = { list, byId: {}, years }; list.forEach((w) => { ERP_WK.byId[w.id] = w; });
+}
+function weekStart(id) {
+  const w = ERP_WK.byId[id]; if (w) return w.start;
+  const y = wkYear(id), no = wkNo(id);
+  return y === ERP_BASE_Y ? addDays(ERP_W1, (no - 1) * 7) : addDays(monOf(y + "-01-04"), (no - 1) * 7);
+}
 function weekEnd(n) { return addDays(weekStart(n), 4); }
 function dayIso(n, h) { return addDays(weekStart(n), h - 1); }
 function currentWeekNo() {
   const t = new Date(); const dow = t.getDay(); // 0=Ahad
-  const mon = new Date(t.getFullYear(), t.getMonth(), t.getDate() - ((dow + 6) % 7) + (dow === 0 || dow === 6 ? 7 : 0));
-  const w1 = dateOf(ERP_W1);
-  return Math.max(1, Math.round((mon - w1) / (7 * 864e5)) + 1);
+  const mon = isoOf(new Date(t.getFullYear(), t.getMonth(), t.getDate() - ((dow + 6) % 7) + (dow === 0 || dow === 6 ? 7 : 0)));
+  const L = ERP_WK.list;
+  if (L.length) {
+    const ex = L.find((w) => w.start === mon); if (ex) return ex.id;
+    const nx = L.find((w) => w.start > mon); if (nx) return nx.id; // dalam cuti penggal: minggu persekolahan seterusnya
+    if (mon <= addDays(L[L.length - 1].start, 28)) return L[L.length - 1].id;
+  }
+  const y = +mon.slice(0, 4);
+  if (y > ERP_BASE_Y) return wkId(y, Math.max(1, Math.round((dateOf(mon) - dateOf(monOf(y + "-01-04"))) / (7 * 864e5)) + 1));
+  return Math.max(1, Math.round((dateOf(mon) - dateOf(ERP_W1)) / (7 * 864e5)) + 1);
 }
 function weekRangeTxt(n) { return dmy(weekStart(n)) + " – " + dmy(weekEnd(n)); }
+
+/* ---- Cuti: kalendar akademik (cuti penggal / cuti lain) + tab "Cuti" sheet utama (cuti umum Melaka + cuti perayaan KPM) ---- */
+async function erpLoadCal() {
+  try {
+    const t = await erpGvizTable("eRPH_Kalendar");
+    S.cal.rows = [];
+    if (["TAHUN", "JENIS", "MULA"].every((c) => t.cols.includes(c))) {
+      const ix = (c) => t.cols.indexOf(c);
+      t.rows.forEach((r) => {
+        const tahun = parseInt(r[ix("TAHUN")], 10), mula = normDate(r[ix("MULA")]), akhir = normDate(r[ix("AKHIR")]) || mula;
+        if (tahun && mula) S.cal.rows.push({ tahun, jenis: String(r[ix("JENIS")] || "").trim(), nama: String(r[ix("NAMA")] || "").trim(), mula, akhir });
+      });
+      S.cal.ok = true;
+    }
+  } catch (e) { /* kalendar belum ada: guna MINGGU1_MULA */ }
+  calBuild();
+  try {
+    const t = await erpGvizTable("Cuti", typeof SPREADSHEET_ID !== "undefined" ? SPREADSHEET_ID : "");
+    S.cuti = [];
+    if (["MULA", "TAMAT", "JENIS"].every((c) => t.cols.includes(c))) {
+      const ix = (c) => t.cols.indexOf(c);
+      t.rows.forEach((r) => {
+        const mula = normDate(r[ix("MULA")]); if (!mula || /^(y|ya|yes|1|true)$/i.test(String(r[ix("ABAIKAN")] || "").trim())) return;
+        let tamat = normDate(r[ix("TAMAT")]) || mula; if (tamat < mula) tamat = mula;
+        S.cuti.push({ mula, tamat, jenis: String(r[ix("JENIS")] || "").trim(), nama: String(r[ix("NAMA")] || "").trim() });
+      });
+    }
+  } catch (e) { /* tab Cuti tiada: abaikan */ }
+}
+/** Nama cuti bagi satu tarikh (cuti penggal, cuti lain, cuti umum, cuti perayaan KPM) atau null. */
+function cutiOf(iso) {
+  const hit = [];
+  S.cuti.forEach((e) => { if (iso >= e.mula && iso <= e.tamat) hit.push(e); });
+  S.cal.rows.forEach((r) => { if ((r.jenis === "Cuti Penggal" || r.jenis === "Cuti Lain") && iso >= r.mula && iso <= (r.akhir || r.mula)) hit.push(r); });
+  if (!hit.length) return null;
+  const p = hit.find((h) => h.nama) || hit[0];
+  return { nama: p.nama || p.jenis || "Cuti" };
+}
 
 /* ================= Muat data ================= */
 async function erpLoadCommon() {
@@ -251,17 +357,18 @@ function head() {
   const bor = S.tab === "saya" && S.view === "borang" && S.cur && !isPC();
   const tools = `<div class="erp-head-tools"><button class="out" data-act="tema" type="button">${g ? "☀ Cerah" : "☾ Gelap"}</button><button class="out" data-act="logout" type="button">Log keluar</button></div>`;
   const inner = bor
-    ? `<div class="hl bor"><span class="t">e-RPH</span><span class="wk"><span>Minggu ${S.cur.minggu}</span><span>${E(dmyHari(S.cur.tarikh, S.cur.hariNo))}</span></span></div>`
+    ? `<div class="hl bor"><span class="t">e-RPH</span><span class="wk"><span>${wkLbl(S.cur.minggu)}</span><span>${E(dmyHari(S.cur.tarikh, S.cur.hariNo))}</span></span></div>`
     : `<div class="hl"><span class="t">e-RPH</span><span class="t sch">SM ARAB (JAIM) AL-ASYRAF</span></div><div class="n">${E(S.user.nama)}</div>`;
   return `<div class="erp-head">${inner}${tools}</div>
-    ${S.isPny ? `<div class="erp-tabs"><button class="erp-tab ${S.tab === "saya" ? "on" : ""}" data-act="tab" data-t="saya" type="button">RPH Saya</button><button class="erp-tab g ${S.tab === "semak" ? "on" : ""}" data-act="tab" data-t="semak" type="button">Semakan</button>${isAdminApp(S.user) ? `<button class="erp-tab g ${S.tab === "tetapan" ? "on" : ""}" data-act="tab" data-t="tetapan" type="button">Tetapan</button>` : ""}</div>` : ""}`;
+    ${S.isPny ? `<div class="erp-tabs"><button class="erp-tab ${S.tab === "saya" ? "on" : ""}" data-act="tab" data-t="saya" type="button">RPH Saya</button><button class="erp-tab g ${S.tab === "semak" ? "on" : ""}" data-act="tab" data-t="semak" type="button">Semakan</button><button class="erp-tab g ${S.tab === "hantar" ? "on" : ""}" data-act="tab" data-t="hantar" type="button">Penghantaran</button>${isAdminApp(S.user) ? `<button class="erp-tab g ${S.tab === "tetapan" ? "on" : ""}" data-act="tab" data-t="tetapan" type="button">Tetapan</button>` : ""}</div>` : ""}`;
 }
 function render() {
   const root = document.getElementById("erp-root"); if (!root) return;
-  root.classList.toggle("erp-semak", S.tab === "semak" || S.tab === "tetapan");
+  root.classList.toggle("erp-semak", S.tab === "semak" || S.tab === "tetapan" || S.tab === "hantar");
   let body = "";
   if (S.tab === "semak") body = vSemak();
   else if (S.tab === "tetapan") body = vTetapan();
+  else if (S.tab === "hantar") body = vHantar();
   else body = S.view === "borang" ? vBorang() : S.view === "dash" && isPC() ? vDash() : vSenarai();
   const y = window.scrollY;
   root.innerHTML = head() + `<div class="erp-main">${body}</div>`;
@@ -301,13 +408,13 @@ function vDash() {
   const nums = [...new Set(Object.keys(S.mine.minggu).map(Number).concat(Object.keys(S.mine.hari).map((k) => +k.split("|")[0])))].filter((x) => x > 0).sort((a, b) => b - a);
   const infos = nums.map(erpWeekInfo);
   const adaCur = nums.indexOf(cur) !== -1;
-  const rows = infos.slice(0, 20).map((w) => `<div class="erp-dr" data-act="buka-minggu" data-n="${w.n}"><span class="c1">Minggu ${w.n}</span><span class="c2">${E(dm(weekStart(w.n)) + " – " + dmy(weekEnd(w.n)))}</span><span class="c3">${w.siap} / 5</span><span class="c4">${pill(w.cls, w.st)}</span><span class="c5">${E(w.pny)}</span><span class="c6">${w.aksi} ›</span></div>`).join("");
+  const rows = infos.slice(0, 20).map((w) => `<div class="erp-dr" data-act="buka-minggu" data-n="${w.n}"><span class="c1">${wkLbl(w.n)}</span><span class="c2">${E(dm(weekStart(w.n)) + " – " + dmy(weekEnd(w.n)))}</span><span class="c3">${w.siap} / 5</span><span class="c4">${pill(w.cls, w.st)}</span><span class="c5">${E(w.pny)}</span><span class="c6">${w.aksi} ›</span></div>`).join("");
   const total = infos.length, hantar = infos.filter((w) => w.st === "Dihantar" || w.st === "Disemak").length, semak = infos.filter((w) => w.st === "Disemak").length;
   const proses = infos.filter((w) => w.st === "Dihantar").length, draf = infos.filter((w) => w.st === "Draf" || w.st === "Dipulang").length;
   const pct = (a, b) => (b ? (a * 100) / b : 0);
   return `<div class="erp-dash">
-    <div class="erp-card erp-dwk"><div><div class="lb">MINGGU SEMASA</div><div class="bg">Minggu ${cur} · ${E(weekRangeTxt(cur))}</div><div class="erp-hint">${adaCur ? "RPH minggu ini sudah dimulakan." : "RPH untuk minggu ini belum diwujudkan."}</div></div>
-      <button class="erp-btn solid" style="height:54px;padding:0 28px;font-size:16px" data-act="buka-minggu" data-n="${cur}" type="button">${adaCur ? "Buka RPH Minggu " + cur : "+ Wujudkan RPH Minggu " + cur}</button></div>
+    <div class="erp-card erp-dwk"><div><div class="lb">MINGGU SEMASA</div><div class="bg">${wkLbl(cur)} · ${E(weekRangeTxt(cur))}</div><div class="erp-hint">${adaCur ? "RPH minggu ini sudah dimulakan." : "RPH untuk minggu ini belum diwujudkan."}</div></div>
+      <button class="erp-btn solid" style="height:54px;padding:0 28px;font-size:16px" data-act="buka-minggu" data-n="${cur}" type="button">${adaCur ? "Buka RPH " + wkLbl(cur) : "+ Wujudkan RPH " + wkLbl(cur)}</button></div>
     <div class="erp-dcols"><div class="erp-card erp-dlist"><h3>Rekod RPH saya</h3>
         <div class="erp-dr hd"><span class="c1">MINGGU</span><span class="c2">TEMPOH</span><span class="c3">HARI SIAP</span><span class="c4">STATUS</span><span class="c5">PENYEMAK</span><span class="c6">TINDAKAN</span></div>
         ${rows || `<div class="erp-empty">Belum ada RPH. Tekan butang di atas untuk memulakan.</div>`}</div>
@@ -320,7 +427,7 @@ function revStatsHtml() {
   const guru = new Set(done.map((x) => norm(x.nama))).size;
   const byW = {}; done.forEach((x) => { byW[+x.minggu] = (byW[+x.minggu] || 0) + 1; });
   const ws = Object.keys(byW).map(Number).sort((a, b) => b - a).slice(0, 6), mx = Math.max(1, ...ws.map((w) => byW[w]));
-  const bars = ws.map((w) => `<div class="erp-bw"><span>M${w}</span><div class="erp-bar"><i style="width:${(byW[w] * 100) / mx}%"></i></div><b>${byW[w]}</b></div>`).join("") || `<div class="erp-hint">Belum ada semakan.</div>`;
+  const bars = ws.map((w) => `<div class="erp-bw"><span>M${wkNo(w)}</span><div class="erp-bar"><i style="width:${(byW[w] * 100) / mx}%"></i></div><b>${byW[w]}</b></div>`).join("") || `<div class="erp-hint">Belum ada semakan.</div>`;
   const tot = done.length + tunggu.length + pulang.length;
   return `<div class="erp-card erp-rstats"><h3>Prestasi semakan saya</h3>
     <div class="erp-kpis"><div><span>Jumlah disemak</span><b>${done.length}</b></div><div><span>Guru</span><b>${guru}</b></div><div><span>Menunggu</span><b style="color:#6a4bd8">${tunggu.length}</b></div></div>
@@ -330,8 +437,10 @@ function revStatsHtml() {
 
 /* ================= Senarai minggu ================= */
 function weekOptions() {
-  const cur = currentWeekNo(), out = [];
-  for (let n = cur + 1; n >= 1; n--) out.push(n);
+  const cur = currentWeekNo(), L = ERP_WK.list, i = L.findIndex((w) => w.id === cur);
+  if (i !== -1) return L.slice(0, i + 2).map((w) => w.id).reverse();
+  const out = [], lo = cur >= 100 ? Math.floor(cur / 100) * 100 + 1 : 1;
+  for (let n = cur + 1; n >= lo; n--) out.push(n);
   return out;
 }
 function vSenarai() {
@@ -339,23 +448,29 @@ function vSenarai() {
   let siap = 0; const belum = [];
   for (let h = 1; h <= 5; h++) { const st = dayStatus(n, h); if (st === "Siap" || st === "Cuti") siap++; else belum.push("H" + h); }
   const pulang = []; for (let h = 1; h <= 5; h++) { const r = S.mine.hari[n + "|" + h]; if (r && r.semakan === "Dipulang") pulang.push(r); }
-  const opts = weekOptions().map((w) => `<option value="${w}" ${w === n ? "selected" : ""}>Minggu ${w} · ${weekRangeTxt(w)}${w === cur ? " · minggu semasa" : ""}</option>`).join("");
+  const opts = weekOptions().map((w) => `<option value="${w}" ${w === n ? "selected" : ""}>${wkLbl(w)}${wkYear(w) !== wkYear(cur) ? " (" + wkYear(w) + ")" : ""} · ${weekRangeTxt(w)}${w === cur ? " · minggu semasa" : ""}</option>`).join("");
   const days = [1, 2, 3, 4, 5].map((h) => {
     const p = dayPill(n, h), k = n + "|" + h, nk = (S.mine.slot[k] || []).length;
-    const info = S.mine.hari[k] ? (S.mine.hari[k].status === "Cuti" ? "Cuti / tiada RPH" : nk + " kelas") : "Belum ditulis";
+    const ct = cutiOf(dayIso(n, h));
+    const info = S.mine.hari[k] ? (S.mine.hari[k].status === "Cuti" ? "Cuti" + (ct ? ": " + ct.nama : " / tiada RPH") : nk + " kelas") : ct ? "Cuti: " + ct.nama : "Belum ditulis";
     return `<div class="erp-day" data-act="open-day" data-h="${h}" style="cursor:pointer"><div class="k ${p.cls}">H${h}</div><div class="m"><b>${ERP_HARI[h - 1]} <span style="display:inline;font-weight:400">· ${dm(dayIso(n, h))}</span></b><span>${E(info)}</span></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">${pill(p.cls, p.t)}<span class="erp-link">${p.aksi} ›</span></div></div>`;
   }).join("");
   const wkBadge = wk ? { Draf: "s-draf", Dihantar: "s-belum", Disemak: "s-siap", Dipulang: "s-pulang" }[wk.status] || "s-draf" : "";
   const pulangBox = pulang.length ? `<div class="erp-card" style="border-color:#e3a0a0"><h3 style="color:#a12020">Dipulangkan untuk pembetulan</h3>${pulang.map((r) => `<div class="erp-hint"><b>H${r.hariNo} ${ERP_HARI[r.hariNo - 1]}</b>: ${E(r.ulasan || "(tiada ulasan)")}</div>`).join("")}</div>` : "";
   const can = siap === 5;
+  const adaData = !!wk || [1, 2, 3, 4, 5].some((h) => S.mine.hari[n + "|" + h]);
+  const ctList = [1, 2, 3, 4, 5].map((h) => ({ h, c: cutiOf(dayIso(n, h)) })).filter((x) => x.c);
+  const wujudBox = adaData ? "" : `<div class="erp-card erp-wujud"><h3>RPH ${E(wkLbl(n))} belum diwujudkan</h3>
+    <div class="erp-hint" style="margin-bottom:10px">Isnin hingga Jumaat akan dicipta sekali gus mengikut <b>Jadual Guru</b> anda (kelas, subjek, masa mula dan hingga). Hari cuti ditanda automatik${ctList.length ? ": " + E(ctList.map((x) => ERP_HARI[x.h - 1] + " (" + x.c.nama + ")").join(", ")) : ""}.</div>
+    <button class="erp-btn solid" style="width:100%;height:46px" data-act="wujud-minggu" type="button">+ Wujudkan RPH ${E(wkLbl(n))}</button></div>`;
   return `<div class="erp-senarai">
   <div class="a-week"><div class="erp-card"><div class="erp-f" style="margin:0"><label class="erp-lbl" for="erp-wk">Pilih minggu</label><select id="erp-wk" class="erp-sel" data-act-change="minggu">${opts}</select></div>
     <div class="erp-between" style="margin-top:12px"><span style="font-weight:600">Kemajuan RPH minggu ini</span><span style="font-weight:700;color:var(--acc)">${siap} / 5 hari siap</span></div>
     <div class="erp-bar" style="margin-top:8px"><i style="width:${siap * 20}%"></i></div>
     ${wk ? `<div class="erp-hint" style="margin-top:8px">Status minggu: ${pill(wkBadge, wk.status)}${wk.tarikhHantar ? " · dihantar " + E(wk.tarikhHantar.slice(0, 16)) : ""}</div>` : ""}</div>
-  ${pulangBox}</div>
+  ${wujudBox}${pulangBox}</div>
   <div class="a-days" style="display:flex;flex-direction:column;gap:10px">${days}</div>
-  <div class="a-hantar erp-card dash"><button class="erp-btn ${can ? "ok" : ""}" style="width:100%;height:48px" data-act="hantar" type="button" ${can ? "" : "disabled"}>Hantar RPH Minggu ${n}</button>
+  <div class="a-hantar erp-card dash"><button class="erp-btn ${can ? "ok" : ""}" style="width:100%;height:48px" data-act="hantar" type="button" ${can ? "" : "disabled"}>Hantar RPH ${wkLbl(n)}</button>
     <div class="erp-hint" style="text-align:center;margin-top:8px">${can ? "Semua hari siap." : "Butang aktif selepas H1–H5 semuanya ditanda siap. Belum siap: <b>" + E(belum.join(", ")) + "</b>."}</div></div>
   <div class="a-salin erp-card"><button class="erp-btn" style="width:100%" data-act="salin-minggu" type="button">⧉ Salin daripada RPH lama saya</button>
     <div class="erp-hint" style="margin-top:6px">Hanya RPH anda sendiri. Kandungan disalin bila tingkatan dan subjek sama; kelas dan waktu ikut Jadual Guru semasa.</div></div>
@@ -406,7 +521,7 @@ function vBorang() {
     <div class="erp-f"><label class="erp-lbl">Catatan Aktiviti</label><textarea class="erp-ta" rows="3" data-kf="catatan" placeholder="Contoh: Murid lelaki meletakkan tangan pada dada semasa bertegur sapa dengan rakan atau guru perempuan…">${E(kar.catatan)}</textarea></div>` : "";
   const siapKept = d.status === "Siap";
   return top + ret + `
-  <div class="erp-bcols"><div class="erp-bl">${isPC() ? `<div class="erp-card erp-wkcard"><div class="lb">MINGGU</div><div class="b">Minggu ${d.minggu}</div><div class="dt">${E(dmyHari(d.tarikh, d.hariNo))}</div></div>` : ""}<div class="erp-chips slots">${chips}</div></div><div class="erp-br">
+  <div class="erp-bcols"><div class="erp-bl">${isPC() ? `<div class="erp-card erp-wkcard"><div class="lb">MINGGU</div><div class="b">${wkLbl(d.minggu)}</div><div class="dt">${E(dmyHari(d.tarikh, d.hariNo))}</div></div>` : ""}<div class="erp-chips slots">${chips}</div></div><div class="erp-br">
   <div><div class="erp-slothead"><span>MASA / KELAS : ${i + 1}</span><span>${d.slots.length > 1 ? `<button data-act="buang-slot" type="button">Buang</button>` : ""}</span></div>
     <div class="erp-slotbody">
       ${jd.length ? `<button class="erp-pick" style="margin:0 0 10px" data-act="pilih-jadual" type="button">▾ Pilih kelas &amp; waktu daripada Jadual Guru (${jd.length})</button>` : `<div class="erp-hint" style="margin-bottom:10px">Tiada Jadual Guru untuk ${ERP_HARI[d.hariNo - 1]}. Isi kelas dan waktu sendiri.</div>`}
@@ -436,6 +551,7 @@ function syncKarAkhir() {
 function onInput(e) {
   const t = e.target;
   if (S.tab === "tetapan") {
+    if (t.dataset.ck !== undefined) { const r = S.tet.cal.rows[+t.dataset.ci]; if (r) { r[t.dataset.ck] = t.value; S.tet.cal.dirty = true; const pv = document.getElementById("cal-prev"); if (pv) pv.innerHTML = calPreviewHtml(); } return; }
     if (t.dataset.tk !== undefined) S.tet.rows[+t.dataset.tk].k = t.value;
     else if (t.dataset.tv !== undefined) S.tet.rows[+t.dataset.tv].v = t.value;
     else if (t.dataset.tq !== undefined) { S.tet.q = t.value; document.getElementById("tet-glist").innerHTML = tetGuruHtml(); }
@@ -462,6 +578,12 @@ function onChange(e) {
   const t = e.target;
   if (t.dataset.tg !== undefined) { const k = norm(t.dataset.tg); if (t.value) S.tet.asg[k] = t.value; else delete S.tet.asg[k]; return; }
   if (t.dataset.actChange === "minggu") { S.minggu = +t.value; render(); return; }
+  if (t.dataset.actChange === "hd-tahun") { S.hd.tahun = +t.value; const ws = hdWeeks(S.hd.tahun); S.hd.minggu = ws.indexOf(S.hd.minggu) !== -1 ? S.hd.minggu : (ws[0] || 0); return render(); }
+  if (t.dataset.actChange === "hd-minggu") { S.hd.minggu = +t.value; return render(); }
+  if (t.dataset.actChange === "hd-guru") { S.hd.guru = t.value; return render(); }
+  if (t.dataset.actChange === "cal-tahun") { calSelectYear(+t.value); return render(); }
+  if (t.dataset.ck !== undefined && t.tagName === "SELECT") { const r = S.tet.cal.rows[+t.dataset.ci]; if (r) { r[t.dataset.ck] = t.value; S.tet.cal.dirty = true; } return render(); }
+  if (t.dataset.calpdf !== undefined) { const f = t.files && t.files[0]; t.value = ""; if (f) calReadPdf(f); return; }
   if (S.view !== "borang" || !S.cur || S.tab !== "saya") return;
   const s = S.cur.slots[S.cur.idx];
   if (t.dataset.c) { s[t.dataset.c] = t.checked; dirty(); }
@@ -641,7 +763,7 @@ function applyCopySlot(i) {
 function openCopyWeek() {
   const weeks = [...new Set(Object.keys(S.mine.slot).filter((k) => (S.mine.slot[k] || []).length).map((k) => +k.split("|")[0]))].filter((w) => w !== S.minggu).sort((a, b) => b - a);
   S._cw = weeks;
-  modal(`<h4>Salin ke Minggu ${S.minggu}</h4><div class="erp-hint" style="margin-bottom:8px">Pilih minggu sumber. Hari yang sudah ada isi tidak diganti. Kandungan hanya disalin bila tingkatan dan subjek sama; kelas dan waktu ikut Jadual Guru.</div>${weeks.length ? weeks.map((w, i) => `<button class="erp-opt" data-act="cw-val" data-i="${i}" type="button"><b>Minggu ${w}</b><small>${weekRangeTxt(w)}</small></button>`).join("") : `<div class="erp-hint">Belum ada RPH lama untuk disalin.</div>`}<div class="erp-right" style="margin-top:8px"><button class="erp-btn" data-act="close" type="button">Tutup</button></div>`);
+  modal(`<h4>Salin ke ${wkLbl(S.minggu)}</h4><div class="erp-hint" style="margin-bottom:8px">Pilih minggu sumber. Hari yang sudah ada isi tidak diganti. Kandungan hanya disalin bila tingkatan dan subjek sama; kelas dan waktu ikut Jadual Guru.</div>${weeks.length ? weeks.map((w, i) => `<button class="erp-opt" data-act="cw-val" data-i="${i}" type="button"><b>${wkLbl(w)}</b><small>${weekRangeTxt(w)}</small></button>`).join("") : `<div class="erp-hint">Belum ada RPH lama untuk disalin.</div>`}<div class="erp-right" style="margin-top:8px"><button class="erp-btn" data-act="close" type="button">Tutup</button></div>`);
 }
 async function copyWeek(src) {
   closeModal();
@@ -678,18 +800,41 @@ async function copyWeek(src) {
   finally { S.busy = false; render(); }
 }
 
+/* ================= Wujudkan RPH satu minggu (auto: Isnin–Jumaat ikut Jadual Guru; hari cuti ditanda Cuti) ================= */
+async function wujudMinggu(n) {
+  if (S.busy) return;
+  S.busy = true; toast("Mewujudkan RPH " + wkLbl(n) + "…", false, true);
+  try {
+    const items = [], ds = []; let cuti = 0, isi = 0; const tiada = [];
+    for (let h = 1; h <= 5; h++) {
+      if (S.mine.hari[n + "|" + h]) continue;
+      const c = cutiOf(dayIso(n, h)), d = dayFromRows(n, h, null, []);
+      if (c) { d.slots = []; ds.push([d, "Cuti"]); items.push(payloadOf(d, "Cuti")); cuti++; continue; }
+      const jd = jadualDay(h);
+      if (!jd.length) { tiada.push(ERP_HARI[h - 1]); continue; }
+      d.slots = jd.map((j) => blankSlot(j)); ds.push([d, "Draf"]); items.push(payloadOf(d, "Draf")); isi += jd.length;
+    }
+    if (!items.length) { toast("Jadual Guru anda tidak ditemui untuk " + wkLbl(n) + ". Buka hari dan isi kelas sendiri.", true); return; }
+    await _saveQ;
+    await erpPost({ action: "wujudMinggu", emel: S.user.email, nama: S.user.nama, minggu: n, hari: items });
+    ds.forEach((x) => applySaved(x[0], x[1], null));
+    toast(wkLbl(n) + " diwujudkan: " + isi + " slot kelas daripada Jadual Guru" + (cuti ? ", " + cuti + " hari cuti ditanda" : "") + (tiada.length ? ". Tiada jadual: " + tiada.join(", ") : "") + ".");
+  } catch (err) { toast(err.message || "Gagal mewujudkan RPH.", true); }
+  finally { S.busy = false; render(); }
+}
+
 /* ================= Hantar minggu ================= */
 async function hantarMinggu() {
   if (S.busy) return;
   const n = S.minggu;
-  if (!confirm("Hantar RPH Minggu " + n + " kepada penyemak dan simpan ke pangkalan data?\n(RPH tidak dikunci; anda masih boleh mengemas kini.)")) return;
+  if (!confirm("Hantar RPH " + wkLbl(n) + " kepada penyemak dan simpan ke pangkalan data?\n(RPH tidak dikunci; anda masih boleh mengemas kini.)")) return;
   S.busy = true; toast("Menghantar…", false, true);
   try {
     await _saveQ;
     const r = await erpPost({ action: "hantarMinggu", emel: S.user.email, nama: S.user.nama, minggu: n });
     const wk = S.mine.minggu[n]; if (wk) { wk.status = "Dihantar"; wk.tarikhHantar = new Date().toISOString().slice(0, 19).replace("T", " "); }
     for (let h = 1; h <= 5; h++) { const x = S.mine.hari[n + "|" + h]; if (x && x.semakan !== "Disemak") { x.semakan = "Menunggu"; } }
-    toast("RPH Minggu " + n + " dihantar." + (r.cadangan ? " " + r.cadangan + " isian baharu dicadangkan ke RPT." : ""));
+    toast("RPH " + wkLbl(n) + " dihantar." + (r.cadangan ? " " + r.cadangan + " isian baharu dicadangkan ke RPT." : ""));
   } catch (err) { toast(err.message || "Gagal menghantar.", true); }
   finally { S.busy = false; render(); }
 }
@@ -709,7 +854,7 @@ function printHtml(d, meta) {
     <tr><th>Tarikh</th><td><b>${E(dmyHari(d.tarikh, d.hariNo))}</b></td></tr><tr><th>Masa</th><td><b>${E(t12(k.mula) + " – " + t12(k.akhir))}</b></td></tr>
     <tr><th>Elemen Teras Karakter</th><td><b>${E(k.elemen.join(", "))}</b></td></tr><tr><th>Catatan Aktiviti</th><td><b>${E(k.catatan)}</b></td></tr></table></div>` : "";
   return `<div class="erp-pr"><div class="ban">RANCANGAN PENGAJARAN HARIAN (e-RPH)</div>
-    <table><thead><tr><th>Nama Guru</th><td>${E(meta.nama)}</td><th>Minggu</th><td>${d.minggu} (${E(weekRangeTxt(d.minggu))})</td></tr>
+    <table><thead><tr><th>Nama Guru</th><td>${E(meta.nama)}</td><th>Minggu</th><td>${wkNo(d.minggu)} (${E(weekRangeTxt(d.minggu))})</td></tr>
     <tr><th>Tarikh</th><td>${E(dmy(d.tarikh))}</td><th>Hari</th><td>${ERP_HARI[d.hariNo - 1]}</td></tr>
     <tr><th>Telah Disemak Oleh</th><td>${E(meta.semakOleh || "")}</td><th>Status</th><td>${E(meta.status || "")}</td></tr></thead></table>
     ${d.slots.map(pembuka).join("")}${kar}</div>`;
@@ -755,7 +900,117 @@ function vTetapan() {
     <div class="erp-card"><h3>Guru dan penyemak (eRPH_Penyemak)</h3>
       <div class="erp-hint" style="margin-bottom:10px">Nama diambil daripada DatabaseSTAFF. Penyemak ialah staf berperanan Pentadbir (${T.pnyList.length}). Guru tanpa penyemak dipilih boleh disemak oleh semua pentadbir.</div>
       <input class="erp-in" data-tq placeholder="Cari nama guru…" value="${A(T.q)}" style="margin-bottom:10px"><div id="tet-glist">${tetGuruHtml()}</div>
-      <div class="erp-right" style="margin-top:10px"><button class="erp-btn solid" data-act="pny-save" type="button">Simpan penyemak</button></div></div></div>`;
+      <div class="erp-right" style="margin-top:10px"><button class="erp-btn solid" data-act="pny-save" type="button">Simpan penyemak</button></div></div></div>
+    ${calCardHtml()}`;
+}
+
+/* ================= Kalendar Akademik (Admin App): disimpan ikut tahun ================= */
+const CAL_JENIS = ["Mula Sesi", "Cuti Penggal", "Cuti Lain", "Tamat Sesi"];
+function calYears() {
+  const ys = new Set(S.cal.rows.map((r) => r.tahun)); const cy = new Date().getFullYear();
+  ys.add(cy); const mx = Math.max(...ys); ys.add(mx + 1);
+  return [...ys].sort((a, b) => a - b);
+}
+function calRowsOf(y) { return S.cal.rows.filter((r) => r.tahun === y).map((r) => ({ jenis: r.jenis, nama: r.nama, mula: r.mula, akhir: r.akhir })); }
+function calBlank(y) {
+  return [{ jenis: "Mula Sesi", nama: "Mula persekolahan", mula: "", akhir: "" }, { jenis: "Cuti Penggal", nama: "Cuti Penggal 1", mula: "", akhir: "" }, { jenis: "Cuti Penggal", nama: "Cuti Pertengahan Tahun", mula: "", akhir: "" }, { jenis: "Cuti Penggal", nama: "Cuti Penggal 2", mula: "", akhir: "" }, { jenis: "Cuti Penggal", nama: "Cuti Akhir Persekolahan", mula: "", akhir: "" }, { jenis: "Tamat Sesi", nama: "Tamat persekolahan", mula: "", akhir: "" }];
+}
+/** Templat Kalendar Akademik 2026 Kumpulan B (Lampiran B & C) — hanya jika admin mahu menggunakannya. */
+function calTpl2026() {
+  const r = (jenis, nama, mula, akhir) => ({ jenis, nama, mula, akhir: akhir || mula });
+  return [r("Mula Sesi", "Mula persekolahan", "2026-01-12"), r("Cuti Penggal", "Cuti Penggal 1", "2026-03-21", "2026-03-29"), r("Cuti Penggal", "Cuti Pertengahan Tahun", "2026-05-23", "2026-06-07"), r("Cuti Penggal", "Cuti Penggal 2", "2026-08-29", "2026-09-06"), r("Cuti Penggal", "Cuti Akhir Persekolahan", "2026-12-05", "2026-12-31"), r("Tamat Sesi", "Tamat persekolahan", "2026-12-04"),
+    r("Cuti Lain", "Tahun Baru Cina (cuti KPM + cuti umum)", "2026-02-16", "2026-02-20"), r("Cuti Lain", "Hari Raya Aidilfitri (cuti tambahan KPM)", "2026-03-19", "2026-03-20"), r("Cuti Lain", "Deepavali (cuti tambahan KPM)", "2026-11-10")];
+}
+function calSelectYear(y) {
+  const C = S.tet.cal; C.tahun = y; C.rows = calRowsOf(y); C.dirty = false;
+  if (!C.rows.length) C.rows = y === 2026 ? calTpl2026() : calBlank(y);
+  if (!calRowsOf(y).length) C.dirty = true;
+}
+function calPreviewHtml() {
+  const C = S.tet.cal, rs = C.rows.map((r) => ({ jenis: r.jenis, mula: normDate(r.mula), akhir: normDate(r.akhir) || normDate(r.mula) })), sp = calSpan(rs);
+  if (!sp) return `<div class="erp-hint">Isi Mula Sesi dan Tamat Sesi untuk melihat pratonton nombor minggu.</div>`;
+  const ws = calWeeks(sp.mula, sp.tamat, sp.cuti), mon = monOf(isoOf(new Date())), i = ws.indexOf(mon);
+  return `<div class="erp-hint"><b>${ws.length} minggu persekolahan</b> · Minggu 1 mula ${E(dmy(ws[0]))} · Minggu ${ws.length} tamat ${E(dmy(addDays(ws[ws.length - 1], 4)))}${i !== -1 ? ` · minggu ini = <b>Minggu ${i + 1}</b>` : ""}.<br>Minggu yang seluruhnya dalam Cuti Penggal tidak diberi nombor. Cuti perayaan dan cuti umum tetap dikira sebagai minggu (hari berkenaan ditanda Cuti).</div>`;
+}
+function calCardHtml() {
+  const C = S.tet.cal;
+  if (!C.tahun) { C.tahun = calYears().filter((y) => S.cal.rows.some((r) => r.tahun === y)).pop() || new Date().getFullYear(); C.rows = calRowsOf(C.tahun); if (!C.rows.length) { C.rows = C.tahun === 2026 ? calTpl2026() : calBlank(C.tahun); C.dirty = true; } }
+  const yrs = calYears(), saved = new Set(S.cal.rows.map((r) => r.tahun));
+  const opts = yrs.map((y) => `<option value="${y}" ${y === C.tahun ? "selected" : ""}>${y}${saved.has(y) ? " · disimpan" : " · belum ada"}</option>`).join("");
+  const rows = C.rows.map((r, i) => {
+    const sesi = r.jenis === "Mula Sesi" || r.jenis === "Tamat Sesi";
+    return `<div class="erp-calrow"><select class="erp-sel" data-ck="jenis" data-ci="${i}">${CAL_JENIS.map((j) => `<option ${j === r.jenis ? "selected" : ""}>${j}</option>`).join("")}</select><input class="erp-in" data-ck="nama" data-ci="${i}" value="${A(r.nama)}" placeholder="Nama"><input class="erp-in" type="date" data-ck="mula" data-ci="${i}" value="${A(r.mula)}" title="Mula">${sesi ? "<span></span>" : `<input class="erp-in" type="date" data-ck="akhir" data-ci="${i}" value="${A(r.akhir)}" title="Akhir">`}<button class="erp-btn sm" data-act="cal-del" data-i="${i}" type="button">Buang</button></div>`;
+  }).join("");
+  const nCuti = S.cuti.length;
+  return `<div class="erp-card erp-calcard"><h3>Kalendar akademik (eRPH_Kalendar)</h3>
+    <div class="erp-hint" style="margin-bottom:10px">Disimpan <b>ikut tahun</b>: memuat naik / menyimpan 2027 tidak mengubah 2026. Nombor minggu dikira daripada kalendar ini (cuti penggal tidak dikira). Cuti umum Melaka dan cuti perayaan KPM diambil daripada tab <b>Cuti</b> (${nCuti ? nCuti + " rekod dimuat" : "belum ada rekod; tekan Kemaskini Cuti di halaman Event"}). Tambah baris <b>Cuti Lain</b> bagi cuti yang tiada dalam tab itu.</div>
+    <div class="erp-calbar"><label class="erp-lbl">Tahun</label><select class="erp-sel" data-act-change="cal-tahun" style="max-width:170px">${opts}</select>
+      <label class="erp-btn" style="cursor:pointer">⬆ Muat naik PDF kalendar<input type="file" accept="application/pdf" data-calpdf hidden></label>
+      ${C.tahun === 2026 ? `<button class="erp-btn" data-act="cal-tpl" type="button">Isi templat 2026 (Kump. B)</button>` : ""}</div>
+    <div class="erp-calrow hd"><span>JENIS</span><span>NAMA</span><span>MULA</span><span>AKHIR</span><span></span></div>${rows}
+    <div id="cal-prev" style="margin-top:8px">${calPreviewHtml()}</div>
+    <div class="erp-right" style="margin-top:10px"><button class="erp-btn" data-act="cal-add" type="button">+ Tambah baris</button><button class="erp-btn solid" data-act="cal-save" type="button">Simpan kalendar ${C.tahun}${C.dirty ? " *" : ""}</button></div></div>`;
+}
+/** Baca teks PDF Kalendar Akademik (Lampiran B): tahun, mula persekolahan, julat cuti penggal. Fungsi tulen supaya boleh diuji. */
+function calParseText(text) {
+  const t = String(text || "").replace(/\s+/g, " "), iso = (d, m, y) => y + "-" + m + "-" + d;
+  const ym = t.match(/KALENDAR AKADEMIK\s+TAHUN\s+(\d{4})/i), tahun = ym ? +ym[1] : 0;
+  const rng = [], reR = /(\d{2})\.(\d{2})\.(\d{4})\s*[-–]\s*(\d{2})\.(\d{2})\.(\d{4})/g; let m;
+  while ((m = reR.exec(t))) rng.push({ mula: iso(m[1], m[2], m[3]), akhir: iso(m[4], m[5], m[6]) });
+  rng.sort((a, b) => (a.mula < b.mula ? -1 : 1));
+  const nmMap = {}; const reN = /CUTI\s+(PENGGAL\s+(\d)|PERTENGAHAN\s+TAHUN|AKHIR\s+PERSEKOLAHAN)/gi;
+  while ((m = reN.exec(t))) {
+    const s = m[1].toUpperCase();
+    if (m[2]) nmMap[10 + +m[2]] = "Cuti Penggal " + m[2]; else if (/^PERTENGAHAN/.test(s)) nmMap[11.5] = "Cuti Pertengahan Tahun"; else nmMap[90] = "Cuti Akhir Persekolahan";
+  }
+  const nm = Object.keys(nmMap).map(Number).sort((a, b) => a - b).map((k) => nmMap[k]);
+  const dates = []; const reD = /(\d{2})\.(\d{2})\.(\d{4})/g;
+  while ((m = reD.exec(t))) if (!tahun || +m[3] === tahun) dates.push(iso(m[1], m[2], m[3]));
+  dates.sort();
+  if (!tahun || !rng.length || !dates.length) return null;
+  const rows = [{ jenis: "Mula Sesi", nama: "Mula persekolahan", mula: dates[0], akhir: dates[0] }];
+  rng.forEach((r, i) => rows.push({ jenis: "Cuti Penggal", nama: nm.length === rng.length ? nm[i] : "Cuti Penggal " + (i + 1), mula: r.mula, akhir: r.akhir }));
+  const last = rng[rng.length - 1], tm = addDays(last.mula, -1);
+  rows.push({ jenis: "Tamat Sesi", nama: "Tamat persekolahan", mula: tm, akhir: tm });
+  return { tahun, rows, kumpulan: (t.match(/KUMPULAN\s+([AB])\s*:/i) || [])[1] || "" };
+}
+function loadPdfJs() {
+  return new Promise((res, rej) => {
+    if (window.pdfjsLib) return res(window.pdfjsLib);
+    const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    s.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; res(window.pdfjsLib); };
+    s.onerror = () => rej(new Error("Pustaka PDF tidak dapat dimuat. Isi jadual secara manual.")); document.head.appendChild(s);
+  });
+}
+async function calReadPdf(file) {
+  toast("Membaca PDF…", false, true);
+  try {
+    const lib = await loadPdfJs(), pdf = await lib.getDocument({ data: await file.arrayBuffer() }).promise; let txt = "";
+    for (let p = 1; p <= pdf.numPages; p++) { const c = await (await pdf.getPage(p)).getTextContent(); txt += c.items.map((i) => i.str).join(" ") + " \n "; }
+    const r = calParseText(txt);
+    if (!r) { toast("PDF tidak dikenali sebagai Kalendar Akademik. Isi jadual secara manual.", true); return; }
+    const C = S.tet.cal; C.tahun = r.tahun; C.rows = r.rows; C.dirty = true;
+    toast("Dibaca: tahun " + r.tahun + (r.kumpulan ? " Kumpulan " + r.kumpulan : "") + ", " + r.rows.length + " baris. Semak, kemudian Simpan." , false);
+    render();
+  } catch (err) { toast(err.message || "Gagal membaca PDF.", true); }
+}
+async function calAct(a, b) {
+  const C = S.tet.cal;
+  if (a === "cal-add") { C.rows.push({ jenis: "Cuti Lain", nama: "", mula: "", akhir: "" }); C.dirty = true; return render(); }
+  if (a === "cal-del") { C.rows.splice(+b.dataset.i, 1); C.dirty = true; return render(); }
+  if (a === "cal-tpl") { if (C.dirty && !confirm("Ganti baris yang sedang diedit dengan templat 2026?")) return; C.rows = calTpl2026(); C.dirty = true; return render(); }
+  if (a === "cal-save") {
+    const items = C.rows.map((r) => ({ jenis: r.jenis, nama: String(r.nama || "").trim(), mula: normDate(r.mula), akhir: normDate(r.akhir) || normDate(r.mula) })).filter((r) => r.mula);
+    for (const r of items) { if (r.akhir < r.mula) { toast("Tarikh akhir sebelum tarikh mula: " + (r.nama || r.jenis), true); return; } if (+r.mula.slice(0, 4) < C.tahun - 1 || +r.mula.slice(0, 4) > C.tahun + 1) { toast("Tarikh " + dmy(r.mula) + " tidak sesuai untuk tahun " + C.tahun + ".", true); return; } }
+    if (!items.some((r) => r.jenis === "Mula Sesi") || !items.some((r) => r.jenis === "Tamat Sesi")) { toast("Perlu ada baris Mula Sesi dan Tamat Sesi.", true); return; }
+    if (S.busy) return; S.busy = true; toast("Menyimpan kalendar…", false, true);
+    try {
+      await erpPost({ action: "saveKalendar", emel: S.user.email, tahun: C.tahun, items });
+      S.cal.rows = S.cal.rows.filter((r) => r.tahun !== C.tahun).concat(items.map((r) => ({ tahun: C.tahun, jenis: r.jenis, nama: r.nama, mula: r.mula, akhir: r.akhir })));
+      calBuild(); C.dirty = false; S.minggu = currentWeekNo(); toast("Kalendar " + C.tahun + " disimpan (" + items.length + " baris). Tahun lain tidak diubah.");
+    } catch (err) { toast(err.message || "Gagal menyimpan kalendar.", true); }
+    finally { S.busy = false; render(); }
+  }
 }
 async function tetSave(action, items, ok) {
   if (S.busy) return; S.busy = true; toast("Menyimpan…", false, true);
@@ -764,7 +1019,87 @@ async function tetSave(action, items, ok) {
   finally { S.busy = false; }
 }
 
-/* ================= Semakan (Pentadbir) ================= */
+/* ================= Dashboard Penghantaran (Pentadbir / Admin App) ================= */
+const HD_KECUALI = ["DR. SURINA BINTI HAMED"]; // pengetua: tidak hantar e-RPH
+/** Hanya GURU: tolak AKP (pembantu), pengetua dan kaunselor sepenuh masa (peraturan sama dengan Analisis e-RPH). */
+function hdIsGuru(x) {
+  const J = String(x.jawatan || "").toUpperCase();
+  if (J.startsWith("PENGETUA") || J.indexOf("PEMBANTU") !== -1 || /\bAKP\b/.test(J) || J.indexOf("KAUNSELOR SEPENUH MASA") !== -1) return false;
+  return !HD_KECUALI.some((n) => norm(n) === norm(x.nama));
+}
+function hdInit() { const c = currentWeekNo(); S.hd.tahun = wkYear(c); S.hd.minggu = c; S.hd.guru = ""; }
+async function hdLoad(force) {
+  const D = S.hd; if (D.busy) return; D.busy = true; if (force) toast("Memuatkan data penghantaran…", false, true);
+  render();
+  try {
+    const [st, mg] = await Promise.all([erpGviz("DatabaseSTAFF", "", SPREADSHEET_ID), erpGviz("eRPH_Minggu")]);
+    const seen = new Set(); D.staff = [];
+    // DatabaseSTAFF: B=Nama C=Jawatan E=Emel1 F=Emel2
+    st.forEach((r) => { const x = { nama: String(r[1] || "").trim(), jawatan: String(r[2] || "").trim(), e1: String(r[4] || "").trim().toLowerCase(), e2: String(r[5] || "").trim().toLowerCase() }; if (!x.nama || seen.has(norm(x.nama)) || !hdIsGuru(x)) return; seen.add(norm(x.nama)); D.staff.push(x); });
+    D.staff.sort((a, b) => a.nama.localeCompare(b.nama, "ms"));
+    D.rows = mg.map((r) => rowObj(r, ERP_MCOL)).filter((o) => o.emel);
+    D.loaded = true; D.at = new Date().toLocaleString("en-GB").replace(",", "");
+    if (force) toast("Data dikemas kini.");
+  } catch (err) { toast("Gagal memuatkan data penghantaran: " + (err.message || err), true); }
+  finally { D.busy = false; render(); }
+}
+function hdYears() {
+  const s = new Set(ERP_WK.years); s.add(wkYear(currentWeekNo()));
+  S.hd.rows.forEach((o) => { const id = +o.minggu; if (id) s.add(wkYear(id)); });
+  return [...s].sort((a, b) => b - a);
+}
+function hdWeeks(y) {
+  const ids = ERP_WK.list.filter((w) => w.year === y).map((w) => w.id).reverse();
+  if (ids.length) return ids;
+  const s = new Set(S.hd.rows.map((o) => +o.minggu).filter((id) => id && wkYear(id) === y)); const c = currentWeekNo(); if (wkYear(c) === y) s.add(c);
+  return [...s].sort((a, b) => b - a);
+}
+const HD_SENT = ["Dihantar", "Disemak", "Dipulang"];
+function hdCompute() {
+  const D = S.hd, wid = D.minggu, y = wkYear(wid), nmax = wkNo(wid);
+  const byE = {}, byN = {};
+  D.staff.forEach((x, i) => { if (x.e1) byE[x.e1] = i; if (x.e2) byE[x.e2] = i; byN[norm(x.nama)] = i; });
+  const per = D.staff.map((x) => ({ x, weeks: {} }));
+  D.rows.forEach((o) => {
+    const id = +o.minggu; if (!id || wkYear(id) !== y) return;
+    let i = byE[String(o.emel).toLowerCase().trim()]; if (i === undefined) i = byN[norm(o.nama)];
+    if (i !== undefined) per[i].weeks[id] = o;
+  });
+  return per.map((p) => {
+    let jh = 0, sel = 0, pros = 0, bs = 0;
+    Object.keys(p.weeks).forEach((id) => { if (wkNo(+id) > nmax) return; const st = p.weeks[id].status; if (HD_SENT.indexOf(st) === -1) return; jh++; if (st === "Disemak") sel++; else if (st === "Dihantar") pros++; else bs++; });
+    const cur = p.weeks[wid], st = cur ? cur.status : "";
+    const m = S.pnyMap.find((q) => q.guru === norm(p.x.nama));
+    const pny = cur && st === "Disemak" && cur.penyemak ? cur.penyemak : m ? m.pny : S.pnyMap.length ? "—" : "SEMUA PENTADBIR";
+    return { nama: p.x.nama, pny, tarikh: cur && HD_SENT.indexOf(st) !== -1 && cur.tarikhHantar ? dmy(cur.tarikhHantar.slice(0, 10)) : "—", st: HD_SENT.indexOf(st) !== -1 ? st : "Belum Hantar", jh, sel, pros, bs, jsem: sel + bs };
+  });
+}
+function vHantar() {
+  const D = S.hd;
+  if (!D.loaded) return `<div class="erd"><div class="erd-load">${D.busy ? "Memuatkan data penghantaran…" : "Tiada data."}</div></div>`;
+  if (!D.minggu) hdInit();
+  const all = hdCompute(), N = all.length, sent = all.filter((r) => r.st !== "Belum Hantar").length, rev = all.filter((r) => r.st === "Disemak").length;
+  const list = D.guru ? all.filter((r) => r.nama === D.guru) : all;
+  const yrs = hdYears(), ws = hdWeeks(D.tahun);
+  const pc = { "Belum Hantar": "b", Dihantar: "d", Disemak: "s", Dipulang: "p" };
+  const zero = (v, c) => `<b class="${v ? c : "z" + c}">${v}</b>`;
+  const rows = list.map((r, i) => `<div class="erd-r"><span class="n">${i + 1}</span><span class="nm">${E(r.nama)}</span><span class="py">${E(r.pny)}</span><span>${E(r.tarikh)}</span><span><i class="erd-st ${pc[r.st]}">${E(r.st.toUpperCase())}</i></span><span class="num">${r.jh}</span>${zero(r.sel, "g")}${zero(r.pros, "a")}${zero(r.bs, "r")}${zero(r.jsem, "c")}</div>`).join("");
+  return `<div class="erd">
+    <div class="erd-hero"><div class="erd-kick">DASHBOARD ANALISIS DATA</div><h2>REKOD PENGHANTARAN DAN SEMAKAN e-RPH<br>SM ARAB (JAIM) AL-ASYRAF</h2></div>
+    <div class="erd-sec">// PILIHAN PAPARAN</div>
+    <div class="erd-filters">
+      <label><span>TAHUN</span><select data-act-change="hd-tahun">${yrs.map((y) => `<option value="${y}" ${y === D.tahun ? "selected" : ""}>${y}</option>`).join("")}</select></label>
+      <label><span>MINGGU</span><select data-act-change="hd-minggu">${ws.map((w) => `<option value="${w}" ${w === D.minggu ? "selected" : ""}>${E(wkLbl(w))}</option>`).join("")}</select></label>
+      <label><span>NAMA GURU</span><select data-act-change="hd-guru"><option value="">Semua Guru</option>${D.staff.map((x) => `<option value="${A(x.nama)}" ${x.nama === D.guru ? "selected" : ""}>${E(x.nama)}</option>`).join("")}</select></label>
+    </div>
+    <div class="erd-stats"><span>HANTAR MINGGU INI <b class="g">${sent}</b></span><span>BELUM HANTAR <b class="r">${N - sent}</b></span><span>SUDAH DISEMAK <b class="c">${rev} / ${N} GURU</b></span></div>
+    <div class="erd-panel"><div class="erd-ph"><span>// PAPARAN DATA TERPERINCI</span><span class="r"><small>Dikemas kini: ${E(D.at)}</small><button type="button" data-act="hd-muat" ${D.busy ? "disabled" : ""}>⟳ MUAT SEMULA</button></span></div>
+      <div class="erd-scroll"><div class="erd-t"><div class="erd-r hd"><span>NO.</span><span>NAMA GURU</span><span>PENYEMAK</span><span>TARIKH HANTAR</span><span>STATUS</span><span class="num">JUM. HANTAR</span><span class="num">SELESAI</span><span class="num">DALAM PROSES</span><span class="num">BELUM SIAP</span><span class="num">JUM. DISEMAK</span></div>
+      ${rows || `<div class="erd-empty">Tiada data.</div>`}</div></div>
+      <div class="erd-note">Hanya guru (tidak termasuk AKP, pengetua dan kaunselor sepenuh masa). Jum. Hantar = minggu dihantar hingga ${E(wkLbl(D.minggu))}; Selesai = disemak; Dalam Proses = menunggu semakan; Belum Siap = dipulangkan untuk pembetulan; Jum. Disemak = Selesai + Dipulang.</div></div></div>`;
+}
+
+/* ================= Semakan (Pentadbir) =================
 function canSee(rowNama) {
   if (isAdminApp(S.user)) return true;
   if (!S.pnyMap.length) return true;
@@ -799,7 +1134,7 @@ function vSemak() {
   const items = list.map((x, i) => {
     const cls = { Dihantar: "s-belum", Disemak: "s-siap", Dipulang: "s-pulang" }[x.status] || "s-draf";
     const st = x.status === "Dihantar" ? "Menunggu" : x.status;
-    return `<div class="erp-day" data-act="rev-open" data-i="${r.list.indexOf(x)}" style="cursor:pointer"><div class="k ${cls}" style="font-size:13px">M${E(x.minggu)}</div><div class="m"><b>${E(x.nama)}</b><span>Minggu ${E(x.minggu)} · ${E(dmy(x.awal))} – ${E(dmy(x.akhir))}${x.tarikhHantar ? " · dihantar " + E(x.tarikhHantar.slice(0, 10).split("-").reverse().join("/")) : ""}</span></div>${pill(cls, st)}</div>`;
+    return `<div class="erp-day" data-act="rev-open" data-i="${r.list.indexOf(x)}" style="cursor:pointer"><div class="k ${cls}" style="font-size:13px">M${wkNo(+x.minggu)}</div><div class="m"><b>${E(x.nama)}</b><span>${E(wkLbl(+x.minggu))} · ${E(dmy(x.awal))} – ${E(dmy(x.akhir))}${x.tarikhHantar ? " · dihantar " + E(x.tarikhHantar.slice(0, 10).split("-").reverse().join("/")) : ""}</span></div>${pill(cls, st)}</div>`;
   }).join("");
   const listHtml = `<div class="erp-card"><h3>Semakan RPH</h3>${chips}</div>${items || `<div class="erp-empty">Tiada RPH yang menunggu semakan.</div>`}`;
   return isPC() ? `<div class="erp-rcols"><div class="erp-rside">${revStatsHtml()}</div><div class="erp-rmain">${listHtml}</div></div>` : listHtml;
@@ -825,7 +1160,7 @@ function vSemakPanel() {
       <div class="erp-f"><label class="erp-lbl">Ulasan penyemak (pilihan; wajib bila perlu pembetulan)</label><textarea class="erp-ta" id="erp-ulasan" rows="3" placeholder="Tulis ulasan atau cadangan pembetulan…">${E(v.ulasan || (d.semakan === "Dipulang" ? "" : d.ulasan))}</textarea></div>`;
   }
   const can = disemak === 5;
-  return `<div class="erp-title2">Semakan RPH Minggu ${v.minggu}<br>Guru: ${E(v.wk ? v.wk.nama : "")}</div>
+  return `<div class="erp-title2">Semakan RPH ${wkLbl(v.minggu)}<br>Guru: ${E(v.wk ? v.wk.nama : "")}</div>
     <div class="erp-card"><div class="erp-between"><span style="font-weight:600">Kemajuan semakan</span><span style="font-weight:700;color:var(--acc)">${disemak} / 5 hari disemak</span></div><div class="erp-bar" style="margin-top:8px"><i style="width:${disemak * 20}%"></i></div></div>
     <div class="erp-main two"><div style="display:flex;flex-direction:column;gap:10px">${hariList}
       <div class="erp-card dash"><button class="erp-btn ${can ? "ok" : ""}" style="width:100%;height:48px" data-act="rev-hantar" type="button" ${can ? "" : "disabled"}>Hantar Semakan Minggu ${v.minggu}</button>
@@ -869,7 +1204,7 @@ async function onClick(e) {
   if (a === "tema") return erpTemaToggle();
   if (a === "logout") { if (confirm("Log keluar?")) logout(); return; }
   if (a === "close") return closeModal();
-  if (a === "tab") { if (S.view === "borang" && !(await leaveDay())) return; S.tab = b.dataset.t; if (S.tab === "semak" && !S.rev.loaded) { render(); await loadReviewList(); } if (S.tab === "tetapan" && !S.tet.loaded) { render(); await loadTetapan(); } render(); return; }
+  if (a === "tab") { if (S.view === "borang" && !(await leaveDay())) return; S.tab = b.dataset.t; if (S.tab === "semak" && !S.rev.loaded) { render(); await loadReviewList(); } if (S.tab === "tetapan" && !S.tet.loaded) { render(); await loadTetapan(); } if (S.tab === "hantar" && !S.hd.loaded) { hdInit(); render(); await hdLoad(); return; } render(); return; }
   if (a === "open-day") return openDay(+b.dataset.h);
   if (a === "goto-day") { if (+b.dataset.h === S.cur.hariNo) return; if (!(await leaveDay())) return; return openDay(+b.dataset.h); }
   if (a === "kembali") { if (!(await leaveDay())) return; S.view = "senarai"; S.cur = null; render(); window.scrollTo(0, 0); return; }
@@ -897,7 +1232,14 @@ async function onClick(e) {
   if (a === "dd-pick") return ddPick(+b.dataset.i);
   if (a === "dd-arr") { const f = b.dataset.f; if (S._dd && S._dd.f === f) return ddCloseAll(); const el = document.querySelector('[data-dd="' + f + '"]'); if (el) el.focus(); return ddOpen(f); }
   if (a === "dash") { if (S.view === "borang" && !(await leaveDay())) return; S.view = "dash"; S.cur = null; render(); window.scrollTo(0, 0); return; }
-  if (a === "buka-minggu") { S.minggu = +b.dataset.n; S.view = "senarai"; render(); window.scrollTo(0, 0); return; }
+  if (a === "buka-minggu") {
+    S.minggu = +b.dataset.n; S.view = "senarai"; render(); window.scrollTo(0, 0);
+    if (!S.mine.minggu[S.minggu] && ![1, 2, 3, 4, 5].some((h) => S.mine.hari[S.minggu + "|" + h])) await wujudMinggu(S.minggu);
+    return;
+  }
+  if (a === "wujud-minggu") return wujudMinggu(S.minggu);
+  if (a.indexOf("cal-") === 0) return calAct(a, b);
+  if (a === "hd-muat") return hdLoad(true);
   if (a === "pick") return openPicker(b.dataset.f);
   if (a === "pick-val") return pickValue(+b.dataset.i);
   if (a === "pick-own") return pickOwn();
@@ -966,7 +1308,7 @@ async function erpInit(user) {
   });
   try {
     erpInitTabs();
-    await Promise.all([erpLoadCommon(), erpLoadJadual(), typeof emLoad === "function" ? emLoad().catch(() => {}) : null]);
+    await Promise.all([erpLoadCommon(), erpLoadCal(), erpLoadJadual(), typeof emLoad === "function" ? emLoad().catch(() => {}) : null]);
     await erpLoadMine();
     S.minggu = currentWeekNo();
     S.view = isPC() ? "dash" : "senarai"; S._pc = isPC();

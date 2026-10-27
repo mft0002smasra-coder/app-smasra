@@ -221,3 +221,50 @@ input.erp-dd-in { height: 46px; padding-top: 0; padding-bottom: 0; }
 .erp-trw .nm { flex: 1; min-width: 0; line-height: 1.25; } .erp-trw .nm span { display: block; font-size: 12px; color: var(--dim); }
 .erp-trw .erp-sel { max-width: 46%; }
 #tet-glist { max-height: 560px; overflow-y: auto; }
+
+/* ---- Kalendar akademik (Tetapan) ---- */
+.erp-calcard { margin-top: 12px; }
+.erp-calbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.erp-calbar .erp-lbl { margin: 0; }
+.erp-calrow { display: grid; grid-template-columns: 150px 1fr 150px 150px 64px; gap: 8px; align-items: center; margin-bottom: 8px; }
+.erp-calrow.hd { font-size: 11px; letter-spacing: .06em; color: var(--dim); margin-bottom: 4px; }
+.erp-calrow .erp-in, .erp-calrow .erp-sel { min-width: 0; width: 100%; }
+@media (max-width: 759px) { .erp-calrow { grid-template-columns: 1fr 1fr; } .erp-calrow.hd { display: none; } }
+.erp-wujud { border-color: var(--acc, #1d4fb8); }
+
+/* ---- Dashboard Penghantaran (gaya gelap tetap) ---- */
+.erd { background: #050b14; color: #d6e4f2; border-radius: 14px; padding: 14px; font-family: Inter, "Source Sans 3", sans-serif; background-image: linear-gradient(rgba(34,211,238,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,.035) 1px, transparent 1px); background-size: 28px 28px; }
+.erd-load { padding: 40px; text-align: center; color: #7fd6e8; letter-spacing: .08em; }
+.erd-hero { position: relative; border: 1px solid rgba(34,211,238,.35); background: linear-gradient(135deg, #0a1626, #07111f); border-radius: 6px; padding: 18px 24px 20px; }
+.erd-hero::before, .erd-hero::after { content: ""; position: absolute; width: 18px; height: 18px; border: 2px solid #22d3ee; }
+.erd-hero::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; } .erd-hero::after { right: -1px; bottom: -1px; border-left: 0; border-top: 0; }
+.erd-kick { font: 600 11px "JetBrains Mono", ui-monospace, monospace; letter-spacing: .28em; color: #22d3ee; margin-bottom: 8px; }
+.erd-hero h2 { margin: 0; font: 700 clamp(20px, 3vw, 36px)/1.25 Orbitron, Inter, sans-serif; letter-spacing: .04em; color: #fff; }
+.erd-hero h2 { text-shadow: 0 0 18px rgba(34,211,238,.25); }
+.erd-sec { margin: 16px 0 8px; font: 500 11px "JetBrains Mono", ui-monospace, monospace; letter-spacing: .2em; color: #7a8ea6; }
+.erd-filters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media (max-width: 759px) { .erd-filters { grid-template-columns: 1fr; } }
+.erd-filters label { display: block; border: 1px solid rgba(34,211,238,.28); background: #08121f; border-radius: 8px; padding: 10px 14px; position: relative; }
+.erd-filters span { display: block; font: 500 10px "JetBrains Mono", ui-monospace, monospace; letter-spacing: .18em; color: #7a8ea6; margin-bottom: 4px; }
+.erd-filters select { width: 100%; background: transparent; color: #fff; border: 0; font: 700 15px Inter, sans-serif; outline: none; appearance: none; cursor: pointer; padding-right: 22px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%2322d3ee' stroke-width='2'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E") right 2px center no-repeat; }
+.erd-filters option { background: #0a1626; color: #fff; }
+.erd-stats { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 14px 2px; font: 500 11px "JetBrains Mono", ui-monospace, monospace; letter-spacing: .18em; color: #7a8ea6; }
+.erd-stats b { font-size: 14px; margin-left: 6px; } .erd .g { color: #34d399; } .erd .r { color: #fb4f6b; } .erd .c { color: #22d3ee; } .erd .a { color: #fbbf24; }
+.erd-panel { border: 1px solid rgba(34,211,238,.25); background: #07101c; border-radius: 8px; overflow: hidden; }
+.erd-ph { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 14px 20px; font: 500 11px "JetBrains Mono", ui-monospace, monospace; letter-spacing: .2em; color: #22d3ee; }
+.erd-ph .r { display: flex; align-items: center; gap: 14px; color: #7a8ea6; } .erd-ph small { font-size: 10px; letter-spacing: .08em; }
+.erd-ph button { background: rgba(34,211,238,.08); color: #22d3ee; border: 1px solid #22d3ee; border-radius: 6px; padding: 9px 16px; font: 600 11px "JetBrains Mono", ui-monospace, monospace; letter-spacing: .14em; cursor: pointer; }
+.erd-ph button:disabled { opacity: .5; cursor: default; }
+.erd-scroll { overflow: auto; max-height: 70vh; }
+.erd-t { min-width: 980px; }
+.erd-r { display: grid; grid-template-columns: 44px minmax(190px, 1.6fr) minmax(170px, 1.3fr) 116px 120px repeat(5, 92px); gap: 8px; align-items: center; padding: 14px 20px; border-top: 1px solid rgba(34,211,238,.1); font-size: 13px; }
+.erd-r.hd { position: sticky; top: 0; background: #07101c; z-index: 1; border-top: 1px solid rgba(34,211,238,.35); font: 600 10px "JetBrains Mono", ui-monospace, monospace; letter-spacing: .14em; color: #22d3ee; padding-top: 12px; padding-bottom: 12px; }
+.erd-r .n { color: #8aa0b8; } .erd-r .nm { font-weight: 700; color: #fff; text-transform: uppercase; } .erd-r .py { color: #b9c9dc; text-transform: uppercase; }
+.erd-r .num, .erd-r b { text-align: center; } .erd-r b { font-weight: 700; font-size: 14px; }
+.erd-r .num { color: #b9c9dc; }
+.erd-r b.zg, .erd-r b.zc { color: #34d399; opacity: .35; } .erd-r b.za { color: #fbbf24; } .erd-r b.zr { color: #fb4f6b; } .erd-r b.zc { color: #22d3ee; }
+.erd-st { font-style: normal; display: inline-block; padding: 5px 12px; border-radius: 999px; font: 600 10px "JetBrains Mono", ui-monospace, monospace; letter-spacing: .1em; border: 1px solid; white-space: nowrap; }
+.erd-st.b { color: #94a3b8; border-color: #334155; background: rgba(148,163,184,.08); } .erd-st.d { color: #fbbf24; border-color: rgba(251,191,36,.5); background: rgba(251,191,36,.08); }
+.erd-st.s { color: #34d399; border-color: rgba(52,211,153,.5); background: rgba(52,211,153,.08); } .erd-st.p { color: #fb4f6b; border-color: rgba(251,79,107,.5); background: rgba(251,79,107,.08); }
+.erd-empty { padding: 30px; text-align: center; color: #7a8ea6; }
+.erd-note { padding: 12px 20px 16px; font-size: 11px; color: #6d8199; border-top: 1px solid rgba(34,211,238,.1); }
