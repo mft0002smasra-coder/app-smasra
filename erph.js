@@ -954,10 +954,11 @@ function calCardHtml() {
 /** Baca teks PDF Kalendar Akademik (Lampiran B): tahun, mula persekolahan, julat cuti penggal. Fungsi tulen supaya boleh diuji. */
 function calParseText(text) {
   const t = String(text || "").replace(/\s+/g, " "), iso = (d, m, y) => y + "-" + m + "-" + d;
-  const ym = t.match(/KALENDAR AKADEMIK\s+TAHUN\s+(\d{4})/i), tahun = ym ? +ym[1] : 0;
+  const ym = t.match(/KALENDAR AKADEMIK\s+TAHUN\s+(\d)\s?(\d)\s?(\d)\s?(\d)/i); let tahun = ym ? +(ym[1] + ym[2] + ym[3] + ym[4]) : 0; // pdf.js kadang memecah "2026" jadi "202 6"
   const rng = [], reR = /(\d{2})\.(\d{2})\.(\d{4})\s*[-–]\s*(\d{2})\.(\d{2})\.(\d{4})/g; let m;
   while ((m = reR.exec(t))) rng.push({ mula: iso(m[1], m[2], m[3]), akhir: iso(m[4], m[5], m[6]) });
   rng.sort((a, b) => (a.mula < b.mula ? -1 : 1));
+  if (!tahun && rng.length) tahun = +rng[0].mula.slice(0, 4);
   const nmMap = {}; const reN = /CUTI\s+(PENGGAL\s+(\d)|PERTENGAHAN\s+TAHUN|AKHIR\s+PERSEKOLAHAN)/gi;
   while ((m = reN.exec(t))) {
     const s = m[1].toUpperCase();
