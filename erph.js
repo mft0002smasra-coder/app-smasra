@@ -1168,7 +1168,7 @@ function vHantar() {
       <div class="erd-note">Hanya guru (tidak termasuk AKP, pengetua dan kaunselor sepenuh masa). Jum. Hantar = minggu dihantar hingga ${E(wkLbl(D.minggu))}; Selesai = disemak; Dalam Proses = menunggu semakan; Belum Siap = dipulangkan untuk pembetulan; Jum. Disemak = Selesai + Dipulang.</div></div></div>`;
 }
 
-/* ================= Semakan (Pentadbir) =================
+/* ================= Semakan (Pentadbir) ================= */
 function canSee(rowNama) {
   if (isAdminApp(S.user)) return true;
   if (!S.pnyMap.length) return true;
