@@ -975,6 +975,32 @@ function calParseText(text) {
   rows.push({ jenis: "Tamat Sesi", nama: "Tamat persekolahan", mula: tm, akhir: tm });
   return { tahun, rows, kumpulan: (t.match(/KUMPULAN\s+([AB])\s*:/i) || [])[1] || "" };
 }
+/** Cuti perayaan tambahan KPM (Lampiran C) bagi KUMPULAN B sahaja, ikut kedudukan lajur dalam jadual PDF. Melaka bukan Sarawak, jadi tarikh "Negeri Sarawak sahaja" dibuang.
+ *  items: [{s: teks, x, y, w}] satu halaman (daripada pdf.js getTextContent). Pulang baris "Cuti Lain". */
+function calParsePerayaan(it, tahun) {
+  const c = (i) => i.x + i.w / 2, hd = (re) => it.filter((i) => re.test(i.s.trim())).sort((a, b) => b.y - a.y)[0];
+  const hA = hd(/^KUMPULAN\s*A$/), hB = hd(/^KUMPULAN\s*B$/), hC = hd(/^CATATAN$/);
+  if (!hA || !hB || !hC) return [];
+  const lo = (c(hA) + c(hB)) / 2, hi = (c(hB) + c(hC)) / 2;
+  const inB = it.filter((i) => c(i) >= lo && c(i) < hi && i.y < hB.y);
+  const names = it.filter((i) => c(i) < c(hA) - 60 && i.y < hB.y && /^[A-Z][A-Z ]{5,}$/.test(i.s.trim()));
+  const ds = [];
+  inB.forEach((i) => {
+    const m = i.s.match(/(\d{2})\.(\d{2})\.(\d{4})/); if (!m || (tahun && +m[3] !== tahun)) return;
+    if (inB.some((j) => j.y < i.y && i.y - j.y < 30 && /sarawak\s+sahaja/i.test(j.s))) return;
+    ds.push({ d: m[3] + "-" + m[2] + "-" + m[1], y: i.y });
+  });
+  ds.sort((a, b) => (a.d < b.d ? -1 : 1));
+  const groups = []; ds.forEach((x) => { const g = groups[groups.length - 1]; if (g && (dateOf(x.d) - dateOf(g[g.length - 1].d)) / 864e5 <= 25) g.push(x); else groups.push([x]); });
+  const out = [];
+  groups.forEach((gp) => {
+    const my = gp.reduce((s, x) => s + x.y, 0) / gp.length, nm = names.slice().sort((a, b) => Math.abs(a.y - my) - Math.abs(b.y - my))[0];
+    const nama = (nm ? nm.s.trim().toLowerCase().replace(/\b\w/g, (x) => x.toUpperCase()) : "Cuti Perayaan") + " (cuti tambahan KPM)";
+    let cur = null;
+    gp.forEach((x) => { if (cur && (dateOf(x.d) - dateOf(cur.akhir)) / 864e5 <= 1) cur.akhir = x.d; else { cur = { jenis: "Cuti Lain", nama, mula: x.d, akhir: x.d }; out.push(cur); } });
+  });
+  return out;
+}
 function loadPdfJs() {
   return new Promise((res, rej) => {
     if (window.pdfjsLib) return res(window.pdfjsLib);
@@ -986,9 +1012,13 @@ function loadPdfJs() {
 async function calReadPdf(file) {
   toast("Membaca PDF…", false, true);
   try {
-    const lib = await loadPdfJs(), pdf = await lib.getDocument({ data: await file.arrayBuffer() }).promise; let txt = "";
-    for (let p = 1; p <= pdf.numPages; p++) { const c = await (await pdf.getPage(p)).getTextContent(); txt += c.items.map((i) => i.str).join(" ") + " \n "; }
+    const lib = await loadPdfJs(), pdf = await lib.getDocument({ data: await file.arrayBuffer() }).promise; let txt = "", pera = [];
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const c = await (await pdf.getPage(p)).getTextContent(), pgTxt = c.items.map((i) => i.str).join(" "); txt += pgTxt + " \n ";
+      if (/CUTI\s+PERAYAAN/i.test(pgTxt)) pera = pera.concat(calParsePerayaan(c.items.map((i) => ({ s: i.str, x: i.transform[4], y: i.transform[5], w: i.width })).filter((i) => i.s.trim()), 0));
+    }
     const r = calParseText(txt);
+    if (r) pera.forEach((x) => { if (+x.mula.slice(0, 4) === r.tahun) r.rows.push(x); });
     if (!r) { toast("PDF tidak dikenali sebagai Kalendar Akademik. Isi jadual secara manual.", true); return; }
     const C = S.tet.cal; C.tahun = r.tahun; C.rows = r.rows; C.dirty = true;
     toast("Dibaca: tahun " + r.tahun + (r.kumpulan ? " Kumpulan " + r.kumpulan : "") + ", " + r.rows.length + " baris. Semak, kemudian Simpan." , false);
