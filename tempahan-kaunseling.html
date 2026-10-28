@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261020c">
+<link rel="stylesheet" href="style.css?v=20261028a">
 <script src="tema-init.js?v=20261020c"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -57,9 +57,11 @@
     <div id="kn-main-content">
       <div class="section-label">Tempahan Sesi &amp; Program Kaunseling</div>
 
-      <div class="tab-switch">
+      <div class="tab-switch kn-tabs">
         <button class="tab-btn active" id="kn-tab-btn-menu" onclick="knSwitchTab('menu')">Menu Utama</button>
         <button class="tab-btn" id="kn-tab-btn-jadual" onclick="knSwitchTab('jadual')">Jadual</button>
+        <button class="tab-btn" id="kn-tab-btn-rujuk" onclick="knSwitchTab('rujuk')">Rujuk Murid</button>
+        <button class="tab-btn hidden" id="kn-tab-btn-senarai" onclick="knSwitchTab('senarai')">Rujukan Guru</button>
       </div>
 
       <!-- Tab: Menu Utama -->
@@ -82,6 +84,41 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Tab: Rujuk Murid (semua guru) -->
+      <div class="tab-panel hidden" id="kn-tab-panel-rujuk">
+        <div class="glass kn-rj-card">
+          <div class="kn-rj-title">Rujukan Murid Bermasalah</div>
+          <p class="sub-dim" style="margin:4px 0 14px">Hantar murid kepada kaunselor untuk sesi kaunseling. Kaunselor akan menerima rujukan ini dan menetapkan sesi.</p>
+
+          <label class="field-label" for="kn-rj-kelas">Kelas Murid *</label>
+          <input class="field-input" type="text" id="kn-rj-kelas" list="kn-rj-kelas-list" placeholder="Pilih atau taip kelas" autocomplete="off" oninput="knRefreshMuridPicker('rujuk')">
+          <datalist id="kn-rj-kelas-list"></datalist>
+
+          <label class="field-label" style="margin-top:12px" for="kn-rj-murid-pick">Nama Murid *</label>
+          <select class="field-input" id="kn-rj-murid-pick" onchange="knOnMuridPick('rujuk')" disabled><option value="">Pilih kelas dahulu</option></select>
+          <input class="field-input" type="text" id="kn-rj-murid" style="margin-top:6px" placeholder="Nama murid (boleh taip/ubah sendiri)" autocomplete="off">
+
+          <label class="field-label" style="margin-top:12px" for="kn-rj-salah">Kesalahan Murid *</label>
+          <textarea class="field-input" id="kn-rj-salah" rows="4" placeholder="Nyatakan kesalahan / masalah murid"></textarea>
+
+          <div class="error-text hidden" id="kn-rj-error"></div>
+          <button class="btn-primary" id="kn-rj-btn" onclick="knSubmitRujukan()">Hantar kepada Kaunselor</button>
+        </div>
+      </div>
+
+      <!-- Tab: Rujukan Guru (Kaunselor & Admin App sahaja) -->
+      <div class="tab-panel hidden" id="kn-tab-panel-senarai">
+        <div class="kn-rj-bar">
+          <div class="kn-rj-filter">
+            <button class="kn-rj-chip active" id="kn-rj-f-Baru" onclick="knRjSetFilter('Baru')">Belum diuruskan</button>
+            <button class="kn-rj-chip" id="kn-rj-f-Selesai" onclick="knRjSetFilter('Selesai')">Selesai</button>
+            <button class="kn-rj-chip" id="kn-rj-f-Semua" onclick="knRjSetFilter('Semua')">Semua</button>
+          </div>
+          <button class="kn-rj-chip" onclick="knLoadRujukan(true)">↻ Muat semula</button>
+        </div>
+        <div id="kn-rj-list"></div>
       </div>
 
       <!-- Tab: Jadual -->
@@ -141,6 +178,7 @@
           <p class="kn-desc" id="kn-modal-desc">-</p>
         </div>
         <div class="kn-modal-right">
+          <div class="kn-rj-banner hidden" id="kn-rj-banner"></div>
           <h4>Borang Tempahan</h4>
 
           <label class="kn-field-label" for="kn-f-kaunselor">Nama Kaunselor *</label>
@@ -240,7 +278,7 @@
 
 <script src="app.js"></script>
 <script src="enrolmen-murid.js?v=20261012c"></script>
-<script src="tempahan-kaunseling.js?v=20261012c"></script>
+<script src="tempahan-kaunseling.js?v=20261028a"></script>
 <script>
   initApp(knInit);
 </script>

@@ -77,11 +77,14 @@ function knCheckAccess(user) {
 
 /* ---------------- Tab ---------------- */
 function knSwitchTab(name) {
-  document.getElementById("kn-tab-panel-menu").classList.toggle("hidden", name !== "menu");
-  document.getElementById("kn-tab-panel-jadual").classList.toggle("hidden", name !== "jadual");
-  document.getElementById("kn-tab-btn-menu").classList.toggle("active", name === "menu");
-  document.getElementById("kn-tab-btn-jadual").classList.toggle("active", name === "jadual");
+  ["menu", "jadual", "rujuk", "senarai"].forEach((t) => {
+    const p = document.getElementById("kn-tab-panel-" + t), b = document.getElementById("kn-tab-btn-" + t);
+    if (p) p.classList.toggle("hidden", t !== name);
+    if (b) b.classList.toggle("active", t === name);
+  });
   if (name === "jadual") knLoadAndRenderTimetables();
+  if (name === "rujuk") { knBuildKelasList("kn-rj-kelas-list"); knRefreshMuridPicker("rujuk"); knEnsureMurid().then(() => { knBuildKelasList("kn-rj-kelas-list"); knRefreshMuridPicker("rujuk"); }); }
+  if (name === "senarai") knLoadRujukan(true);
 }
 
 /* ---------------- Fetch staf (senarai kaunselor layak) ---------------- */
@@ -120,6 +123,7 @@ async function knFetchBookings() {
    Sesi = seorang murid (pilihan menggantikan); Program = beberapa murid (pilihan ditambah; beberapa kelas dipisahkan koma). */
 const KN_PICKER = {
   form:   { kelas: "kn-f-tingkatan",      sel: "kn-f-murid-pick", ta: "kn-f-murid",      list: "kn-tingkatan-list",   single: () => knCurrentJenis === "Sesi Kaunseling" },
+  rujuk:  { kelas: "kn-rj-kelas",         sel: "kn-rj-murid-pick", ta: "kn-rj-murid",      list: "kn-rj-kelas-list",   single: () => true },
   detail: { kelas: "kn-d-tingkatan-view", sel: "kn-d-murid-pick", ta: "kn-d-murid-view", list: "kn-d-tingkatan-list", single: () => document.getElementById("kn-d-jenis").textContent === "Sesi Kaunseling" },
 };
 /** Muat data murid sekali (cuba semula jika sebelum ini gagal). Tidak pernah menolak. */
@@ -164,6 +168,8 @@ function knOnMuridPick(which) {
 /* ---------------- Borang tempahan ---------------- */
 function knOpenForm(jenis) {
   knCurrentJenis = jenis;
+  knRujukanId = null;
+  const bn = document.getElementById("kn-rj-banner"); if (bn) { bn.classList.add("hidden"); bn.textContent = ""; }
   const isSesi = jenis === "Sesi Kaunseling";
   const img = isSesi ? KN_IMG_SESI : KN_IMG_PROGRAM;
   document.getElementById("kn-modal-photo").innerHTML = `<img src="${img}" alt="${jenis}" onerror="this.parentElement.innerHTML='<div class=&quot;kn-ph-fallback&quot;>${jenis}</div>'">`;
@@ -272,6 +278,11 @@ async function knSubmitBooking() {
   }
 
   knCloseModal("kn-booking-overlay");
+  if (knRujukanId) { // rujukan guru ini kini sudah diuruskan: tanda Selesai (senyap)
+    const id = knRujukanId; knRujukanId = null;
+    fetch(KN_API_URL, { method: "POST", body: JSON.stringify({ action: "rujukanTanda", rowId: id, email: knCurrentUser.email }) }).then(() => knLoadRujukan(true)).catch(() => {});
+    const r = knRujukan.find((x) => x.rowId === id); if (r) { r.STATUS = "Selesai"; knRenderRujukan(); }
+  }
   document.getElementById("kn-result-icon").textContent = "✓";
   document.getElementById("kn-result-title").textContent = "Tempahan Berjaya!";
   document.getElementById("kn-result-msg").textContent = `Rekod ${knCurrentJenis.toLowerCase()} telah disimpan.`;
@@ -565,6 +576,74 @@ function knInit(user) {
   knUpdateWeekBadge();
   knInitImages();
   knEnsureMurid(); // muat data murid lebih awal (tidak menghalang paparan)
+  if (knIsKaunselor(user)) { document.getElementById("kn-tab-btn-senarai").classList.remove("hidden"); knLoadRujukan(false); }
+}
+
+/* ---------------- Rujukan murid bermasalah (guru -> kaunselor) ---------------- */
+let knRujukan = [], knRjFilter = "Baru", knRujukanId = null;
+/** Hanya Kaunselor Sepenuh Masa dan Admin App boleh lihat senarai rujukan (pelayan menyemak semula). */
+function knIsKaunselor(u) {
+  return String(u.jawatan || "").toUpperCase().indexOf("KAUNSELOR SEPENUH MASA") !== -1 || String(u.role3 || "").trim().toLowerCase() === "admin app";
+}
+async function knPost(payload) {
+  const res = await fetch(KN_API_URL, { method: "POST", body: JSON.stringify(payload) }), raw = await res.text();
+  try { return JSON.parse(raw); } catch (e) { return res.ok ? { status: "success", _fallbackParse: true } : { status: "error", message: "Respons tak sah: " + raw.slice(0, 120) }; }
+}
+async function knSubmitRujukan() {
+  const kelas = knCanonKelasList(document.getElementById("kn-rj-kelas").value), murid = document.getElementById("kn-rj-murid").value.trim(), kesalahan = document.getElementById("kn-rj-salah").value.trim();
+  const err = document.getElementById("kn-rj-error"), btn = document.getElementById("kn-rj-btn");
+  err.classList.add("hidden");
+  const fail = (m) => { err.textContent = m; err.classList.remove("hidden"); };
+  if (!kelas || !murid || !kesalahan) return fail("Sila isi kelas, nama murid dan kesalahan murid.");
+  if (!knApiConfigured()) return fail("API Kaunseling belum disambungkan.");
+  btn.disabled = true; btn.textContent = "Menghantar...";
+  let r;
+  try { r = await knPost({ action: "rujuk", email: knCurrentUser.email, kelas, murid, kesalahan }); }
+  catch (e) { r = { status: "error", message: "Gagal sambung ke server (" + e.message + ")." }; }
+  btn.disabled = false; btn.textContent = "Hantar kepada Kaunselor";
+  if (r.status !== "success") return fail(r.message || "Gagal menghantar rujukan.");
+  document.getElementById("kn-rj-kelas").value = ""; document.getElementById("kn-rj-murid").value = ""; document.getElementById("kn-rj-salah").value = "";
+  knRefreshMuridPicker("rujuk");
+  document.getElementById("kn-result-icon").textContent = "✓";
+  document.getElementById("kn-result-title").textContent = "Rujukan Dihantar";
+  document.getElementById("kn-result-msg").textContent = "Tempahan untuk murid (" + murid + ") telah dihantar ke kaunselor.";
+  document.getElementById("kn-result-overlay").classList.remove("hidden");
+  if (knIsKaunselor(knCurrentUser)) knLoadRujukan(true);
+}
+async function knLoadRujukan(show) {
+  const box = document.getElementById("kn-rj-list");
+  if (show && box && !knRujukan.length) box.innerHTML = `<div class="kn-rj-empty">Memuatkan rujukan…</div>`;
+  if (!knApiConfigured()) return;
+  try {
+    const res = await fetch(`${KN_API_URL}?action=rujukan&email=${encodeURIComponent(knCurrentUser.email)}`), json = await res.json();
+    if (json.status === "success") knRujukan = json.data || [];
+    else if (show && box) { box.innerHTML = `<div class="kn-rj-empty">${knEscape(json.message || "Gagal memuatkan rujukan.")}</div>`; return; }
+  } catch (e) { if (show && box) { box.innerHTML = `<div class="kn-rj-empty">Gagal memuatkan rujukan (${knEscape(e.message)}).</div>`; return; } }
+  knRenderRujukan();
+}
+function knRjSetFilter(f) { knRjFilter = f; knRenderRujukan(); }
+function knRenderRujukan() {
+  ["Baru", "Selesai", "Semua"].forEach((f) => { const b = document.getElementById("kn-rj-f-" + f); if (b) b.classList.toggle("active", f === knRjFilter); });
+  const baru = knRujukan.filter((x) => x.STATUS !== "Selesai").length, tb = document.getElementById("kn-tab-btn-senarai");
+  if (tb) tb.textContent = "Rujukan Guru" + (baru ? " (" + baru + ")" : "");
+  const list = knRujukan.filter((x) => knRjFilter === "Semua" || (knRjFilter === "Baru" ? x.STATUS !== "Selesai" : x.STATUS === "Selesai"));
+  const box = document.getElementById("kn-rj-list"); if (!box) return;
+  box.innerHTML = list.map((x) => `<button type="button" class="kn-rj-item ${x.STATUS === "Selesai" ? "done" : ""}" onclick="knOpenFromRujukan(${x.rowId})">
+      <div class="kn-rj-top"><div><div class="kn-rj-nm">${knEscape(x.MURID)}</div><div class="kn-rj-kl">${knEscape(x.KELAS)}</div></div><span class="kn-rj-pill ${x.STATUS === "Selesai" ? "selesai" : "baru"}">${x.STATUS === "Selesai" ? "Selesai" : "Baru"}</span></div>
+      <div class="kn-rj-ms">${knEscape(x.KESALAHAN)}</div>
+      <div class="kn-rj-meta">Guru: ${knEscape(x.GURU)} · ${knEscape(x.TARIKH)}</div>
+      ${x.STATUS === "Selesai" ? "" : `<div class="kn-rj-go">Buat sesi kaunseling ›</div>`}</button>`).join("") || `<div class="kn-rj-empty">Tiada rujukan.</div>`;
+}
+/** Klik rujukan: terus buka Borang Sesi Kaunseling dengan kelas dan nama murid auto terisi. */
+function knOpenFromRujukan(rowId) {
+  const r = knRujukan.find((x) => x.rowId === rowId); if (!r) return;
+  knOpenForm("Sesi Kaunseling");
+  knRujukanId = r.STATUS === "Selesai" ? null : rowId;
+  document.getElementById("kn-f-tingkatan").value = knMuridReady() ? knCanonKelasList(r.KELAS) : r.KELAS;
+  document.getElementById("kn-f-murid").value = r.MURID;
+  knRefreshMuridPicker("form");
+  const bn = document.getElementById("kn-rj-banner"); bn.textContent = "Rujukan daripada " + r.GURU + " — kesalahan: " + r.KESALAHAN; bn.classList.remove("hidden");
+  knEnsureMurid().then(() => { if (knRujukanId === rowId || !knRujukanId) { document.getElementById("kn-f-tingkatan").value = knCanonKelasList(r.KELAS); knRefreshMuridPicker("form"); } });
 }
 
 function knShowNoPermission() {
