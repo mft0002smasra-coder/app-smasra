@@ -955,25 +955,26 @@ function calCardHtml() {
 function calParseText(text) {
   const t = String(text || "").replace(/\s+/g, " "), iso = (d, m, y) => y + "-" + m + "-" + d;
   const ym = t.match(/KALENDAR AKADEMIK\s+TAHUN\s+(\d)\s?(\d)\s?(\d)\s?(\d)/i); let tahun = ym ? +(ym[1] + ym[2] + ym[3] + ym[4]) : 0; // pdf.js kadang memecah "2026" jadi "202 6"
-  const rng = [], reR = /(\d{2})\.(\d{2})\.(\d{4})\s*[-–]\s*(\d{2})\.(\d{2})\.(\d{4})/g; let m;
-  while ((m = reR.exec(t))) rng.push({ mula: iso(m[1], m[2], m[3]), akhir: iso(m[4], m[5], m[6]) });
+  // Julat cuti: cari tajuk "CUTI PENGGAL n / PERTENGAHAN TAHUN / AKHIR PERSEKOLAHAN" kemudian dua tarikh selepasnya (tanda "-" kadang tiada, cth baris Cuti Akhir 2027)
+  const pair = /(\d{2})\.(\d{2})\.(\d{4})\s*[-–—]?\s*(\d{2})\.(\d{2})\.(\d{4})/, reN = /CUTI\s+(PENGGAL\s+(\d)|PERTENGAHAN\s+TAHUN|AKHIR\s+PERSEKOLAHAN)/gi, hd = {}; let m;
+  while ((m = reN.exec(t))) {
+    const p = pair.exec(t.slice(reN.lastIndex, reN.lastIndex + 60)); if (!p) continue;
+    const key = m[2] ? 10 + +m[2] : /^PERTENGAHAN/i.test(m[1]) ? 11.5 : 90, r = { mula: iso(p[1], p[2], p[3]), akhir: iso(p[4], p[5], p[6]), nama: m[2] ? "Cuti Penggal " + m[2] : key === 11.5 ? "Cuti Pertengahan Tahun" : "Cuti Akhir Persekolahan" };
+    if (r.akhir >= r.mula && !hd[key]) hd[key] = r;
+  }
+  let rng = Object.keys(hd).map(Number).sort((a, b) => a - b).map((k) => hd[k]);
+  if (!rng.length) { const reR = /(\d{2})\.(\d{2})\.(\d{4})\s*[-–—]\s*(\d{2})\.(\d{2})\.(\d{4})/g; while ((m = reR.exec(t))) rng.push({ mula: iso(m[1], m[2], m[3]), akhir: iso(m[4], m[5], m[6]), nama: "" }); }
   rng.sort((a, b) => (a.mula < b.mula ? -1 : 1));
   if (!tahun && rng.length) tahun = +rng[0].mula.slice(0, 4);
-  const nmMap = {}; const reN = /CUTI\s+(PENGGAL\s+(\d)|PERTENGAHAN\s+TAHUN|AKHIR\s+PERSEKOLAHAN)/gi;
-  while ((m = reN.exec(t))) {
-    const s = m[1].toUpperCase();
-    if (m[2]) nmMap[10 + +m[2]] = "Cuti Penggal " + m[2]; else if (/^PERTENGAHAN/.test(s)) nmMap[11.5] = "Cuti Pertengahan Tahun"; else nmMap[90] = "Cuti Akhir Persekolahan";
-  }
-  const nm = Object.keys(nmMap).map(Number).sort((a, b) => a - b).map((k) => nmMap[k]);
   const dates = []; const reD = /(\d{2})\.(\d{2})\.(\d{4})/g;
   while ((m = reD.exec(t))) if (!tahun || +m[3] === tahun) dates.push(iso(m[1], m[2], m[3]));
   dates.sort();
   if (!tahun || !rng.length || !dates.length) return null;
   const rows = [{ jenis: "Mula Sesi", nama: "Mula persekolahan", mula: dates[0], akhir: dates[0] }];
-  rng.forEach((r, i) => rows.push({ jenis: "Cuti Penggal", nama: nm.length === rng.length ? nm[i] : "Cuti Penggal " + (i + 1), mula: r.mula, akhir: r.akhir }));
+  rng.forEach((r, i) => rows.push({ jenis: "Cuti Penggal", nama: r.nama || "Cuti Penggal " + (i + 1), mula: r.mula, akhir: r.akhir }));
   const last = rng[rng.length - 1], tm = addDays(last.mula, -1);
   rows.push({ jenis: "Tamat Sesi", nama: "Tamat persekolahan", mula: tm, akhir: tm });
-  return { tahun, rows, kumpulan: (t.match(/KUMPULAN\s+([AB])\s*:/i) || [])[1] || "" };
+  return { tahun, rows, kumpulan: (t.match(/KUMPULAN\s+([AB])\b/i) || [])[1] || "" };
 }
 /** Cuti perayaan tambahan KPM (Lampiran C) bagi KUMPULAN B sahaja, ikut kedudukan lajur dalam jadual PDF. Melaka bukan Sarawak, jadi tarikh "Negeri Sarawak sahaja" dibuang.
  *  items: [{s: teks, x, y, w}] satu halaman (daripada pdf.js getTextContent). Pulang baris "Cuti Lain". */
@@ -983,7 +984,17 @@ function calParsePerayaan(it, tahun) {
   if (!hA || !hB || !hC) return [];
   const lo = (c(hA) + c(hB)) / 2, hi = (c(hB) + c(hC)) / 2;
   const inB = it.filter((i) => c(i) >= lo && c(i) < hi && i.y < hB.y);
-  const names = it.filter((i) => c(i) < c(hA) - 60 && i.y < hB.y && /^[A-Z][A-Z ]{5,}$/.test(i.s.trim()));
+  // Nama perayaan (lajur kiri, boleh dua baris) dan tarikh sebenar perayaan itu (lajur kiri) -> padanan tarikh Kumpulan B ikut jarak tarikh
+  const left = it.filter((i) => c(i) < c(hA) - 60 && i.y < hB.y), blocks = [];
+  left.filter((i) => /^[A-Z][A-Z ]{2,}$/.test(i.s.trim())).sort((a, b) => b.y - a.y).forEach((i) => {
+    const l = blocks[blocks.length - 1];
+    if (l && l.yb - i.y < (i.h || 12) * 2.2) { l.nama += " " + i.s.trim(); l.yb = i.y; } else blocks.push({ nama: i.s.trim(), y: i.y, yb: i.y, tarikh: [] });
+  });
+  left.forEach((i) => {
+    const m = i.s.match(/(\d{2})\.(\d{2})\.(\d{4})/); if (!m) return;
+    const bl = blocks.filter((x) => x.y >= i.y - 2).sort((x, y) => (x.y - i.y) - (y.y - i.y))[0];
+    if (bl) bl.tarikh.push(m[3] + "-" + m[2] + "-" + m[1]);
+  });
   const ds = [];
   inB.forEach((i) => {
     const m = i.s.match(/(\d{2})\.(\d{2})\.(\d{4})/); if (!m || (tahun && +m[3] !== tahun)) return;
@@ -991,15 +1002,41 @@ function calParsePerayaan(it, tahun) {
     ds.push({ d: m[3] + "-" + m[2] + "-" + m[1], y: i.y });
   });
   ds.sort((a, b) => (a.d < b.d ? -1 : 1));
-  const groups = []; ds.forEach((x) => { const g = groups[groups.length - 1]; if (g && (dateOf(x.d) - dateOf(g[g.length - 1].d)) / 864e5 <= 25) g.push(x); else groups.push([x]); });
-  const out = [];
-  groups.forEach((gp) => {
-    const my = gp.reduce((s, x) => s + x.y, 0) / gp.length, nm = names.slice().sort((a, b) => Math.abs(a.y - my) - Math.abs(b.y - my))[0];
-    const nama = (nm ? nm.s.trim().toLowerCase().replace(/\b\w/g, (x) => x.toUpperCase()) : "Cuti Perayaan") + " (cuti tambahan KPM)";
-    let cur = null;
-    gp.forEach((x) => { if (cur && (dateOf(x.d) - dateOf(cur.akhir)) / 864e5 <= 1) cur.akhir = x.d; else { cur = { jenis: "Cuti Lain", nama, mula: x.d, akhir: x.d }; out.push(cur); } });
+  const ranges = []; let cur = null;
+  ds.forEach((x) => { if (cur && (dateOf(x.d) - dateOf(cur.akhir)) / 864e5 <= 1) { cur.akhir = x.d; cur.ys.push(x.y); } else { cur = { mula: x.d, akhir: x.d, ys: [x.y] }; ranges.push(cur); } });
+  const jarak = (r, bl) => Math.min(...bl.tarikh.map((t) => Math.min(Math.abs(dateOf(r.mula) - dateOf(t)), Math.abs(dateOf(r.akhir) - dateOf(t))) / 864e5), 9999);
+  return ranges.map((r) => {
+    const nm = blocks.slice().sort((x, y) => jarak(r, x) - jarak(r, y))[0];
+    return { jenis: "Cuti Lain", nama: (nm ? nm.nama.toLowerCase().replace(/\b\w/g, (x) => x.toUpperCase()) : "Cuti Perayaan") + " (cuti tambahan KPM)", mula: r.mula, akhir: r.akhir };
+  });
+}
+/** PDF imbasan (tiada lapisan teks): ubah perkataan OCR (tesseract.js) kepada "item" seperti pdf.js — perkataan sebaris yang berdekatan digabung; y diterbalikkan (atas = besar). */
+function ocrItems(words, H) {
+  const out = []; let prev = null;
+  words.forEach((w) => {
+    const t = String(w.text || "").trim(); if (!t) return;
+    const b = w.bbox, h = b.y1 - b.y0, cy = (b.y0 + b.y1) / 2;
+    if (prev && Math.abs(cy - prev.cy) < h * 0.6 && b.x0 - prev.x1 < h * 1.3 && b.x0 >= prev.x1 - 4) { prev.item.s += " " + t; prev.x1 = b.x1; prev.item.w = prev.x1 - prev.item.x; return; }
+    const item = { s: t, x: b.x0, w: b.x1 - b.x0, y: H - cy, h }; out.push(item); prev = { x1: b.x1, cy, item };
   });
   return out;
+}
+function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = () => rej(new Error("Pustaka OCR tidak dapat dimuat.")); document.head.appendChild(s); }); }
+async function calOcr(pdf) {
+  if (!window.Tesseract) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js");
+  const wk = await window.Tesseract.createWorker("eng"); let txt = "", pera = [];
+  try {
+    for (let p = 1; p <= pdf.numPages; p++) {
+      toast("PDF imbasan: membaca halaman " + p + " / " + pdf.numPages + " (OCR, mungkin ~30 saat)…", false, true);
+      const page = await pdf.getPage(p), vp = page.getViewport({ scale: 2.7 }), cv = document.createElement("canvas");
+      cv.width = Math.ceil(vp.width); cv.height = Math.ceil(vp.height);
+      await page.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise;
+      const words = ((await wk.recognize(cv)).data.words || []).filter((w) => w.text && w.text.trim()), pgTxt = words.map((w) => w.text).join(" ");
+      txt += pgTxt + " \n ";
+      if (/CUTI\s+PERAYAAN/i.test(pgTxt)) pera = pera.concat(calParsePerayaan(ocrItems(words, cv.height), 0));
+    }
+  } finally { try { await wk.terminate(); } catch (e) { /* senyap */ } }
+  return { txt, pera };
 }
 function loadPdfJs() {
   return new Promise((res, rej) => {
@@ -1015,11 +1052,12 @@ async function calReadPdf(file) {
     const lib = await loadPdfJs(), pdf = await lib.getDocument({ data: await file.arrayBuffer() }).promise; let txt = "", pera = [];
     for (let p = 1; p <= pdf.numPages; p++) {
       const c = await (await pdf.getPage(p)).getTextContent(), pgTxt = c.items.map((i) => i.str).join(" "); txt += pgTxt + " \n ";
-      if (/CUTI\s+PERAYAAN/i.test(pgTxt)) pera = pera.concat(calParsePerayaan(c.items.map((i) => ({ s: i.str, x: i.transform[4], y: i.transform[5], w: i.width })).filter((i) => i.s.trim()), 0));
+      if (/CUTI\s+PERAYAAN/i.test(pgTxt)) pera = pera.concat(calParsePerayaan(c.items.map((i) => ({ s: i.str, x: i.transform[4], y: i.transform[5], w: i.width, h: i.height })).filter((i) => i.s.trim()), 0));
     }
+    if (txt.replace(/\s/g, "").length < 200) { const o = await calOcr(pdf); txt = o.txt; pera = o.pera; }
     const r = calParseText(txt);
     if (r) pera.forEach((x) => { if (+x.mula.slice(0, 4) === r.tahun) r.rows.push(x); });
-    if (!r) { toast("PDF tidak dikenali sebagai Kalendar Akademik. Isi jadual secara manual.", true); return; }
+    if (!r) { toast("PDF tidak dikenali sebagai Kalendar Akademik (Lampiran B). Isi jadual secara manual.", true); return; }
     const C = S.tet.cal; C.tahun = r.tahun; C.rows = r.rows; C.dirty = true;
     toast("Dibaca: tahun " + r.tahun + (r.kumpulan ? " Kumpulan " + r.kumpulan : "") + ", " + r.rows.length + " baris. Semak, kemudian Simpan." , false);
     render();
