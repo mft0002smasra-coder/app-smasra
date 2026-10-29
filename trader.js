@@ -41,7 +41,8 @@ function trSwitch(k) { trTab = k; trRender(); }
 function planMetrics(p, P) {
   const risk = Math.abs(p.ref - p.sl), rr = p.tp.map((t) => Math.abs(t - p.ref) / risk);
   const unit = (v) => v / P.faktor;
-  return { risk, rr, riskTxt: P.unit === "pip" ? Math.round(risk * P.faktor) + " pip" : "USD" + trFmt(risk, 0), tpTxt: p.tp.map((t) => (P.unit === "pip" ? Math.round(Math.abs(t - p.ref) * P.faktor) + " pip" : "USD" + trFmt(Math.abs(t - p.ref), 0))), unit };
+  const pt = P.unit === "point" || P.unit === "pip", fmtD = (v) => (pt ? Math.round(v * P.faktor) + " " + P.unit : "USD" + trFmt(v, 0)); // EUR/USD guna "point" (1 point = 0.00001)
+  return { risk, rr, riskTxt: fmtD(risk), tpTxt: p.tp.map((t) => fmtD(Math.abs(t - p.ref))), unit };
 }
 function planText(p, P) {
   const dp = P.dp, buy = p.arah === "BUY", e = p.entry.slice().sort((x, y) => (buy ? y - x : x - y));

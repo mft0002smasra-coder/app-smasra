@@ -5,37 +5,37 @@
    BUKAN nasihat pelaburan.
    ============================================================ */
 window.TRADER_DATA = {
-  kemaskini: "26 Okt 2026, pagi (data sumber 21–26 Okt 2026)",
+  kemaskini: "26 Okt 2026, pagi (data sumber 21–26 Okt 2026); EUR/USD dikemas 29 Okt: 5 tempat perpuluhan, SL 100 point",
   pasangan: {
     eur: {
-      kod: "EUR/USD", nama: "Euro", unit: "pip", faktor: 10000, nilaiLot: 10, // 1 pip = 0.0001; USD10 sepip bagi 1 lot standard
-      dp: 4, rujuk: "≈ 1.1210 – 1.1250", bias: "Neutral · cenderung menurun", biasWarna: "amber",
-      ringkas: "Trend menurun lima minggu dalam saluran menurun; lantunan dari 1.1160 masih korektif. Pasaran menunggu keputusan Fed (28 Okt) dan data PCE/KDNK AS (29 Okt).",
+      kod: "EUR/USD", nama: "Euro", unit: "point", faktor: 100000, nilaiLot: 1, slPoint: 100, // 1 point = 0.00001 (harga 5 tempat perpuluhan); USD1 sepoint bagi 1 lot standard. SL tetap 100 point
+      dp: 5, rujuk: "≈ 1.12100 – 1.12500", bias: "Neutral · cenderung menurun", biasWarna: "amber",
+      ringkas: "Trend menurun lima minggu dalam saluran menurun; lantunan dari 1.11600 masih korektif. Pasaran menunggu keputusan Fed (28 Okt) dan data PCE/KDNK AS (29 Okt).",
       pelan: [
-        { id: "e1", tajuk: "Breakout Beli", arah: "BUY", tf: "M15 – H1", entry: [1.1245, 1.1275], ref: 1.1265, sl: 1.1205, tp: [1.1365, 1.1465],
-          syarat: "Masuk selepas candle H1 ditutup di atas 1.1270 (atau retest 1.1245–1.1275 yang bertahan).",
-          nota: "Sah hanya jika rintangan 1.1270 ditembusi. Kurangkan lot atau elak sebelum keputusan Fed." },
-        { id: "e2", tajuk: "Lantunan di Support", arah: "BUY", tf: "M5 – M15", entry: [1.1190, 1.1215], ref: 1.1205, sl: 1.1145, tp: [1.1270, 1.1365],
-          syarat: "Tunggu candle penolakan (pin bar / engulfing) di zon 1.1190–1.1215 dan Stochastic berpusing naik.",
-          nota: "Sasaran pertama ketat (RR rendah): ambil sebahagian di TP1 dan alih SL ke harga masuk." },
-        { id: "e3", tajuk: "Pecah Support", arah: "SELL", tf: "M15 – H1", entry: [1.1135, 1.1160], ref: 1.1150, sl: 1.1205, tp: [1.1050, 1.1000],
-          syarat: "Masuk selepas candle H1 ditutup di bawah 1.1160 dan retest 1.1135–1.1160 gagal naik semula.",
-          nota: "Melawan lantunan korektif: sah jika saluran menurun dihormati. Sasaran jauh 1.1000 ialah paras psikologi." },
+        { id: "e1", tajuk: "Breakout Beli", arah: "BUY", tf: "M15 – H1", entry: [1.12600, 1.12700], ref: 1.12650, sl: 1.12550, tp: [1.13620, 1.14620],
+          syarat: "Masuk selepas candle H1 ditutup di atas 1.12700 (atau retest 1.12450–1.12750 yang bertahan).",
+          nota: "Sah hanya jika rintangan 1.12700 ditembusi. TP1 sebelum rintangan 1.13650, TP2 sebelum 1.14650 (30 point sebelum paras supaya sempat terisi sebelum harga berpatah). Kurangkan lot atau elak sebelum keputusan Fed." },
+        { id: "e2", tajuk: "Lantunan di Support", arah: "BUY", tf: "M5 – M15", entry: [1.12000, 1.12100], ref: 1.12050, sl: 1.11950, tp: [1.12420, 1.12670],
+          syarat: "Tunggu candle penolakan (pin bar / engulfing) di zon 1.11900–1.12150 dan Stochastic berpusing naik.",
+          nota: "SL 100 point. TP1 sebelum rintangan 1.12450, TP2 sebelum rintangan 1.12700 (30 point sebelum paras). Ambil sebahagian di TP1 dan alih SL ke harga masuk." },
+        { id: "e3", tajuk: "Pecah Support", arah: "SELL", tf: "M15 – H1", entry: [1.11450, 1.11550], ref: 1.11500, sl: 1.11600, tp: [1.10530, 1.10030],
+          syarat: "Masuk selepas candle H1 ditutup di bawah 1.11600 dan retest 1.11350–1.11600 gagal naik semula.",
+          nota: "Melawan lantunan korektif: sah jika saluran menurun dihormati. SL 100 point. TP1 sebelum 1.10500 dan TP2 sebelum 1.10000 (30 point sebelum paras psikologi/sasaran gelombang)." },
       ],
       sr: {
         res: [
-          { p: 1.1465, n: "Sasaran breakout minggu 19 Okt; sempadan atas saluran menurun" },
-          { p: 1.1365, n: "Sasaran utama senario beli (RoboForex 21 Okt)" },
-          { p: 1.1270, n: "Rintangan tempatan; kunci breakout beli" },
-          { p: 1.1245, n: "Rintangan tempatan jangka pendek" },
+          { p: 1.14650, n: "Sasaran breakout minggu 19 Okt; sempadan atas saluran menurun" },
+          { p: 1.13650, n: "Sasaran utama senario beli (RoboForex 21 Okt)" },
+          { p: 1.12700, n: "Rintangan tempatan; kunci breakout beli" },
+          { p: 1.12450, n: "Rintangan tempatan jangka pendek" },
         ],
         sup: [
-          { p: 1.1210, n: "Disokong penyatuan harga 26 Okt (Intermarket Analysis)" },
-          { p: 1.1190, n: "Sokongan pembeli kuat (RoboForex)" },
-          { p: 1.1160, n: "Sokongan dan sempadan bawah saluran menurun" },
-          { p: 1.1145, n: "Sokongan seterusnya; di bawahnya terbuka ke 1.1000" },
+          { p: 1.12100, n: "Disokong penyatuan harga 26 Okt (Intermarket Analysis)" },
+          { p: 1.11900, n: "Sokongan pembeli kuat (RoboForex)" },
+          { p: 1.11600, n: "Sokongan dan sempadan bawah saluran menurun" },
+          { p: 1.11450, n: "Sokongan seterusnya; di bawahnya terbuka ke 1.10000" },
         ],
-        catatan: "Perhatian: tutup H1 di bawah 1.1160 meningkatkan risiko penurunan lanjut; tutup di atas 1.1270 membuka 1.1365.",
+        catatan: "Perhatian: tutup H1 di bawah 1.11600 meningkatkan risiko penurunan lanjut; tutup di atas 1.12700 membuka 1.13650.",
       },
       fundamental: [
         "Sentimen ZEW zon euro jatuh ke 18.5 (dari 25.8, ramalan 24.2): menekan euro.",
@@ -45,16 +45,16 @@ window.TRADER_DATA = {
         "Kalendar ekonomi: FOMC 28 Okt (02:00 MYT 29 Okt), KDNK S3 dan PCE AS 29 Okt (20:30 MYT), NFP AS 6 Nov. Elak masuk sekitar masa acara.",
       ],
       teknikal: [
-        "Carta harian: trend menurun masih utuh; harga dalam saluran menurun, lantunan dari 1.1160.",
+        "Carta harian: trend menurun masih utuh; harga dalam saluran menurun, lantunan dari 1.11600.",
         "Stochastic harian oversold dengan persilangan bullish, tetapi belum mengesahkan pembalikan jangka sederhana.",
-        "Penutupan mingguan sekitar 1.1230 menamatkan lima minggu rugi berturut-turut.",
+        "Penutupan mingguan sekitar 1.12300 menamatkan lima minggu rugi berturut-turut.",
       ],
       elliott: {
-        ringkas: "Kiraan kerja (tafsiran struktur harga, bukan kiraan rasmi): turun lima minggu dalam saluran menurun; lantunan 1.1160 → 1.1245–1.1270 dilabel gelombang korektif (b).",
+        ringkas: "Kiraan kerja (tafsiran struktur harga, bukan kiraan rasmi): turun lima minggu dalam saluran menurun; lantunan 1.11600 → 1.12450–1.12700 dilabel gelombang korektif (b).",
         pts: [[0, 22], [18, 58], [32, 38], [52, 84], [64, 66]], labels: ["(a)", "(b)", "", "", ""], // dilukis dalam trader.js
         senario: [
-          { t: "Utama", w: "Lantunan tertahan di bawah 1.1270–1.1365 (gelombang b), kemudian gelombang (c) menembusi 1.1160 menyasar 1.1050 – 1.1000.", batal: "Batal bila harian ditutup di atas 1.1465." },
-          { t: "Alternatif", w: "1.1160 ialah hujung gelombang (c) / 5 turun; lantunan lebih kuat ke 1.1365 – 1.1465.", batal: "Batal bila harga tutup di bawah 1.1145." },
+          { t: "Utama", w: "Lantunan tertahan di bawah 1.12700–1.13650 (gelombang b), kemudian gelombang (c) menembusi 1.11600 menyasar 1.10500 – 1.10000.", batal: "Batal bila harian ditutup di atas 1.14650." },
+          { t: "Alternatif", w: "1.11600 ialah hujung gelombang (c) / 5 turun; lantunan lebih kuat ke 1.13650 – 1.14650.", batal: "Batal bila harga tutup di bawah 1.11450." },
         ],
       },
     },
