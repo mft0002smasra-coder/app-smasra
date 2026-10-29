@@ -56,6 +56,19 @@ function dm(iso) { const d = dateOf(iso); return d ? pad(d.getDate()) + "/" + pa
 function toMin(t) { const m = String(t || "").match(/^(\d{1,2}):(\d{2})/); return m ? +m[1] * 60 + +m[2] : null; }
 function fromMin(n) { n = ((n % 1440) + 1440) % 1440; return pad(Math.floor(n / 60)) + ":" + pad(n % 60); }
 function t12(t) { const m = toMin(t); if (m === null) return ""; const h = Math.floor(m / 60), mm = m % 60; return (h % 12 || 12) + ":" + pad(mm) + " " + (h < 12 ? "AM" : "PM"); }
+/* Dialog pengesahan dalam aplikasi: confirm() asal disekat senyap dalam iframe Google Sites (tiada allow-modals), jadi butang tidak berfungsi */
+function ask(msg) {
+  return new Promise((res) => {
+    const w = document.createElement("div"); w.className = "erp-ask";
+    w.innerHTML = '<div class="erp-ask-box" role="dialog" aria-modal="true"><p></p><div class="erp-ask-bt"><button type="button" class="erp-ask-no">Batal</button><button type="button" class="erp-ask-ok">Ya, teruskan</button></div></div>';
+    w.querySelector("p").textContent = msg;
+    const done = (v) => { w.remove(); res(v); };
+    w.querySelector(".erp-ask-ok").onclick = () => done(true);
+    w.querySelector(".erp-ask-no").onclick = () => done(false);
+    w.addEventListener("click", (e) => { if (e.target === w) done(false); });
+    document.body.appendChild(w); w.querySelector(".erp-ask-ok").focus();
+  });
+}
 function toast(msg, err, sticky) {
   const el = document.getElementById("erp-toast"); if (!el) return;
   el.textContent = msg; el.classList.toggle("err", !!err); el.classList.toggle("busy", !!sticky); el.classList.remove("hidden");
@@ -827,7 +840,7 @@ async function wujudMinggu(n) {
 async function hantarMinggu() {
   if (S.busy) return;
   const n = S.minggu;
-  if (!confirm("Hantar RPH " + wkLbl(n) + " kepada penyemak dan simpan ke pangkalan data?\n(RPH tidak dikunci; anda masih boleh mengemas kini.)")) return;
+  if (!await ask("Hantar RPH " + wkLbl(n) + " kepada penyemak dan simpan ke pangkalan data?\n(RPH tidak dikunci; anda masih boleh mengemas kini.)")) return;
   S.busy = true; toast("Menghantar…", false, true);
   try {
     await _saveQ;
@@ -1067,7 +1080,7 @@ async function calAct(a, b) {
   const C = S.tet.cal;
   if (a === "cal-add") { C.rows.push({ jenis: "Cuti Lain", nama: "", mula: "", akhir: "" }); C.dirty = true; return render(); }
   if (a === "cal-del") { C.rows.splice(+b.dataset.i, 1); C.dirty = true; return render(); }
-  if (a === "cal-tpl") { if (C.dirty && !confirm("Ganti baris yang sedang diedit dengan templat 2026?")) return; C.rows = calTpl2026(); C.dirty = true; return render(); }
+  if (a === "cal-tpl") { if (C.dirty && !await ask("Ganti baris yang sedang diedit dengan templat 2026?")) return; C.rows = calTpl2026(); C.dirty = true; return render(); }
   if (a === "cal-save") {
     const items = C.rows.map((r) => ({ jenis: r.jenis, nama: String(r.nama || "").trim(), mula: normDate(r.mula), akhir: normDate(r.akhir) || normDate(r.mula) })).filter((r) => r.mula);
     for (const r of items) { if (r.akhir < r.mula) { toast("Tarikh akhir sebelum tarikh mula: " + (r.nama || r.jenis), true); return; } if (+r.mula.slice(0, 4) < C.tahun - 1 || +r.mula.slice(0, 4) > C.tahun + 1) { toast("Tarikh " + dmy(r.mula) + " tidak sesuai untuk tahun " + C.tahun + ".", true); return; } }
@@ -1256,7 +1269,7 @@ async function revSemak(status) {
 }
 async function revHantar() {
   const v = S.rev.sel; if (S.busy) return;
-  if (!confirm("Hantar semakan Minggu " + v.minggu + " untuk " + (v.wk ? v.wk.nama : "") + "?")) return;
+  if (!await ask("Hantar semakan Minggu " + v.minggu + " untuk " + (v.wk ? v.wk.nama : "") + "?")) return;
   S.busy = true;
   try {
     await erpPost({ action: "hantarSemakan", emelGuru: v.emel, minggu: v.minggu, penyemak: S.user.nama });
@@ -1271,7 +1284,7 @@ async function onClick(e) {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const a = b.dataset.act;
   if (a === "tema") return erpTemaToggle();
-  if (a === "logout") { if (confirm("Log keluar?")) logout(); return; }
+  if (a === "logout") { if (await ask("Log keluar?")) logout(); return; }
   if (a === "close") return closeModal();
   if (a === "tab") { if (S.view === "borang" && !(await leaveDay())) return; S.tab = b.dataset.t; if (S.tab === "semak" && !S.rev.loaded) { render(); await loadReviewList(); } if (S.tab === "tetapan" && !S.tet.loaded) { render(); await loadTetapan(); } if (S.tab === "hantar" && !S.hd.loaded) { hdInit(); render(); await hdLoad(); return; } render(); return; }
   if (a === "open-day") return openDay(+b.dataset.h);
@@ -1283,7 +1296,7 @@ async function onClick(e) {
     const nx = jd.find((j) => used.indexOf(norm(j.kelas) + "|" + j.mula) === -1);
     S.cur.slots.push(blankSlot(nx || {})); S.cur.idx = S.cur.slots.length - 1; dirty(); return render();
   }
-  if (a === "buang-slot") { if (!confirm("Buang Kelas " + (S.cur.idx + 1) + "?")) return; S.cur.slots.splice(S.cur.idx, 1); S.cur.idx = Math.max(0, S.cur.idx - 1); dirty(); return render(); }
+  if (a === "buang-slot") { if (!await ask("Buang Kelas " + (S.cur.idx + 1) + "?")) return; S.cur.slots.splice(S.cur.idx, 1); S.cur.idx = Math.max(0, S.cur.idx - 1); dirty(); return render(); }
   if (a === "tet-add") { S.tet.rows.push({ k: "", v: "" }); return render(); }
   if (a === "tet-del") { S.tet.rows.splice(+b.dataset.i, 1); return render(); }
   if (a === "tet-save") {
@@ -1328,7 +1341,7 @@ async function onClick(e) {
     const er = validateDay(S.cur); if (er.length) { toast(er[0], true); return; }
     if (await saveCur("Siap")) { S.view = "senarai"; S.cur = null; render(); window.scrollTo(0, 0); } return;
   }
-  if (a === "cuti") { if (!confirm("Tandakan hari ini sebagai cuti / tiada RPH? Kandungan hari ini akan dikosongkan.")) return; if (await saveCur("Cuti")) render(); return; }
+  if (a === "cuti") { if (!await ask("Tandakan hari ini sebagai cuti / tiada RPH? Kandungan hari ini akan dikosongkan.")) return; if (await saveCur("Cuti")) render(); return; }
   if (a === "batal-cuti") { S.cur.status = "Draf"; const jd = jadualDay(S.cur.hariNo); S.cur.slots = jd.length ? jd.map((j) => blankSlot(j)) : [blankSlot()]; S.cur.idx = 0; dirty(); render(); return; }
   if (a === "cetak") {
     const d = S.cur, er = validateDay(d);

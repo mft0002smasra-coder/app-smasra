@@ -268,3 +268,10 @@ input.erp-dd-in { height: 46px; padding-top: 0; padding-bottom: 0; }
 .erd-st.s { color: #34d399; border-color: rgba(52,211,153,.5); background: rgba(52,211,153,.08); } .erd-st.p { color: #fb4f6b; border-color: rgba(251,79,107,.5); background: rgba(251,79,107,.08); }
 .erd-empty { padding: 30px; text-align: center; color: #7a8ea6; }
 .erd-note { padding: 12px 20px 16px; font-size: 11px; color: #6d8199; border-top: 1px solid rgba(34,211,238,.1); }
+
+.erp-ask{position:fixed;inset:0;z-index:99999;background:rgba(10,20,40,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.erp-ask-box{background:var(--erp-card,#fff);color:inherit;border-radius:14px;max-width:420px;width:100%;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.erp-ask-box p{margin:0 0 16px;white-space:pre-line;line-height:1.5;color:#1a2540}
+.erp-ask-bt{display:flex;gap:10px;justify-content:flex-end}
+.erp-ask-bt button{border-radius:10px;padding:9px 16px;font-weight:700;cursor:pointer;border:1px solid #1d4ed8;background:#fff;color:#1d4ed8}
+.erp-ask-bt .erp-ask-ok{background:#1d4ed8;color:#fff}
