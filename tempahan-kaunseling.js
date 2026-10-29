@@ -618,7 +618,7 @@ async function knLoadRujukan(show) {
     const res = await fetch(`${KN_API_URL}?action=rujukan&email=${encodeURIComponent(knCurrentUser.email)}`), json = await res.json();
     if (json.status === "success") knRujukan = json.data || [];
     else if (show && box) { box.innerHTML = `<div class="kn-rj-empty">${knEscape(json.message || "Gagal memuatkan rujukan.")}</div>`; return; }
-  } catch (e) { if (show && box) { box.innerHTML = `<div class="kn-rj-empty">Gagal memuatkan rujukan (${knEscape(e.message)}).</div>`; return; } }
+  } catch (e) { if (show && box) { box.innerHTML = `<div class="kn-rj-empty">Gagal memuatkan rujukan (${knEscape(e.message)}). Pastikan Apps Script Kaunseling sudah di-deploy semula (New version).</div>`; return; } }
   knRenderRujukan();
 }
 function knRjSetFilter(f) { knRjFilter = f; knRenderRujukan(); }
