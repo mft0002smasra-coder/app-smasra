@@ -323,3 +323,43 @@ body.erp-body[data-erp="gelap"] .s-siap, body.erp-body[data-erp="gelap"] .s-draf
 .erp-modal-sheet { border-radius: 24px; }
 @media (min-width: 761px) { .erp-head { padding: 14px 32px 12px; } .erp-tabs, .erp-main { padding-left: 24px; padding-right: 24px; } }
 @media (prefers-reduced-motion: reduce) { .erp-tab, .erp-btn, .erp-day { transition: none; } .erp-tab:hover, .erp-btn:hover, .erp-day:hover { transform: none; } }
+
+/* ================= Glassmorphism + Flat: jelas dan profesional =================
+   Isian (latar butang/tab/bar/header) guna biru bergradien; teks berwarna indigo (#4f46e5) dikekalkan. Kaca = latar lut sinar + kabur; "flat" = tanpa bayang 3D. */
+body.erp-body { --grad: linear-gradient(135deg,#2563eb 0%,#1d4ed8 55%,#1e40af 100%); --coco-shadow: 0 8px 32px rgba(37,99,235,.12);
+  --glass: rgba(255,255,255,.66); --glass-2: rgba(255,255,255,.78); --glass-bd: rgba(255,255,255,.85); --glass-line: rgba(79,70,229,.22); }
+body.erp-body[data-erp="gelap"] { --coco-shadow: 0 8px 32px rgba(0,0,0,.35); --glass: rgba(30,36,92,.55); --glass-2: rgba(30,36,92,.7); --glass-bd: rgba(165,180,252,.28); --glass-line: rgba(165,180,252,.35); }
+html.erp-html, body.erp-body { background-color: var(--bg) !important; }
+body.erp-body { background-image: radial-gradient(60% 50% at 8% 4%, rgba(59,130,246,.35), transparent 70%), radial-gradient(50% 45% at 92% 12%, rgba(99,102,241,.30), transparent 70%), radial-gradient(55% 50% at 70% 100%, rgba(14,165,233,.25), transparent 70%) !important; background-attachment: fixed !important; }
+body.erp-body[data-erp="gelap"] { background-image: radial-gradient(60% 50% at 8% 4%, rgba(59,130,246,.30), transparent 70%), radial-gradient(50% 45% at 92% 12%, rgba(99,102,241,.28), transparent 70%), radial-gradient(55% 50% at 70% 100%, rgba(14,165,233,.18), transparent 70%) !important; }
+/* kaca */
+.erp-card, .erp-day, .erp-kv, .erp-slotbody, .erp-tab, .erp-chip, .erp-btn:not(.solid):not(.ok):not(.warn), .erp-tabs-h button:not(.cur) {
+  background: var(--glass); -webkit-backdrop-filter: blur(16px) saturate(160%); backdrop-filter: blur(16px) saturate(160%); border: 1px solid var(--glass-bd); }
+.erp-card, .erp-day { box-shadow: var(--coco-shadow); border-radius: 20px; }
+.erp-card.dash { background: var(--glass); border: 1px dashed var(--glass-line); box-shadow: none; }
+.erp-kv, .erp-slotbody { border-radius: 16px; }
+.erp-slotbody { border-radius: 0 0 16px 16px; }
+.erp-in, .erp-sel, .erp-ta { background: var(--glass-2); border: 1px solid var(--glass-line); border-radius: 12px; }
+.erp-in:focus, .erp-sel:focus, .erp-ta:focus { border-color: #2563eb; outline: 3px solid rgba(37,99,235,.35); outline-offset: 0; }
+.erp-btn:not(.solid):not(.ok):not(.warn) { border: 1px solid var(--glass-line); color: var(--b); }
+.erp-chip { border: 1px solid var(--glass-line); }
+/* isian biru bergradien (teks putih) */
+.erp-head, .erp-tab.on, .erp-tab.on.g, .erp-btn.solid, .erp-chip.on, .erp-slothead, .erp-tabs-h button.cur, .erp-tabs-h button.cur.d { background: var(--grad); color: #fff; border-color: transparent; }
+.erp-bar { background: rgba(37,99,235,.12); border: 1px solid var(--glass-line); height: 12px; }
+.erp-bar > i { background: var(--grad); }
+.erp-head { box-shadow: 0 6px 24px rgba(30,64,175,.25); }
+.erp-head .out { background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.4); }
+/* flat: buang bayang 3D */
+.erp-tab.on, .erp-tab.on.g, .erp-btn.solid, .erp-btn.ok { box-shadow: none; }
+.erp-btn.ok { border: 0; background: #ea580c; color: #000; }
+.erp-btn.warn { border: 1px solid var(--draf-t); }
+.erp-tab, .erp-btn, .erp-day { transition: transform .2s ease-out, box-shadow .2s ease-out; }
+.erp-day:hover { border-color: var(--glass-bd); box-shadow: 0 12px 36px rgba(37,99,235,.2); }
+.erp-day.sel { border: 2px solid #2563eb; }
+.erp-day .k { border-radius: 14px; }
+.erp-pill { border: 0; }
+.s-siap, .s-draf, .s-belum, .s-pulang { border: 0 !important; }
+.erp-modal-sheet { background: var(--glass-2); -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); border: 1px solid var(--glass-bd); border-radius: 22px; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { :root body.erp-body { --glass: rgba(255,255,255,.94); --glass-2: #fff; } :root body.erp-body[data-erp="gelap"] { --glass: #1a1f4a; --glass-2: #1a1f4a; } }
+@media (prefers-reduced-transparency: reduce) { :root body.erp-body { --glass: rgba(255,255,255,.96); --glass-2: #fff; } :root body.erp-body[data-erp="gelap"] { --glass: #1a1f4a; --glass-2: #1a1f4a; } }
+.erp-btn:disabled, .erp-btn.solid:disabled, .erp-btn.ok:disabled { background: var(--disabled) !important; border: 1px solid transparent !important; color: var(--disabled-t) !important; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; cursor: not-allowed; transform: none; }
