@@ -872,12 +872,28 @@ function printHtml(d, meta) {
     <tr><th>Telah Disemak Oleh</th><td>${E(meta.semakOleh || "")}</td><th>Status</th><td>${E(meta.status || "")}</td></tr></thead></table>
     ${d.slots.map(pembuka).join("")}${kar}</div>`;
 }
+/** Cetak / PDF. Dalam iframe Google Sites, window.print() disekat senyap (tiada allow-modals), jadi dokumen dibuka dalam tab baharu
+ *  yang mencetak sendiri; jika tab timbul disekat, fail HTML dimuat turun (buka, kemudian Ctrl+P / Simpan sebagai PDF). */
+const ERP_PR_CSS = '@page{size:A4;margin:10mm}body{margin:0;padding:8px;background:#fff}.erp-pr{font-family:"Source Sans 3",Arial,sans-serif;color:#000;font-size:12px}.erp-pr .ban{background:#1d4fb8;color:#fff;text-align:center;font-weight:700;font-size:18px;padding:8px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.erp-pr table{width:100%;border-collapse:collapse;margin:6px 0}.erp-pr td,.erp-pr th{border:1px solid #444;padding:4px 6px;vertical-align:top;text-align:left;white-space:pre-line}.erp-pr th{background:#dbe7ff;width:24%;-webkit-print-color-adjust:exact;print-color-adjust:exact}.erp-pr .blk{break-inside:avoid;page-break-inside:avoid;margin-top:8px}.erp-pr .bh{background:#1d4fb8;color:#fff;font-weight:700;padding:3px 6px;-webkit-print-color-adjust:exact;print-color-adjust:exact}';
 function cetak(d, meta) {
-  document.getElementById("erp-print-area").innerHTML = printHtml(d, meta);
-  document.body.classList.add("erp-printing");
-  const done = () => { document.body.classList.remove("erp-printing"); window.removeEventListener("afterprint", done); };
-  window.addEventListener("afterprint", done);
-  setTimeout(() => { window.print(); setTimeout(done, 1500); }, 60);
+  const inFrame = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
+  const body = printHtml(d, meta);
+  if (!inFrame) {
+    document.getElementById("erp-print-area").innerHTML = body;
+    document.body.classList.add("erp-printing");
+    const done = () => { document.body.classList.remove("erp-printing"); window.removeEventListener("afterprint", done); };
+    window.addEventListener("afterprint", done);
+    setTimeout(() => { window.print(); setTimeout(done, 1500); }, 60);
+    return;
+  }
+  const doc = '<!doctype html><html lang="ms"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>e-RPH ' + E(meta.nama || "") + '</title><style>' + ERP_PR_CSS + '</style></head><body>' + body +
+    '<script>window.addEventListener("load",function(){setTimeout(function(){window.print()},400)})<\/script></body></html>';
+  const url = URL.createObjectURL(new Blob([doc], { type: "text/html;charset=utf-8" }));
+  const w = window.open(url, "_blank");
+  if (w) { toast("Tab cetak dibuka. Pilih 'Simpan sebagai PDF' atau pencetak."); setTimeout(() => URL.revokeObjectURL(url), 60000); return; }
+  const a = document.createElement("a"); a.href = url; a.download = "eRPH_" + (d.tarikh || "hari") + ".html"; document.body.appendChild(a); a.click(); a.remove();
+  toast("Tab baharu disekat. Fail dimuat turun: buka fail itu, kemudian tekan Ctrl+P untuk cetak / simpan PDF.");
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
 /* ================= Tetapan (Admin App sahaja) ================= */
