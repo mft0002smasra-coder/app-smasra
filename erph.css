@@ -363,3 +363,38 @@ body.erp-body[data-erp="gelap"] { background-image: radial-gradient(60% 50% at 8
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { :root body.erp-body { --glass: rgba(255,255,255,.94); --glass-2: #fff; } :root body.erp-body[data-erp="gelap"] { --glass: #1a1f4a; --glass-2: #1a1f4a; } }
 @media (prefers-reduced-transparency: reduce) { :root body.erp-body { --glass: rgba(255,255,255,.96); --glass-2: #fff; } :root body.erp-body[data-erp="gelap"] { --glass: #1a1f4a; --glass-2: #1a1f4a; } }
 .erp-btn:disabled, .erp-btn.solid:disabled, .erp-btn.ok:disabled { background: var(--disabled) !important; border: 1px solid transparent !important; color: var(--disabled-t) !important; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; cursor: not-allowed; transform: none; }
+
+/* ================= Warna teks dan aksen dipelbagikan (biru, ungu, teal, kuning, merah jambu, hijau) ================= */
+body.erp-body { --t-bl:#1d4ed8; --t-vi:#6d28d9; --t-te:#0f766e; --t-am:#b45309; --t-ro:#be185d; --t-gr:#15803d; --t-sk:#0369a1;
+  --b-bl:#dbeafe; --b-vi:#ede9fe; --b-te:#ccfbf1; --b-am:#fef3c7; --b-ro:#fce7f3; }
+body.erp-body[data-erp="gelap"] { --t-bl:#93c5fd; --t-vi:#c4b5fd; --t-te:#5eead4; --t-am:#fcd34d; --t-ro:#f9a8d4; --t-gr:#86efac; --t-sk:#7dd3fc;
+  --b-bl:#1e3a8a; --b-vi:#4c1d95; --b-te:#134e4a; --b-am:#5b3a0b; --b-ro:#831843; }
+/* penanda hari H1–H5 */
+[data-h="1"] > .k { background: var(--b-bl); color: var(--t-bl); }
+[data-h="2"] > .k { background: var(--b-vi); color: var(--t-vi); }
+[data-h="3"] > .k { background: var(--b-te); color: var(--t-te); }
+[data-h="4"] > .k { background: var(--b-am); color: var(--t-am); }
+[data-h="5"] > .k { background: var(--b-ro); color: var(--t-ro); }
+/* panel kiri RPH Saya */
+.a-week .erp-lbl { color: var(--t-sk); font-weight: 700; }
+.a-week .erp-between span:last-child { color: var(--t-gr) !important; }
+.a-salin .erp-btn { color: var(--t-vi) !important; border-color: color-mix(in srgb, var(--t-vi) 40%, transparent); }
+.a-muat .erp-btn[data-act="dash"] { color: var(--t-te) !important; border-color: color-mix(in srgb, var(--t-te) 40%, transparent); }
+.a-muat .erp-btn[data-act="muat"] { color: var(--t-am) !important; border-color: color-mix(in srgb, var(--t-am) 40%, transparent); }
+/* tajuk kad berselang warna */
+.erp-card:nth-child(3n+1) > h3 { color: var(--t-bl); }
+.erp-card:nth-child(3n+2) > h3 { color: var(--t-vi); }
+.erp-card:nth-child(3n) > h3 { color: var(--t-te); }
+/* label borang berselang warna */
+.erp-f:nth-of-type(6n+1) > .erp-lbl { color: var(--t-bl); }
+.erp-f:nth-of-type(6n+2) > .erp-lbl { color: var(--t-vi); }
+.erp-f:nth-of-type(6n+3) > .erp-lbl { color: var(--t-te); }
+.erp-f:nth-of-type(6n+4) > .erp-lbl { color: var(--t-am); }
+.erp-f:nth-of-type(6n+5) > .erp-lbl { color: var(--t-ro); }
+.erp-f:nth-of-type(6n) > .erp-lbl { color: var(--t-gr); }
+/* tindakan */
+.erp-btn[data-act="cetak"], .erp-btn[data-act="rev-cetak"] { color: var(--t-te) !important; border-color: color-mix(in srgb, var(--t-te) 40%, transparent); }
+.erp-btn[data-act="simpan"] { color: var(--t-bl) !important; border-color: color-mix(in srgb, var(--t-bl) 40%, transparent); }
+.erp-btn[data-act="rev-pulang"] { color: var(--t-ro) !important; border-color: color-mix(in srgb, var(--t-ro) 40%, transparent); }
+[data-h="1"] .erp-link { color: var(--t-bl); } [data-h="2"] .erp-link { color: var(--t-vi); } [data-h="3"] .erp-link { color: var(--t-te); } [data-h="4"] .erp-link { color: var(--t-am); } [data-h="5"] .erp-link { color: var(--t-ro); }
+.erp-hint b { color: var(--t-am); }
