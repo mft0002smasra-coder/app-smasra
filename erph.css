@@ -275,3 +275,51 @@ input.erp-dd-in { height: 46px; padding-top: 0; padding-bottom: 0; }
 .erp-ask-bt{display:flex;gap:10px;justify-content:flex-end}
 .erp-ask-bt button{border-radius:10px;padding:9px 16px;font-weight:700;cursor:pointer;border:1px solid #1d4ed8;background:#fff;color:#1d4ed8}
 .erp-ask-bt .erp-ask-ok{background:#1d4ed8;color:#fff}
+
+/* ================= Gaya Coco (indigo + oren): profesional dan mesra pengguna =================
+   Padanan fon "Modern Professional" (Poppins + Open Sans). Lapisan ini menimpa pemboleh ubah tema di atas. */
+body.erp-body { --bg:#eef2ff; --card:#fff; --text:#1e1b4b; --dim:#475569; --line:#c7d2fe; --field:#f8faff; --field-bd:#a5b4fc; --soft:#f8faff; --bar:#e0e7ff; --dash:#a5b4fc; --b:#4f46e5; --g:#4f46e5; --on-acc:#fff;
+  --siap-bg:#dcfce7; --siap-t:#14532d; --draf-bg:#fef3c7; --draf-t:#78350f; --belum-bg:#e0e7ff; --belum-t:#3730a3; --pulang-bg:#fee2e2; --pulang-t:#7f1d1d; --disabled:#dbe1f5; --disabled-t:#64748b;
+  --coco-shadow: 0 5px 0 rgba(79,70,229,.10), 0 10px 24px rgba(30,27,75,.07), inset 0 2px 0 #fff; --coco-cta:#ea580c; }
+body.erp-body[data-erp="gelap"] { --bg:#0f1330; --card:#1a1f4a; --text:#eef2ff; --dim:#a5b4fc; --line:#3b4180; --field:#12163a; --field-bd:#5b63b7; --soft:#1f2557; --bar:#2b3270; --dash:#5b63b7; --b:#818cf8; --g:#818cf8; --on-acc:#1e1b4b;
+  --siap-bg:#14532d; --siap-t:#bbf7d0; --draf-bg:#5b3a0b; --draf-t:#fde68a; --belum-bg:#2b3270; --belum-t:#c7d2fe; --pulang-bg:#5b1a1a; --pulang-t:#fecaca; --disabled:#2b3270; --disabled-t:#8f9ad6;
+  --coco-shadow: 0 5px 0 rgba(0,0,0,.25), 0 10px 24px rgba(0,0,0,.25); }
+.erp-scope { font-family: "Open Sans", "Source Sans 3", system-ui, sans-serif; }
+.erp-head .t, .erp-head .n, .erp-card h3, .erp-tab, .erp-btn, .erp-chip, .erp-pill, .erp-day .m b, .erp-slothead, .erp-tabs-h button, .erp-day .k, .erp-pick { font-family: "Poppins", "Open Sans", system-ui, sans-serif; }
+.erp-head { padding: 14px 20px 12px; }
+.erp-head .t, .erp-head .n { font-weight: 700; font-size: 22px; }
+.erp-tabs { gap: 10px; padding: 14px 12px 0; }
+.erp-tab { height: 48px; border-radius: 18px; border: 2px solid var(--line); font-weight: 600; transition: transform .2s ease-out; }
+.erp-tab:hover { transform: translateY(-2px); }
+.erp-tab.on, .erp-tab.on.g { box-shadow: 0 5px 0 rgba(30,27,75,.25); }
+.erp-main { padding: 14px 12px 0; gap: 14px; }
+.erp-card { border: 2px solid var(--line); border-radius: 24px; padding: 18px; box-shadow: var(--coco-shadow); }
+.erp-card.dash { border-style: dashed; box-shadow: none; }
+.erp-card h3 { font-size: 15px; letter-spacing: .3px; font-weight: 700; }
+.erp-lbl { font-weight: 700; color: var(--text); }
+.erp-in, .erp-sel, .erp-ta { border: 2px solid var(--line); border-radius: 14px; background: var(--field); }
+.erp-in:focus, .erp-sel:focus, .erp-ta:focus { outline: 3px solid var(--acc); outline-offset: 1px; border-color: var(--acc); }
+.erp-btn { border: 2px solid var(--acc); border-radius: 999px; font-weight: 600; transition: transform .2s ease-out; }
+.erp-btn:hover:not(:disabled) { transform: translateY(-2px); }
+.erp-btn.solid { box-shadow: 0 4px 0 rgba(30,27,75,.25); }
+.erp-btn.ok { background: var(--coco-cta); border-color: #1e1b4b; color: #000; box-shadow: 0 5px 0 rgba(30,27,75,.25); }
+.erp-btn.warn { background: var(--draf-bg); border-color: var(--draf-t); color: var(--draf-t); }
+.erp-btn:focus-visible, .erp-tab:focus-visible, .erp-chip:focus-visible, .erp-day:focus-visible, .erp-tabs-h button:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+.erp-bar { height: 14px; border-radius: 999px; border: 2px solid var(--line); }
+.erp-bar > i { border-radius: 999px; }
+.erp-day { border: 2px solid var(--line); border-radius: 20px; padding: 14px 18px; box-shadow: var(--coco-shadow); transition: transform .2s ease-out, border-color .2s ease-out; }
+.erp-day:hover { transform: translateY(-2px); border-color: var(--acc); }
+.erp-day.sel { border-color: var(--acc); }
+.erp-day .k { width: 48px; height: 48px; border-radius: 16px; }
+.erp-day .m b { font-weight: 600; font-size: 17px; }
+.erp-pill { border-radius: 999px; padding: 3px 12px; font-weight: 600; border: 2px solid transparent; }
+.s-siap { border-color: #86efac; } .s-draf { border-color: #fde68a; } .s-belum { border-color: #a5b4fc; } .s-pulang { border-color: #fca5a5; }
+body.erp-body[data-erp="gelap"] .s-siap, body.erp-body[data-erp="gelap"] .s-draf, body.erp-body[data-erp="gelap"] .s-belum, body.erp-body[data-erp="gelap"] .s-pulang { border-color: transparent; }
+.erp-chip { height: 42px; border: 2px solid var(--line); border-radius: 999px; font-weight: 600; }
+.erp-slothead { border-radius: 16px 16px 0 0; }
+.erp-slotbody { border: 2px solid var(--line); border-top: 0; border-radius: 0 0 16px 16px; }
+.erp-tabs-h button { border-radius: 14px; }
+.erp-kv { border-radius: 14px; border: 2px solid var(--line); }
+.erp-modal-sheet { border-radius: 24px; }
+@media (min-width: 761px) { .erp-head { padding: 14px 32px 12px; } .erp-tabs, .erp-main { padding-left: 24px; padding-right: 24px; } }
+@media (prefers-reduced-motion: reduce) { .erp-tab, .erp-btn, .erp-day { transition: none; } .erp-tab:hover, .erp-btn:hover, .erp-day:hover { transform: none; } }
