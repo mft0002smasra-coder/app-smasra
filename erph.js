@@ -1182,16 +1182,24 @@ function vHantar() {
 }
 
 /* ================= Semakan (Pentadbir) ================= */
-function canSee(rowNama) {
+const normN = (s) => norm(String(s == null ? "" : s).replace(/[^A-Za-z0-9\u00C0-\u024F ]+/g, " ")); // abai noktah/koma/tanda hubung dalam nama
+/** Boleh lihat? Padanan ikut nama DAN emel (nama dalam eRPH_Minggu mungkin berbeza sedikit daripada DatabaseSTAFF). */
+function canSee(o) {
   if (isAdminApp(S.user)) return true;
   if (!S.pnyMap.length) return true;
-  const m = S.pnyMap.filter((x) => x.guru === norm(rowNama));
-  return !m.length || m.some((x) => x.pny === norm(S.user.nama));
+  const em = String(o.emel || "").toLowerCase().trim(), gNama = normN((S._staffByEmail && S._staffByEmail[em]) || o.nama);
+  const gAlt = normN(o.nama), me = normN(S.user.nama), me2 = normN((S._staffByEmail && S._staffByEmail[String(S.user.email || "").toLowerCase().trim()]) || "");
+  const m = S.pnyMap.filter((x) => { const g = normN(x.guru); return g === gNama || g === gAlt; });
+  return !m.length || m.some((x) => { const p = normN(x.pny); return p === me || (me2 && p === me2); });
 }
 async function loadReviewList() {
   const q = "select * where G = 'Dihantar' or G = 'Disemak' or G = 'Dipulang'";
-  const rows = await erpGvizSafe("eRPH_Minggu", q);
-  S.rev.list = rows.map((r) => rowObj(r, ERP_MCOL)).filter((o) => String(o.emel).toLowerCase() !== String(S.user.email).toLowerCase() && canSee(o.nama))
+  // muat semula pemetaan penyemak + senarai staf supaya tetapan terkini (dan padanan ikut emel) digunakan
+  const [rows, pny, st] = await Promise.all([erpGvizSafe("eRPH_Minggu", q), erpGvizSafe("eRPH_Penyemak"), erpGvizSafe("DatabaseSTAFF", "", SPREADSHEET_ID)]);
+  if (pny.length || !S.pnyMap.length) S.pnyMap = pny.map((r) => ({ guru: norm(r[0]), pny: norm(r[1]) })).filter((x) => x.guru && x.pny);
+  S._staffByEmail = {};
+  st.forEach((r) => { const nm = String(r[1] || "").trim(); [r[4], r[5]].forEach((e) => { e = String(e || "").toLowerCase().trim(); if (e && nm) S._staffByEmail[e] = nm; }); });
+  S.rev.list = rows.map((r) => rowObj(r, ERP_MCOL)).filter((o) => String(o.emel).toLowerCase() !== String(S.user.email).toLowerCase() && canSee(o))
     .sort((a, b) => (a.tarikhHantar < b.tarikhHantar ? 1 : -1));
   S.rev.loaded = true;
 }
