@@ -243,11 +243,18 @@ async function erpLoadCommon() {
   S.cad = cad.map(mapRow).filter((o) => norm(o.subjek));
   S.pnyMap = pny.map((r) => ({ guru: norm(r[0]), pny: norm(r[1]) })).filter((x) => x.guru && x.pny);
 }
+/** Semua emel milik pengguna (emel log masuk, emel1, emel2): data lama mungkin disimpan di bawah emel yang berbeza daripada yang digunakan untuk log masuk sekarang. */
+function myEmails() { return [...new Set([S.user.email, S.user.emel1, S.user.emel2].map((x) => String(x || "").toLowerCase().trim().replace(/'/g, "")).filter(Boolean))]; }
+/** Emel yang digunakan untuk kunci data RPH (emel pada rekod sedia ada; jika belum ada, emel log masuk). */
+function dataEmail() { return S.dataEmail || S.user.email; }
 async function erpLoadMine() {
-  const em = String(S.user.email).toLowerCase().replace(/'/g, "");
-  const q = `select * where lower(B) = '${em}'`;
+  const ems = myEmails(), nm = String(S.user.nama || "").toUpperCase().trim();
+  const cond = ems.map((e) => `lower(B) = '${e}'`); if (nm && nm.indexOf("'") === -1) cond.push(`upper(C) = '${nm}'`);
+  const q = `select * where ${cond.join(" or ")}`;
   const [m, h, s] = await Promise.all([erpGvizSafe("eRPH_Minggu", q), erpGvizSafe("eRPH_Hari", q), erpGvizSafe("eRPH_Slot", q)]);
   S.mine = { minggu: {}, hari: {}, slot: {} };
+  const cnt = {}; m.forEach((r) => { const e = String(r[1] || "").toLowerCase().trim(); if (e) cnt[e] = (cnt[e] || 0) + 1; });
+  const top = Object.keys(cnt).sort((x, y) => cnt[y] - cnt[x])[0]; S.dataEmail = top || S.user.email; // rekod sedia ada menentukan emel kunci
   m.forEach((r) => { const o = rowObj(r, ERP_MCOL); S.mine.minggu[+o.minggu] = o; });
   h.forEach((r) => { const o = rowObj(r, ERP_HCOL); S.mine.hari[+o.minggu + "|" + +o.hariNo] = o; });
   s.forEach((r) => { const o = rowObj(r, ERP_SCOL); (S.mine.slot[+o.minggu + "|" + +o.hariNo] = S.mine.slot[+o.minggu + "|" + +o.hariNo] || []).push(o); });
@@ -625,7 +632,7 @@ function validateDay(d) {
 function payloadOf(d, statusHari) {
   const k = d.karakter;
   return {
-    action: "saveHari", emel: S.user.email, nama: S.user.nama, minggu: d.minggu, hariNo: d.hariNo,
+    action: "saveHari", emel: dataEmail(), nama: S.user.nama, minggu: d.minggu, hariNo: d.hariNo,
     tarikhAwal: weekStart(d.minggu), tarikhAkhir: weekEnd(d.minggu), tarikh: d.tarikh, statusHari,
     karakter: { ada: !!k.ada, mula: k.mula, akhir: k.akhir, elemen: k.elemen, catatan: k.catatan },
     slots: statusHari === "Cuti" ? [] : d.slots.map((s) => ({ kelas: s.kelas, tingkatan: s.tingkatan, subjek: s.subjek, mula: s.mula, akhir: s.akhir, ujian: !!s.ujian, pentaksiranAda: !!s.pentakAda, tema: s.tema, tajuk: s.tajuk, stdKandungan: s.stdKandungan, stdPembelajaran: s.stdPembelajaran, objektif: s.objektif, ringkasan: s.ringkasan, pentaksiran: s.pentaksiran, refleksi: s.refleksi, kehadiran: s.kehadiran })),
@@ -634,13 +641,13 @@ function payloadOf(d, statusHari) {
 /** Kemas kini cache setempat selepas simpan berjaya (gviz ada kelewatan beberapa saat, jadi tidak baca semula terus). */
 function applySaved(d, statusHari, resp) {
   const n = d.minggu, h = d.hariNo, k = n + "|" + h, now = new Date().toISOString().slice(0, 16).replace("T", " ");
-  if (!S.mine.minggu[n]) S.mine.minggu[n] = { key: "", emel: S.user.email, nama: S.user.nama, minggu: String(n), awal: weekStart(n), akhir: weekEnd(n), status: "Draf", tarikhHantar: "", penyemak: "", tarikhSemak: "", kemaskini: now };
+  if (!S.mine.minggu[n]) S.mine.minggu[n] = { key: "", emel: dataEmail(), nama: S.user.nama, minggu: String(n), awal: weekStart(n), akhir: weekEnd(n), status: "Draf", tarikhHantar: "", penyemak: "", tarikhSemak: "", kemaskini: now };
   const old = S.mine.hari[k], wkSt = S.mine.minggu[n].status;
   const kar = d.karakter;
   let semakan = resp && resp.semakan !== undefined ? resp.semakan : (old ? old.semakan : "");
-  S.mine.hari[k] = { key: "", emel: S.user.email, nama: S.user.nama, minggu: String(n), hariNo: String(h), tarikh: d.tarikh, status: statusHari, karAda: kar.ada ? "YA" : "", karMula: kar.ada ? kar.mula : "", karAkhir: kar.ada ? kar.akhir : "", karElemen: kar.ada ? kar.elemen.join(", ") : "", karCatatan: kar.ada ? kar.catatan : "", semakan, semakOleh: old && semakan === "Dipulang" ? old.semakOleh : "", semakTarikh: "", ulasan: old && semakan === "Dipulang" ? old.ulasan : "", kemaskini: now };
+  S.mine.hari[k] = { key: "", emel: dataEmail(), nama: S.user.nama, minggu: String(n), hariNo: String(h), tarikh: d.tarikh, status: statusHari, karAda: kar.ada ? "YA" : "", karMula: kar.ada ? kar.mula : "", karAkhir: kar.ada ? kar.akhir : "", karElemen: kar.ada ? kar.elemen.join(", ") : "", karCatatan: kar.ada ? kar.catatan : "", semakan, semakOleh: old && semakan === "Dipulang" ? old.semakOleh : "", semakTarikh: "", ulasan: old && semakan === "Dipulang" ? old.ulasan : "", kemaskini: now };
   if (wkSt === "Disemak") S.mine.minggu[n].status = "Dihantar";
-  S.mine.slot[k] = statusHari === "Cuti" ? [] : d.slots.map((s, i) => ({ key: "", emel: S.user.email, nama: S.user.nama, minggu: String(n), tarikh: d.tarikh, hariNo: String(h), slotNo: String(i + 1), kelas: s.kelas, tingkatan: s.tingkatan, subjek: s.subjek, mula: s.mula, akhir: s.akhir, ujian: s.ujian ? "YA" : "", pentakAda: s.pentakAda ? "YA" : "", tema: s.tema, tajuk: s.tajuk, stdKandungan: s.stdKandungan, stdPembelajaran: s.stdPembelajaran, objektif: s.objektif, ringkasan: s.ringkasan, pentaksiran: s.pentaksiran.join(", "), refleksi: s.refleksi, kehadiran: s.kehadiran, kemaskini: now }));
+  S.mine.slot[k] = statusHari === "Cuti" ? [] : d.slots.map((s, i) => ({ key: "", emel: dataEmail(), nama: S.user.nama, minggu: String(n), tarikh: d.tarikh, hariNo: String(h), slotNo: String(i + 1), kelas: s.kelas, tingkatan: s.tingkatan, subjek: s.subjek, mula: s.mula, akhir: s.akhir, ujian: s.ujian ? "YA" : "", pentakAda: s.pentakAda ? "YA" : "", tema: s.tema, tajuk: s.tajuk, stdKandungan: s.stdKandungan, stdPembelajaran: s.stdPembelajaran, objektif: s.objektif, ringkasan: s.ringkasan, pentaksiran: s.pentaksiran.join(", "), refleksi: s.refleksi, kehadiran: s.kehadiran, kemaskini: now }));
   d.saved = true; d.dirty = false; d.status = statusHari; d.semakan = semakan;
 }
 let _saveQ = Promise.resolve();
@@ -829,7 +836,7 @@ async function wujudMinggu(n) {
     }
     if (!items.length) { toast("Jadual Guru anda tidak ditemui untuk " + wkLbl(n) + ". Buka hari dan isi kelas sendiri.", true); return; }
     await _saveQ;
-    await erpPost({ action: "wujudMinggu", emel: S.user.email, nama: S.user.nama, minggu: n, hari: items });
+    await erpPost({ action: "wujudMinggu", emel: dataEmail(), nama: S.user.nama, minggu: n, hari: items });
     ds.forEach((x) => applySaved(x[0], x[1], null));
     toast(wkLbl(n) + " diwujudkan: " + isi + " slot kelas daripada Jadual Guru" + (cuti ? ", " + cuti + " hari cuti ditanda" : "") + (tiada.length ? ". Tiada jadual: " + tiada.join(", ") : "") + ".");
   } catch (err) { toast(err.message || "Gagal mewujudkan RPH.", true); }
@@ -844,7 +851,7 @@ async function hantarMinggu() {
   S.busy = true; toast("Menghantar…", false, true);
   try {
     await _saveQ;
-    const r = await erpPost({ action: "hantarMinggu", emel: S.user.email, nama: S.user.nama, minggu: n });
+    const r = await erpPost({ action: "hantarMinggu", emel: dataEmail(), nama: S.user.nama, minggu: n });
     const wk = S.mine.minggu[n]; if (wk) { wk.status = "Dihantar"; wk.tarikhHantar = new Date().toISOString().slice(0, 19).replace("T", " "); }
     for (let h = 1; h <= 5; h++) { const x = S.mine.hari[n + "|" + h]; if (x && x.semakan !== "Disemak") { x.semakan = "Menunggu"; } }
     toast("RPH " + wkLbl(n) + " dihantar." + (r.cadangan ? " " + r.cadangan + " isian baharu dicadangkan ke RPT." : ""));
@@ -1215,7 +1222,7 @@ async function loadReviewList() {
   if (pny.length || !S.pnyMap.length) S.pnyMap = pny.map((r) => ({ guru: norm(r[0]), pny: norm(r[1]) })).filter((x) => x.guru && x.pny);
   S._staffByEmail = {};
   st.forEach((r) => { const nm = String(r[1] || "").trim(); [r[4], r[5]].forEach((e) => { e = String(e || "").toLowerCase().trim(); if (e && nm) S._staffByEmail[e] = nm; }); });
-  S.rev.list = rows.map((r) => rowObj(r, ERP_MCOL)).filter((o) => String(o.emel).toLowerCase() !== String(S.user.email).toLowerCase() && canSee(o))
+  S.rev.list = rows.map((r) => rowObj(r, ERP_MCOL)).filter((o) => myEmails().indexOf(String(o.emel).toLowerCase().trim()) === -1 && canSee(o))
     .sort((a, b) => (a.tarikhHantar < b.tarikhHantar ? 1 : -1));
   S.rev.loaded = true;
 }
