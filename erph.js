@@ -380,7 +380,7 @@ function head() {
     ? `<div class="hl bor"><span class="t">e-RPH</span><span class="wk"><span>${wkLbl(S.cur.minggu)}</span><span>${E(dmyHari(S.cur.tarikh, S.cur.hariNo))}</span></span></div>`
     : `<div class="hl"><span class="t">e-RPH</span><span class="t sch">SM ARAB (JAIM) AL-ASYRAF</span></div><div class="n">${E(S.user.nama)}</div>`;
   return `<div class="erp-head">${inner}${tools}</div>
-    ${S.isPny ? `<div class="erp-tabs"><button class="erp-tab ${S.tab === "saya" ? "on" : ""}" data-act="tab" data-t="saya" type="button">RPH Saya</button><button class="erp-tab g ${S.tab === "semak" ? "on" : ""}" data-act="tab" data-t="semak" type="button">Semakan</button><button class="erp-tab g ${S.tab === "hantar" ? "on" : ""}" data-act="tab" data-t="hantar" type="button">Penghantaran</button>${isAdminApp(S.user) ? `<button class="erp-tab g ${S.tab === "tetapan" ? "on" : ""}" data-act="tab" data-t="tetapan" type="button">Tetapan</button>` : ""}</div>` : ""}`;
+    ${S.isPny ? `<div class="erp-tabs"><i class="erp-ind"></i><button class="erp-tab g ${S.tab === "hantar" ? "on" : ""}" data-act="tab" data-t="hantar" type="button">Penghantaran</button><button class="erp-tab ${S.tab === "saya" ? "on" : ""}" data-act="tab" data-t="saya" type="button">RPH Saya</button><button class="erp-tab g ${S.tab === "semak" ? "on" : ""}" data-act="tab" data-t="semak" type="button">Semakan</button>${isAdminApp(S.user) ? `<button class="erp-tab g ${S.tab === "tetapan" ? "on" : ""}" data-act="tab" data-t="tetapan" type="button">Tetapan</button>` : ""}</div>` : ""}`;
 }
 function render() {
   const root = document.getElementById("erp-root"); if (!root) return;
@@ -394,8 +394,18 @@ function render() {
   root.innerHTML = head() + `<div class="erp-main">${body}</div>`;
   if (S._keepScroll) window.scrollTo(0, y);
   S._keepScroll = false;
-  S._dd = null; ddFitAll();
+  S._dd = null; ddFitAll(); tabInd();
 }
+/** Penunjuk cecair yang menggelongsor ke tab aktif. */
+function tabInd() {
+  const bar = document.querySelector(".erp-tabs"); if (!bar) return;
+  const on = bar.querySelector(".erp-tab.on"), ind = bar.querySelector(".erp-ind"); if (!on || !ind) return;
+  const x = on.offsetLeft, w = on.offsetWidth, p = S._ind;
+  if (p && p.w) { ind.style.transition = "none"; ind.style.transform = `translateX(${p.x}px)`; ind.style.width = p.w + "px"; ind.getBoundingClientRect(); }
+  requestAnimationFrame(() => { ind.style.transition = ""; ind.style.transform = `translateX(${x}px)`; ind.style.width = w + "px"; });
+  S._ind = { x, w };
+}
+window.addEventListener("resize", () => { S._ind = null; tabInd(); });
 const pill = (cls, t) => `<span class="erp-pill ${cls}">${E(t)}</span>`;
 function dayPill(n, h) {
   const r = S.mine.hari[n + "|" + h], wk = S.mine.minggu[n];
@@ -1191,22 +1201,16 @@ function vLanding(all) {
       const txt = o.status === "Dihantar" ? `${E(o.nama)} menghantar RPH ${E(w)}` : o.status === "Disemak" ? `RPH ${E(w)} ${E(o.nama)} telah disemak` : `RPH ${E(w)} ${E(o.nama)} dipulangkan`;
       return `<div class="erl-act erl-g"><i class="${o.status === "Dihantar" ? "d" : o.status === "Disemak" ? "s" : "p"}"></i><span>${txt}</span><small>${E(d)}</small></div>`;
     }).join("") || `<div class="erl-act erl-g"><span>Belum ada aktiviti.</span></div>`;
-  const ciri = [["Hantar RPH", "Hantar RPH mingguan kepada penyemak yang ditetapkan.", "bl"], ["Semakan dan ulasan", "Penyemak mengesahkan atau memulangkan dengan ulasan.", "vi"], ["Salin RPH lama", "Guna semula kandungan minggu terdahulu.", "te"], ["Cetak / PDF", "Cetak atau simpan RPH sebagai PDF.", "am"]]
-    .map((c) => `<div class="erl-card erl-g"><b style="color:var(--t-${c[2]})">${c[0]}</b><span>${c[1]}</span></div>`).join("");
-  const sel = [["Akses ikut peranan", "Guru hanya melihat RPH sendiri; penyemak melihat guru yang ditetapkan.", "bl"], ["Penyemak ditetapkan", "Setiap guru disemak oleh penyemak yang ditetapkan pentadbir.", "vi"], ["Sejarah direkod", "Tarikh hantar, semak dan pulang disimpan.", "te"], ["Data dalam Google Sheets sekolah", "Data kekal dalam Sheet milik sekolah.", "am"]]
-    .map((c) => `<div class="erl-card erl-g"><b style="color:var(--t-${c[2]})">${c[0]}</b><span>${c[1]}</span></div>`).join("");
-  const src = [["ld-kal", "KALENDAR", "Kalendar Akademik", "Cuti penggal, cuti perayaan dan minggu persekolahan.", "bl"], ["ld-rpt", "RPT", "Rancangan Pengajaran Tahunan", "Pratonton tema dan tajuk ikut subjek dan tingkatan.", "vi"], ["ld-pan", "PANDUAN", "Panduan guna e-RPH", "Langkah wujud, isi, hantar dan cetak RPH.", "am"], ["ld-jad", "JADUAL", "Jadual Waktu Saya", "Jadual mengajar anda sahaja.", "te"]]
-    .map((c) => `<div class="erl-card erl-g"><small style="color:var(--t-${c[4]})">${c[1]}</small><b>${c[2]}</b><span>${c[3]}</span><button type="button" class="erp-btn sm" data-act="${c[0]}">Buka</button></div>`).join("");
+  const src = [["ld-kal", "KALENDAR", "Kalendar Akademik", "Cuti penggal, cuti perayaan dan minggu persekolahan.", "bl"], ["ld-pan", "PANDUAN", "Panduan guna e-RPH", "Langkah wujud, isi, hantar dan cetak RPH.", "am"], ["ld-jad", "JADUAL", "Jadual Waktu Saya", "Jadual mengajar anda sahaja.", "te"]]
+    .map((c) => `<button type="button" class="erl-card erl-g" data-act="${c[0]}"><small style="color:var(--t-${c[4]})">${c[1]}</small><b>${c[2]}</b><span>${c[3]}</span></button>`).join("");
   return `<div class="erl">
     <div class="erl-hero"><div class="erl-hl"><span class="erl-pill erl-g">Platform RPH digital sekolah</span><h2>RPH yang <em>teratur</em>, mudah disemak dan <em class="b">dipercayai.</em></h2><p>Guru menyediakan, penyemak mengesahkan dan pentadbir memantau, semuanya dalam satu paparan yang jelas.</p>
       <div class="erl-cta"><button type="button" class="erp-btn solid" data-act="ld-mula">Mula Wujudkan RPH</button><button type="button" class="erp-btn" data-act="ld-data">Lihat Penghantaran</button></div></div>
       <div class="erl-sum erl-g"><div class="erl-k">RINGKASAN PENGHANTARAN</div><div class="erl-w">${E(wkLbl(D.minggu))} · ${E(weekRangeTxt(D.minggu))}</div>
         <div class="erl-rate"><b>${rate}%</b><span>kadar hantar (${sent} / ${all.length} guru)</span></div><div class="erl-bar"><i style="width:${rate}%"></i></div>
         <div class="erl-tiles">${ldTile(cnt("Disemak"), "Selesai", "t-gr")}${ldTile(cnt("Dihantar"), "Dalam Proses", "t-am")}${ldTile(cnt("Dipulang"), "Belum Siap", "t-ro")}${ldTile(cnt("Belum Hantar"), "Belum Hantar", "t-vi")}</div></div></div>
-    <div class="erl-two"><div><div class="erl-h">Ciri utama</div><div class="erl-grid">${ciri}</div></div><div><div class="erl-h">Aktiviti terkini</div><div class="erl-list">${act}</div></div></div>
-    <div class="erl-h">Keselamatan dan kepercayaan</div><div class="erl-grid4">${sel}</div>
-    <div class="erl-h">Sumber pendidikan</div><div class="erl-grid4">${src}</div>
-    <div id="erl-data"></div></div>`;
+    <div class="erl-two"><div><div class="erl-h">Aktiviti terkini</div><div class="erl-list">${act}</div></div><div class="erl-src">${src}</div></div>
+    </div>`;
 }
 function ldKal(y) {
   const yrs = [...new Set([...(ERP_WK.years || []), wkYear(currentWeekNo())])].sort(); y = y || wkYear(currentWeekNo());
@@ -1246,22 +1250,22 @@ function vHantar() {
   const all = hdCompute(), N = all.length, sent = all.filter((r) => r.st !== "Belum Hantar").length, rev = all.filter((r) => r.st === "Disemak").length;
   const list = D.guru ? all.filter((r) => r.nama === D.guru) : all;
   const yrs = hdYears(), ws = hdWeeks(D.tahun);
-  const pc = { "Belum Hantar": "b", Dihantar: "d", Disemak: "s", Dipulang: "p" };
-  const zero = (v, c) => `<b class="${v ? c : "z" + c}">${v}</b>`;
-  const rows = list.map((r, i) => `<div class="erd-r"><span class="n">${i + 1}</span><span class="nm">${E(r.nama)}</span><span class="py">${E(r.pny)}</span><span>${E(r.tarikh)}</span><span><i class="erd-st ${pc[r.st]}">${E(r.st.toUpperCase())}</i></span><span class="num">${r.jh}</span>${zero(r.sel, "g")}${zero(r.pros, "a")}${zero(r.bs, "r")}${zero(r.jsem, "c")}</div>`).join("");
-  return vLanding(all) + `<div class="erd">
-    <div class="erd-hero"><div class="erd-kick">DASHBOARD ANALISIS DATA</div><h2>REKOD PENGHANTARAN DAN SEMAKAN e-RPH<br>SM ARAB (JAIM) AL-ASYRAF</h2></div>
-    <div class="erd-sec">// PILIHAN PAPARAN</div>
-    <div class="erd-filters">
-      <label><span>TAHUN</span><select data-act-change="hd-tahun">${yrs.map((y) => `<option value="${y}" ${y === D.tahun ? "selected" : ""}>${y}</option>`).join("")}</select></label>
-      <label><span>MINGGU</span><select data-act-change="hd-minggu">${ws.map((w) => `<option value="${w}" ${w === D.minggu ? "selected" : ""}>${E(wkLbl(w))}</option>`).join("")}</select></label>
-      <label><span>NAMA GURU</span><select data-act-change="hd-guru"><option value="">Semua Guru</option>${D.staff.map((x) => `<option value="${A(x.nama)}" ${x.nama === D.guru ? "selected" : ""}>${E(x.nama)}</option>`).join("")}</select></label>
+  const col = { "Belum Hantar": ["#E0E7FF", "#3730A3"], Dihantar: ["#FEF3C7", "#78350F"], Disemak: ["#DCFCE7", "#14532D"], Dipulang: ["#FEE2E2", "#7F1D1D"] };
+  const rows = list.map((r, i) => `<div class="erl-tr"><span class="mut">${i + 1}</span><span class="nm">${E(r.nama)}</span><span>${E(r.pny)}</span><span>${E(r.tarikh)}</span><span><i class="erl-st" style="background:${col[r.st][0]};color:${col[r.st][1]}">${E(r.st)}</i></span><span class="b">${r.jh}</span><span class="b" style="color:#15803D">${r.sel}</span><span class="b" style="color:#B45309">${r.pros}</span><span class="b" style="color:#BE185D">${r.bs}</span><span class="b" style="color:#1D4ED8">${r.jsem}</span></div>`).join("");
+  const kad = [["JUM. GURU", N, "var(--text)"], ["SELESAI", all.filter((r) => r.st === "Disemak").length, "#15803D"], ["DALAM PROSES", all.filter((r) => r.st === "Dihantar").length, "#B45309"], ["BELUM SIAP", all.filter((r) => r.st === "Dipulang").length, "#BE185D"]]
+    .map((k) => `<div class="erl-g erl-kad"><div class="erl-k">${k[0]}</div><b style="color:${k[2]}">${k[1]}</b></div>`).join("");
+  return vLanding(all) + `<div class="erl erl-data" id="erl-data">
+    <div><div class="erl-kk">PAPARAN DATA TERPERINCI</div><h3 class="erl-h3">Rekod penghantaran dan semakan e-RPH</h3></div>
+    <div class="erl-g erl-filt">
+      <label><span class="erl-k">TAHUN</span><select data-act-change="hd-tahun">${yrs.map((y) => `<option value="${y}" ${y === D.tahun ? "selected" : ""}>${y}</option>`).join("")}</select></label>
+      <label><span class="erl-k">MINGGU</span><select data-act-change="hd-minggu">${ws.map((w) => `<option value="${w}" ${w === D.minggu ? "selected" : ""}>${E(wkLbl(w))}</option>`).join("")}</select></label>
+      <label><span class="erl-k">NAMA GURU</span><select data-act-change="hd-guru"><option value="">Semua Guru</option>${D.staff.map((x) => `<option value="${A(x.nama)}" ${x.nama === D.guru ? "selected" : ""}>${E(x.nama)}</option>`).join("")}</select></label>
+      <button type="button" class="erp-btn" style="margin-left:auto" data-act="hd-muat" ${D.busy ? "disabled" : ""}>⟳ Muat semula</button>
     </div>
-    <div class="erd-stats"><span>HANTAR MINGGU INI <b class="g">${sent}</b></span><span>BELUM HANTAR <b class="r">${N - sent}</b></span><span>SUDAH DISEMAK <b class="c">${rev} / ${N} GURU</b></span></div>
-    <div class="erd-panel"><div class="erd-ph"><span>// PAPARAN DATA TERPERINCI</span><span class="r"><small>Dikemas kini: ${E(D.at)}</small><button type="button" data-act="hd-muat" ${D.busy ? "disabled" : ""}>⟳ MUAT SEMULA</button></span></div>
-      <div class="erd-scroll"><div class="erd-t"><div class="erd-r hd"><span>NO.</span><span>NAMA GURU</span><span>PENYEMAK</span><span>TARIKH HANTAR</span><span>STATUS</span><span class="num">JUM. HANTAR</span><span class="num">SELESAI</span><span class="num">DALAM PROSES</span><span class="num">BELUM SIAP</span><span class="num">JUM. DISEMAK</span></div>
-      ${rows || `<div class="erd-empty">Tiada data.</div>`}</div></div>
-      <div class="erd-note">Hanya guru (tidak termasuk AKP, pengetua dan kaunselor sepenuh masa). Jum. Hantar = minggu dihantar hingga ${E(wkLbl(D.minggu))}; Selesai = disemak; Dalam Proses = menunggu semakan; Belum Siap = dipulangkan untuk pembetulan; Jum. Disemak = Selesai + Dipulang.</div></div></div>`;
+    <div class="erl-kads">${kad}</div>
+    <div class="erl-g erl-tbl"><div class="erl-scroll"><div class="erl-tw"><div class="erl-tr hd"><span>NO.</span><span>NAMA GURU</span><span>PENYEMAK</span><span>TARIKH HANTAR</span><span>STATUS</span><span>JUM. HANTAR</span><span>SELESAI</span><span>DALAM PROSES</span><span>BELUM SIAP</span><span>JUM. DISEMAK</span></div>
+      ${rows || `<div class="erp-empty">Tiada data.</div>`}</div></div>
+      <div class="erl-note">Dikemas kini: ${E(D.at)}. Hanya guru (tidak termasuk AKP, pengetua dan kaunselor sepenuh masa). Jum. Hantar = minggu dihantar hingga ${E(wkLbl(D.minggu))}; Selesai = disemak; Dalam Proses = menunggu semakan; Belum Siap = dipulangkan untuk pembetulan; Jum. Disemak = Selesai + Dipulang.</div></div></div>`;
 }
 
 /* ================= Semakan (Pentadbir) ================= */
