@@ -871,18 +871,18 @@ async function hantarMinggu() {
 
 /* ================= Cetak / PDF ================= */
 function printHtml(d, meta) {
+  const k = d.karakter;
+  const karRows = k.ada ? `<tr><th colspan="2" class="kh">PROGRAM PEMBENTUKAN KARAKTER (15 MINIT)</th></tr><tr><th>Tarikh</th><td><b>${E(dmyHari(d.tarikh, d.hariNo))}</b></td></tr><tr><th>Masa</th><td><b>${E(t12(k.mula) + " – " + t12(k.akhir))}</b></td></tr>
+    <tr><th>Elemen Teras Karakter</th><td><b>${E(k.elemen.join(", "))}</b></td></tr><tr><th>Catatan Aktiviti</th><td><b>${E(k.catatan)}</b></td></tr>` : "";
   const pembuka = (s, i) => {
     const row = (k, v) => `<tr><th>${k}</th><td>${E(v || "")}</td></tr>`;
     return `<div class="blk"><div class="bh">MASA / KELAS : ${i + 1}</div><table>
       ${row("Masa", t12(s.mula) + " – " + t12(s.akhir))}${row("Kelas / Subjek", s.kelas + " · " + s.subjek)}
       ${row("Ujian / Pentaksiran", [s.ujian ? "Ada Ujian" : "", s.pentakAda ? "Ada Pentaksiran" : ""].filter(Boolean).join(", ") || "-")}
       ${row("Tema / Bidang Pembelajaran", s.tema)}${row("Tajuk", s.tajuk)}${row("Standard Kandungan", s.stdKandungan)}${row("Standard Pembelajaran", s.stdPembelajaran)}
-      ${row("Objektif Pembelajaran", s.objektif)}${row("Ringkasan Aktiviti", s.ringkasan)}${row("Pentaksiran", (s.pentaksiran || []).join(", "))}${row("Impak / Refleksi", s.refleksi)}</table></div>`;
+      ${row("Objektif Pembelajaran", s.objektif)}${row("Ringkasan Aktiviti", s.ringkasan)}${row("Pentaksiran", (s.pentaksiran || []).join(", "))}${row("Impak / Refleksi", s.refleksi)}${i === d.slots.length - 1 ? karRows : ""}</table></div>`;
   };
-  const k = d.karakter;
-  const kar = k.ada ? `<div class="blk"><div class="bh">PELAKSANAAN AKTIVITI PROGRAM PEMBENTUKAN KARAKTER (15 MINIT)</div><table>
-    <tr><th>Tarikh</th><td><b>${E(dmyHari(d.tarikh, d.hariNo))}</b></td></tr><tr><th>Masa</th><td><b>${E(t12(k.mula) + " – " + t12(k.akhir))}</b></td></tr>
-    <tr><th>Elemen Teras Karakter</th><td><b>${E(k.elemen.join(", "))}</b></td></tr><tr><th>Catatan Aktiviti</th><td><b>${E(k.catatan)}</b></td></tr></table></div>` : "";
+  const kar = k.ada && !d.slots.length ? `<div class="blk"><table>${karRows}</table></div>` : "";
   return `<div class="erp-pr"><div class="ban">RANCANGAN PENGAJARAN HARIAN (e-RPH)</div>
     <table><thead><tr><th>Nama Guru</th><td>${E(meta.nama)}</td><th>Minggu</th><td>${wkNo(d.minggu)} (${E(weekRangeTxt(d.minggu))})</td></tr>
     <tr><th>Tarikh</th><td>${E(dmy(d.tarikh))}</td><th>Hari</th><td>${ERP_HARI[d.hariNo - 1]}</td></tr>
@@ -891,7 +891,7 @@ function printHtml(d, meta) {
 }
 /** Cetak / PDF. Dalam iframe Google Sites, window.print() disekat senyap (tiada allow-modals), jadi dokumen dibuka dalam tab baharu
  *  yang mencetak sendiri; jika tab timbul disekat, fail HTML dimuat turun (buka, kemudian Ctrl+P / Simpan sebagai PDF). */
-const ERP_PR_CSS = '@page{size:A4;margin:10mm}body{margin:0;padding:8px;background:#fff}.erp-pr{font-family:"Source Sans 3",Arial,sans-serif;color:#000;font-size:12px}.erp-pr .ban{background:#1d4fb8;color:#fff;text-align:center;font-weight:700;font-size:18px;padding:8px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.erp-pr table{width:100%;border-collapse:collapse;margin:6px 0}.erp-pr td,.erp-pr th{border:1px solid #444;padding:4px 6px;vertical-align:top;text-align:left;white-space:pre-line}.erp-pr th{background:#dbe7ff;width:24%;-webkit-print-color-adjust:exact;print-color-adjust:exact}.erp-pr .blk{break-inside:avoid;page-break-inside:avoid;margin-top:8px}.erp-pr .bh{background:#1d4fb8;color:#fff;font-weight:700;padding:3px 6px;-webkit-print-color-adjust:exact;print-color-adjust:exact}';
+const ERP_PR_CSS = '@page{size:A4;margin:10mm}body{margin:0;padding:8px;background:#fff}.erp-pr{font-family:"Source Sans 3",Arial,sans-serif;color:#000;font-size:12px}.erp-pr .ban{background:#1d4fb8;color:#fff;text-align:center;font-weight:700;font-size:18px;padding:8px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.erp-pr table{width:100%;border-collapse:collapse;margin:6px 0}.erp-pr td,.erp-pr th{border:1px solid #444;padding:4px 6px;vertical-align:top;text-align:left;white-space:pre-line}.erp-pr th{background:#dbe7ff;width:24%;-webkit-print-color-adjust:exact;print-color-adjust:exact}.erp-pr .blk{break-inside:avoid;page-break-inside:avoid;margin-top:8px}.erp-pr th.kh{background:#eef2fb;color:#000;font-weight:700;text-align:left;width:auto;border-top:2px solid #444}.erp-pr .bh{background:#1d4fb8;color:#fff;font-weight:700;padding:3px 6px;-webkit-print-color-adjust:exact;print-color-adjust:exact}';
 function cetak(d, meta) {
   const inFrame = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
   const body = printHtml(d, meta);
@@ -920,8 +920,10 @@ async function loadTetapan() {
     const T = S.tet;
     T.rows = tet.filter((r) => String(r[0] || "").trim()).map((r) => ({ k: String(r[0]).trim(), v: String(r[1] == null ? "" : r[1]).trim() }));
     // DatabaseSTAFF: A=Gambar B=Nama C=Jawatan D=Telefon E=Emel1 F=Emel2 G=Role H=Role2 I=Role3
-    T.staff = st.map((r) => ({ nama: String(r[1] || "").trim(), jawatan: String(r[2] || "").trim(), role2: String(r[7] || "").trim(), role3: String(r[8] || "").trim() })).filter((x) => x.nama);
-    T.pnyList = T.staff.filter((x) => x.role2.toLowerCase() === "pentadbir" || isPentadbir(x)).map((x) => x.nama).sort((a, b) => a.localeCompare(b, "ms"));
+    const tetKecuali = (j) => /^(PEMBANTUKHIDMATAM|PEMBANTUTADBIR|PEMBANTUMAKMAL)/.test(String(j || "").toUpperCase().replace(/[^A-Z0-9]/g, "")); // bukan guru / penyemak
+    T.staff = st.map((r) => ({ nama: String(r[1] || "").trim(), jawatan: String(r[2] || "").trim(), role: String(r[6] || "").trim(), role2: String(r[7] || "").trim(), role3: String(r[8] || "").trim() })).filter((x) => x.nama && !tetKecuali(x.jawatan));
+    // penyemak = staf yang berperanan "Pentadbir" (Role / Role2 / Role3 dalam DatabaseSTAFF)
+    T.pnyList = [...new Set(T.staff.filter((x) => [x.role, x.role2, x.role3].some((v) => v.toLowerCase() === "pentadbir")).map((x) => x.nama))].sort((a, b) => a.localeCompare(b, "ms"));
     T.asg = {}; pny.forEach((r) => { if (norm(r[0]) && String(r[1] || "").trim()) T.asg[norm(r[0])] = String(r[1]).trim(); });
     T.loaded = true;
   } catch (e) { toast("Gagal memuatkan tetapan.", true); }
