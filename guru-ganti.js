@@ -77,7 +77,7 @@ function ggMergeCells(items) {
 const GG_COLS = [
   { key: "bil", re: /^BIL$/i }, { key: "tidakHadir", re: /GURU\s*TIDAK\s*HADIR/i }, { key: "mula", re: /^MULA$/i },
   { key: "tamat", re: /^TAMAT$/i }, { key: "kelas", re: /^KELAS$/i }, { key: "subjek", re: /^SUBJEK$/i },
-  { key: "ganti", re: /GURU\s*GANTI/i }, { key: "tandatangan", re: /TANDATANGAN/i },
+  { key: "ganti", re: /GURU\s*GANTI/i }, { key: "catatan", re: /^CATATAN$/i }, { key: "tandatangan", re: /TANDATANGAN/i },
 ];
 
 function ggParseDateFromText(text) {
@@ -93,7 +93,7 @@ function ggParseDateFromText(text) {
 
 /**
  * Urai item teks satu halaman PDF. items: [{str,x,y,w}] (y: PDF, makin besar makin ATAS).
- * Pulang { tarikh, hari, rows:[{bil,guruTidakHadir,mula,tamat,kelas,subjek,guruGanti}], warnings:[] }
+ * Pulang { tarikh, hari, rows:[{bil,guruTidakHadir,mula,tamat,kelas,subjek,guruGanti,catatan}], warnings:[] }
  */
 function ggParseItems(items, fileName) {
   const warnings = [];
@@ -162,9 +162,11 @@ function ggParseItems(items, fileName) {
     const lo = i === slots.length - 1 ? bottom : (s.y + slots[i + 1].y) / 2;
     const g = groupOf(s.y);
     const ganti = textIn("ganti", hi, lo);
+    // catatan: lajur CATATAN; jika tiada lajur itu, teks dalam lajur TANDATANGAN (selepas guru ganti) dianggap catatan
+    const catatan = [textIn("catatan", hi, lo), textIn("tandatangan", hi, lo)].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
     if (!ganti) warnings.push(`Slot ${ggFmtMasa(s.mula)} (${g.guru || "?"}): nama guru ganti tidak dikesan.`);
     if (!s.tamat) warnings.push(`Slot ${ggFmtMasa(s.mula)}: masa tamat tidak dikesan.`);
-    return { bil: g.bil, guruTidakHadir: g.guru, mula: s.mula, tamat: s.tamat, kelas: g.kelas, subjek: g.subjek, guruGanti: ganti };
+    return { bil: g.bil, guruTidakHadir: g.guru, mula: s.mula, tamat: s.tamat, kelas: g.kelas, subjek: g.subjek, guruGanti: ganti, catatan };
   });
   return { tarikh, hari, rows, warnings };
 }
@@ -241,7 +243,7 @@ async function ggReliefForUser(user, ymd) {
   try {
     const rows = await ggFetch(ymd);
     return rows.filter((r) => r.tarikh === ymd && ggMatchName(user.nama, r.guruGanti))
-      .map((r) => ({ mula: r.mula, tamat: r.tamat, kelas: r.kelas, subjek: r.subjek, guruTidakHadir: r.guruTidakHadir }))
+      .map((r) => ({ mula: r.mula, tamat: r.tamat, kelas: r.kelas, subjek: r.subjek, guruTidakHadir: r.guruTidakHadir, catatan: r.catatan || "" }))
       .sort((a, b) => (ggMinutes(a.mula) || 0) - (ggMinutes(b.mula) || 0));
   } catch (e) { return []; }
 }

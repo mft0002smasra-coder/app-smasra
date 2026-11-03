@@ -3132,3 +3132,6 @@ html[data-cerah="1"] .nt-modal-msg{ color:#111; }
 .kn-rj-banner{ background:#FFF7E0;border:1px solid #E8C766;color:#5B4A12;border-radius:10px;padding:9px 12px;font-size:12px;line-height:1.45;margin-bottom:10px; }
 .kn-rj-banner.hidden{ display:none; }
 .kn-rj-empty{ text-align:center;color:var(--text-dim);padding:30px 10px; }
+
+.gg-cat{ color:#b45309;font-weight:600; }
+.jg-relief-cat{ color:#b45309;font-weight:600; }

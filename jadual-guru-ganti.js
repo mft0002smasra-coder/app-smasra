@@ -39,6 +39,7 @@ function ggRenderList() {
         <div class="gg-kelas"><b>${ggEsc(r.kelas || "-")}</b>${r.subjek ? ` · ${ggEsc(r.subjek)}` : ""}</div>
         <div class="gg-line"><span class="gg-lbl">Tidak hadir</span>${ggEsc(r.guruTidakHadir || "-")}</div>
         <div class="gg-line gg-ganti"><span class="gg-lbl">Guru ganti</span><b>${ggEsc(r.guruGanti)}</b>${mine ? `<span class="gg-me">ANDA</span>` : ""}</div>
+        ${r.catatan ? `<div class="gg-line gg-cat"><span class="gg-lbl">Catatan</span>${ggEsc(r.catatan)}</div>` : ""}
       </div>
     </div>`;
   }).join("");
@@ -106,6 +107,7 @@ function ggRenderPreview() {
           <div class="gg-pv-line">${ggEsc(r.kelas)} · ${ggEsc(r.subjek)}</div>
           <div class="gg-pv-line"><span class="gg-lbl">Tidak hadir</span>${ggEsc(r.guruTidakHadir)}</div>
           <div class="gg-pv-line"><span class="gg-lbl">Ganti</span><b>${ggEsc(r.guruGanti)}</b></div>
+          ${r.catatan ? `<div class="gg-pv-line"><span class="gg-lbl">Catatan</span>${ggEsc(r.catatan)}</div>` : ""}
         </div>`).join("")}
     </div>
     <div class="gg-pv-actions">
@@ -133,7 +135,7 @@ async function ggSave() {
   ggBusy = true;
   const btn = document.getElementById("gg-save-btn"); btn.disabled = true; btn.textContent = "Menyimpan...";
   try {
-    const rows = ggParsed.rows.map((r) => ({ bil: r.bil, guruTidakHadir: r.guruTidakHadir, mula: r.mula, tamat: r.tamat, kelas: r.kelas, subjek: r.subjek, guruGanti: r.guruGanti }));
+    const rows = ggParsed.rows.map((r) => ({ bil: r.bil, guruTidakHadir: r.guruTidakHadir, mula: r.mula, tamat: r.tamat, kelas: r.kelas, subjek: r.subjek, guruGanti: r.guruGanti, catatan: r.catatan || "" }));
     const res = await postToAppsScript(API_URL, { action: "simpanGuruGanti", email: ggUser.email, tarikh: ggParsed.tarikh, rows });
     if (res && res.success) {
       const tarikh = ggParsed.tarikh;

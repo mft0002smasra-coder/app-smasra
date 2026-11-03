@@ -233,7 +233,7 @@ function jgOpenCellDetail(rec) {
       const row = (l, v) => `<div class="jg-detail-row"><span class="jg-detail-label">${l}</span><span>${jgEscape(v || "-")}</span></div>`;
       rb.innerHTML = `<div class="jg-detail-relief-title">RELIEF HARI INI</div>` +
         row("Guru tidak hadir", r.guruTidakHadir) + row("Guru ganti", r.guruGanti) +
-        row("Masa", `${f(r.mula)} - ${f(r.tamat)}`) + row("Kelas", r.kelas) + row("Subjek", r.subjek);
+        row("Masa", `${f(r.mula)} - ${f(r.tamat)}`) + row("Kelas", r.kelas) + row("Subjek", r.subjek) + (r.catatan ? row("Catatan", r.catatan) : "");
       rb.classList.remove("hidden");
     } else { rb.innerHTML = ""; rb.classList.add("hidden"); }
   }
@@ -716,7 +716,7 @@ async function jgRenderHomeCard(user) {
     <div class="jg-home-row jg-relief">
       <span class="jg-home-waktu jg-relief-tag">RELIEF</span>
       <span class="jg-home-masa">${ggFmtShort(r.mula)}&ndash;${ggFmtShort(r.tamat)}</span>
-      <span class="jg-home-subj">${jgEscape(r.subjek)}${r.kelas ? " (" + jgEscape(r.kelas) + ")" : ""}${r.guruTidakHadir ? `<small class="jg-relief-note">ganti ${jgEscape(r.guruTidakHadir)}</small>` : ""}</span>
+      <span class="jg-home-subj">${jgEscape(r.subjek)}${r.kelas ? " (" + jgEscape(r.kelas) + ")" : ""}${r.guruTidakHadir ? `<small class="jg-relief-note">ganti ${jgEscape(r.guruTidakHadir)}</small>` : ""}${r.catatan ? `<small class="jg-relief-note jg-relief-cat">Catatan: ${jgEscape(r.catatan)}</small>` : ""}</span>
     </div>`,
   })));
   rows.sort((a, b) => a.min - b.min);
