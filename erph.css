@@ -456,3 +456,28 @@ body.erp-body[data-erp="gelap"] .erp-tabs { background: linear-gradient(180deg, 
 .erl-pop .erl-tiles { margin: 10px 0; } .erl-pop .erl-tile b { font-size: 18px; color: #2563eb; }
 .erl-sel { display: flex; gap: 8px; margin-bottom: 8px; } .erl-sel select { flex: 1; padding: 8px; border-radius: 10px; border: 1px solid var(--field-bd); background: var(--field); color: var(--text); font: inherit; }
 .erl-step { display: flex; gap: 12px; padding: 8px 0; } .erl-step i { flex: none; width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg,#2563eb,#1e40af); color: #fff; font: 700 14px/28px "Poppins", sans-serif; text-align: center; font-style: normal; } .erl-step b { display: block; } .erl-step span { color: var(--dim); font-size: 13px; }
+
+/* ===== Prestasi (radar heksagon, donat, senarai individu) ===== */
+.prq-card { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+.prq-card .erl-h { margin: 0; } .prq-card .erl-h small { font: 600 13px "Open Sans", sans-serif; color: var(--dim); margin-left: 6px; }
+.prq-radar { width: 100%; max-width: 340px; height: auto; overflow: visible; display: block; margin: 6px auto; }
+.prq-ring { stroke: rgba(30,64,175,.38); stroke-width: 1.2; } .prq-ring.out { stroke: #1d4ed8; stroke-width: 2; }
+.prq-spoke { stroke: rgba(30,64,175,.5); stroke-width: 1.2; }
+.prq-lbl { font: 700 12px "Poppins", sans-serif; fill: #1e1b4b; } .prq-sc { font: 600 9px "Open Sans", sans-serif; fill: #1e40af; }
+.prq-area { stroke: #1d4ed8; stroke-width: 2.5; stroke-linejoin: round; }
+.prq-dot { fill: #fff; stroke: #1d4ed8; stroke-width: 3; }
+.prq-track { stroke: rgba(30,64,175,.16); } .prq-big { font: 700 20px "Poppins", sans-serif; fill: #1e1b4b; } .prq-small { font: 600 9px "Poppins", sans-serif; fill: #475569; letter-spacing: .08em; }
+body.erp-body[data-erp="gelap"] .prq-ring { stroke: rgba(147,197,253,.4); } body.erp-body[data-erp="gelap"] .prq-ring.out { stroke: #60a5fa; } body.erp-body[data-erp="gelap"] .prq-spoke { stroke: rgba(147,197,253,.5); }
+body.erp-body[data-erp="gelap"] .prq-lbl, body.erp-body[data-erp="gelap"] .prq-big { fill: #e8eefc; } body.erp-body[data-erp="gelap"] .prq-sc, body.erp-body[data-erp="gelap"] .prq-small { fill: #9fb0d0; }
+body.erp-body[data-erp="gelap"] .prq-area { stroke: #60a5fa; } body.erp-body[data-erp="gelap"] .prq-dot { fill: #0e1626; stroke: #60a5fa; } body.erp-body[data-erp="gelap"] .prq-track { stroke: rgba(147,197,253,.2); }
+.prq-donuts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+.prq-card.c { align-items: center; text-align: center; } .prq-card.c b { font: 600 14px "Poppins", sans-serif; color: var(--text); } .prq-card.c span { font-size: 13px; color: var(--dim); } .prq-card.c u { text-decoration: none; font-weight: 700; }
+.prq-wk { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); } .prq-wk b { display: block; font: 600 14px "Poppins", sans-serif; color: var(--text); } .prq-wk span { font-size: 12px; color: var(--dim); }
+.prq-pill { font-style: normal; font: 600 12px "Poppins", sans-serif; padding: 3px 12px; border-radius: 999px; white-space: nowrap; } .prq-pill.s { background: #dcfce7; color: #14532d; } .prq-pill.d { background: #fef3c7; color: #78350f; } .prq-pill.p { background: #fee2e2; color: #7f1d1d; } .prq-pill.b { background: #e0e7ff; color: #3730a3; }
+.prq-list { display: flex; flex-direction: column; gap: 10px; }
+button.prq-row { text-align: left; font: inherit; color: inherit; cursor: pointer; padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; transition: transform .2s ease, box-shadow .2s ease; } button.prq-row:hover { transform: translateY(-3px); box-shadow: 0 16px 36px rgba(15,23,42,.28); }
+.prq-row .t { display: flex; justify-content: space-between; font: 600 15px "Poppins", sans-serif; color: var(--text); } .prq-row .t span { color: var(--dim); }
+.prq-row .bar { display: grid; grid-template-columns: 90px 1fr 44px; gap: 8px; align-items: center; font-size: 12px; } .prq-row .bar small { color: var(--dim); } .prq-row .bar div { height: 8px; border-radius: 999px; background: rgba(30,64,175,.14); overflow: hidden; } .prq-row .bar i { display: block; height: 100%; border-radius: 999px; } .prq-row .bar em { font-style: normal; font-weight: 700; text-align: right; }
+.prq-row .ch { display: flex; gap: 6px; flex-wrap: wrap; } .prq-row .ch i { font-style: normal; font: 600 11px "Poppins", sans-serif; padding: 2px 10px; border-radius: 999px; } .ch i.g { background: #dcfce7; color: #14532d; } .ch i.a { background: #fef3c7; color: #78350f; } .ch i.r { background: #fee2e2; color: #7f1d1d; }
+.erl-sel input.erp-in { flex: 1; }
+.erl > .erp-btn.sm[data-act="pr-back"] { align-self: flex-start; width: auto; padding: 0 16px; }

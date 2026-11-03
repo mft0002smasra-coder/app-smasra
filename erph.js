@@ -380,15 +380,21 @@ function head() {
     ? `<div class="hl bor"><span class="t">e-RPH</span><span class="wk"><span>${wkLbl(S.cur.minggu)}</span><span>${E(dmyHari(S.cur.tarikh, S.cur.hariNo))}</span></span></div>`
     : `<div class="hl"><span class="t">e-RPH</span><span class="t sch">SM ARAB (JAIM) AL-ASYRAF</span></div><div class="n">${E(S.user.nama)}</div>`;
   return `<div class="erp-head">${inner}${tools}</div>
-    ${S.isPny ? `<div class="erp-tabs"><i class="erp-ind"></i><button class="erp-tab g ${S.tab === "hantar" ? "on" : ""}" data-act="tab" data-t="hantar" type="button">Penghantaran</button><button class="erp-tab ${S.tab === "saya" ? "on" : ""}" data-act="tab" data-t="saya" type="button">RPH Saya</button><button class="erp-tab g ${S.tab === "semak" ? "on" : ""}" data-act="tab" data-t="semak" type="button">Semakan</button>${isAdminApp(S.user) ? `<button class="erp-tab g ${S.tab === "tetapan" ? "on" : ""}" data-act="tab" data-t="tetapan" type="button">Tetapan</button>` : ""}</div>` : ""}`;
+    ${(() => { const T = []; const on = (t) => (S.tab === t ? "on" : ""), btn = (t, l, g) => `<button class="erp-tab ${g ? "g " : ""}${on(t)}" data-act="tab" data-t="${t}" type="button">${l}</button>`;
+      if (S.isPny) T.push(btn("hantar", "Penghantaran", 1));
+      T.push(btn("saya", "RPH Saya"), btn("prestasi", "Prestasi", 1));
+      if (S.isPny) T.push(btn("semak", "Semakan", 1));
+      if (S.isPny && isAdminApp(S.user)) T.push(btn("tetapan", "Tetapan", 1));
+      return `<div class="erp-tabs"><i class="erp-ind"></i>${T.join("")}</div>`; })()}`;
 }
 function render() {
   const root = document.getElementById("erp-root"); if (!root) return;
-  root.classList.toggle("erp-semak", S.tab === "semak" || S.tab === "tetapan" || S.tab === "hantar");
+  root.classList.toggle("erp-semak", S.tab === "semak" || S.tab === "tetapan" || S.tab === "hantar" || S.tab === "prestasi");
   let body = "";
   if (S.tab === "semak") body = vSemak();
   else if (S.tab === "tetapan") body = vTetapan();
   else if (S.tab === "hantar") body = vHantar();
+  else if (S.tab === "prestasi") body = vPrestasi();
   else body = S.view === "borang" ? vBorang() : S.view === "dash" && isPC() ? vDash() : vSenarai();
   const y = window.scrollY;
   root.innerHTML = head() + `<div class="erp-main">${body}</div>`;
@@ -580,6 +586,7 @@ function syncKarAkhir() {
 }
 function onInput(e) {
   const t = e.target;
+  if (t.dataset.actInput === "pr-q") { S.pr.q = t.value; const L = document.getElementById("pr-list"); if (L) L.innerHTML = prListHtml(prWeeks()); return; }
   if (S.tab === "tetapan") {
     if (t.dataset.ck !== undefined) { const r = S.tet.cal.rows[+t.dataset.ci]; if (r) { r[t.dataset.ck] = t.value; S.tet.cal.dirty = true; const pv = document.getElementById("cal-prev"); if (pv) pv.innerHTML = calPreviewHtml(); } return; }
     if (t.dataset.tk !== undefined) S.tet.rows[+t.dataset.tk].k = t.value;
@@ -608,6 +615,9 @@ function onChange(e) {
   const t = e.target;
   if (t.dataset.tg !== undefined) { const k = norm(t.dataset.tg); if (t.value) S.tet.asg[k] = t.value; else delete S.tet.asg[k]; return; }
   if (t.dataset.actChange === "minggu") { S.minggu = +t.value; render(); return; }
+  if (t.dataset.actChange === "pr-tahun") { S.pr.tahun = +t.value; return render(); }
+  if (t.dataset.actChange === "pr-bulan") { S.pr.bulan = t.value; return render(); }
+  if (t.dataset.actChange === "pr-sort") { S.pr.sort = t.value; return render(); }
   if (t.dataset.actChange === "hd-tahun") { S.hd.tahun = +t.value; const ws = hdWeeks(S.hd.tahun); S.hd.minggu = ws.indexOf(S.hd.minggu) !== -1 ? S.hd.minggu : (ws[0] || 0); return render(); }
   if (t.dataset.actChange === "hd-minggu") { S.hd.minggu = +t.value; return render(); }
   if (t.dataset.actChange === "hd-guru") { S.hd.guru = t.value; return render(); }
@@ -1270,6 +1280,96 @@ function vHantar() {
       <div class="erl-note">Dikemas kini: ${E(D.at)}. Hanya guru (tidak termasuk AKP, pengetua dan kaunselor sepenuh masa). Jum. Hantar = minggu dihantar hingga ${E(wkLbl(D.minggu))}; Selesai = disemak; Dalam Proses = menunggu semakan; Belum Siap = dipulangkan untuk pembetulan; Jum. Disemak = Selesai + Dipulang.</div></div></div>`;
 }
 
+/* ================= Prestasi (guru: diri sendiri; Pentadbir / Admin App: senarai individu) ================= */
+const PR_COL = { green: "#16a34a", blue: "#2563eb", amber: "#d97706", red: "#e11d48" };
+const prIsAdmin = (u) => [u.role, u.role2, u.role3].some((v) => String(v || "").trim().toLowerCase() === "pentadbir" || String(v || "").trim().toLowerCase() === "admin app");
+S.pr = { tahun: 0, bulan: "", q: "", sort: "nama", sel: null };
+const PR_BULAN = ["Januari", "Februari", "Mac", "April", "Mei", "Jun", "Julai", "Ogos", "September", "Oktober", "November", "Disember"];
+function prWeeks() {
+  const P = S.pr, cur = currentWeekNo();
+  let ids = ERP_WK.list.filter((w) => w.year === P.tahun).map((w) => w.id);
+  if (!ids.length) { const n = wkYear(cur) === P.tahun ? wkNo(cur) : 40; ids = Array.from({ length: n }, (_, i) => wkId(P.tahun, i + 1)); }
+  ids = ids.filter((id) => id <= cur);
+  if (P.bulan !== "") ids = ids.filter((id) => dateOf(weekStart(id)).getMonth() === +P.bulan);
+  return ids.sort((a, b) => a - b);
+}
+/** Senarai orang: {nama, key, weeks:{id:baris}}. Admin = semua guru (DatabaseSTAFF + eRPH_Minggu); guru biasa = diri sendiri. */
+function prPersons() {
+  if (!prIsAdmin(S.user)) return [{ nama: S.user.nama, key: norm(S.user.nama), weeks: S.mine.minggu }];
+  const D = S.hd, byE = {}, byN = {};
+  D.staff.forEach((x, i) => { if (x.e1) byE[x.e1] = i; if (x.e2) byE[x.e2] = i; byN[norm(x.nama)] = i; });
+  const per = D.staff.map((x) => ({ nama: x.nama, key: norm(x.nama), weeks: {} }));
+  D.rows.forEach((o) => { const id = +o.minggu; if (!id) return; let i = byE[String(o.emel).toLowerCase().trim()]; if (i === undefined) i = byN[norm(o.nama)]; if (i !== undefined) per[i].weeks[id] = o; });
+  return per;
+}
+function prStat(p, weeks) {
+  let h = 0, d = 0, sl = 0, pr = 0, bs = 0;
+  weeks.forEach((w) => { const o = p.weeks[w], st = o ? o.status : ""; if (HD_SENT.indexOf(st) === -1) return; h++; if (st === "Disemak") { d++; sl++; } else if (st === "Dihantar") pr++; else bs++; });
+  const n = weeks.length, pc = (a, b) => (b ? Math.min(100, Math.round(a * 100 / b)) : 0), tot = sl + pr + bs;
+  return { h, d, n, sl, pr, bs, pH: pc(h, n), pS: pc(d, h), pSl: pc(sl, tot), pPr: pc(pr, tot), pBs: pc(bs, tot), tot };
+}
+function prRadar(a) {
+  const axes = [["Penghantaran", a.pH], ["Semakan", a.pS], ["Selesai", a.pSl], ["Proses", a.pPr], ["Belum Siap", a.pBs]];
+  const size = 260, cx = size / 2, cy = size / 2, R = size / 2 - 52, n = axes.length, ang = (i) => (Math.PI * 2 * i) / n - Math.PI / 2;
+  const pt = (i, v) => `${(cx + R * v * Math.cos(ang(i))).toFixed(1)},${(cy + R * v * Math.sin(ang(i))).toFixed(1)}`;
+  const rings = [0.2, 0.4, 0.6, 0.8, 1].map((lv) => `<polygon points="${axes.map((_, i) => pt(i, lv)).join(" ")}" fill="${lv === 1 ? "rgba(37,99,235,.06)" : "none"}" class="prq-ring${lv === 1 ? " out" : ""}"/>`).join("");
+  const spokes = axes.map((ax, i) => { const c = Math.cos(ang(i)), an = Math.abs(c) < 0.25 ? "middle" : c > 0 ? "start" : "end";
+    return `<line x1="${cx}" y1="${cy}" x2="${(cx + R * c).toFixed(1)}" y2="${(cy + R * Math.sin(ang(i))).toFixed(1)}" class="prq-spoke"/><text x="${(cx + (R + 18) * c).toFixed(1)}" y="${(cy + (R + 18) * Math.sin(ang(i))).toFixed(1)}" text-anchor="${an}" dominant-baseline="middle" class="prq-lbl">${ax[0]}</text>`; }).join("");
+  const lv = axes.map((ax, i) => pt(i, Math.max(0, Math.min(100, ax[1])) / 100));
+  const dots = axes.map((ax, i) => { const [x, y] = lv[i].split(","); return `<circle cx="${x}" cy="${y}" r="4.5" class="prq-dot"><title>${ax[0]}: ${ax[1]}%</title></circle>`; }).join("");
+  const scale = [0.5, 1].map((v) => `<text x="${cx + 4}" y="${(cy - R * v).toFixed(1)}" class="prq-sc">${v * 100}</text>`).join("");
+  return `<svg viewBox="0 0 ${size} ${size}" class="prq-radar"><defs><linearGradient id="prqFill" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b82f6" stop-opacity=".55"/><stop offset="1" stop-color="#1e40af" stop-opacity=".25"/></linearGradient></defs>${rings}${spokes}${scale}<polygon points="${lv.join(" ")}" fill="url(#prqFill)" class="prq-area"/>${dots}</svg>`;
+}
+function prDonut(segs, size, stroke, big, small) {
+  const r = (size - stroke) / 2, c = 2 * Math.PI * r, tot = segs.reduce((a, s) => a + s.v, 0); let cum = 0;
+  const arcs = tot ? segs.filter((s) => s.v > 0).map((s) => { const len = s.v / tot * c, rot = cum / tot * 360 - 90; cum += s.v; return `<circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${s.c}" stroke-width="${stroke}" stroke-dasharray="${len.toFixed(1)} ${(c - len).toFixed(1)}" transform="rotate(${rot.toFixed(1)} ${size / 2} ${size / 2})"/>`; }).join("") : "";
+  return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}"><circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" class="prq-track" stroke-width="${stroke}"/>${arcs}<text x="${size / 2}" y="${size / 2 + 2}" text-anchor="middle" class="prq-big">${big}</text><text x="${size / 2}" y="${size / 2 + 16}" text-anchor="middle" class="prq-small">${small}</text></svg>`;
+}
+function prPersonHtml(p, weeks, back) {
+  const a = prStat(p, weeks);
+  const rows = [...weeks].reverse().map((w) => {
+    const o = p.weeks[w], st = o && HD_SENT.indexOf(o.status) !== -1 ? o.status : (o && o.status === "Draf" ? "Draf" : "Belum Hantar");
+    const cls = { Disemak: "s", Dihantar: "d", Dipulang: "p" }[st] || "b", txt = { Disemak: "Selesai", Dihantar: "Dalam Proses", Dipulang: "Belum Siap" }[st] || st;
+    const sub = o && HD_SENT.indexOf(o.status) !== -1 && o.tarikhHantar ? "Dihantar " + dmy(String(o.tarikhHantar).slice(0, 10)) + (o.penyemak ? " · " + o.penyemak : "") : "Belum dihantar";
+    return `<div class="prq-wk"><div><b>${E(wkLbl(w))}</b><span>${E(sub)}</span></div><i class="prq-pill ${cls}">${E(txt)}</i></div>`;
+  }).join("");
+  return `${back ? `<button type="button" class="erp-btn sm" data-act="pr-back">‹ Senarai guru</button>` : ""}
+    <div class="erl-g prq-card"><div class="erl-h">${back ? "Prestasi" : "Prestasi Saya"} <small>${E(p.nama)}</small></div>${prRadar(a)}</div>
+    <div class="prq-donuts">
+      <div class="erl-g prq-card c">${prDonut([{ v: a.pH, c: PR_COL.green }, { v: 100 - a.pH, c: "transparent" }], 96, 12, a.pH + "%", "HANTAR")}<b>Kadar Penghantaran</b><span>${a.h} / ${a.n} minggu</span></div>
+      <div class="erl-g prq-card c">${prDonut([{ v: a.pS, c: PR_COL.blue }, { v: 100 - a.pS, c: "transparent" }], 96, 12, a.pS + "%", "DISEMAK")}<b>Kadar Semakan</b><span>${a.d} / ${a.h}</span></div>
+      <div class="erl-g prq-card c">${prDonut([{ v: a.sl, c: PR_COL.green }, { v: a.pr, c: PR_COL.amber }, { v: a.bs, c: PR_COL.red }], 96, 12, String(a.tot), "STATUS")}<b>Selesai / Proses / Belum Siap</b><span><u style="color:${PR_COL.green}">${a.sl}</u> · <u style="color:${PR_COL.amber}">${a.pr}</u> · <u style="color:${PR_COL.red}">${a.bs}</u></span></div>
+    </div>
+    <div class="erl-g prq-card"><div class="erl-h">Rekod Mingguan</div>${rows || `<div class="erp-hint">Tiada data.</div>`}</div>`;
+}
+function prListHtml(weeks) {
+  const P = S.pr, q = norm(P.q);
+  let L = prPersons().map((p) => ({ p, a: prStat(p, weeks) })).filter((x) => !q || norm(x.p.nama).indexOf(q) !== -1);
+  const cmp = { nama: (x, y) => x.p.nama.localeCompare(y.p.nama, "ms"), hantar: (x, y) => x.a.pH - y.a.pH || x.p.nama.localeCompare(y.p.nama, "ms"), semak: (x, y) => x.a.pS - y.a.pS || x.p.nama.localeCompare(y.p.nama, "ms") }[P.sort];
+  L.sort(cmp);
+  const col = (v) => (v >= 90 ? PR_COL.green : v >= 60 ? PR_COL.amber : PR_COL.red);
+  return L.map(({ p, a }) => `<button type="button" class="erl-g prq-row" data-act="pr-open" data-k="${A(p.key)}"><div class="t"><b>${E(p.nama)}</b><span>›</span></div>
+    <div class="bar"><small>Hantar ${a.h}/${a.n}</small><div><i style="width:${a.pH}%;background:${col(a.pH)}"></i></div><em style="color:${col(a.pH)}">${a.pH}%</em></div>
+    <div class="bar"><small>Semak ${a.d}/${a.h}</small><div><i style="width:${a.pS}%;background:${col(a.pS)}"></i></div><em style="color:${col(a.pS)}">${a.pS}%</em></div>
+    <div class="ch">${a.sl ? `<i class="g">Selesai ${a.sl}</i>` : ""}${a.pr ? `<i class="a">Proses ${a.pr}</i>` : ""}${a.bs ? `<i class="r">Belum Siap ${a.bs}</i>` : ""}</div></button>`).join("") || `<div class="erp-empty">Tiada guru sepadan.</div>`;
+}
+function vPrestasi() {
+  const P = S.pr, adm = prIsAdmin(S.user);
+  if (adm && !S.hd.loaded) return `<div class="erp-loading">Memuatkan data prestasi…</div>`;
+  if (!P.tahun) P.tahun = wkYear(currentWeekNo());
+  const yrs = [...new Set([...(ERP_WK.years || []), wkYear(currentWeekNo())])].sort((a, b) => b - a), weeks = prWeeks();
+  const filt = `<div class="erl-g erl-filt"><label><span class="erl-k">TAHUN</span><select data-act-change="pr-tahun">${yrs.map((y) => `<option value="${y}" ${y === P.tahun ? "selected" : ""}>${y}</option>`).join("")}</select></label>
+    <label><span class="erl-k">BULAN</span><select data-act-change="pr-bulan"><option value="">Semua bulan</option>${PR_BULAN.map((m, i) => `<option value="${i}" ${P.bulan !== "" && +P.bulan === i ? "selected" : ""}>${m}</option>`).join("")}</select></label></div>`;
+  let body;
+  if (!weeks.length) body = `<div class="erp-empty">Tiada minggu bagi pilihan ini.</div>`;
+  else if (!adm) body = prPersonHtml(prPersons()[0], weeks, false);
+  else if (P.sel) { const p = prPersons().find((x) => x.key === P.sel); body = p ? prPersonHtml(p, weeks, true) : `<div class="erp-empty">Guru tidak dijumpai.</div>`; }
+  else body = `<div class="erl-g prq-card"><div class="erl-h">Prestasi Individu <small>${S.hd.staff.length} guru · ${weeks.length} minggu</small></div>
+      <div class="erl-sel"><input class="erp-in" id="pr-q" placeholder="Cari nama guru…" value="${A(P.q)}" data-act-input="pr-q"><select class="erp-sel" data-act-change="pr-sort"><option value="nama" ${P.sort === "nama" ? "selected" : ""}>Susun: Nama</option><option value="hantar" ${P.sort === "hantar" ? "selected" : ""}>Hantar terendah</option><option value="semak" ${P.sort === "semak" ? "selected" : ""}>Semak terendah</option></select></div></div>
+    <div id="pr-list" class="prq-list">${prListHtml(weeks)}</div>`;
+  return `<div class="erl">${filt}${body}</div>`;
+}
+
 /* ================= Semakan (Pentadbir) ================= */
 const normN = (s) => norm(String(s == null ? "" : s).replace(/[^A-Za-z0-9\u00C0-\u024F ]+/g, " ")); // abai noktah/koma/tanda hubung dalam nama
 /** Boleh lihat? Padanan ikut nama DAN emel (nama dalam eRPH_Minggu mungkin berbeza sedikit daripada DatabaseSTAFF). */
@@ -1383,7 +1483,7 @@ async function onClick(e) {
   if (a === "tema") return erpTemaToggle();
   if (a === "logout") { if (await ask("Log keluar?")) logout(); return; }
   if (a === "close") return closeModal();
-  if (a === "tab") { if (S.view === "borang" && !(await leaveDay())) return; S.tab = b.dataset.t; if (S.tab === "semak" && !S.rev.loaded) { render(); await loadReviewList(); } if (S.tab === "tetapan" && !S.tet.loaded) { render(); await loadTetapan(); } if (S.tab === "hantar" && !S.hd.loaded) { hdInit(); render(); await hdLoad(); return; } render(); return; }
+  if (a === "tab") { if (S.view === "borang" && !(await leaveDay())) return; S.tab = b.dataset.t; if (S.tab === "semak" && !S.rev.loaded) { render(); await loadReviewList(); } if (S.tab === "tetapan" && !S.tet.loaded) { render(); await loadTetapan(); } if ((S.tab === "hantar" || (S.tab === "prestasi" && prIsAdmin(S.user))) && !S.hd.loaded) { hdInit(); render(); await hdLoad(); return; } render(); return; }
   if (a === "open-day") return openDay(+b.dataset.h);
   if (a === "goto-day") { if (+b.dataset.h === S.cur.hariNo) return; if (!(await leaveDay())) return; return openDay(+b.dataset.h); }
   if (a === "kembali") { if (!(await leaveDay())) return; S.view = "senarai"; S.cur = null; render(); window.scrollTo(0, 0); return; }
@@ -1418,6 +1518,8 @@ async function onClick(e) {
   }
   if (a === "wujud-minggu") return wujudMinggu(S.minggu);
   if (a.indexOf("cal-") === 0) return calAct(a, b);
+  if (a === "pr-open") { S.pr.sel = b.dataset.k; render(); window.scrollTo(0, 0); return; }
+  if (a === "pr-back") { S.pr.sel = null; return render(); }
   if (a === "hd-muat") return hdLoad(true);
   if (a === "ld-mula") { S.tab = "saya"; return render(); }
   if (a === "ld-data") { const el = document.getElementById("erl-data"); if (el) el.scrollIntoView({ behavior: "smooth" }); return; }
