@@ -128,3 +128,31 @@ body.erp-body { --mu-card: rgba(255,255,255,.93); } body.erp-body[data-erp="gela
 .mu .erp-card, .mu .erp-chip, .mu .erp-btn, .mu-sec, .mu .mu-mr { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 .mu .erp-card, .mu-sec { background: var(--mu-card) !important; }
 .mu-wide { contain: content; }
+
+/* landing Utama */
+.mu-tempoh { font: 700 15px "Poppins", sans-serif; display: flex; gap: 8px; align-items: center; min-height: 40px; }
+.mu-go { margin-left: auto; }
+.mu-ukad { display: grid; grid-template-columns: 1.5fr repeat(3, minmax(0, 1fr)); gap: 14px; }
+.mu-donut { display: flex; gap: 16px; align-items: center; }
+.mu-donut .ring { width: 92px; height: 92px; border-radius: 50%; position: relative; flex: none; }
+.mu-donut .ring b { position: absolute; inset: 11px; border-radius: 50%; background: var(--mu-card, #fff); display: flex; align-items: center; justify-content: center; font: 700 20px "Poppins", sans-serif; }
+.mu-num.sm { font-size: 20px; margin: 4px 0; }
+.mu-ut2 { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 14px; align-items: start; }
+.mu-ut3 { display: flex; flex-direction: column; gap: 14px; }
+.mu-leg { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 10px; }
+.s-na { background: var(--line); color: var(--muted, #64748b); }
+.mu-mx { display: grid; gap: 4px; align-items: center; min-width: 560px; }
+.mu-mx > span { text-align: center; font-size: 12.5px; }
+.mu-mx .h { font: 600 11px "Poppins", sans-serif; opacity: .75; } .mu-mx .l { text-align: left; }
+.mu-mx .c { height: 28px; line-height: 28px; border-radius: 8px; font: 700 13px "Poppins", sans-serif; }
+.mu-mx .p { font: 700 12.5px "Poppins", sans-serif; } .mu-mx .p.ok { color: var(--siap-t); } .mu-mx .p.bad { color: var(--pulang-t); }
+.mu-bars2 { display: grid; grid-template-columns: 52px 1fr 40px; gap: 10px; align-items: center; font-size: 13px; margin: 8px 0; }
+.mu-bars2 span { text-align: right; font-weight: 700; }
+.mu-bars2 .trk { height: 10px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.mu-bars2 .trk i { display: block; height: 100%; background: #2563eb; transition: width .5s ease; } .mu-bars2 .trk i.ok { background: var(--siap-t); } .mu-bars2 .trk i.bad { background: var(--pulang-t); }
+.mu-akt { display: flex; gap: 10px; font-size: 13px; line-height: 1.4; margin: 8px 0; align-items: flex-start; }
+.mu-akt > i { width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; flex: none; background: var(--draf-t); } .mu-akt > i.ok { background: var(--siap-t); }
+.mu-tdl { display: grid; grid-template-columns: 110px minmax(180px, 1.4fr) minmax(160px, 1fr) 120px 70px; gap: 8px 12px; align-items: center; font-size: 13.5px; min-width: 640px; }
+.mu-tdl .h { font: 600 11px "Poppins", sans-serif; opacity: .75; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+.mu-tdl .g { opacity: .8; }
+@media (max-width: 900px) { .mu-ukad { grid-template-columns: repeat(2, minmax(0, 1fr)); } .mu-ut2 { grid-template-columns: 1fr; } .mu-go { margin-left: 0; } }

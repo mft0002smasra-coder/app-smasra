@@ -20,7 +20,7 @@ const pad = (n) => String(n).padStart(2, "0");
 const f2 = (x) => (x === null || x === undefined || isNaN(x) ? "–" : x.toFixed(2));
 
 let S = {
-  user: null, adm: false, tab: "isi", busy: false,
+  user: null, adm: false, tab: "utama", home: { tkt: 0, all: false }, busy: false,
   tet: C.cantum(null), tetOk: false, td: null, tdDirty: false,
   murid: [], muridOk: false,
   marks: {}, ulasan: {}, loaded: {},          // marks[ujianId][KELAS|KOD] ; ulasan[ujianId][KELAS] = {kunci:teks}
@@ -159,7 +159,7 @@ const kelasBoleh = () => allKelas();
 const slipKelas = () => (S.adm ? allKelas() : kelasGuru());
 const ujianUntukTkt = (t) => S.tet.ujian.filter((u) => !t || (u.tkt || []).indexOf(t) !== -1);
 function tabsAda() {
-  const T = [["isi", "Isi Markah"], ["kelas", "Keputusan Kelas"], ["tkt", "Keputusan Tingkatan"], ["analisis", "Analisis Mata Pelajaran"], ["slip", "Slip Keputusan"]];
+  const T = [["utama", "Utama"], ["isi", "Isi Markah"], ["kelas", "Keputusan Kelas"], ["tkt", "Keputusan Tingkatan"], ["analisis", "Analisis Mata Pelajaran"], ["slip", "Slip Keputusan"]];
   if (!(S.adm || kelasGuru().length)) T.splice(T.findIndex((x) => x[0] === "slip"), 1); // Slip: guru kelas, Pentadbir, Admin App sahaja
   if (S.adm) T.push(["tetapan", "Tetapan"]); // Pentadbir / Admin App sahaja
   return T;
@@ -203,7 +203,7 @@ function render() {
   const root = document.getElementById("erp-root"); if (!root) return;
   root.classList.add("erp-semak");
   if (S.tab === "tetapan" && !S.adm) S.tab = "isi";
-  const v = { isi: vIsi, kelas: vKelas, tkt: vTkt, analisis: vAnalisis, slip: vSlip, tetapan: vTetapan }[S.tab] || vIsi;
+  const v = { utama: vUtama, isi: vIsi, kelas: vKelas, tkt: vTkt, analisis: vAnalisis, slip: vSlip, tetapan: vTetapan }[S.tab] || vIsi;
   const y = window.scrollY;
   root.innerHTML = head() + `<div class="erp-main mu">${v()}</div>`;
   if (S._keepScroll) window.scrollTo(0, y); S._keepScroll = false;
@@ -591,6 +591,10 @@ async function onClick(e) {
     if (S.tab === "isi" && S.dirty && !(await ask("Markah belum disimpan. Tinggalkan halaman ini?"))) return;
     S.tab = el.dataset.t; S._ind = S._ind; render(); return;
   }
+  if (a === "ut-tkt") { S.home.tkt = +el.dataset.t; S.home.all = false; S._keepScroll = true; render(); return; }
+  if (a === "ut-semua") { S.home.all = !S.home.all; S._keepScroll = true; render(); return; }
+  if (a === "ut-isi") { S.isi = { uj: S.ujianId, kelas: el.dataset.k, subjek: el.dataset.s, anim: true }; S.draftKey = ""; S.dirty = false; S.tab = "isi"; render(); window.scrollTo(0, 0); return; }
+  if (a === "ut-csv") return utamaCsv();
   if (a === "isi-draf") return isiSimpan(false);
   if (a === "isi-hantar") return isiSimpan(true);
   if (a === "isi-buka") { if (!(await ask("Buka semula markah ini untuk diedit oleh guru?"))) return; try { await post({ action: "bukaSemula", ujian: S.isi.uj, kelas: S.isi.kelas, subjek: S.isi.subjek }); const r = S.marks[S.isi.uj][up(S.isi.kelas) + "|" + up(S.isi.subjek)]; if (r) r.status = "Draf"; bust(); toast("Dibuka semula."); render(); } catch (err) { toast(err.message, true); } return; }
@@ -638,7 +642,7 @@ async function onChange(e) {
       const I = S.isi; if (a === "isi-uj") I.uj = v; else if (a === "isi-kelas") I.kelas = v; else I.subjek = v;
       S.draftKey = ""; S.dirty = false; if (isiOpts().ready) I.anim = true; render(); return;
     }
-    if (["kls-uj", "tkt-uj", "an-uj", "slp-uj"].indexOf(a) !== -1) { S.ujianId = v; S.slip.sel = 0; S.slip.ulasan = {}; }
+    if (["ut-uj", "kls-uj", "tkt-uj", "an-uj", "slp-uj"].indexOf(a) !== -1) { S.ujianId = v; S.slip.sel = 0; S.slip.ulasan = {}; }
     else if (a === "kls-kelas" || a === "slp-kelas") { S.kelas = v; S.slip.sel = 0; S.slip.ulasan = {}; }
     else if (a === "tkt-tkt" || a === "an-tkt") { S.tkt = +v; S.scope = "ALL"; S.tktKelas = ""; }
     render(); return;
@@ -709,6 +713,94 @@ function analisisCsv() {
   csvDown("Analisis_" + (S.scope === "ALL" ? "Tingkatan_" + S.tkt : S.scope.replace(/\s+/g, "_")), rows);
 }
 
+
+/* ================= Utama (landing) ================= */
+function ujianTerkini() {
+  const L = S.tet.ujian.slice(); if (!L.length) return null;
+  const key = (u) => String(u.mula || "") || String(u.tahun || "") + "-00-00";
+  L.sort((a, b) => key(b).localeCompare(key(a)));
+  return L.find((u) => u.buka) || L[0];
+}
+function jgMap() {
+  if (S.cache.jgmap) return S.cache.jgmap;
+  const m = {};
+  if (typeof jgRecords !== "undefined") jgRecords.forEach((r) => {
+    if (!up(r.kelas) || !up(r.guru)) return;
+    const kelas = up(canon(r.kelas)), lv = C.lvlOf(C.tingOf(kelas), S.tet), s = C.cariSubjek(r.subjek, S.tet.subjek.filter((x) => x.lvl === lv)); if (!s) return;
+    const k = kelas + "|" + s.kod; (m[k] = m[k] || []); if (m[k].indexOf(up(r.guru)) === -1) m[k].push(up(r.guru));
+  });
+  return (S.cache.jgmap = m);
+}
+function utamaData(uid, tf) {
+  const ck = "u|" + uid + "|" + tf; if (S.cache[ck]) return S.cache[ck];
+  const u = ujianBy(uid), marks = S.marks[uid] || {}, jm = jgMap();
+  const kelas = allKelas().filter((k) => (!tf || C.tingOf(k) === tf) && (!u || !(u.tkt || []).length || (u.tkt || []).indexOf(C.tingOf(k)) !== -1));
+  const kods = [], nama = {};
+  kelas.forEach((k) => subjCols(C.tingOf(k)).forEach((s) => { if (kods.indexOf(s.kod) === -1) kods.push(s.kod); nama[s.kod] = s.nama; }));
+  const tot = { H: 0, D: 0, B: 0 }, tk = {}, todo = [];
+  const rows = kelas.map((k) => {
+    const ting = C.tingOf(k), have = subjCols(ting).map((s) => s.kod); let h = 0, n = 0;
+    const cells = kods.map((kod) => {
+      if (have.indexOf(kod) === -1) return { kod, st: "N" };
+      const r = marks[up(k) + "|" + up(kod)], st = r ? (r.status === "Dihantar" ? "H" : "D") : "B";
+      n++; tot[st]++; tk[ting] = tk[ting] || { h: 0, n: 0 }; tk[ting].n++; if (st === "H") { h++; tk[ting].h++; }
+      if (st !== "H") todo.push({ kelas: k, kod, st, guru: (jm[up(k) + "|" + kod] || []).join(", "), ting });
+      return { kod, st };
+    });
+    return { kelas: k, cells, h, n };
+  });
+  todo.sort((a, b) => (a.st === b.st ? 0 : a.st === "B" ? -1 : 1) || a.kelas.localeCompare(b.kelas, "ms", { numeric: true }));
+  const akt = Object.keys(marks).map((k) => ({ k, r: marks[k] })).filter((x) => x.r.kemaskini).sort((a, b) => String(b.r.kemaskini).localeCompare(String(a.r.kemaskini))).slice(0, 6);
+  return (S.cache[ck] = { u, kelas, kods, nama, rows, tot, tk, todo, akt, jum: tot.H + tot.D + tot.B });
+}
+function hariLagi(u) {
+  if (!u || !u.akhir) return "";
+  const d = Math.ceil((new Date(u.akhir + "T23:59:59") - new Date()) / 864e5);
+  return d < 0 ? "Tamat" : d === 0 ? "Hari ini" : d + " hari lagi";
+}
+function vUtama() {
+  const w = warnMurid(), L = S.tet.ujian.slice().sort((a, b) => (String(b.mula || b.tahun)).localeCompare(String(a.mula || a.tahun)));
+  if (!L.length) return w + `<div class="erp-card"><div class="erp-empty">Belum ada ujian / peperiksaan ditetapkan. Pentadbir boleh menambahnya di Tetapan.</div></div>`;
+  if (!ujianBy(S.ujianId)) { const t = ujianTerkini(); S.ujianId = t.id; }
+  const uid = S.ujianId, terkini = ujianTerkini(), u = ujianBy(uid);
+  if (!S.murid.length) return w;
+  if (needLoad(uid)) return w + loadingBox;
+  const tf = S.home.tkt, D = utamaData(uid, tf), pct = D.jum ? Math.round(D.tot.H / D.jum * 100) : 0, pd = D.jum ? Math.round((D.tot.H + D.tot.D) / D.jum * 100) : 0;
+  const tktAda = [...new Set(allKelas().map((k) => C.tingOf(k)))].filter(Boolean).sort();
+  const chips = [0].concat(tktAda).map((t) => `<button class="erp-chip ${t === tf ? "on" : ""}" data-act="ut-tkt" data-t="${t}" type="button">${t ? "Tingkatan " + t : "Semua"}</button>`).join("");
+  const bar = `<div class="erp-card mu-bar">${fld("UJIAN / PEPERIKSAAN", `<select class="erp-sel" data-act-change="ut-uj">${L.map((x) => opt(x.id, x.nama + " " + x.tahun + (terkini && x.id === terkini.id ? " — TERKINI" : "") + (x.buka ? "" : " (ditutup)"), uid)).join("")}</select>`)}
+    <div class="erp-f mu-fld"><label class="erp-lbl">TINGKATAN</label><div class="erp-chips">${chips}</div></div>
+    ${u && (u.mula || u.akhir) ? `<div class="erp-f mu-fld"><label class="erp-lbl">TEMPOH PENGISIAN</label><b class="mu-tempoh">${E(u.mula || "?")} – ${E(u.akhir || "?")} ${hariLagi(u) ? `<span class="erp-pill s-draf">${hariLagi(u)}</span>` : ""}</b></div>` : ""}
+    <button class="erp-btn solid mu-go" data-act="tab" data-t="isi" type="button">Isi markah</button></div>`;
+  if (!D.jum) return w + bar + `<div class="erp-card"><div class="erp-empty">Tiada kelas / mata pelajaran untuk ujian dan tingkatan ini.</div></div>`;
+  const kad = `<div class="mu-ukad"><div class="erp-card mu-donut"><div class="ring" style="background:conic-gradient(var(--siap-t) 0 ${pct}%, var(--draf-t) ${pct}% ${pd}%, var(--line) ${pd}% 100%)"><b>${pct}%</b></div><div><span class="erp-lbl">KADAR KEMASUKAN MARKAH</span><b class="mu-num sm">${D.tot.H} / ${D.jum} dihantar</b><div class="erp-hint">1 kotak = 1 kelas × 1 mata pelajaran.</div></div></div>
+    ${[["DIHANTAR", D.tot.H, "ok", "dikunci & dikira"], ["DRAF", D.tot.D, "", "belum dihantar"], ["BELUM DIISI", D.tot.B, "bad", "perlu tindakan"]].map((k) => `<div class="erp-card"><span class="erp-lbl">${k[0]}</span><b class="mu-num ${k[2]}">${k[1]}</b><div class="erp-hint">${k[3]}</div></div>`).join("")}</div>`;
+  const ic = { H: "✓", D: "…", B: "!", N: "–" }, cls = { H: "s-siap", D: "s-draf", B: "s-belum", N: "s-na" }, sn = { H: "Dihantar", D: "Draf", B: "Belum diisi", N: "Tidak berkenaan" };
+  const mx = `<div class="erp-card"><h3>Status pengisian: kelas × mata pelajaran</h3><div class="mu-leg">${["H", "D", "B", "N"].map((x) => `<span class="erp-pill ${cls[x]}">${ic[x]} ${sn[x]}</span>`).join("")}</div>
+    <div class="mu-wide"><div class="mu-mx" style="grid-template-columns:120px repeat(${D.kods.length},minmax(34px,1fr)) 54px"><span class="h l">KELAS</span>${D.kods.map((k) => `<span class="h" title="${A(D.nama[k])}">${E(k)}</span>`).join("")}<span class="h">%</span>
+    ${D.rows.map((r) => { const p = r.n ? Math.round(r.h / r.n * 100) : 0; return `<span class="l"><b>${E(r.kelas)}</b></span>${r.cells.map((c) => `<span class="c ${cls[c.st]}" title="${A(c.kod + " — " + sn[c.st])}">${ic[c.st]}</span>`).join("")}<span class="p ${p === 100 ? "ok" : p < 60 ? "bad" : ""}">${p}%</span>`; }).join("")}</div></div></div>`;
+  const tkt = `<div class="erp-card"><h3>Kemasukan mengikut tingkatan</h3>${Object.keys(D.tk).sort().map((t) => { const p = Math.round(D.tk[t].h / D.tk[t].n * 100); return `<div class="mu-bars2"><b>Tkt ${t}</b><div class="trk"><i class="${p === 100 ? "ok" : p < 60 ? "bad" : ""}" style="width:${p}%"></i></div><span>${p}%</span></div>`; }).join("")}</div>`;
+  const akt = `<div class="erp-card"><h3>Aktiviti terkini</h3>${D.akt.length ? D.akt.map((x) => { const [kl, kd] = x.k.split("|"); return `<div class="mu-akt"><i class="${x.r.status === "Dihantar" ? "ok" : "dr"}"></i><div><b>${E(x.r.oleh || "—")}</b> ${x.r.status === "Dihantar" ? "menghantar" : "menyimpan draf"} ${E(kd)} · ${E(kl)}<div class="erp-hint">${E(x.r.kemaskini)}</div></div></div>`; }).join("") : `<div class="erp-hint">Belum ada aktiviti.</div>`}</div>`;
+  // tugasan saya
+  const sudah = (k, kod) => { const r = (S.marks[uid] || {})[up(k) + "|" + up(kod)]; return r && r.status === "Dihantar"; };
+  const mine = S.jg.filter((x) => (!tf || C.tingOf(x.kelas) === tf) && !sudah(x.kelas, x.kod));
+  const saya = S.jg.length ? `<div class="erp-card"><h3>Tugasan saya yang belum dihantar <span class="erp-pill ${mine.length ? "s-belum" : "s-siap"}">${mine.length ? mine.length + " kotak" : "Semua siap ✓"}</span></h3><div class="erp-chips">${mine.map((x) => `<button class="erp-chip" data-act="ut-isi" data-k="${A(x.kelas)}" data-s="${A(x.kod)}" type="button">${E(x.kelas)} · ${E(x.kod)}</button>`).join("")}</div></div>` : "";
+  // senarai belum diisi: Pentadbir & Admin App sahaja
+  let senarai = "";
+  if (S.adm) {
+    const rows = S.home.all ? D.todo : D.todo.slice(0, 10);
+    senarai = `<div class="erp-card"><div class="mu-bar" style="justify-content:space-between;align-items:center"><h3 style="margin:0">Senarai belum diisi <span class="erp-pill s-belum">${D.todo.length} kotak</span> <span class="erp-pill s-na">🔒 Pentadbir &amp; Admin App sahaja</span></h3><button class="erp-btn sm" data-act="ut-csv" type="button">Muat turun CSV</button></div>
+      ${D.todo.length ? `<div class="mu-wide"><div class="mu-tdl"><span class="h">KELAS</span><span class="h">MATA PELAJARAN</span><span class="h">GURU (JADUAL GURU)</span><span class="h">STATUS</span><span class="h"></span>${rows.map((x) => `<b>${E(x.kelas)}</b><span>${E(x.kod)} — ${E(D.nama[x.kod])}</span><span class="g">${E(x.guru || "—")}</span><span><i class="erp-pill ${x.st === "B" ? "s-belum" : "s-draf"}">${x.st === "B" ? "Belum diisi" : "Draf"}</i></span><span><button class="erp-btn sm" data-act="ut-isi" data-k="${A(x.kelas)}" data-s="${A(x.kod)}" type="button">Buka</button></span>`).join("")}</div></div>
+      ${D.todo.length > 10 ? `<div style="margin-top:10px"><button class="erp-btn sm" data-act="ut-semua" type="button">${S.home.all ? "Papar 10 teratas" : "Papar semua (" + D.todo.length + ")"}</button></div>` : ""}` : `<div class="erp-hint">Semua markah telah dihantar. 🎉</div>`}
+      <div class="erp-hint">Belum diisi dipaparkan dahulu, kemudian draf. Guru dikenal pasti melalui Jadual Guru.</div></div>`;
+  }
+  return w + bar + kad + `<div class="mu-ut2">${mx}<div class="mu-ut3">${tkt}${akt}</div></div>` + saya + senarai;
+}
+function utamaCsv() {
+  const D = utamaData(S.ujianId, S.home.tkt), u = ujianBy(S.ujianId);
+  csvDown("Belum_diisi_" + (u ? (u.nama + "_" + u.tahun).replace(/\s+/g, "_") : ""), [["KELAS", "KOD", "MATA PELAJARAN", "GURU", "STATUS"]].concat(D.todo.map((x) => [x.kelas, x.kod, D.nama[x.kod], x.guru, x.st === "B" ? "Belum diisi" : "Draf"])));
+}
+
 /* ================= Mula ================= */
 async function muInit(user) {
   S.user = user; S.adm = isPentadbir(user);
@@ -721,7 +813,7 @@ async function muInit(user) {
     await Promise.all([loadTetapan(), loadMurid(), loadStaff(), typeof jgFetchRecords === "function" ? jgFetchRecords(false).catch(() => {}) : null]);
     await loadJg();
     const ti = tabsAda(); if (!ti.some((x) => x[0] === S.tab)) S.tab = ti[0][0];
-    const buka = S.tet.ujian.find((u) => u.buka) || S.tet.ujian[0]; S.ujianId = buka ? buka.id : "";
+    const buka = ujianTerkini(); S.ujianId = buka ? buka.id : "";
     if (S.ujianId) await loadMarks(S.ujianId);
     render();
   } catch (err) { root.innerHTML = `<div class="erp-empty">Ralat memuatkan Markah Ujian: ${E(err.message || err)}</div>`; }
