@@ -71,6 +71,11 @@ async function gviz(sheet, tq, sid) {
   const t = parsed.table || {};
   return { cols: (t.cols || []).map((c) => String(c.label || "").trim()), rows: (t.rows || []).map((r) => (r.c || []).map((c) => (c && c.v != null ? String(c.v) : ""))) };
 }
+async function apiGet(params) {
+  if (!muOk(MU_API_URL)) throw new Error("API belum dipasang");
+  const r = await fetch(MU_API_URL + "?" + new URLSearchParams(Object.assign({ _ts: Date.now() }, params)), { cache: "no-store" });
+  const j = await r.json(); if (!j || j.ok === false) throw new Error((j && j.message) || "API gagal"); return j;
+}
 async function post(payload) {
   if (!muOk(MU_API_URL)) throw new Error("API Markah belum dipasang (MU_API_URL belum diisi dalam markah.js).");
   const r = await postToAppsScript(MU_API_URL, Object.assign({ emel: S.user.email }, payload));
@@ -81,11 +86,14 @@ async function post(payload) {
 /* ================= Muat data ================= */
 async function loadTetapan() {
   if (!muOk(MU_SHEET_ID)) return;
+  let saved = {}, ok = false;
   try {
-    const t = await gviz("MU_Tetapan", "", MU_SHEET_ID), saved = {};
-    t.rows.forEach((r) => { if (r[0]) { try { saved[r[0].trim()] = JSON.parse(r[1]); } catch (e) {} } });
-    S.tet = C.cantum(saved); S.tetOk = true; bust();
-  } catch (e) { /* guna lalai */ }
+    const t = await gviz("MU_Tetapan", "", MU_SHEET_ID);
+    t.rows.forEach((r) => { if (r[0]) { try { saved[r[0].trim()] = JSON.parse(r[1]); } catch (e) {} } }); ok = true;
+  } catch (e) {
+    try { saved = (await apiGet({ action: "getTetapan" })).tetapan || {}; ok = true; } catch (e2) { S.readErr = true; }
+  }
+  if (ok) { S.readErr = false; S.tet = C.cantum(saved); S.tetOk = Object.keys(saved).length > 0; bust(); }
 }
 async function loadMurid() {
   try {
@@ -116,7 +124,9 @@ async function loadMarks(uid, force) {
   S.marks[uid] = {}; S.ulasan[uid] = {};
   if (muOk(MU_SHEET_ID)) {
     const q = "select * where B = '" + uid.replace(/'/g, "") + "'";
-    const [m, u] = await Promise.all([gviz("MU_Markah", q, MU_SHEET_ID).catch(() => ({ rows: [] })), gviz("MU_Ulasan", q, MU_SHEET_ID).catch(() => ({ rows: [] }))]);
+    let m, u;
+    try { [m, u] = await Promise.all([gviz("MU_Markah", q, MU_SHEET_ID), gviz("MU_Ulasan", q, MU_SHEET_ID)]); }
+    catch (e) { try { const j = await apiGet({ action: "getMarkah", ujian: uid }); m = { rows: j.markah || [] }; u = { rows: j.ulasan || [] }; } catch (e2) { S.readErr = true; m = { rows: [] }; u = { rows: [] }; } }
     m.rows.forEach((r) => { let marks = {}; try { marks = JSON.parse(r[5] || "{}"); } catch (e) {} S.marks[uid][up(r[2]) + "|" + up(r[3])] = { status: r[4] || "Draf", marks, oleh: r[6], kemaskini: r[8] }; });
     u.rows.forEach((r) => { try { S.ulasan[uid][up(r[2])] = JSON.parse(r[3] || "{}"); } catch (e) {} });
   }
@@ -201,15 +211,15 @@ function render() {
 }
 const opt = (v, t, cur) => `<option value="${A(v)}" ${String(v) === String(cur) ? "selected" : ""}>${E(t)}</option>`;
 const fld = (lbl, inner) => `<div class="erp-f mu-fld"><label class="erp-lbl">${lbl}</label>${inner}</div>`;
-const warnMurid = () => (S.muridOk ? "" : `<div class="mu-warn">Data murid tidak dapat dibaca daripada DatabaseMurid. Semak Sheet dikongsi “Anyone with the link – Viewer”.</div>`) + (muOk(MU_SHEET_ID) && muOk(MU_API_URL) ? "" : `<div class="mu-warn">Sheet / API Markah belum dipasang (MU_SHEET_ID, MU_API_URL dalam markah.js). Paparan menggunakan tetapan lalai dan tiada markah boleh disimpan.</div>`);
+const warnMurid = () => (S.readErr ? `<div class="mu-warn">Tetapan / markah TIDAK dapat dibaca daripada Sheet Markah (semak Sheet dikongsi “Anyone with the link – Viewer” dan Web App telah di-deploy versi terkini). Tetapan lalai dipaparkan sementara — JANGAN simpan tetapan sehingga ini dibetulkan.</div>` : "") + (S.muridOk ? "" : `<div class="mu-warn">Data murid tidak dapat dibaca daripada DatabaseMurid. Semak Sheet dikongsi “Anyone with the link – Viewer”.</div>`) + (muOk(MU_SHEET_ID) && muOk(MU_API_URL) ? "" : `<div class="mu-warn">Sheet / API Markah belum dipasang (MU_SHEET_ID, MU_API_URL dalam markah.js). Paparan menggunakan tetapan lalai dan tiada markah boleh disimpan.</div>`);
 
 /* ================= Isi Markah ================= */
 function isiOpts() {
   const I = S.isi;
-  const kelas = S.adm ? allKelas() : [...new Set(S.jg.map((x) => x.kelas))].filter((k) => S.murid.some((m) => m.kelas === k)).sort((a, b) => a.localeCompare(b, "ms", { numeric: true }));
+  const kelas = allKelas();
   if (I.kelas && kelas.indexOf(I.kelas) === -1) I.kelas = "";
   const ting = I.kelas ? C.tingOf(I.kelas) : 0;
-  const subj = !I.kelas ? [] : S.adm ? C.subjekTkt(S.tet, ting) : S.jg.filter((x) => x.kelas === I.kelas).map((x) => subjBy(x.kod, ting)).filter((s) => s && s.aktif !== false && (s.tkt || []).indexOf(ting) !== -1);
+  const subj = !I.kelas ? [] : C.subjekTkt(S.tet, ting);
   if (I.subjek && !subj.some((s) => s.kod === I.subjek)) I.subjek = "";
   const uj = ujianUntukTkt(ting).filter((u) => S.adm || u.buka);
   if (I.uj && !uj.some((u) => u.id === I.uj)) I.uj = "";
@@ -236,7 +246,7 @@ function badRaw(raw) { const s = String(raw || "").trim(); if (!s) return false;
 function vIsi() {
   const o = isiOpts(), I = S.isi;
   if (!S.muridOk) return warnMurid();
-  if (!o.kelas.length) return warnMurid() + `<div class="erp-card"><div class="erp-hint">Tiada kelas/subjek untuk anda dalam Jadual Guru. Pastikan nama anda dan subjek dalam Jadual Guru sepadan dengan senarai Mata Pelajaran (Tetapan), atau minta Pentadbir menyemak.</div></div>`;
+  if (!o.kelas.length) return warnMurid() + `<div class="erp-card"><div class="erp-hint">Tiada kelas dijumpai dalam Data Murid.</div></div>`;
   const ph = `<option value="">— Sila pilih —</option>`;
   const top = `<div class="erp-card mu-bar">
     ${fld("UJIAN / PEPERIKSAAN", `<select class="erp-sel" data-act-change="isi-uj">${ph}${o.uj.map((x) => opt(x.id, x.nama + " " + x.tahun + (x.buka ? "" : " (ditutup)"), I.uj)).join("")}</select>`)}
@@ -613,6 +623,7 @@ async function tdAct(a, el) {
   if (a === "td-reset") { S.td = null; S.tdDirty = false; S._keepScroll = true; render(); return; }
   if (a === "td-save") {
     const r = tdSave(); if (r.err) { toast(r.err, true); return; }
+    if (S.readErr && !(await ask("Tetapan sedia ada gagal dibaca. Menyimpan akan menimpa tetapan lama dengan paparan ini. Teruskan?"))) return;
     S.busy = true; toast("Menyimpan tetapan…", false, true);
     try { await post({ action: "saveTetapan", tetapan: r.out }); S.tet = C.cantum(r.out); S.tetOk = true; bust(); S.td = null; S.tdDirty = false; await loadJg(); toast("Tetapan disimpan."); }
     catch (err) { toast(err.message || String(err), true); }
