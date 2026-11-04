@@ -155,14 +155,13 @@ const guruKelasOf = (k) => (S.tet.guruKelas && S.tet.guruKelas[k]) || guruAuto(k
 const allKelas = () => [...new Set(S.murid.map((m) => m.kelas))].sort((a, b) => a.localeCompare(b, "ms", { numeric: true }));
 const muridKelas = (k) => S.murid.filter((m) => m.kelas === k);
 const kelasGuru = () => allKelas().filter((k) => sameNama(guruKelasOf(k), S.user.nama));
-const kelasBoleh = () => (S.adm ? allKelas() : kelasGuru());
+const kelasBoleh = () => allKelas();
+const slipKelas = () => (S.adm ? allKelas() : kelasGuru());
 const ujianUntukTkt = (t) => S.tet.ujian.filter((u) => !t || (u.tkt || []).indexOf(t) !== -1);
 function tabsAda() {
-  const T = [["isi", "Isi Markah"]];
-  if (S.adm || kelasGuru().length) T.push(["kelas", "Keputusan Kelas"]);
-  if (S.adm) T.push(["tkt", "Keputusan Tingkatan"], ["analisis", "Analisis Mata Pelajaran"]);
-  if (S.adm || kelasGuru().length) T.push(["slip", "Slip Keputusan"]);
-  if (S.adm) T.push(["tetapan", "Tetapan"]);
+  const T = [["isi", "Isi Markah"], ["kelas", "Keputusan Kelas"], ["tkt", "Keputusan Tingkatan"], ["analisis", "Analisis Mata Pelajaran"], ["slip", "Slip Keputusan"]];
+  if (!(S.adm || kelasGuru().length)) T.splice(T.findIndex((x) => x[0] === "slip"), 1); // Slip: guru kelas, Pentadbir, Admin App sahaja
+  if (S.adm) T.push(["tetapan", "Tetapan"]); // Pentadbir / Admin App sahaja
   return T;
 }
 /** Kira semua murid dalam satu kelas untuk satu ujian. */
@@ -203,6 +202,7 @@ window.addEventListener("resize", () => { S._ind = null; tabInd(); });
 function render() {
   const root = document.getElementById("erp-root"); if (!root) return;
   root.classList.add("erp-semak");
+  if (S.tab === "tetapan" && !S.adm) S.tab = "isi";
   const v = { isi: vIsi, kelas: vKelas, tkt: vTkt, analisis: vAnalisis, slip: vSlip, tetapan: vTetapan }[S.tab] || vIsi;
   const y = window.scrollY;
   root.innerHTML = head() + `<div class="erp-main mu">${v()}</div>`;
@@ -357,7 +357,7 @@ const loadingBox = `<div class="erp-card"><div class="erp-hint">Memuatkan markah
 
 function vKelas() {
   if (!S.muridOk) return warnMurid();
-  const ks = kelasBoleh(); if (!ks.length) return `<div class="erp-card"><div class="erp-hint">Anda bukan guru kelas bagi mana-mana kelas dalam Data Murid.</div></div>`;
+  const ks = kelasBoleh(); if (!ks.length) return `<div class="erp-card"><div class="erp-hint">Tiada kelas dalam Data Murid.</div></div>`;
   if (ks.indexOf(S.kelas) === -1) S.kelas = ks[0];
   const ting = C.tingOf(S.kelas), top = `<div class="erp-card mu-bar">${ujianSel("kls-uj", ting)}${fld("KELAS", `<select class="erp-sel" data-act-change="kls-kelas">${ks.map((k) => opt(k, k, S.kelas)).join("")}</select>`)}
     <div class="erp-f mu-fld"><span class="erp-lbl">GURU KELAS</span><b>${E(guruKelasOf(S.kelas) || "–")}</b></div>
@@ -428,16 +428,15 @@ function slipHtml(x, kls, u, ulasan, ting, last) {
   const baris = c.rows.map((r, j) => {
     const sj = subjAll[j], nm = sj.nama || sj.kod;
     const m = r.st === "num" ? r.m : r.st === "th" ? "TH" : "+", g = r.st === "num" ? r.g : "-", red = r.st === "num" && r.gagal;
-    return `<div class="sr"><span>${j + 1}</span><span>${E(nm)}${sj.kira === false ? " *" : ""}</span><b style="${red ? "color:#b91c1c" : ""}">${m}</b><b style="${red ? "color:#b91c1c" : ""}">${E(g)}</b></div>`;
+    return `<div class="sr"><span>${j + 1}</span><span>${E(nm)}</span><b style="${red ? "color:#b91c1c" : ""}">${m}</b><b style="${red ? "color:#b91c1c" : ""}">${E(g)}</b></div>`;
   }).join("");
   const gredAll = sk.map((q, i) => c.gc[i] + " [" + q.g + "]").join(", ");
-  const ada = subjAll.some((s) => s.kira === false);
+  
   return `<div class="slip" ${last ? "" : 'style="page-break-after:always"'}>
     <div class="sh"><img src="${A(typeof SCHOOL_LOGO_URL !== "undefined" ? SCHOOL_LOGO_URL : "")}" alt="" onerror="this.style.visibility='hidden'"><div class="st"><div class="sn">${E(MU_SCHOOL)}</div><div class="sa">${E(MU_ALAMAT)}</div></div><div class="sp"></div></div>
     <div class="sj"><span>SLIP KEPUTUSAN</span><span>${E(up(u.nama))}</span><span>${E(u.tahun)}</span></div>
     <div class="sd"><span>Nama</span><span>:</span><b>${E(x.m.nama)}</b><span>Tingkatan</span><span>:</span><b>${E(x.m.kelas)}</b><span>No. KP</span><span>:</span><b>${E(x.m.kp)}</b><span>Pencapaian</span><span>:</span><b style="${c.lulus === false ? "color:#b91c1c" : ""}">${c.lulus === null ? "–" : c.lulus ? "LULUS" : "GAGAL"}</b></div>
     <div class="sb"><div class="sr h"><span>Bil</span><span>Mata Pelajaran</span><span>Markah</span><span>Gred</span></div>${baris}</div>
-    ${ada ? `<div class="sf">* Direkod sahaja — tidak dikira dalam GPI, jumlah markah dan kedudukan.</div>` : ""}
     ${c.gagalWajib.length ? `<div class="sf" style="color:#b91c1c;font-weight:700">Gagal mata pelajaran wajib: ${E(c.gagalWajib.join(", "))}</div>` : ""}
     <div class="ss"><div><span>Bilangan Mata Pelajaran Daftar</span><span>:</span><b>${c.n}</b></div>
       <div><span>Jumlah Markah</span><span>:</span><b>${c.n ? c.jum : "–"}</b><span>Peratus (%)</span><span>:</span><b>${f2(c.pct)}</b><span>Gred Purata Pelajar</span><span>:</span><b>${f2(c.gpi)}</b></div></div>
@@ -448,7 +447,7 @@ function slipHtml(x, kls, u, ulasan, ting, last) {
 }
 const SLIP_CSS = '.slip{width:794px;height:1123px;box-sizing:border-box;background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-size:12px;padding:44px 52px;display:flex;flex-direction:column;overflow:hidden}.slip *{box-sizing:border-box}.slip .sh{display:flex;align-items:center;gap:18px;padding-bottom:10px;border-bottom:2px solid #000}.slip .sh img{width:78px;height:78px;object-fit:contain;flex:none}.slip .sp{width:78px;flex:none}.slip .st{flex:1;text-align:center}.slip .sn{font-weight:700;font-size:20px;letter-spacing:.02em}.slip .sa{font-size:12px;margin-top:3px}.slip .sj{display:flex;justify-content:space-between;font-weight:700;font-size:13px;padding:14px 60px 0;text-align:center}.slip .sd{display:grid;grid-template-columns:70px 12px 1fr 90px 12px 150px;row-gap:12px;margin-top:30px;font-size:12px}.slip .sd b{font-size:13px}.slip .sb{margin-top:20px;border-top:1px solid #000;border-bottom:1px solid #000;padding:6px 0 12px}.slip .sr{display:grid;grid-template-columns:44px 1fr 90px 70px;padding:3px 0;font-size:11.5px}.slip .sr>span:first-child{padding-left:12px}.slip .sr>b,.slip .sr>span:nth-child(n+3){text-align:center}.slip .sr.h{font-weight:700;font-size:12px;border-bottom:1px solid #000;margin-bottom:10px;padding-bottom:6px}.slip .sf{font-size:10px;margin-top:4px}.slip .ss{display:grid;grid-template-columns:1.25fr 1fr;column-gap:30px;margin-top:20px;font-size:11.5px}.slip .ss>div{display:grid;grid-template-columns:auto 10px 1fr;column-gap:6px;row-gap:14px;align-content:start}.slip .ss>div:first-child{grid-template-columns:200px 10px 1fr}.slip .ss>div:last-child{grid-template-columns:120px 10px 1fr}.slip .sg{display:grid;grid-template-columns:200px 10px 1fr;margin-top:14px;font-size:11.5px}.slip .sl{margin-top:20px;border-top:1px solid #000}.slip .su{margin-top:22px;font-size:11.5px;display:flex;gap:8px;align-items:baseline}.slip .ul{font-family:"Caveat","Segoe Script",cursive;font-size:17px;font-style:italic}.slip .sx{margin-top:auto;display:flex;justify-content:space-between;font-size:11.5px;padding-top:50px}';
 function slipCtx() {
-  const ks = kelasBoleh(); if (ks.indexOf(S.kelas) === -1) S.kelas = ks[0];
+  const ks = slipKelas(); if (ks.indexOf(S.kelas) === -1) S.kelas = ks[0];
   const ting = C.tingOf(S.kelas); kiraTkt(S.ujianId, ting);
   const kls = kiraKelas(S.ujianId, S.kelas);
   const ul = Object.assign({}, (S.ulasan[S.ujianId] || {})[up(S.kelas)] || {}, S.slip.ulasan);
@@ -456,7 +455,7 @@ function slipCtx() {
 }
 function vSlip() {
   if (!S.muridOk) return warnMurid();
-  const ks = kelasBoleh(); if (!ks.length) return `<div class="erp-card"><div class="erp-hint">Anda bukan guru kelas bagi mana-mana kelas dalam Data Murid.</div></div>`;
+  const ks = slipKelas(); if (!ks.length) return `<div class="erp-card"><div class="erp-hint">Slip keputusan hanya untuk guru kelas, Pentadbir dan Admin App.</div></div>`;
   if (ks.indexOf(S.kelas) === -1) S.kelas = ks[0];
   const ting = C.tingOf(S.kelas), bundle = S.slip.mode === "bundle";
   const top = `<div class="erp-card mu-bar">${ujianSel("slp-uj", ting)}${fld("KELAS", `<select class="erp-sel" data-act-change="slp-kelas">${ks.map((k) => opt(k, k, S.kelas)).join("")}</select>`)}
