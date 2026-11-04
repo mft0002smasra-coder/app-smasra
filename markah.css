@@ -122,3 +122,9 @@ body.erp-body[data-erp="gelap"] .mu-agrid, body.erp-body[data-erp="gelap"] .mu-g
 .mu-sec .mu-two2 { margin: 8px 0; }
 .mu-trw.sj { grid-template-columns: 70px minmax(140px, 2fr) minmax(90px, 1fr) 96px minmax(110px, 1fr) 44px 52px 62px 62px 142px; }
 .mu-trw .mv .erp-btn.sm { padding-left: 10px; padding-right: 10px; }
+
+/* mod ringan: tiada blur pada kad/jadual (hanya kepala & tab kekal kaca) */
+body.erp-body { --mu-card: rgba(255,255,255,.93); } body.erp-body[data-erp="gelap"] { --mu-card: #172238; }
+.mu .erp-card, .mu .erp-chip, .mu .erp-btn, .mu-sec, .mu .mu-mr { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.mu .erp-card, .mu-sec { background: var(--mu-card) !important; }
+.mu-wide { contain: content; }

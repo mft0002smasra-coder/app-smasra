@@ -26,6 +26,7 @@ let S = {
   marks: {}, ulasan: {}, loaded: {},          // marks[ujianId][KELAS|KOD] ; ulasan[ujianId][KELAS] = {kunci:teks}
   jg: [],                                      // tugasan guru daripada Jadual Guru: [{kelas, kod}]
   ujianId: "", kelas: "", tkt: 0, scope: "ALL",
+  cache: {}, tktKelas: "",
   isi: { uj: "", kelas: "", subjek: "", anim: false }, staff: [], tetOpen: {},
   draft: {}, draftKey: "", dirty: false,
   slip: { mode: "satu", sel: 0, ulasan: {}, dirty: false },
@@ -83,7 +84,7 @@ async function loadTetapan() {
   try {
     const t = await gviz("MU_Tetapan", "", MU_SHEET_ID), saved = {};
     t.rows.forEach((r) => { if (r[0]) { try { saved[r[0].trim()] = JSON.parse(r[1]); } catch (e) {} } });
-    S.tet = C.cantum(saved); S.tetOk = true;
+    S.tet = C.cantum(saved); S.tetOk = true; bust();
   } catch (e) { /* guna lalai */ }
 }
 async function loadMurid() {
@@ -101,7 +102,7 @@ async function loadMurid() {
     });
     out.forEach((m) => { m.ting = C.tingOf(m.kelas); m.key = C.muKey(m); });
     out.sort((a, b) => a.kelas.localeCompare(b.kelas, "ms", { numeric: true }) || a.nama.localeCompare(b.nama, "ms"));
-    S.murid = out; S.muridOk = true;
+    S.murid = out; S.muridOk = true; bust();
   } catch (e) { S.muridOk = false; }
 }
 async function loadStaff() {
@@ -119,7 +120,7 @@ async function loadMarks(uid, force) {
     m.rows.forEach((r) => { let marks = {}; try { marks = JSON.parse(r[5] || "{}"); } catch (e) {} S.marks[uid][up(r[2]) + "|" + up(r[3])] = { status: r[4] || "Draf", marks, oleh: r[6], kemaskini: r[8] }; });
     u.rows.forEach((r) => { try { S.ulasan[uid][up(r[2])] = JSON.parse(r[3] || "{}"); } catch (e) {} });
   }
-  S.loaded[uid] = true;
+  S.loaded[uid] = true; bust();
 }
 async function loadJg() {
   try { await jgFetchRecords(false); } catch (e) {}
@@ -155,18 +156,21 @@ function tabsAda() {
   return T;
 }
 /** Kira semua murid dalam satu kelas untuk satu ujian. */
+const bust = () => { S.cache = {}; };
 function kiraKelas(uid, kelas) {
+  const ck = "k|" + uid + "|" + kelas; if (S.cache[ck]) return S.cache[ck];
   const ms = muridKelas(kelas), ting = ms.length ? ms[0].ting : C.tingOf(kelas), marks = S.marks[uid] || {};
   const list = ms.map((m) => ({ m, c: C.kiraMurid(m, kelas, S.tet, marks, ting) }));
   const rk = C.kedudukan(list, (x) => x.c);
   list.forEach((x) => { x.rk = rk.get(x) || null; });
-  return { ting, list };
+  return (S.cache[ck] = { ting, list });
 }
 function kiraTkt(uid, ting) {
+  const ck = "t|" + uid + "|" + ting; if (S.cache[ck]) return S.cache[ck];
   const kelas = allKelas().filter((k) => C.tingOf(k) === ting), groups = kelas.map((k) => kiraKelas(uid, k));
   const all = [].concat(...groups.map((g) => g.list)), rt = C.kedudukan(all, (x) => x.c);
-  all.forEach((x) => { x.rt = rt.get(x) || null; });
-  return { kelas, groups, all };
+  all.forEach((x) => { x.rt = rt.get(x) || null; x.nt = all.length; });
+  return (S.cache[ck] = { kelas, groups, all });
 }
 
 /* ================= Kerangka ================= */
@@ -298,7 +302,7 @@ async function isiSimpan(hantar) {
   try {
     const r = await post({ action: "saveMarkah", ujian: S.isi.uj, kelas: S.isi.kelas, subjek: S.isi.subjek, markah: marks, hantar: !!hantar });
     const rec = { status: r.status, marks: Object.assign({}, marks), oleh: S.user.nama, kemaskini: "" };
-    (S.marks[S.isi.uj] = S.marks[S.isi.uj] || {})[up(S.isi.kelas) + "|" + up(S.isi.subjek)] = rec; S.dirty = false;
+    (S.marks[S.isi.uj] = S.marks[S.isi.uj] || {})[up(S.isi.kelas) + "|" + up(S.isi.subjek)] = rec; S.dirty = false; bust();
     toast(hantar ? "Markah dihantar." : "Draf disimpan.");
   } catch (e) { toast(e.message || String(e), true); }
   S.busy = false; render();
@@ -359,12 +363,14 @@ function vTkt() {
   if (!S.muridOk) return warnMurid();
   const ts = tktList(); if (!ts.length) return warnMurid();
   if (ts.indexOf(S.tkt) === -1) S.tkt = ts[ts.length - 1];
+  const kls = allKelas().filter((k) => C.tingOf(k) === S.tkt); if (kls.indexOf(S.tktKelas) === -1) S.tktKelas = kls[0] || "";
   const top = `<div class="erp-card mu-bar">${ujianSel("tkt-uj", S.tkt)}${fld("TINGKATAN", `<select class="erp-sel" data-act-change="tkt-tkt">${ts.map((t) => opt(t, "Tingkatan " + t, S.tkt)).join("")}</select>`)}
-    <div class="erp-right mu-bt"><button class="erp-btn" data-act="tkt-cetak" type="button">Cetak / PDF</button><button class="erp-btn" data-act="tkt-csv" type="button">Muat turun Excel</button></div></div>`;
+    <div class="erp-right mu-bt"><button class="erp-btn" data-act="tkt-cetak" type="button">Cetak / PDF (semua kelas)</button><button class="erp-btn" data-act="tkt-csv" type="button">Muat turun Excel</button></div></div>`;
   if (!S.ujianId) return top; if (needLoad(S.ujianId)) return top + loadingBox;
-  const t = kiraTkt(S.ujianId, S.tkt);
-  return `${warnMurid()}${top}${kadHtml(t.all)}<div class="erp-card mu-tbl">${tblHtml({ ting: S.tkt, tkt: true, groups: t.groups.map((g, i) => ({ nama: t.kelas[i], list: g.list })) })}
-    <div class="erp-hint" style="padding:8px 14px">Senarai murid dipisahkan mengikut kelas. KDDK KLS = kedudukan dalam kelas; KDDK TKT = kedudukan dalam tingkatan (GPI terendah = terbaik, jumlah markah sebagai penentu).</div></div>`;
+  const t = kiraTkt(S.ujianId, S.tkt), gi = t.kelas.indexOf(S.tktKelas), g = t.groups[gi];
+  const chips = `<div class="erp-card mu-bar"><span class="erp-lbl" style="margin:0">KELAS</span><div class="erp-chips">${t.kelas.map((k) => `<button class="erp-chip ${k === S.tktKelas ? "on" : ""}" data-act="tkt-kelas" data-k="${A(k)}" type="button">${E(k)}</button>`).join("")}</div></div>`;
+  return `${warnMurid()}${top}${kadHtml(t.all)}${chips}<div class="erp-card mu-tbl">${g ? tblHtml({ ting: S.tkt, tkt: true, groups: [{ nama: t.kelas[gi], list: g.list }] }) : ""}
+    <div class="erp-hint" style="padding:8px 14px">Kad di atas = seluruh tingkatan. Jadual dipaparkan satu kelas pada satu masa (guna Cetak / Excel untuk semua kelas). KDDK KLS = kedudukan dalam kelas; KDDK TKT = kedudukan dalam tingkatan (GPI terendah = terbaik, jumlah markah sebagai penentu).</div></div>`;
 }
 
 /* ================= Analisis Mata Pelajaran ================= */
@@ -415,7 +421,7 @@ function slipHtml(x, kls, u, ulasan, ting, last) {
     return `<div class="sr"><span>${j + 1}</span><span>${E(nm)}${sj.kira === false ? " *" : ""}</span><b style="${red ? "color:#b91c1c" : ""}">${m}</b><b style="${red ? "color:#b91c1c" : ""}">${E(g)}</b></div>`;
   }).join("");
   const gredAll = sk.map((q, i) => c.gc[i] + " [" + q.g + "]").join(", ");
-  const nkls = kls.list.length, ada = subjAll.some((s) => s.kira === false);
+  const ada = subjAll.some((s) => s.kira === false);
   return `<div class="slip" ${last ? "" : 'style="page-break-after:always"'}>
     <div class="sh"><img src="${A(typeof SCHOOL_LOGO_URL !== "undefined" ? SCHOOL_LOGO_URL : "")}" alt="" onerror="this.style.visibility='hidden'"><div class="st"><div class="sn">${E(MU_SCHOOL)}</div><div class="sa">${E(MU_ALAMAT)}</div></div><div class="sp"></div></div>
     <div class="sj"><span>SLIP KEPUTUSAN</span><span>${E(up(u.nama))}</span><span>${E(u.tahun)}</span></div>
@@ -423,7 +429,7 @@ function slipHtml(x, kls, u, ulasan, ting, last) {
     <div class="sb"><div class="sr h"><span>Bil</span><span>Mata Pelajaran</span><span>Markah</span><span>Gred</span></div>${baris}</div>
     ${ada ? `<div class="sf">* Direkod sahaja — tidak dikira dalam GPI, jumlah markah dan kedudukan.</div>` : ""}
     ${c.gagalWajib.length ? `<div class="sf" style="color:#b91c1c;font-weight:700">Gagal mata pelajaran wajib: ${E(c.gagalWajib.join(", "))}</div>` : ""}
-    <div class="ss"><div><span>Bilangan Mata Pelajaran Daftar</span><span>:</span><b>${c.n}</b><span>Kedudukan Dalam Kelas</span><span>:</span><b>${x.rk || "–"} / ${nkls}</b><span>Kedudukan Dalam Tingkatan</span><span>:</span><b>${x.rt || "–"} / ${x.nt}</b></div>
+    <div class="ss"><div><span>Bilangan Mata Pelajaran Daftar</span><span>:</span><b>${c.n}</b></div>
       <div><span>Jumlah Markah</span><span>:</span><b>${c.n ? c.jum : "–"}</b><span>Peratus (%)</span><span>:</span><b>${f2(c.pct)}</b><span>Gred Purata Pelajar</span><span>:</span><b>${f2(c.gpi)}</b></div></div>
     <div class="sg"><span>Pencapaian Gred Keseluruhan</span><span>:</span><b>${E(gredAll)}</b></div>
     <div class="sl"></div>
@@ -433,8 +439,8 @@ function slipHtml(x, kls, u, ulasan, ting, last) {
 const SLIP_CSS = '.slip{width:794px;height:1123px;box-sizing:border-box;background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-size:12px;padding:44px 52px;display:flex;flex-direction:column;overflow:hidden}.slip *{box-sizing:border-box}.slip .sh{display:flex;align-items:center;gap:18px;padding-bottom:10px;border-bottom:2px solid #000}.slip .sh img{width:78px;height:78px;object-fit:contain;flex:none}.slip .sp{width:78px;flex:none}.slip .st{flex:1;text-align:center}.slip .sn{font-weight:700;font-size:20px;letter-spacing:.02em}.slip .sa{font-size:12px;margin-top:3px}.slip .sj{display:flex;justify-content:space-between;font-weight:700;font-size:13px;padding:14px 60px 0;text-align:center}.slip .sd{display:grid;grid-template-columns:70px 12px 1fr 90px 12px 150px;row-gap:12px;margin-top:30px;font-size:12px}.slip .sd b{font-size:13px}.slip .sb{margin-top:20px;border-top:1px solid #000;border-bottom:1px solid #000;padding:6px 0 12px}.slip .sr{display:grid;grid-template-columns:44px 1fr 90px 70px;padding:3px 0;font-size:11.5px}.slip .sr>span:first-child{padding-left:12px}.slip .sr>b,.slip .sr>span:nth-child(n+3){text-align:center}.slip .sr.h{font-weight:700;font-size:12px;border-bottom:1px solid #000;margin-bottom:10px;padding-bottom:6px}.slip .sf{font-size:10px;margin-top:4px}.slip .ss{display:grid;grid-template-columns:1.25fr 1fr;column-gap:30px;margin-top:20px;font-size:11.5px}.slip .ss>div{display:grid;grid-template-columns:auto 10px 1fr;column-gap:6px;row-gap:14px;align-content:start}.slip .ss>div:first-child{grid-template-columns:200px 10px 1fr}.slip .ss>div:last-child{grid-template-columns:120px 10px 1fr}.slip .sg{display:grid;grid-template-columns:200px 10px 1fr;margin-top:14px;font-size:11.5px}.slip .sl{margin-top:20px;border-top:1px solid #000}.slip .su{margin-top:22px;font-size:11.5px;display:flex;gap:8px;align-items:baseline}.slip .ul{font-family:"Caveat","Segoe Script",cursive;font-size:17px;font-style:italic}.slip .sx{margin-top:auto;display:flex;justify-content:space-between;font-size:11.5px;padding-top:50px}';
 function slipCtx() {
   const ks = kelasBoleh(); if (ks.indexOf(S.kelas) === -1) S.kelas = ks[0];
-  const ting = C.tingOf(S.kelas), kls = kiraKelas(S.ujianId, S.kelas), tk = kiraTkt(S.ujianId, ting);
-  kls.list.forEach((x) => { const f = tk.all.find((y) => y.m.key === x.m.key && y.m.kelas === x.m.kelas); x.rt = f ? f.rt : null; x.nt = tk.all.length; });
+  const ting = C.tingOf(S.kelas); kiraTkt(S.ujianId, ting);
+  const kls = kiraKelas(S.ujianId, S.kelas);
   const ul = Object.assign({}, (S.ulasan[S.ujianId] || {})[up(S.kelas)] || {}, S.slip.ulasan);
   return { ks, ting, kls, ul, u: ujianBy(S.ujianId) };
 }
@@ -448,7 +454,7 @@ function vSlip() {
   if (!S.ujianId) return top; if (needLoad(S.ujianId)) return top + loadingBox;
   const cx = slipCtx(), n = cx.kls.list.length; if (S.slip.sel >= n) S.slip.sel = 0;
   const sel = cx.kls.list[S.slip.sel];
-  const list = cx.kls.list.map((x, i) => `<button class="mu-mr ${i === S.slip.sel ? "on" : ""}" data-act="slp-pick" data-i="${i}" type="button"><span class="dim">${i + 1}</span><span class="nm"><b>${E(x.m.nama)}</b><small>GPI ${f2(x.c.gpi)} · Kedudukan ${x.rk || "–"}/${n}</small></span><i class="erp-pill ${x.c.lulus === null ? "s-belum" : x.c.lulus ? "s-siap" : "s-pulang"}">${x.c.lulus === null ? "–" : x.c.lulus ? "LULUS" : "GAGAL"}</i>${bundle ? `<span class="tk">✓</span>` : ""}</button>`).join("");
+  const list = cx.kls.list.map((x, i) => `<button class="mu-mr ${i === S.slip.sel ? "on" : ""}" data-act="slp-pick" data-i="${i}" type="button"><span class="dim">${i + 1}</span><span class="nm"><b>${E(x.m.nama)}</b><small>GPI ${f2(x.c.gpi)}</small></span><i class="erp-pill ${x.c.lulus === null ? "s-belum" : x.c.lulus ? "s-siap" : "s-pulang"}">${x.c.lulus === null ? "–" : x.c.lulus ? "LULUS" : "GAGAL"}</i>${bundle ? `<span class="tk">✓</span>` : ""}</button>`).join("");
   return `${warnMurid()}${top}
   <div class="erp-card mu-bar"><div class="erp-hint" style="flex:1">${bundle ? `Mod bundle: ${n} slip dicetak sekali gus, satu murid satu helaian A4 mengikut bil.` : "Mod satu-satu: pilih seorang murid, kemudian tekan Cetak slip ini."}</div>
     <div class="erp-right mu-bt"><button class="erp-btn solid orange" data-act="slp-cetak" type="button">${bundle ? `Cetak ${n} slip (1 kelas)` : "Cetak slip ini"}</button><button class="erp-btn" data-act="slp-pdf" type="button">Simpan PDF</button></div></div>
@@ -578,8 +584,9 @@ async function onClick(e) {
   }
   if (a === "isi-draf") return isiSimpan(false);
   if (a === "isi-hantar") return isiSimpan(true);
-  if (a === "isi-buka") { if (!(await ask("Buka semula markah ini untuk diedit oleh guru?"))) return; try { await post({ action: "bukaSemula", ujian: S.isi.uj, kelas: S.isi.kelas, subjek: S.isi.subjek }); const r = S.marks[S.isi.uj][up(S.isi.kelas) + "|" + up(S.isi.subjek)]; if (r) r.status = "Draf"; toast("Dibuka semula."); render(); } catch (err) { toast(err.message, true); } return; }
+  if (a === "isi-buka") { if (!(await ask("Buka semula markah ini untuk diedit oleh guru?"))) return; try { await post({ action: "bukaSemula", ujian: S.isi.uj, kelas: S.isi.kelas, subjek: S.isi.subjek }); const r = S.marks[S.isi.uj][up(S.isi.kelas) + "|" + up(S.isi.subjek)]; if (r) r.status = "Draf"; bust(); toast("Dibuka semula."); render(); } catch (err) { toast(err.message, true); } return; }
   if (a === "isi-paste") { const first = document.querySelector("[data-mk]"); toast("Salin lajur markah daripada Excel, klik kotak markah murid pertama dan tekan Ctrl+V."); if (first) first.focus(); return; }
+  if (a === "tkt-kelas") { S.tktKelas = el.dataset.k; S._keepScroll = true; render(); return; }
   if (a === "an-scope") { S.scope = el.dataset.s; S._keepScroll = true; render(); return; }
   if (a === "slp-mode") { S.slip.mode = el.dataset.m; S._keepScroll = true; render(); return; }
   if (a === "slp-pick") { S.slip.sel = +el.dataset.i; S._keepScroll = true; render(); return; }
@@ -607,7 +614,7 @@ async function tdAct(a, el) {
   if (a === "td-save") {
     const r = tdSave(); if (r.err) { toast(r.err, true); return; }
     S.busy = true; toast("Menyimpan tetapan…", false, true);
-    try { await post({ action: "saveTetapan", tetapan: r.out }); S.tet = C.cantum(r.out); S.tetOk = true; S.td = null; S.tdDirty = false; await loadJg(); toast("Tetapan disimpan."); }
+    try { await post({ action: "saveTetapan", tetapan: r.out }); S.tet = C.cantum(r.out); S.tetOk = true; bust(); S.td = null; S.tdDirty = false; await loadJg(); toast("Tetapan disimpan."); }
     catch (err) { toast(err.message || String(err), true); }
     S.busy = false; render();
   }
@@ -623,7 +630,7 @@ async function onChange(e) {
     }
     if (["kls-uj", "tkt-uj", "an-uj", "slp-uj"].indexOf(a) !== -1) { S.ujianId = v; S.slip.sel = 0; S.slip.ulasan = {}; }
     else if (a === "kls-kelas" || a === "slp-kelas") { S.kelas = v; S.slip.sel = 0; S.slip.ulasan = {}; }
-    else if (a === "tkt-tkt" || a === "an-tkt") { S.tkt = +v; S.scope = "ALL"; }
+    else if (a === "tkt-tkt" || a === "an-tkt") { S.tkt = +v; S.scope = "ALL"; S.tktKelas = ""; }
     render(); return;
   }
   if (tf && S.td) tdField(t);
