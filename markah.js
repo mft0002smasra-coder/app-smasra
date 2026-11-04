@@ -400,8 +400,8 @@ function analisisTbl(d) {
   h += row("#FDE68A", `<span></span><span class="sm">BIL. HADIR</span>${d.an.map((a) => `<b>${a.hadir}</b>`).join("")}`);
   h += row("#FDE68A", `<span></span><span class="sm">BIL. TIDAK HADIR</span>${d.an.map((a) => `<b>${a.th}</b>`).join("")}`);
   d.sk.forEach((x, k) => { h += row(BAND[Math.min(BAND.length - 1, Math.round((k / Math.max(1, d.sk.length - 1)) * (BAND.length - 1)))], `<b>${k + 1}</b><b>${E(x.g)}</b>${d.an.map((a) => `<span class="${a.gc[k] ? "bd" : ""}">${a.gc[k]}</span>`).join("")}`); });
-  h += row("#fff", `<b class="sp2c">MENGUASAI</b>${d.an.map((a) => `<span class="pc">${a.hadir ? a.ya + "<br>(" + pc(a.ya, a.hadir) + ")" : "0<br>(-)"}</span>`).join("")}`.replace('<b class="sp2c">', '<b class="sp2c" style="grid-column:span 2">'));
-  h += row("#fff", `<b class="sp2c" style="grid-column:span 2">TIDAK MENGUASAI</b>${d.an.map((a) => `<span class="pc">${a.hadir ? a.tidak + "<br>(" + pc(a.tidak, a.hadir) + ")" : "0<br>(-)"}</span>`).join("")}`);
+  h += row("#fff", `<b class="sp2c">LULUS</b>${d.an.map((a) => `<span class="pc">${a.hadir ? a.ya + "<br>(" + pc(a.ya, a.hadir) + ")" : "0<br>(-)"}</span>`).join("")}`.replace('<b class="sp2c">', '<b class="sp2c" style="grid-column:span 2">'));
+  h += row("#fff", `<b class="sp2c" style="grid-column:span 2">GAGAL</b>${d.an.map((a) => `<span class="pc">${a.hadir ? a.tidak + "<br>(" + pc(a.tidak, a.hadir) + ")" : "0<br>(-)"}</span>`).join("")}`);
   h += row("#E0E7FF", `<b class="sp2c" style="grid-column:span 2">GPMP</b>${d.an.map((a) => `<b>${f2(a.gpmp)}</b>`).join("")}`);
   return `<div class="mu-wide"><div class="mu-agrid" style="min-width:${184 + n * 74}px">${h}</div></div>`;
 }
@@ -415,11 +415,11 @@ function vAnalisis() {
   if (!S.ujianId) return top; if (needLoad(S.ujianId)) return top + loadingBox;
   const d = analisisData(), u = ujianBy(S.ujianId);
   const totH = d.an.reduce((a, x) => a + x.hadir, 0), totY = d.an.reduce((a, x) => a + x.ya, 0), wk = d.an.filter((a, i) => a.hadir && d.subj[i].kira !== false).sort((a, b) => a.ya / a.hadir - b.ya / b.hadir)[0];
-  const kad = [["BIL. MURID", d.pool.length, ""], ["GPS", f2(d.gps), ""], ["PURATA MENGUASAI", totH ? (totY / totH * 100).toFixed(1) + "%" : "–", "ok"], ["SUBJEK PALING LEMAH", wk ? d.subj[d.an.indexOf(wk)].kod : "–", "bad"]];
+  const kad = [["BIL. MURID", d.pool.length, ""], ["GPS", f2(d.gps), ""], ["PURATA LULUS", totH ? (totY / totH * 100).toFixed(1) + "%" : "–", "ok"], ["SUBJEK PALING LEMAH", wk ? d.subj[d.an.indexOf(wk)].kod : "–", "bad"]];
   return `${warnMurid()}${top}<div class="mu-kad">${kad.map((k) => `<div class="erp-card"><span class="erp-lbl">${k[0]}</span><b class="mu-num ${k[2]}">${k[1]}</b></div>`).join("")}</div>
     <div class="erp-card"><div class="mu-at">ANALISIS MENGIKUT MATA PELAJARAN</div><div class="mu-as">${S.scope === "ALL" ? "TINGKATAN " + S.tkt : E(S.scope)} · ${E(u ? u.nama + " " + u.tahun : "")}</div>${analisisTbl(d)}
     <div class="mu-gps"><span>GPS</span><b>${f2(d.gps)}</b></div>
-    <div class="erp-hint">Menguasai = semua gred kecuali gred gagal (G). Peratus dikira daripada murid hadir bagi subjek itu. GPMP = purata nilai gred subjek. GPS = purata GPMP mata pelajaran yang dikira; subjek bertanda * (cth PJK, PSV) dipaparkan untuk analisis sahaja dan tidak dimasukkan dalam GPS.</div></div>`;
+    <div class="erp-hint">Lulus = semua gred kecuali gred gagal (G); Gagal = gred gagal. Peratus dikira daripada murid hadir bagi subjek itu. GPMP = purata nilai gred subjek. GPS = purata GPMP mata pelajaran yang dikira; subjek bertanda * (cth PJK, PSV) dipaparkan untuk analisis sahaja dan tidak dimasukkan dalam GPS.</div></div>`;
 }
 
 /* ================= Slip Keputusan ================= */
@@ -558,7 +558,7 @@ function vTetapan() {
         ${det.map((d, i) => `<div class="mu-trw dt"><b>${E(d.t)}</b><span class="dim">${d.nama ? "→ " + E(d.nama) : "(nama penuh tidak dikenali)"}</span><span class="mv"><button class="erp-btn sm solid" data-act="td-det" data-i="${i}" data-l="rendah" type="button">+ Rendah</button><button class="erp-btn sm solid" data-act="td-det" data-i="${i}" data-l="atas" type="button">+ Atas</button></span></div>`).join("")}</div>`)}
   ${secHtml("gr", "Skala Gred", "Rendah A=1…G=6 · Atas A+=0…G=9", `<div class="erp-hint">Menengah Rendah (Tingkatan 1–3): A=1 … E=5, G (gagal)=6. Menengah Atas &amp; Tingkatan 5 (SPM): A+=0 … G (gagal)=9.</div>
       <div class="mu-two2">${gr("rendah", "Menengah Rendah")}${gr("atas", "Menengah Atas / SPM")}</div>
-      <div class="erp-hint">GPI = jumlah nilai gred ÷ bilangan subjek yang dikira. Gred terakhir dalam setiap skala ialah gred gagal (tidak menguasai).</div>`)}
+      <div class="erp-hint">GPI = jumlah nilai gred ÷ bilangan subjek yang dikira. Gred terakhir dalam setiap skala ialah gred gagal (gagal).</div>`)}
   ${secHtml("pr", "Peraturan Keputusan", "ambang GPI lulus", `${fld("SKALA ATAS (SPM) BERMULA TINGKATAN", `<input class="erp-in" data-tf="pr.tktAtas" value="${A(P.tktAtas)}" inputmode="numeric">`)}
       ${fld("LULUS JIKA GPI KURANG DARIPADA — MENENGAH RENDAH", `<input class="erp-in" data-tf="pr.ambangRendah" value="${A(P.ambangRendah)}" inputmode="decimal">`)}
       ${fld("LULUS JIKA GPI KURANG DARIPADA — MENENGAH ATAS / SPM", `<input class="erp-in" data-tf="pr.ambangAtas" value="${A(P.ambangAtas)}" inputmode="decimal">`)}
@@ -702,14 +702,14 @@ function analisisCetak() {
   const r = (l, f) => `<tr><td></td><td class="l"><b>${l}</b></td>${d.an.map(f).join("")}</tr>`;
   let b = r("BIL. HADIR", (a) => `<td>${a.hadir}</td>`) + r("BIL. TIDAK HADIR", (a) => `<td>${a.th}</td>`);
   d.sk.forEach((x, k) => { b += `<tr><td>${k + 1}</td><td class="l"><b>${E(x.g)}</b></td>${d.an.map((a) => `<td>${a.gc[k]}</td>`).join("")}</tr>`; });
-  b += r("MENGUASAI", (a) => `<td>${a.hadir ? a.ya + " (" + pc(a.ya, a.hadir) + ")" : "0 (-)"}</td>`) + r("TIDAK MENGUASAI", (a) => `<td>${a.hadir ? a.tidak + " (" + pc(a.tidak, a.hadir) + ")" : "0 (-)"}</td>`) + r("GPMP", (a) => `<td>${f2(a.gpmp)}</td>`);
+  b += r("LULUS", (a) => `<td>${a.hadir ? a.ya + " (" + pc(a.ya, a.hadir) + ")" : "0 (-)"}</td>`) + r("GAGAL", (a) => `<td>${a.hadir ? a.tidak + " (" + pc(a.tidak, a.hadir) + ")" : "0 (-)"}</td>`) + r("GPMP", (a) => `<td>${f2(a.gpmp)}</td>`);
   cetakDoc(`<h2>${E(MU_SCHOOL)}</h2><h3>ANALISIS MENGIKUT MATA PELAJARAN — ${S.scope === "ALL" ? "TINGKATAN " + S.tkt : E(S.scope)} — ${E(u ? u.nama + " " + u.tahun : "")}</h3><table><thead>${th}</thead><tbody>${b}</tbody></table><h3 style="margin-top:10px">GPS: ${f2(d.gps)}</h3><div class="note">GPS = purata GPMP mata pelajaran yang dikira. * = analisis sahaja, tidak dimasukkan dalam GPS.</div>`, PR_CSS, "Analisis " + (S.scope === "ALL" ? "Tingkatan " + S.tkt : S.scope));
 }
 function analisisCsv() {
   const d = analisisData(), rows = [["BIL", "MATA PELAJARAN"].concat(d.subj.map((s) => s.kod))];
   rows.push(["", "BIL. HADIR"].concat(d.an.map((a) => a.hadir)), ["", "BIL. TIDAK HADIR"].concat(d.an.map((a) => a.th)));
   d.sk.forEach((x, k) => rows.push([k + 1, x.g].concat(d.an.map((a) => a.gc[k]))));
-  rows.push(["", "MENGUASAI"].concat(d.an.map((a) => a.ya)), ["", "TIDAK MENGUASAI"].concat(d.an.map((a) => a.tidak)), ["", "GPMP"].concat(d.an.map((a) => (a.gpmp === null ? "" : a.gpmp.toFixed(2)))), ["", "GPS", f2(d.gps)]);
+  rows.push(["", "LULUS"].concat(d.an.map((a) => a.ya)), ["", "GAGAL"].concat(d.an.map((a) => a.tidak)), ["", "GPMP"].concat(d.an.map((a) => (a.gpmp === null ? "" : a.gpmp.toFixed(2)))), ["", "GPS", f2(d.gps)]);
   csvDown("Analisis_" + (S.scope === "ALL" ? "Tingkatan_" + S.tkt : S.scope.replace(/\s+/g, "_")), rows);
 }
 
