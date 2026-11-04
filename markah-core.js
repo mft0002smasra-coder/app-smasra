@@ -23,9 +23,10 @@
       ["PA", "PENDIDIKAN AKHLAK", "Elektif", [4, 5]], ["PERN", "PERNIAGAAN", "Elektif", [4, 5]], ["LAM", "LUGHAH ARABIAH MU’ASIRAH", "Agama"], ["USUL", "USULUDDIN", "Agama"],
       ["SYA", "SYARIAH", "Agama"], ["BAL", "BAHASA ARAB LANJUTAN", "Elektif", [4, 5]], ["MUI", "MUTAALA’AH ISLAMIAH", "Agama", [4, 5]],
       ["PJK", "PENDIDIKAN JASMANI DAN KESIHATAN", "Teras", [1, 2, 3, 4, 5], false], ["PSV", "PENDIDIKAN SENI VISUAL", "Teras", [1, 2, 3, 4, 5], false],
-    ].map((s) => ({ kod: s[0], nama: s[1], kat: s[2], tkt: s[3] || [1, 2, 3, 4, 5], aktif: true, kira: s[4] !== false, analisis: true, alias: "" })),
+    ].map((s) => ({ kod: s[0], nama: s[1], kat: s[2], tkt: s[3] || [1, 2, 3, 4, 5], aktif: true, kira: s[4] !== false, analisis: true, wajib: false, alias: "" })),
     gred: { rendah: mkSkala(SK_RENDAH), atas: mkSkala(SK_ATAS) },
     peraturan: { tktAtas: 4, ambangRendah: 5, ambangAtas: 8 },
+    guruKelas: {},
   };
 
   /* Kamus singkatan -> nama penuh (untuk "detect" singkatan daripada Jadual Guru / kod subjek) */
@@ -59,6 +60,7 @@
 
   const tingOf = (kelas) => { const m = String(kelas || "").match(/(?:^|[^0-9])([1-6])(?![0-9])/); return m ? +m[1] : 0; };
   const isAtas = (ting, tet) => ting >= ((tet && tet.peraturan && tet.peraturan.tktAtas) || 4);
+  const lvlOf = (ting, tet) => (isAtas(ting, tet) ? "atas" : "rendah");
   function skala(tet, ting) {
     const s = isAtas(ting, tet) ? tet.gred.atas : tet.gred.rendah;
     return s.slice().sort((a, b) => b.dari - a.dari);
@@ -72,7 +74,18 @@
   const ambang = (tet, ting) => (isAtas(ting, tet) ? tet.peraturan.ambangAtas : tet.peraturan.ambangRendah);
 
   /** Subjek aktif bagi satu tingkatan, ikut susunan tetapan. */
-  const subjekTkt = (tet, ting) => tet.subjek.filter((s) => s.aktif !== false && (s.tkt || []).indexOf(ting) !== -1);
+  const subjekTkt = (tet, ting) => tet.subjek.filter((s) => s.aktif !== false && s.lvl === lvlOf(ting, tet) && (s.tkt || []).indexOf(ting) !== -1);
+  /** Tetapan lama (satu senarai) dipecahkan kepada Menengah Rendah / Atas mengikut tingkatan. */
+  function migrate(list, tktAtas) {
+    const out = [];
+    list.forEach((s) => {
+      if (s.lvl) { out.push(s); return; }
+      const r = (s.tkt || []).filter((t) => t < tktAtas), a = (s.tkt || []).filter((t) => t >= tktAtas);
+      if (r.length) out.push(Object.assign({}, s, { lvl: "rendah", tkt: r }));
+      if (a.length) out.push(Object.assign({}, s, { lvl: "atas", tkt: a }));
+    });
+    return out;
+  }
 
   function muKey(m) {
     const kp = String(m.kp || "").replace(/[^0-9A-Za-z]/g, "");
@@ -92,14 +105,15 @@
     const rows = subj.map((s) => {
       const rec = marks[up(kelas) + "|" + up(s.kod)];
       const r = rawVal(rec && rec.marks ? rec.marks[key] : "");
-      if (r.t === "num") { const g = gredOf(r.v, tet, ting); return { kod: s.kod, kira: s.kira !== false, st: "num", m: r.v, g: g.g, mata: g.mata, gagal: isGagal(g, tet, ting) }; }
-      return { kod: s.kod, kira: s.kira !== false, st: r.t };
+      if (r.t === "num") { const g = gredOf(r.v, tet, ting); return { kod: s.kod, kira: s.kira !== false, wajib: !!s.wajib, st: "num", m: r.v, g: g.g, mata: g.mata, gagal: isGagal(g, tet, ting) }; }
+      return { kod: s.kod, kira: s.kira !== false, wajib: !!s.wajib, st: r.t };
     });
     const nums = rows.filter((r) => r.kira && r.st === "num");
     const sk = skala(tet, ting), gc = sk.map((x) => nums.filter((r) => r.g === x.g).length);
     const n = nums.length, jum = nums.reduce((a, r) => a + r.m, 0), mata = nums.reduce((a, r) => a + r.mata, 0);
     const gpi = n ? mata / n : null;
-    return { rows, n, jum, pct: n ? jum / n : null, gpi, gc, lulus: gpi === null ? null : gpi < ambang(tet, ting), ting, key };
+    const gagalWajib = rows.filter((r) => r.wajib && r.st === "num" && r.gagal).map((r) => r.kod);
+    return { rows, n, jum, pct: n ? jum / n : null, gpi, gc, gagalWajib, lulus: gpi === null ? null : gpi < ambang(tet, ting) && !gagalWajib.length, ting, key };
   }
 
   /** Kedudukan (1 = terbaik): GPI menaik, kemudian jumlah markah menurun; sama-sama sama = kedudukan sama. */
@@ -131,13 +145,15 @@
   function cantum(saved) {
     const t = clone(DEF), s = saved || {};
     if (Array.isArray(s.ujian) && s.ujian.length) t.ujian = s.ujian;
-    if (Array.isArray(s.subjek) && s.subjek.length) t.subjek = s.subjek.map((x) => Object.assign({ aktif: true, kira: true, analisis: true, alias: "", kat: "Teras", tkt: [1, 2, 3, 4, 5] }, x));
+    if (Array.isArray(s.subjek) && s.subjek.length) t.subjek = s.subjek.map((x) => Object.assign({ aktif: true, kira: true, analisis: true, wajib: false, alias: "", kat: "Teras", tkt: [1, 2, 3, 4, 5] }, x));
     if (s.gred && Array.isArray(s.gred.rendah) && s.gred.rendah.length) t.gred.rendah = s.gred.rendah;
     if (s.gred && Array.isArray(s.gred.atas) && s.gred.atas.length) t.gred.atas = s.gred.atas;
     if (s.peraturan) t.peraturan = Object.assign(t.peraturan, s.peraturan);
+    t.guruKelas = s.guruKelas && typeof s.guruKelas === "object" ? s.guruKelas : {};
+    t.subjek = migrate(t.subjek, +t.peraturan.tktAtas || 4);
     return t;
   }
 
-  const API = { DEF, KAMUS, nk, up, clone, cariSubjek, namaPenuh, tingOf, isAtas, skala, gredOf, isGagal, ambang, subjekTkt, muKey, rawVal, kiraMurid, kedudukan, analisisSubjek, cantum };
+  const API = { lvlOf, migrate, DEF, KAMUS, nk, up, clone, cariSubjek, namaPenuh, tingOf, isAtas, skala, gredOf, isGagal, ambang, subjekTkt, muKey, rawVal, kiraMurid, kedudukan, analisisSubjek, cantum };
   if (typeof module !== "undefined" && module.exports) module.exports = API; else root.MUC = API;
 })(typeof window !== "undefined" ? window : globalThis);

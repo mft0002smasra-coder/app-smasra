@@ -91,3 +91,34 @@ body.erp-body[data-erp="gelap"] .mu-agrid, body.erp-body[data-erp="gelap"] .mu-g
 .mu-two.tet > .mu-col:first-child { flex: 1 1 100%; }
 .mu-two.tet > .mu-col:last-child { flex: 1 1 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); align-items: start; gap: 18px; }
 .mu-two.tet > .mu-col:last-child > .erp-right { grid-column: 1 / -1; }
+/* placeholder + animasi pendedahan senarai pengisian */
+.mu-ph { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; padding: 34px 18px !important; color: var(--dim); }
+.mu-ph b { font: 600 16px "Poppins", sans-serif; color: var(--text); }
+.mu-info { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; }
+.mu-info .mu-big { display: block; } .mu-info-t { margin-left: auto; color: var(--dim); font-size: 14px; text-align: right; }
+.mu-rv { display: flex; flex-direction: column; gap: 16px; }
+.mu-reveal { animation: muIn .5s cubic-bezier(.2,.8,.2,1) both; }
+.mu-reveal .mu-tr.isi:not(.h) { animation: muRow .45s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i, 0) * 35ms + 120ms); }
+.mu-reveal .mu-side .erp-card { animation: muIn .55s cubic-bezier(.2,.8,.2,1) .25s both; }
+@keyframes muIn { from { opacity: 0; transform: translateY(18px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes muRow { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .mu-reveal, .mu-reveal * { animation: none !important; } }
+/* tetapan: bahagian boleh lipat */
+.mu-sec { background: var(--card); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow, 0 10px 30px rgba(15,23,42,.14)); overflow: hidden; }
+.mu-sec-h { display: flex; align-items: center; gap: 12px; width: 100%; background: none; border: 0; cursor: pointer; text-align: left; padding: 16px 20px; min-height: 56px; color: inherit; font: inherit; }
+.mu-sec-h h3 { margin: 0; flex: 0 0 auto; }
+.mu-sec-i { color: var(--dim); font-size: 13px; margin-left: auto; }
+.mu-chev { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; border-radius: 50%; background: var(--soft); color: var(--b); font-size: 16px; transition: transform .3s cubic-bezier(.2,.8,.2,1); }
+.mu-sec.open .mu-chev { transform: rotate(90deg); }
+.mu-sec-b { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .35s cubic-bezier(.2,.8,.2,1); }
+.mu-sec.open .mu-sec-b { grid-template-rows: 1fr; }
+.mu-sec-in { overflow: hidden; min-height: 0; padding: 0 20px; visibility: hidden; transition: visibility 0s .35s; }
+.mu-sec.open .mu-sec-in { padding: 0 20px 18px; visibility: visible; transition-delay: 0s; }
+.mu-two.tet { display: block; }
+.mu-lv { margin: 6px 0 18px; } .mu-lv h4 { margin: 0; font: 700 15px "Poppins", sans-serif; } .mu-lv h4 small { color: var(--dim); font-weight: 600; }
+.mu-trw.sj { grid-template-columns: 78px minmax(150px, 2fr) minmax(100px, 1fr) 100px minmax(120px, 1.1fr) 48px 56px 64px 64px 130px; }
+.mu-trw.kl { grid-template-columns: 1fr 1.4fr 1.6fr 60px; }
+.mu-trw.dt { grid-template-columns: 1fr 2fr 150px; }
+.mu-sec .mu-two2 { margin: 8px 0; }
+.mu-trw.sj { grid-template-columns: 70px minmax(140px, 2fr) minmax(90px, 1fr) 96px minmax(110px, 1fr) 44px 52px 62px 62px 142px; }
+.mu-trw .mv .erp-btn.sm { padding-left: 10px; padding-right: 10px; }
