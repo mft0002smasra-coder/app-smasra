@@ -156,3 +156,35 @@ body.erp-body { --mu-card: rgba(255,255,255,.93); } body.erp-body[data-erp="gela
 .mu-tdl .h { font: 600 11px "Poppins", sans-serif; opacity: .75; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
 .mu-tdl .g { opacity: .8; }
 @media (max-width: 900px) { .mu-ukad { grid-template-columns: repeat(2, minmax(0, 1fr)); } .mu-ut2 { grid-template-columns: 1fr; } .mu-go { margin-left: 0; } }
+
+/* ===== halaman dalam APP SMASRA ===== */
+.mu-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 12px 0; }
+.mu-seg a { text-align: center; text-decoration: none; padding: 11px 6px; border-radius: 999px; font: 600 14px "Poppins", sans-serif; background: var(--card); color: var(--text); border: 1px solid var(--line); min-height: 44px; box-sizing: border-box; }
+.mu-seg a.on { background: var(--acc); color: var(--on-acc); border-color: transparent; }
+.mu-ujt { display: grid; grid-template-columns: minmax(0, 1fr) repeat(6, 42px); gap: 5px; align-items: center; margin-top: 8px; font-size: 12px; }
+.mu-ujt .h { font: 600 10.5px "Poppins", sans-serif; text-align: center; opacity: .75; } .mu-ujt .h.l { text-align: left; }
+.mu-ujt button.l { text-align: left; min-height: 44px; padding: 6px 10px; border-radius: 10px; border: 2px solid transparent; background: var(--soft); color: var(--text); font: 600 12.5px "Poppins", sans-serif; }
+.mu-ujt button.l.on { border-color: var(--acc); background: var(--card); }
+.mu-ujt button.l i { font-style: normal; font-size: 9px; padding: 1px 6px; border-radius: 99px; background: #dbeafe; color: #1e40af; margin-left: 4px; }
+.mu-ujt .c { text-align: center; font: 700 11px "Poppins", sans-serif; padding: 9px 0; border-radius: 8px; }
+.mu-ujt .c.ok, .mu-bars2 .trk i.ok, .mu-kc .trk i.ok { background: var(--siap-bg); color: var(--siap-t); } .mu-ujt .c.mid { background: #dbeafe; color: #1e40af; } .mu-ujt .c.lo { background: var(--draf-bg); color: var(--draf-t); } .mu-ujt .c.bad { background: var(--belum-bg); color: var(--pulang-t); } .mu-ujt .c.na { background: var(--bar); opacity: .6; }
+.mu-tp { display: block; font: 500 12.5px "Open Sans", sans-serif; margin-top: 3px; }
+.mu-two2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.mu-kc { padding: 0 !important; overflow: hidden; margin-top: 8px; }
+.mu-kh { width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 14px; min-height: 52px; background: transparent; border: 0; color: var(--text); text-align: left; font: inherit; cursor: pointer; }
+.mu-kh b { font: 700 14px "Poppins", sans-serif; flex: 1; } .mu-kh em { font-style: normal; width: 14px; }
+.mu-kc .trk { width: 84px; height: 8px; border-radius: 99px; background: var(--bar); overflow: hidden; } .mu-kc .trk i { display: block; height: 100%; background: #2563eb; }
+.mu-kc .trk i.bad { background: var(--pulang-t); } .mu-kc .trk i.lo { background: var(--draf-t); }
+.mu-kc .pp { width: 40px; text-align: right; font: 700 13px "Poppins", sans-serif; } .mu-kc .pp.ok { color: var(--siap-t); } .mu-kc .pp.bad { color: var(--pulang-t); }
+.mu-kb { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 14px; }
+.mu-bl { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); } .mu-bl > div { flex: 1; min-width: 0; }
+.mu-donut { display: flex; gap: 14px; align-items: center; } .mu-donut .ring { width: 84px; height: 84px; }
+.mu-donut .ring b { inset: 10px; font-size: 18px; }
+.mu-app #app-content { padding-top: 96px !important; }
+.mu-app .erp-main { padding-top: 6px; }
+@media (max-width: 560px) {
+  .mu-tr.isi { grid-template-columns: 26px minmax(0, 1fr) 84px 50px; gap: 8px; padding: 7px 10px; }
+  .mu-tr.isi > :nth-child(3) { display: none; }
+  .mu-tr.isi b { font-size: 13px; line-height: 1.25; overflow-wrap: anywhere; }
+  .mu-tr.isi .mu-mk { width: 100%; min-width: 0; }
+}

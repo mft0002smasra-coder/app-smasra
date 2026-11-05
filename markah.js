@@ -16,11 +16,12 @@ const muOk = (v) => v && String(v).indexOf("PASTE_") !== 0;
 const E = (s) => escapeHtml(s == null ? "" : String(s));
 const A = (s) => escapeAttr(s == null ? "" : String(s));
 const up = C.up;
+const APP = window.MU_APP || ""; // "isi" | "status" = dimuatkan dalam APP SMASRA (bar atas & bawah APP kekal); kosong = embed penuh
 const pad = (n) => String(n).padStart(2, "0");
 const f2 = (x) => (x === null || x === undefined || isNaN(x) ? "–" : x.toFixed(2));
 
 let S = {
-  user: null, adm: false, tab: "utama", home: { tkt: 0, all: false }, busy: false,
+  user: null, adm: false, tab: "utama", home: { tkt: 0, all: false, view: "kelas", open: "" }, busy: false,
   tet: C.cantum(null), tetOk: false, td: null, tdDirty: false,
   murid: [], muridOk: false,
   marks: {}, ulasan: {}, loaded: {},          // marks[ujianId][KELAS|KOD] ; ulasan[ujianId][KELAS] = {kunci:teks}
@@ -159,6 +160,7 @@ const kelasBoleh = () => allKelas();
 const slipKelas = () => (S.adm ? allKelas() : kelasGuru());
 const ujianUntukTkt = (t) => S.tet.ujian.filter((u) => !t || (u.tkt || []).indexOf(t) !== -1);
 function tabsAda() {
+  if (APP) return [APP === "status" ? ["utama", "Status Pengisian"] : ["isi", "Isi Markah"]];
   const T = [["utama", "Utama"], ["isi", "Isi Markah"], ["kelas", "Keputusan Kelas"], ["tkt", "Keputusan Tingkatan"], ["analisis", "Analisis Mata Pelajaran"], ["slip", "Slip Keputusan"]];
   if (!(S.adm || kelasGuru().length)) T.splice(T.findIndex((x) => x[0] === "slip"), 1); // Slip: guru kelas, Pentadbir, Admin App sahaja
   if (S.adm) T.push(["tetapan", "Tetapan"]); // Pentadbir / Admin App sahaja
@@ -184,6 +186,7 @@ function kiraTkt(uid, ting) {
 
 /* ================= Kerangka ================= */
 function head() {
+  if (APP) return `<div class="mu-seg"><a class="${APP === "isi" ? "on" : ""}" href="markah-isi.html" data-act="mu-go" data-h="markah-isi.html">Isi Markah</a><a class="${APP === "status" ? "on" : ""}" href="markah-status.html" data-act="mu-go" data-h="markah-status.html">Status Pengisian</a></div>`;
   const g = temaGet() === "gelap";
   const tools = `<div class="erp-head-tools"><button class="out" data-act="tema" type="button">${g ? "☀ Cerah" : "☾ Gelap"}</button><button class="out" data-act="logout" type="button">Log keluar</button></div>`;
   const T = tabsAda().map(([t, l]) => `<button class="erp-tab g ${S.tab === t ? "on" : ""}" data-act="tab" data-t="${t}" type="button">${l}</button>`).join("");
@@ -202,8 +205,9 @@ window.addEventListener("resize", () => { S._ind = null; tabInd(); });
 function render() {
   const root = document.getElementById("erp-root"); if (!root) return;
   root.classList.add("erp-semak");
+  if (APP) S.tab = APP === "status" ? "utama" : "isi";
   if (S.tab === "tetapan" && !S.adm) S.tab = "isi";
-  const v = { utama: vUtama, isi: vIsi, kelas: vKelas, tkt: vTkt, analisis: vAnalisis, slip: vSlip, tetapan: vTetapan }[S.tab] || vIsi;
+  const v = { utama: APP ? vStatusApp : vUtama, isi: vIsi, kelas: vKelas, tkt: vTkt, analisis: vAnalisis, slip: vSlip, tetapan: vTetapan }[S.tab] || vIsi;
   const y = window.scrollY;
   root.innerHTML = head() + `<div class="erp-main mu">${v()}</div>`;
   if (S._keepScroll) window.scrollTo(0, y); S._keepScroll = false;
@@ -253,8 +257,9 @@ function vIsi() {
     ${fld("KELAS", `<select class="erp-sel" data-act-change="isi-kelas">${ph}${o.kelas.map((k) => opt(k, k, I.kelas)).join("")}</select>`)}
     ${fld("MATA PELAJARAN", `<select class="erp-sel" data-act-change="isi-subj" ${I.kelas ? "" : "disabled"}>${ph}${o.subj.map((s) => opt(s.kod, s.kod + " — " + s.nama, I.subjek)).join("")}</select>`)}
   </div>`;
-  if (!o.ready) return warnMurid() + top + `<div class="erp-card mu-ph"><b>Sila pilih Ujian / Peperiksaan, Kelas dan Mata Pelajaran</b><span>Senarai murid akan dipaparkan selepas ketiga-tiganya dipilih.</span></div>`;
-  if (needLoad(I.uj)) return warnMurid() + top + loadingBox;
+  const tg = S.jg.length ? `<div class="erp-card"><span class="erp-lbl">TUGASAN SAYA (JADUAL GURU) · KETUK UNTUK PILIH</span><div class="erp-chips">${S.jg.map((x) => { const r = (S.marks[I.uj || S.ujianId] || {})[up(x.kelas) + "|" + up(x.kod)], on = I.kelas === x.kelas && I.subjek === x.kod; return `<button class="erp-chip ${on ? "on" : ""}" data-act="isi-tugas" data-k="${A(x.kelas)}" data-s="${A(x.kod)}" type="button">${E(x.kelas)} · ${E(x.kod)}${r ? (r.status === "Dihantar" ? " ✓" : " …") : ""}</button>`; }).join("")}</div></div>` : "";
+  if (!o.ready) return warnMurid() + tg + top + `<div class="erp-card mu-ph"><b>Sila pilih Ujian / Peperiksaan, Kelas dan Mata Pelajaran</b><span>Senarai murid akan dipaparkan selepas ketiga-tiganya dipilih.</span></div>`;
+  if (needLoad(I.uj)) return warnMurid() + tg + top + loadingBox;
   draftInit();
   const anim = I.anim; I.anim = false;
   const u = ujianBy(I.uj), rec = (S.marks[I.uj] || {})[up(I.kelas) + "|" + up(I.subjek)], kunci = rec && rec.status === "Dihantar" && !S.adm;
@@ -264,7 +269,7 @@ function vIsi() {
       <span><input class="mu-mk ${badRaw(S.draft[m.key]) ? "lo" : ""}" data-mk="${A(m.key)}" value="${A(S.draft[m.key] || "")}" inputmode="decimal" autocomplete="off" ${kunci || !buka ? "readonly" : ""} aria-label="Markah ${A(m.nama)}"></span>
       <span id="g-${A(m.key)}">${gredCell(S.draft[m.key], o.ting)}</span></div>`).join("");
   const statusPill = rec ? `<span class="erp-pill ${rec.status === "Dihantar" ? "s-siap" : "s-draf"}">${E(rec.status)}</span>` : `<span class="erp-pill s-belum">Belum diisi</span>`;
-  return `${warnMurid()}${top}
+  return `${warnMurid()}${tg}${top}
   <div class="mu-rv ${anim ? "mu-reveal" : ""}">
   <div class="erp-card mu-info"><span><span class="erp-lbl">BIL. MURID</span><b class="mu-big">${ms.length} orang</b></span><span><span class="erp-lbl">STATUS</span>${statusPill}</span><span class="mu-info-t"><b>${E(sub ? sub.nama : "")}</b> · ${E(I.kelas)} · ${E(u ? u.nama + " " + u.tahun : "")}</span></div>
   ${sub && sub.kira === false ? `<div class="mu-note">${E(sub.kod)} direkod sahaja — TIDAK dikira dalam GPI, jumlah markah dan kedudukan.</div>` : ""}
@@ -591,8 +596,17 @@ async function onClick(e) {
     if (S.tab === "isi" && S.dirty && !(await ask("Markah belum disimpan. Tinggalkan halaman ini?"))) return;
     S.tab = el.dataset.t; S._ind = S._ind; render(); return;
   }
+  if (a === "mu-go") { e.preventDefault(); if (APP === "isi" && S.dirty && !(await ask("Markah belum disimpan. Tinggalkan halaman ini?"))) return; location.href = el.dataset.h; return; }
+  if (a === "ut-uj-pick") { S.ujianId = el.dataset.u; S.home.open = ""; S._keepScroll = true; render(); return; }
+  if (a === "ut-view") { S.home.view = el.dataset.v; S._keepScroll = true; render(); return; }
+  if (a === "ut-open") { S.home.open = S.home.open === el.dataset.k ? "" : el.dataset.k; S._keepScroll = true; render(); return; }
+  if (a === "isi-tugas") {
+    if (S.dirty && !(await ask("Markah belum disimpan. Tukar pilihan dan buang perubahan?"))) return;
+    const I = S.isi; if (!I.uj) { const t = ujianTerkini(); I.uj = t ? t.id : ""; } I.kelas = el.dataset.k; I.subjek = el.dataset.s; S.draftKey = ""; S.dirty = false; if (isiOpts().ready) I.anim = true; S._keepScroll = true; render(); return;
+  }
   if (a === "ut-tkt") { S.home.tkt = +el.dataset.t; S.home.all = false; S._keepScroll = true; render(); return; }
   if (a === "ut-semua") { S.home.all = !S.home.all; S._keepScroll = true; render(); return; }
+  if (a === "ut-isi" && APP) { location.href = "markah-isi.html?uj=" + encodeURIComponent(S.ujianId) + "&k=" + encodeURIComponent(el.dataset.k) + "&s=" + encodeURIComponent(el.dataset.s); return; }
   if (a === "ut-isi") { S.isi = { uj: S.ujianId, kelas: el.dataset.k, subjek: el.dataset.s, anim: true }; S.draftKey = ""; S.dirty = false; S.tab = "isi"; render(); window.scrollTo(0, 0); return; }
   if (a === "ut-csv") return utamaCsv();
   if (a === "isi-draf") return isiSimpan(false);
@@ -801,6 +815,50 @@ function utamaCsv() {
   csvDown("Belum_diisi_" + (u ? (u.nama + "_" + u.tahun).replace(/\s+/g, "_") : ""), [["KELAS", "KOD", "MATA PELAJARAN", "GURU", "STATUS"]].concat(D.todo.map((x) => [x.kelas, x.kod, D.nama[x.kod], x.guru, x.st === "B" ? "Belum diisi" : "Draf"])));
 }
 
+/* ================= Status Pengisian (halaman APP SMASRA) ================= */
+function vStatusApp() {
+  const w = warnMurid(), L = S.tet.ujian.slice().sort((a, b) => (String(b.mula || b.tahun)).localeCompare(String(a.mula || a.tahun)));
+  if (!L.length) return w + `<div class="erp-card"><div class="erp-empty">Belum ada ujian / peperiksaan ditetapkan.</div></div>`;
+  if (!ujianBy(S.ujianId)) S.ujianId = ujianTerkini().id;
+  if (!S.murid.length) return w;
+  const pend = L.filter((x) => !S.loaded[x.id]);
+  if (pend.length) { if (!S._loadingAll) { S._loadingAll = true; Promise.all(pend.map((x) => loadMarks(x.id))).then(() => { S._loadingAll = false; S._keepScroll = true; render(); }); } return w + loadingBox; }
+  const uid = S.ujianId, u = ujianBy(uid), terkini = ujianTerkini(), tf = S.home.tkt;
+  const tktAda = [...new Set(allKelas().map((k) => C.tingOf(k)))].filter(Boolean).sort();
+  const pcOf = (D) => (D.jum ? Math.round(D.tot.H / D.jum * 100) : null);
+  const cls = (p) => (p === null ? "na" : p === 100 ? "ok" : p >= 60 ? "mid" : p > 0 ? "lo" : "bad");
+  // 1. Ujian × Tingkatan
+  const ut = `<div class="erp-card"><h3>Ujian × Tingkatan</h3><div class="erp-hint" style="margin-top:0">Ketuk satu ujian untuk lihat butirannya di bawah.</div>
+    <div class="mu-ujt" style="grid-template-columns:minmax(0,1fr) repeat(${tktAda.length + 1},40px)"><span class="h l">UJIAN</span>${tktAda.map((t) => `<span class="h">T${t}</span>`).join("")}<span class="h">JUM</span>
+    ${L.map((x) => { const cells = tktAda.map((t) => pcOf(utamaData(x.id, t))), all = pcOf(utamaData(x.id, 0)); return `<button class="l ${x.id === uid ? "on" : ""}" data-act="ut-uj-pick" data-u="${A(x.id)}" type="button">${E(x.nama + " " + x.tahun)}${terkini && x.id === terkini.id ? ` <i>TERKINI</i>` : ""}</button>${cells.concat([all]).map((p) => `<span class="c ${cls(p)}">${p === null ? "–" : p + "%"}</span>`).join("")}`; }).join("")}</div></div>`;
+  // 2. butiran ujian dipilih
+  const D = utamaData(uid, tf), pct = pcOf(D) || 0, pd = D.jum ? Math.round((D.tot.H + D.tot.D) / D.jum * 100) : 0;
+  const chips = [0].concat(tktAda).map((t) => `<button class="erp-chip ${t === tf ? "on" : ""}" data-act="ut-tkt" data-t="${t}" type="button">${t ? "Tkt " + t : "Semua"}</button>`).join("");
+  const head2 = `<div class="erp-card"><h3>${E(u.nama + " " + u.tahun)}${u.mula || u.akhir ? ` <span class="mu-tp">${E(u.mula || "?")} – ${E(u.akhir || "?")} ${hariLagi(u) ? `<span class="erp-pill s-draf">${hariLagi(u)}</span>` : ""}</span>` : ""}</h3>
+    <div class="erp-chips" style="margin:6px 0 12px">${chips}</div>
+    ${D.jum ? `<div class="mu-donut"><div class="ring" style="background:conic-gradient(var(--siap-t) 0 ${pct}%, var(--draf-t) ${pct}% ${pd}%, var(--line) ${pd}% 100%)"><b>${pct}%</b></div><div><span class="erp-lbl">KADAR KEMASUKAN MARKAH</span><b class="mu-num sm">${D.tot.H} / ${D.jum} dihantar</b><div class="mu-strip"><span class="erp-pill s-draf">Draf ${D.tot.D}</span><span class="erp-pill s-belum">Belum ${D.tot.B}</span></div></div></div>` : `<div class="erp-hint">Tiada kelas / mata pelajaran untuk pilihan ini.</div>`}</div>`;
+  if (!D.jum) return w + ut + head2;
+  const view = S.adm ? S.home.view : "kelas";
+  const sw = `<div class="mu-two2"><button class="erp-btn ${view === "kelas" ? "solid" : ""}" data-act="ut-view" data-v="kelas" type="button">Mengikut kelas</button>${S.adm ? `<button class="erp-btn ${view === "belum" ? "solid" : ""}" data-act="ut-view" data-v="belum" type="button">🔒 Belum diisi (${D.todo.length})</button>` : ""}</div>`;
+  const ic = { H: "✓", D: "…", B: "!", N: "–" }, cl = { H: "s-siap", D: "s-draf", B: "s-belum", N: "s-na" };
+  let body;
+  if (view === "kelas") {
+    body = `<div class="mu-leg"><span class="erp-pill s-siap">✓ Dihantar</span><span class="erp-pill s-draf">… Draf</span><span class="erp-pill s-belum">! Belum</span></div>` + D.rows.map((r) => {
+      const p = r.n ? Math.round(r.h / r.n * 100) : 0, o = S.home.open === r.kelas;
+      return `<div class="erp-card mu-kc"><button class="mu-kh" data-act="ut-open" data-k="${A(r.kelas)}" type="button"><b>${E(r.kelas)}</b><span class="trk"><i class="${cls(p)}" style="width:${p}%"></i></span><span class="pp ${cls(p)}">${p}%</span><em>${o ? "⌃" : "⌄"}</em></button>${o ? `<div class="mu-kb">${r.cells.filter((c) => c.st !== "N").map((c) => `<span class="erp-pill ${cl[c.st]}" title="${A(D.nama[c.kod])}">${E(c.kod)} ${ic[c.st]}</span>`).join("")}</div>` : ""}</div>`;
+    }).join("");
+  } else {
+    const rows = S.home.all ? D.todo : D.todo.slice(0, 15);
+    body = `<div class="erp-card"><span class="erp-pill s-na">🔒 Pentadbir &amp; Admin App sahaja</span>
+      ${D.todo.length ? rows.map((x) => `<div class="mu-bl"><div><b>${E(x.kelas)} · ${E(x.kod)}</b><div class="erp-hint" style="margin:0">${E(x.guru || "Guru tidak dijumpai dalam Jadual Guru")}</div></div><i class="erp-pill ${x.st === "B" ? "s-belum" : "s-draf"}">${x.st === "B" ? "Belum" : "Draf"}</i><button class="erp-btn sm" data-act="ut-isi" data-k="${A(x.kelas)}" data-s="${A(x.kod)}" type="button">Buka</button></div>`).join("") : `<div class="erp-hint">Semua markah telah dihantar. 🎉</div>`}
+      <div class="mu-two2" style="margin-top:10px">${D.todo.length > 15 ? `<button class="erp-btn sm" data-act="ut-semua" type="button">${S.home.all ? "Papar 15 teratas" : "Papar semua (" + D.todo.length + ")"}</button>` : ""}<button class="erp-btn sm" data-act="ut-csv" type="button">Muat turun CSV</button></div></div>`;
+  }
+  const sudah = (k, kod) => { const r = (S.marks[uid] || {})[up(k) + "|" + up(kod)]; return r && r.status === "Dihantar"; };
+  const mine = S.jg.filter((x) => (!tf || C.tingOf(x.kelas) === tf) && !sudah(x.kelas, x.kod));
+  const saya = S.jg.length ? `<div class="erp-card"><h3>Tugasan saya yang belum dihantar <span class="erp-pill ${mine.length ? "s-belum" : "s-siap"}">${mine.length ? mine.length + " kotak" : "Semua siap ✓"}</span></h3><div class="erp-chips">${mine.map((x) => `<button class="erp-chip" data-act="ut-isi" data-k="${A(x.kelas)}" data-s="${A(x.kod)}" type="button">${E(x.kelas)} · ${E(x.kod)}</button>`).join("")}</div></div>` : "";
+  return w + ut + head2 + saya + sw + body;
+}
+
 /* ================= Mula ================= */
 async function muInit(user) {
   S.user = user; S.adm = isPentadbir(user);
@@ -815,6 +873,7 @@ async function muInit(user) {
     const ti = tabsAda(); if (!ti.some((x) => x[0] === S.tab)) S.tab = ti[0][0];
     const buka = ujianTerkini(); S.ujianId = buka ? buka.id : "";
     if (S.ujianId) await loadMarks(S.ujianId);
+    if (APP === "isi") { try { const q = new URLSearchParams(location.search); if (q.get("uj") && q.get("k") && q.get("s")) { S.isi = { uj: q.get("uj"), kelas: q.get("k"), subjek: q.get("s"), anim: true }; } } catch (e) {} }
     render();
   } catch (err) { root.innerHTML = `<div class="erp-empty">Ralat memuatkan Markah Ujian: ${E(err.message || err)}</div>`; }
 }
