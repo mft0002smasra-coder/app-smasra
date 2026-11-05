@@ -197,3 +197,6 @@ body.erp-body { --mu-card: rgba(255,255,255,.93); } body.erp-body[data-erp="gela
   .mu-tr.isi b { font-size: 13px; line-height: 1.25; overflow-wrap: anywhere; }
   .mu-tr.isi .mu-mk { width: 100%; min-width: 0; }
 }
+
+.mu-aks { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 14px; max-height: 340px; overflow-y: auto; padding: 8px 4px; border: 1px solid var(--line); border-radius: 12px; }
+.mu-ak { display: flex; align-items: center; gap: 8px; padding: 6px 6px; font-size: 13.5px; cursor: pointer; border-radius: 8px; } .mu-ak:hover { background: var(--soft); } .mu-ak input { width: 18px; height: 18px; flex: none; }

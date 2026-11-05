@@ -27,6 +27,7 @@
     gred: { rendah: mkSkala(SK_RENDAH), atas: mkSkala(SK_ATAS) },
     peraturan: { tktAtas: 4, ambangRendah: 5, ambangAtas: 8 },
     guruKelas: {},
+    akses: { keputusan: [] },
   };
 
   /* Kamus singkatan -> nama penuh (untuk "detect" singkatan daripada Jadual Guru / kod subjek) */
@@ -150,6 +151,7 @@
     if (s.gred && Array.isArray(s.gred.atas) && s.gred.atas.length) t.gred.atas = s.gred.atas;
     if (s.peraturan) t.peraturan = Object.assign(t.peraturan, s.peraturan);
     t.guruKelas = s.guruKelas && typeof s.guruKelas === "object" ? s.guruKelas : {};
+    t.akses = { keputusan: s.akses && Array.isArray(s.akses.keputusan) ? s.akses.keputusan.map((x) => String(x)) : [] };
     t.subjek = migrate(t.subjek, +t.peraturan.tktAtas || 4);
     return t;
   }

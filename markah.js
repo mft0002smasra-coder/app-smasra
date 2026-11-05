@@ -157,11 +157,13 @@ const allKelas = () => [...new Set(S.murid.map((m) => m.kelas))].sort((a, b) => 
 const muridKelas = (k) => S.murid.filter((m) => m.kelas === k);
 const kelasGuru = () => allKelas().filter((k) => sameNama(guruKelasOf(k), S.user.nama));
 const kelasBoleh = () => allKelas();
+const bolehKeputusan = () => S.adm || ((S.tet.akses && S.tet.akses.keputusan) || []).some((n) => sameNama(n, S.user.nama)); // tab Keputusan Kelas / Tingkatan
 const slipKelas = () => (S.adm ? allKelas() : kelasGuru());
 const ujianUntukTkt = (t) => S.tet.ujian.filter((u) => !t || (u.tkt || []).indexOf(t) !== -1);
 function tabsAda() {
   if (APP) return [["isi", "Isi Markah"], ["utama", "Status Pengisian"]];
   const T = [["utama", "Utama"], ["isi", "Isi Markah"], ["kelas", "Keputusan Kelas"], ["tkt", "Keputusan Tingkatan"], ["analisis", "Analisis Mata Pelajaran"], ["slip", "Slip Keputusan"]];
+  if (!bolehKeputusan()) { for (const k of ["kelas", "tkt"]) T.splice(T.findIndex((x) => x[0] === k), 1); }
   if (!(S.adm || kelasGuru().length)) T.splice(T.findIndex((x) => x[0] === "slip"), 1); // Slip: guru kelas, Pentadbir, Admin App sahaja
   if (S.adm) T.push(["tetapan", "Tetapan"]); // Pentadbir / Admin App sahaja
   return T;
@@ -206,6 +208,7 @@ function render() {
   const root = document.getElementById("erp-root"); if (!root) return;
   root.classList.add("erp-semak");
   if (APP && S.tab !== "utama") S.tab = "isi";
+  if ((S.tab === "kelas" || S.tab === "tkt") && !bolehKeputusan()) S.tab = "isi";
   if (S.tab === "tetapan" && !S.adm) S.tab = "isi";
   const v = { utama: APP ? vStatusApp : vUtama, isi: vIsi, kelas: vKelas, tkt: vTkt, analisis: vAnalisis, slip: vSlip, tetapan: vTetapan }[S.tab] || vIsi;
   const y = window.scrollY;
@@ -552,6 +555,8 @@ function vTetapan() {
     const pilih = adminApp ? `<select class="erp-sel" data-tf="gk" data-k="${A(k)}"><option value="">(Auto) ${E(auto || "–")}</option>${opts.map((o) => opt(o, o, cur)).join("")}</select>` : `<span>${E(cur || auto || "–")}${cur ? ' <small class="dim">(ditetapkan)</small>' : ""}</span>`;
     return `<div class="mu-trw kl"><b>${E(k)}</b><span class="dim">${E(auto || "–")}</span>${pilih}<b>${muridKelas(k).length}</b></div>`;
   }).join("");
+  const akL = (T.akses && T.akses.keputusan) || [], akOpts = stf.slice(); akL.forEach((n) => { if (akOpts.indexOf(n) === -1) akOpts.push(n); });
+  const akHtml = akOpts.map((n) => `<label class="mu-ak"><input type="checkbox" data-tc="ak" data-n="${A(n)}" ${akL.indexOf(n) !== -1 ? "checked" : ""}><span>${E(n)}</span></label>`).join("");
   const P = T.peraturan, nUj = T.ujian.length, nSj = T.subjek.length;
   return `<div class="erp-card"><h3>Tetapan</h3><div class="erp-hint">Pentadbir dan Admin App sahaja. Klik tajuk untuk membuka / menyembunyikan setiap bahagian. Perubahan terpakai selepas <b>Simpan tetapan</b>.${S.tetOk ? "" : " (Belum ada tetapan tersimpan — memaparkan lalai.)"}</div></div>
   ${secHtml("uj", "Ujian / Peperiksaan", nUj + " ujian", `<div class="erp-right" style="margin-bottom:8px"><button class="erp-btn sm solid" data-act="td-add" data-k="uj" type="button">+ Tambah ujian</button></div>
@@ -570,6 +575,8 @@ function vTetapan() {
       <div class="erp-hint">Nilai ambang ialah andaian — sahkan dengan peraturan sekolah. Selain ambang GPI, murid yang gagal mana-mana mata pelajaran WAJIB LULUS juga GAGAL. Tingkatan 4 menggunakan skala dan pengiraan SPM. Jika tingkatan permulaan skala atas diubah, semak semula senarai mata pelajaran.</div>`)}
   ${secHtml("kl", "Kelas dan Guru Kelas", kelasList.length + " kelas", `<div class="mu-trw kl h"><span>KELAS</span><span>AUTO (DATA MURID)</span><span>GURU KELAS</span><span>MURID</span></div>${kls || `<div class="erp-hint">Data murid belum dimuatkan.</div>`}
       <div class="erp-hint">${adminApp ? "Guru kelas diambil secara automatik daripada Data Murid. Admin App boleh memilih guru lain jika ada perubahan; pilihan ini mengatasi nilai auto. Pilih “(Auto)” untuk kembali kepada Data Murid." : "Guru kelas diambil daripada Data Murid. Hanya Admin App boleh menetapkan guru kelas secara manual."}</div>`)}
+  ${secHtml("ak", "Akses Keputusan Kelas & Tingkatan", akL.length + " guru dibenarkan", `<div class="erp-hint" style="margin-top:0">Tandakan guru yang boleh melihat tab <b>Keputusan Kelas</b> dan <b>Keputusan Tingkatan</b>. Guru yang tidak ditandakan tidak akan melihat kedua-dua tab ini. Pentadbir dan Admin App sentiasa boleh melihatnya.</div>
+      <div class="mu-aks">${akHtml || `<div class="erp-hint">Senarai guru belum dimuatkan.</div>`}</div>`)}
   <div class="erp-right"><button class="erp-btn" data-act="td-reset" type="button">Batal</button><button class="erp-btn solid orange" data-act="td-save" type="button">Simpan tetapan</button></div>`;
 }
 function tdSave() {
@@ -581,6 +588,7 @@ function tdSave() {
   out.subjek.forEach((s) => { s.kod = up(s.kod); s.nama = up(s.nama || s.kod); s.alias = String(s.alias || "").trim(); s.wajib = !!s.wajib; });
   out.subjek = out.subjek.filter((s) => s.kod);
   const kodSet = new Set(); for (const s of out.subjek) { const k = s.lvl + "|" + s.kod; if (kodSet.has(k)) return { err: "Kod subjek berganda dalam " + (s.lvl === "atas" ? "Menengah Atas" : "Menengah Rendah") + ": " + s.kod }; kodSet.add(k); }
+  out.akses = { keputusan: ((T.akses && T.akses.keputusan) || []).filter(Boolean) };
   out.guruKelas = {}; Object.keys(T.guruKelas || {}).forEach((k) => { if (T.guruKelas[k]) out.guruKelas[k] = T.guruKelas[k]; });
   ["rendah", "atas"].forEach((k) => { out.gred[k].forEach((g) => { g.dari = num(g.dari, 0); g.mata = num(g.mata, 0); }); out.gred[k].sort((a, b) => b.dari - a.dari); });
   out.peraturan = { tktAtas: Math.round(num(T.peraturan.tktAtas, 4)), ambangRendah: num(T.peraturan.ambangRendah, 5), ambangAtas: num(T.peraturan.ambangAtas, 8) };
@@ -672,6 +680,7 @@ function tdField(t) {
   else if (f === "gk") { T.guruKelas = T.guruKelas || {}; if (t.value) T.guruKelas[t.dataset.k] = t.value; else delete T.guruKelas[t.dataset.k]; }
 }
 function tdCheck(t) {
+  if (t.dataset.tc === "ak") { const T = S.td; T.akses = T.akses || { keputusan: [] }; const n = t.dataset.n, set = new Set(T.akses.keputusan || []); t.checked ? set.add(n) : set.delete(n); T.akses.keputusan = [...set].sort(); S.tdDirty = true; const h = t.closest(".mu-sec").querySelector(".mu-sec-i"); if (h) h.textContent = set.size + " guru dibenarkan"; return; }
   const T = S.td, i = +t.dataset.i, f = t.dataset.tc, on = t.checked; S.tdDirty = true;
   const tg = (arr, v) => { const s = new Set(arr || []); on ? s.add(v) : s.delete(v); return [...s].sort(); };
   if (f === "uj.buka") T.ujian[i].buka = on; else if (f === "uj.tkt") T.ujian[i].tkt = tg(T.ujian[i].tkt, +t.dataset.t);
