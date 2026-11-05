@@ -157,17 +157,28 @@ body.erp-body { --mu-card: rgba(255,255,255,.93); } body.erp-body[data-erp="gela
 .mu-tdl .g { opacity: .8; }
 @media (max-width: 900px) { .mu-ukad { grid-template-columns: repeat(2, minmax(0, 1fr)); } .mu-ut2 { grid-template-columns: 1fr; } .mu-go { margin-left: 0; } }
 
-/* ===== halaman dalam APP SMASRA ===== */
-.mu-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 12px 0; }
-.mu-seg a { text-align: center; text-decoration: none; padding: 11px 6px; border-radius: 999px; font: 600 14px "Poppins", sans-serif; background: var(--card); color: var(--text); border: 1px solid var(--line); min-height: 44px; box-sizing: border-box; }
-.mu-seg a.on { background: var(--acc); color: var(--on-acc); border-color: transparent; }
-.mu-ujt { display: grid; grid-template-columns: minmax(0, 1fr) repeat(6, 42px); gap: 5px; align-items: center; margin-top: 8px; font-size: 12px; }
-.mu-ujt .h { font: 600 10.5px "Poppins", sans-serif; text-align: center; opacity: .75; } .mu-ujt .h.l { text-align: left; }
-.mu-ujt button.l { text-align: left; min-height: 44px; padding: 6px 10px; border-radius: 10px; border: 2px solid transparent; background: var(--soft); color: var(--text); font: 600 12.5px "Poppins", sans-serif; }
-.mu-ujt button.l.on { border-color: var(--acc); background: var(--card); }
-.mu-ujt button.l i { font-style: normal; font-size: 9px; padding: 1px 6px; border-radius: 99px; background: #dbeafe; color: #1e40af; margin-left: 4px; }
-.mu-ujt .c { text-align: center; font: 700 11px "Poppins", sans-serif; padding: 9px 0; border-radius: 8px; }
-.mu-ujt .c.ok, .mu-bars2 .trk i.ok, .mu-kc .trk i.ok { background: var(--siap-bg); color: var(--siap-t); } .mu-ujt .c.mid { background: #dbeafe; color: #1e40af; } .mu-ujt .c.lo { background: var(--draf-bg); color: var(--draf-t); } .mu-ujt .c.bad { background: var(--belum-bg); color: var(--pulang-t); } .mu-ujt .c.na { background: var(--bar); opacity: .6; }
+/* ===== halaman Pengisian Markah dalam APP SMASRA (tiada header APP; bar bawah kekal) ===== */
+.mu-app #app-content { padding-top: 0 !important; }
+.mu-app .wrap { max-width: 480px; }
+.mu-seg { position: sticky; top: 0; z-index: 12; display: flex; gap: 4px; margin: 0; padding: calc(8px + env(safe-area-inset-top)) 12px 8px; background: var(--bg); border-bottom: 1px solid var(--line); }
+.mu-seg button { flex: 1; min-height: 44px; border: 0; border-radius: 12px; background: var(--bar); color: var(--text); font: 600 14px "Poppins", sans-serif; cursor: pointer; transition: background .2s, color .2s; }
+.mu-seg button.on { background: var(--acc); color: var(--on-acc); box-shadow: 0 3px 10px rgba(79,70,229,.3); }
+.mu-app .erp-main.mu { padding: 12px 12px 8px; gap: 12px; }
+.mu-app .erp-card { padding: 14px; border-radius: 16px; }
+.mu-app .erp-card h3 { font-size: 15px; margin: 0 0 6px; }
+.mu-app .mu-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; align-items: end; }
+.mu-app .mu-bar > .mu-fld:first-child { grid-column: 1 / -1; }
+.mu-app .mu-fld { min-width: 0; } .mu-app .mu-fld .erp-sel { min-width: 0; width: 100%; }
+.mu-app .mu-two { gap: 12px; } .mu-app .mu-side { flex-basis: 100%; max-width: none; }
+.mu-app .mu-act { flex-wrap: wrap; } .mu-app .mu-act .erp-btn { flex: 1 1 auto; }
+.mu-ujb { display: block; width: 100%; text-align: left; padding: 10px 10px 10px; margin-top: 8px; border-radius: 14px; border: 2px solid transparent; background: var(--soft); color: var(--text); cursor: pointer; font: inherit; }
+.mu-ujb.on { border-color: var(--acc); background: var(--card); box-shadow: 0 3px 12px rgba(79,70,229,.18); }
+.mu-ujb .nm { display: block; font: 700 13.5px/1.3 "Poppins", sans-serif; }
+.mu-ujb .nm i { font-style: normal; font-size: 9.5px; padding: 2px 8px; border-radius: 99px; background: #dbeafe; color: #1e40af; margin-left: 6px; vertical-align: 1px; }
+.mu-ujb .gr { display: grid; gap: 5px; margin-top: 8px; }
+.mu-ujb .c { text-align: center; padding: 5px 0 6px; border-radius: 10px; font: 700 12px "Poppins", sans-serif; }
+.mu-ujb .c em { display: block; font: 600 9.5px "Poppins", sans-serif; opacity: .7; font-style: normal; }
+.mu-ujb .c.ok, .mu-kc .trk i.ok { background: var(--siap-bg); color: var(--siap-t); } .mu-ujb .c.mid { background: #dbeafe; color: #1e40af; } .mu-ujb .c.lo { background: var(--draf-bg); color: var(--draf-t); } .mu-ujb .c.bad { background: var(--belum-bg); color: var(--pulang-t); } .mu-ujb .c.na { background: var(--bar); opacity: .65; }
 .mu-tp { display: block; font: 500 12.5px "Open Sans", sans-serif; margin-top: 3px; }
 .mu-two2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
 .mu-kc { padding: 0 !important; overflow: hidden; margin-top: 8px; }
@@ -180,8 +191,6 @@ body.erp-body { --mu-card: rgba(255,255,255,.93); } body.erp-body[data-erp="gela
 .mu-bl { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); } .mu-bl > div { flex: 1; min-width: 0; }
 .mu-donut { display: flex; gap: 14px; align-items: center; } .mu-donut .ring { width: 84px; height: 84px; }
 .mu-donut .ring b { inset: 10px; font-size: 18px; }
-.mu-app #app-content { padding-top: 96px !important; }
-.mu-app .erp-main { padding-top: 6px; }
 @media (max-width: 560px) {
   .mu-tr.isi { grid-template-columns: 26px minmax(0, 1fr) 84px 50px; gap: 8px; padding: 7px 10px; }
   .mu-tr.isi > :nth-child(3) { display: none; }

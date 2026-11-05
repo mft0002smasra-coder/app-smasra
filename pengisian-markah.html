@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pengisian Markah — SM Arab (Jaim) Al-Asyraf</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1d4fb8">
+<link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Open+Sans:wght@400;600;700&family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20261022a">
+<link rel="stylesheet" href="erph.css?v=20261103a">
+<link rel="stylesheet" href="markah.css?v=20261105c">
+<script src="tema-init.js?v=20261022a"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body class="erp-body mu-app">
+<div class="wrap" style="padding:0 0 96px">
+
+  <div id="login-screen" class="hidden">
+    <img class="logo-plain school-logo-img" alt="Logo Sekolah">
+    <div class="brand-title">SM ARAB (JAIM) AL-ASYRAF</div>
+    <div class="brand-sub">Sistem Pengurusan Sekolah</div>
+    <div class="glass">
+      <div class="gsi-wrap" id="google-btn-container"></div>
+      <div class="divider">Atau</div>
+      <form id="login-form">
+        <label class="field-label" for="login-email">Emel Rasmi</label>
+        <input class="field-input" type="email" id="login-email" placeholder="nama@moe-dl.edu.my" autocomplete="email" required>
+        <button class="btn-primary" type="submit" id="login-btn">Log Masuk</button>
+        <div class="error-text hidden" id="login-error"></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="app-content" class="hidden">
+    <div class="erp-scope" id="erp-root"><div class="erp-loading">Memuatkan Markah Ujian…</div></div>
+  </div>
+</div>
+
+<div class="erp-modal hidden" id="erp-modal"><div class="erp-modal-sheet" id="erp-modal-body"></div></div>
+<div id="erp-print-area"></div>
+<div class="erp-toast hidden" id="erp-toast"></div>
+
+<div class="bottom-nav-wrap">
+  <nav class="bottom-nav">
+    <a class="bn-item" href="kehadiran-staf.html?open=kehadiran" aria-label="Kehadiran"><span data-icon="calendar"></span><span class="bn-label">Kehadiran</span></a>
+    <a class="bn-item" href="event.html" aria-label="Event"><span data-icon="event"></span><span class="bn-label">Event</span></a>
+    <a class="bn-item" href="index.html" aria-label="Home"><span data-icon="home"></span><span class="bn-label">Home</span></a>
+    <a class="bn-item" href="laporan-pentadbir.html" aria-label="Laporan"><span data-icon="clipboard"></span><span class="bn-label">Laporan</span></a>
+    <a class="bn-item" href="profile.html" aria-label="Profil"><span data-icon="profile"></span><span class="bn-label">Profil</span></a>
+  </nav>
+</div>
+
+<script>window.MU_APP = "app";</script>
+<script src="app.js?v=20261022a"></script>
+<script src="enrolmen-murid.js?v=20261007b"></script>
+<script src="jadual-guru.js?v=20261104b"></script>
+<script src="markah-core.js?v=20261104b"></script>
+<script src="markah.js?v=20261105a"></script>
+<script>
+  initApp(muInit);
+</script>
+</body>
+</html>

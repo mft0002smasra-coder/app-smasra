@@ -302,8 +302,7 @@ const MENU_STRUCTURE = [
       { href: "jadual-guru.html", icon: "clipboard", label: "Jadual Guru" },
       { href: "jadual-guru-ganti.html", icon: "clipboard", label: "Jadual Guru Ganti" },
       { href: "erph-analisis.html", icon: "chart", label: "Analisis e-RPH" },
-      { href: "markah-isi.html", icon: "clipboard", label: "Isi Markah" },
-      { href: "markah-status.html", icon: "chart", label: "Status Pengisian Markah" },
+      { href: "pengisian-markah.html", icon: "clipboard", label: "Pengisian Markah" },
     ],
   },
   {

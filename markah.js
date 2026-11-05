@@ -16,7 +16,7 @@ const muOk = (v) => v && String(v).indexOf("PASTE_") !== 0;
 const E = (s) => escapeHtml(s == null ? "" : String(s));
 const A = (s) => escapeAttr(s == null ? "" : String(s));
 const up = C.up;
-const APP = window.MU_APP || ""; // "isi" | "status" = dimuatkan dalam APP SMASRA (bar atas & bawah APP kekal); kosong = embed penuh
+const APP = window.MU_APP || ""; // "app" = halaman Pengisian Markah dalam APP SMASRA (hanya bar navigasi bawah APP); kosong = embed penuh
 const pad = (n) => String(n).padStart(2, "0");
 const f2 = (x) => (x === null || x === undefined || isNaN(x) ? "–" : x.toFixed(2));
 
@@ -160,7 +160,7 @@ const kelasBoleh = () => allKelas();
 const slipKelas = () => (S.adm ? allKelas() : kelasGuru());
 const ujianUntukTkt = (t) => S.tet.ujian.filter((u) => !t || (u.tkt || []).indexOf(t) !== -1);
 function tabsAda() {
-  if (APP) return [APP === "status" ? ["utama", "Status Pengisian"] : ["isi", "Isi Markah"]];
+  if (APP) return [["isi", "Isi Markah"], ["utama", "Status Pengisian"]];
   const T = [["utama", "Utama"], ["isi", "Isi Markah"], ["kelas", "Keputusan Kelas"], ["tkt", "Keputusan Tingkatan"], ["analisis", "Analisis Mata Pelajaran"], ["slip", "Slip Keputusan"]];
   if (!(S.adm || kelasGuru().length)) T.splice(T.findIndex((x) => x[0] === "slip"), 1); // Slip: guru kelas, Pentadbir, Admin App sahaja
   if (S.adm) T.push(["tetapan", "Tetapan"]); // Pentadbir / Admin App sahaja
@@ -186,7 +186,7 @@ function kiraTkt(uid, ting) {
 
 /* ================= Kerangka ================= */
 function head() {
-  if (APP) return `<div class="mu-seg"><a class="${APP === "isi" ? "on" : ""}" href="markah-isi.html" data-act="mu-go" data-h="markah-isi.html">Isi Markah</a><a class="${APP === "status" ? "on" : ""}" href="markah-status.html" data-act="mu-go" data-h="markah-status.html">Status Pengisian</a></div>`;
+  if (APP) return `<div class="mu-seg">${tabsAda().map(([t, l]) => `<button class="${S.tab === t ? "on" : ""}" data-act="tab" data-t="${t}" type="button">${l}</button>`).join("")}</div>`;
   const g = temaGet() === "gelap";
   const tools = `<div class="erp-head-tools"><button class="out" data-act="tema" type="button">${g ? "☀ Cerah" : "☾ Gelap"}</button><button class="out" data-act="logout" type="button">Log keluar</button></div>`;
   const T = tabsAda().map(([t, l]) => `<button class="erp-tab g ${S.tab === t ? "on" : ""}" data-act="tab" data-t="${t}" type="button">${l}</button>`).join("");
@@ -205,7 +205,7 @@ window.addEventListener("resize", () => { S._ind = null; tabInd(); });
 function render() {
   const root = document.getElementById("erp-root"); if (!root) return;
   root.classList.add("erp-semak");
-  if (APP) S.tab = APP === "status" ? "utama" : "isi";
+  if (APP && S.tab !== "utama") S.tab = "isi";
   if (S.tab === "tetapan" && !S.adm) S.tab = "isi";
   const v = { utama: APP ? vStatusApp : vUtama, isi: vIsi, kelas: vKelas, tkt: vTkt, analisis: vAnalisis, slip: vSlip, tetapan: vTetapan }[S.tab] || vIsi;
   const y = window.scrollY;
@@ -594,9 +594,8 @@ async function onClick(e) {
   if (a === "logout") { if (await ask("Log keluar?")) logout(); return; }
   if (a === "tab") {
     if (S.tab === "isi" && S.dirty && !(await ask("Markah belum disimpan. Tinggalkan halaman ini?"))) return;
-    S.tab = el.dataset.t; S._ind = S._ind; render(); return;
+    S.tab = el.dataset.t; S._ind = S._ind; render(); if (APP) window.scrollTo(0, 0); return;
   }
-  if (a === "mu-go") { e.preventDefault(); if (APP === "isi" && S.dirty && !(await ask("Markah belum disimpan. Tinggalkan halaman ini?"))) return; location.href = el.dataset.h; return; }
   if (a === "ut-uj-pick") { S.ujianId = el.dataset.u; S.home.open = ""; S._keepScroll = true; render(); return; }
   if (a === "ut-view") { S.home.view = el.dataset.v; S._keepScroll = true; render(); return; }
   if (a === "ut-open") { S.home.open = S.home.open === el.dataset.k ? "" : el.dataset.k; S._keepScroll = true; render(); return; }
@@ -606,8 +605,7 @@ async function onClick(e) {
   }
   if (a === "ut-tkt") { S.home.tkt = +el.dataset.t; S.home.all = false; S._keepScroll = true; render(); return; }
   if (a === "ut-semua") { S.home.all = !S.home.all; S._keepScroll = true; render(); return; }
-  if (a === "ut-isi" && APP) { location.href = "markah-isi.html?uj=" + encodeURIComponent(S.ujianId) + "&k=" + encodeURIComponent(el.dataset.k) + "&s=" + encodeURIComponent(el.dataset.s); return; }
-  if (a === "ut-isi") { S.isi = { uj: S.ujianId, kelas: el.dataset.k, subjek: el.dataset.s, anim: true }; S.draftKey = ""; S.dirty = false; S.tab = "isi"; render(); window.scrollTo(0, 0); return; }
+    if (a === "ut-isi") { S.isi = { uj: S.ujianId, kelas: el.dataset.k, subjek: el.dataset.s, anim: true }; S.draftKey = ""; S.dirty = false; S.tab = "isi"; render(); window.scrollTo(0, 0); return; }
   if (a === "ut-csv") return utamaCsv();
   if (a === "isi-draf") return isiSimpan(false);
   if (a === "isi-hantar") return isiSimpan(true);
@@ -828,9 +826,8 @@ function vStatusApp() {
   const pcOf = (D) => (D.jum ? Math.round(D.tot.H / D.jum * 100) : null);
   const cls = (p) => (p === null ? "na" : p === 100 ? "ok" : p >= 60 ? "mid" : p > 0 ? "lo" : "bad");
   // 1. Ujian × Tingkatan
-  const ut = `<div class="erp-card"><h3>Ujian × Tingkatan</h3><div class="erp-hint" style="margin-top:0">Ketuk satu ujian untuk lihat butirannya di bawah.</div>
-    <div class="mu-ujt" style="grid-template-columns:minmax(0,1fr) repeat(${tktAda.length + 1},40px)"><span class="h l">UJIAN</span>${tktAda.map((t) => `<span class="h">T${t}</span>`).join("")}<span class="h">JUM</span>
-    ${L.map((x) => { const cells = tktAda.map((t) => pcOf(utamaData(x.id, t))), all = pcOf(utamaData(x.id, 0)); return `<button class="l ${x.id === uid ? "on" : ""}" data-act="ut-uj-pick" data-u="${A(x.id)}" type="button">${E(x.nama + " " + x.tahun)}${terkini && x.id === terkini.id ? ` <i>TERKINI</i>` : ""}</button>${cells.concat([all]).map((p) => `<span class="c ${cls(p)}">${p === null ? "–" : p + "%"}</span>`).join("")}`; }).join("")}</div></div>`;
+  const ut = `<div class="erp-card"><h3>Ujian × Tingkatan</h3><div class="erp-hint" style="margin:0 0 8px">Ketuk satu ujian untuk lihat butirannya di bawah.</div>
+    ${L.map((x) => { const cells = tktAda.map((t) => [`T${t}`, pcOf(utamaData(x.id, t))]).concat([["JUM", pcOf(utamaData(x.id, 0))]]); return `<button class="mu-ujb ${x.id === uid ? "on" : ""}" data-act="ut-uj-pick" data-u="${A(x.id)}" type="button"><span class="nm">${E(x.nama + " " + x.tahun)}${terkini && x.id === terkini.id ? ` <i>TERKINI</i>` : ""}</span><span class="gr" style="grid-template-columns:repeat(${cells.length},minmax(0,1fr))">${cells.map((c) => `<span class="c ${cls(c[1])}"><em>${c[0]}</em>${c[1] === null ? "–" : c[1] + "%"}</span>`).join("")}</span></button>`; }).join("")}</div>`;
   // 2. butiran ujian dipilih
   const D = utamaData(uid, tf), pct = pcOf(D) || 0, pd = D.jum ? Math.round((D.tot.H + D.tot.D) / D.jum * 100) : 0;
   const chips = [0].concat(tktAda).map((t) => `<button class="erp-chip ${t === tf ? "on" : ""}" data-act="ut-tkt" data-t="${t}" type="button">${t ? "Tkt " + t : "Semua"}</button>`).join("");
@@ -873,7 +870,7 @@ async function muInit(user) {
     const ti = tabsAda(); if (!ti.some((x) => x[0] === S.tab)) S.tab = ti[0][0];
     const buka = ujianTerkini(); S.ujianId = buka ? buka.id : "";
     if (S.ujianId) await loadMarks(S.ujianId);
-    if (APP === "isi") { try { const q = new URLSearchParams(location.search); if (q.get("uj") && q.get("k") && q.get("s")) { S.isi = { uj: q.get("uj"), kelas: q.get("k"), subjek: q.get("s"), anim: true }; } } catch (e) {} }
+    if (APP) { try { const q = new URLSearchParams(location.search); S.tab = q.get("tab") === "status" ? "utama" : "isi"; } catch (e) { S.tab = "isi"; } }
     render();
   } catch (err) { root.innerHTML = `<div class="erp-empty">Ralat memuatkan Markah Ujian: ${E(err.message || err)}</div>`; }
 }
