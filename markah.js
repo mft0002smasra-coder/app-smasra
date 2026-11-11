@@ -283,6 +283,7 @@ function vIsi() {
       <div class="mu-tr isi h"><span>BIL</span><span>NAMA MURID</span><span>NO. KP</span><span>MARKAH</span><span>GRED</span></div>
       ${rows || `<div class="erp-hint" style="padding:14px">Tiada murid dalam kelas ini.</div>`}
       <div class="erp-right mu-act">
+        <button class="erp-btn" data-act="isi-cetak" type="button" ${ms.length ? "" : "disabled"}>Cetak senarai markah</button>
         <button class="erp-btn" data-act="isi-paste" type="button" ${kunci || !buka ? "disabled" : ""}>Tampal daripada Excel</button>
         <button class="erp-btn" data-act="isi-draf" type="button" ${kunci || !buka ? "disabled" : ""}>Simpan draf</button>
         <button class="erp-btn solid" data-act="isi-hantar" type="button" ${kunci || !buka ? "disabled" : ""}>Hantar markah</button>
@@ -293,6 +294,27 @@ function vIsi() {
     <div class="mu-side"><div id="isi-sum">${isiSum(st)}</div>
       <div class="erp-card mu-hint">Gred dikira automatik mengikut skala ${C.isAtas(o.ting, S.tet) ? "Menengah Atas / SPM" : "Menengah Rendah"} dalam Tetapan.</div></div>
   </div></div>`;
+}
+/* Cetak senarai markah (bahagian pengisian markah sahaja: jadual murid + markah + gred) */
+function isiCetak() {
+  const I = S.isi, o = isiOpts(), u = ujianBy(I.uj), sub = subjBy(I.subjek, o.ting), ms = muridKelas(I.kelas), rec = (S.marks[I.uj] || {})[up(I.kelas) + "|" + up(I.subjek)];
+  if (!ms.length) { toast("Tiada murid untuk dicetak."); return; }
+  let diisi = 0, th = 0, jum = 0, gagal = 0;
+  const rows = ms.map((m, i) => {
+    const raw = S.draft[m.key], r = C.rawVal(raw); let mk = "", gr = "", cls = "";
+    if (r.t === "th") { mk = "TH"; gr = "TH"; th++; diisi++; }
+    else if (r.t === "num") { const g = C.gredOf(r.v, S.tet, o.ting); mk = String(raw).trim(); gr = g.g; diisi++; jum += r.v; if (C.isGagal(g, S.tet, o.ting)) { cls = "bad"; gagal++; } }
+    return `<tr><td>${i + 1}</td><td class="l">${E(m.nama)}</td><td>${E(m.kp)}</td><td class="${cls}">${E(mk)}</td><td class="${cls}">${E(gr)}</td></tr>`;
+  }).join("");
+  const nNum = diisi - th, purata = nNum ? (jum / nNum).toFixed(1) : "–", tarikh = new Date().toLocaleDateString("ms-MY", { day: "numeric", month: "long", year: "numeric" });
+  const css = '@page{size:A4 portrait;margin:12mm}body{margin:0;padding:6px;background:#fff;font-family:Arial,Helvetica,sans-serif;color:#000}h2{margin:0 0 2px;font-size:15px;text-align:center}h3{margin:0 0 8px;font-size:12.5px;text-align:center;font-weight:600}.meta{display:flex;justify-content:space-between;gap:12px;font-size:11px;margin:0 0 8px}table{border-collapse:collapse;width:100%;font-size:11px}th,td{border:1px solid #444;padding:4px 6px;text-align:center}td.l{text-align:left}th{background:#e8eefc;-webkit-print-color-adjust:exact;print-color-adjust:exact}thead{display:table-header-group}tr{page-break-inside:avoid}.bad{color:#b91c1c;font-weight:700}.sum{font-size:11px;margin-top:8px}.sig{display:flex;justify-content:space-between;margin-top:34px;font-size:11px}.sig div{width:44%;border-top:1px solid #000;padding-top:4px;text-align:center}.note{font-size:9.5px;color:#444;margin-top:6px}';
+  const body = `<h2>${E(MU_SCHOOL)}</h2><h3>SENARAI MARKAH — ${E(u ? u.nama + " " + u.tahun : "")}</h3>
+    <div class="meta"><span><b>Mata pelajaran:</b> ${E(sub ? sub.kod + " — " + sub.nama : I.subjek)}</span><span><b>Kelas:</b> ${E(I.kelas)}</span><span><b>Bil. murid:</b> ${ms.length}</span></div>
+    <table><thead><tr><th style="width:36px">BIL</th><th>NAMA MURID</th><th style="width:110px">NO. KP</th><th style="width:70px">MARKAH</th><th style="width:60px">GRED</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="sum">Diisi: <b>${diisi} / ${ms.length}</b> · Tidak hadir (TH): <b>${th}</b> · Purata: <b>${purata}</b> · Gagal: <b>${gagal}</b>${rec ? " · Status: <b>" + E(rec.status) + "</b>" : " · Status: <b>Belum disimpan</b>"}</div>
+    <div class="sig"><div>Guru Mata Pelajaran<br>(${E(S.user.nama)})</div><div>Disemak oleh</div></div>
+    <div class="note">Dicetak pada ${E(tarikh)} · TH = tidak hadir · Murid tanpa markah dianggap tidak mengambil subjek ini.</div>`;
+  cetakDoc(body, css, "Senarai Markah " + I.kelas + " " + (sub ? sub.kod : ""));
 }
 function isiSum(st) {
   const mx = Math.max(1, ...st.gc);
@@ -615,6 +637,7 @@ async function onClick(e) {
   if (a === "ut-semua") { S.home.all = !S.home.all; S._keepScroll = true; render(); return; }
     if (a === "ut-isi") { S.isi = { uj: S.ujianId, kelas: el.dataset.k, subjek: el.dataset.s, anim: true }; S.draftKey = ""; S.dirty = false; S.tab = "isi"; render(); window.scrollTo(0, 0); return; }
   if (a === "ut-csv") return utamaCsv();
+  if (a === "isi-cetak") return isiCetak();
   if (a === "isi-draf") return isiSimpan(false);
   if (a === "isi-hantar") return isiSimpan(true);
   if (a === "isi-buka") { if (!(await ask("Buka semula markah ini untuk diedit oleh guru?"))) return; try { await post({ action: "bukaSemula", ujian: S.isi.uj, kelas: S.isi.kelas, subjek: S.isi.subjek }); const r = S.marks[S.isi.uj][up(S.isi.kelas) + "|" + up(S.isi.subjek)]; if (r) r.status = "Draf"; bust(); toast("Dibuka semula."); render(); } catch (err) { toast(err.message, true); } return; }
