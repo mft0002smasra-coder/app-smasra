@@ -1,25 +1,32 @@
 {
-  "name": "SM Arab (Jaim) Al-Asyraf",
-  "short_name": "SMASRA",
-  "description": "Aplikasi pengurusan sekolah SM Arab (Jaim) Al-Asyraf - pengumuman, kehadiran, laporan dan prestasi.",
-  "start_url": "./index.html",
-  "scope": "./",
-  "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#030b12",
-  "theme_color": "#030b12",
-  "icons": [
-    {
-      "src": "https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "https://lh3.googleusercontent.com/d/1JFlMpX8nCN4ZKW9SRiNdtFT-UC8D3nlN",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    }
-  ]
+ "name": "Koperasi SMA (JAIM) Al-Asyraf — POS",
+ "short_name": "Koperasi POS",
+ "description": "Sistem POS & pengurusan Koperasi SMA (JAIM) Al-Asyraf",
+ "start_url": "./index.html",
+ "scope": "./",
+ "display": "standalone",
+ "orientation": "any",
+ "background_color": "#F5F3FF",
+ "theme_color": "#6D28D9",
+ "lang": "ms",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icon-maskable-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
 }
