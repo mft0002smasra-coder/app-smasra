@@ -481,3 +481,10 @@ button.prq-row { text-align: left; font: inherit; color: inherit; cursor: pointe
 .prq-row .ch { display: flex; gap: 6px; flex-wrap: wrap; } .prq-row .ch i { font-style: normal; font: 600 11px "Poppins", sans-serif; padding: 2px 10px; border-radius: 999px; } .ch i.g { background: #dcfce7; color: #14532d; } .ch i.a { background: #fef3c7; color: #78350f; } .ch i.r { background: #fee2e2; color: #7f1d1d; }
 .erl-sel input.erp-in { flex: 1; }
 .erl > .erp-btn.sm[data-act="pr-back"] { align-self: flex-start; width: auto; padding: 0 16px; }
+
+/* Akses guru: Keputusan / Tetapan / Buka semula */
+.mu-akt3{display:flex;flex-direction:column;gap:2px}
+.mu-akt3r{display:grid;grid-template-columns:minmax(0,1fr) 84px 84px 96px;align-items:center;gap:6px;padding:6px 4px;border-bottom:1px solid var(--line)}
+.mu-akt3r.h{font:700 11px/1.2 inherit;color:var(--muted,#64748b);position:sticky;top:0}
+.mu-akt3r.h span:not(:first-child),.mu-akt3r label{text-align:center}
+.mu-akt3r input{width:18px;height:18px}
