@@ -200,3 +200,12 @@ body.erp-body { --mu-card: rgba(255,255,255,.93); } body.erp-body[data-erp="gela
 
 .mu-aks { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 14px; max-height: 340px; overflow-y: auto; padding: 8px 4px; border: 1px solid var(--line); border-radius: 12px; }
 .mu-ak { display: flex; align-items: center; gap: 8px; padding: 6px 6px; font-size: 13.5px; cursor: pointer; border-radius: 8px; } .mu-ak:hover { background: var(--soft); } .mu-ak input { width: 18px; height: 18px; flex: none; }
+
+/* Akses guru: Keputusan / Tetapan / Buka semula (jadual penuh lebar dalam .mu-aks) */
+.mu-aks > .mu-akt3 { grid-column: 1 / -1; display: flex; flex-direction: column; min-width: 0; }
+.mu-akt3r { display: grid; grid-template-columns: minmax(0, 1fr) 84px 84px 96px; align-items: center; gap: 6px; padding: 6px 4px; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+.mu-akt3r.h { font-size: 11px; font-weight: 700; line-height: 1.2; color: var(--muted, #64748b); position: sticky; top: -8px; background: var(--card, #fff); z-index: 1; }
+.mu-akt3r.h span:not(:first-child), .mu-akt3r label { text-align: center; }
+.mu-akt3r label { display: flex; justify-content: center; align-items: center; cursor: pointer; min-height: 28px; }
+.mu-akt3r input { width: 18px; height: 18px; }
+@media (max-width: 520px) { .mu-akt3r { grid-template-columns: minmax(0, 1fr) 62px 62px 70px; gap: 4px; } }
