@@ -158,6 +158,9 @@ const muridKelas = (k) => S.murid.filter((m) => m.kelas === k);
 const kelasGuru = () => allKelas().filter((k) => sameNama(guruKelasOf(k), S.user.nama));
 const kelasBoleh = () => allKelas();
 const bolehKeputusan = () => S.adm || ((S.tet.akses && S.tet.akses.keputusan) || []).some((n) => sameNama(n, S.user.nama)); // tab Keputusan Kelas / Tingkatan
+const dalamAkses = (k) => ((S.tet.akses && S.tet.akses[k]) || []).some((n) => sameNama(n, S.user.nama));
+const bolehTetapan = () => S.adm || dalamAkses("tetapan"); // tab Tetapan: Pentadbir / Admin App / guru dipilih
+const bolehBuka = () => S.adm || dalamAkses("buka"); // buka semula markah yang telah dihantar
 const slipKelas = () => (S.adm ? allKelas() : kelasGuru());
 const ujianUntukTkt = (t) => S.tet.ujian.filter((u) => !t || (u.tkt || []).indexOf(t) !== -1);
 function tabsAda() {
@@ -165,7 +168,7 @@ function tabsAda() {
   const T = [["utama", "Utama"], ["isi", "Isi Markah"], ["kelas", "Keputusan Kelas"], ["tkt", "Keputusan Tingkatan"], ["analisis", "Analisis Mata Pelajaran"], ["slip", "Slip Keputusan"]];
   if (!bolehKeputusan()) { for (const k of ["kelas", "tkt"]) T.splice(T.findIndex((x) => x[0] === k), 1); }
   if (!(S.adm || kelasGuru().length)) T.splice(T.findIndex((x) => x[0] === "slip"), 1); // Slip: guru kelas, Pentadbir, Admin App sahaja
-  if (S.adm) T.push(["tetapan", "Tetapan"]); // Pentadbir / Admin App sahaja
+  if (bolehTetapan()) T.push(["tetapan", "Tetapan"]); // Pentadbir / Admin App / guru dipilih
   return T;
 }
 /** Kira semua murid dalam satu kelas untuk satu ujian. */
@@ -209,7 +212,7 @@ function render() {
   root.classList.add("erp-semak");
   if (APP && S.tab !== "utama") S.tab = "isi";
   if ((S.tab === "kelas" || S.tab === "tkt") && !bolehKeputusan()) S.tab = "isi";
-  if (S.tab === "tetapan" && !S.adm) S.tab = "isi";
+  if (S.tab === "tetapan" && !bolehTetapan()) S.tab = "isi";
   const v = { utama: APP ? vStatusApp : vUtama, isi: vIsi, kelas: vKelas, tkt: vTkt, analisis: vAnalisis, slip: vSlip, tetapan: vTetapan }[S.tab] || vIsi;
   const y = window.scrollY;
   root.innerHTML = head() + `<div class="erp-main mu">${v()}</div>`;
@@ -265,7 +268,7 @@ function vIsi() {
   if (needLoad(I.uj)) return warnMurid() + tg + top + loadingBox;
   draftInit();
   const anim = I.anim; I.anim = false;
-  const u = ujianBy(I.uj), rec = (S.marks[I.uj] || {})[up(I.kelas) + "|" + up(I.subjek)], kunci = rec && rec.status === "Dihantar" && !S.adm;
+  const u = ujianBy(I.uj), rec = (S.marks[I.uj] || {})[up(I.kelas) + "|" + up(I.subjek)], kunci = rec && rec.status === "Dihantar" && !S.adm && !bolehBuka();
   const ms = muridKelas(I.kelas), st = isiStat(o.ting), buka = !!(u && (u.buka || S.adm));
   const sub = subjBy(I.subjek, o.ting);
   const rows = ms.map((m, i) => `<div class="mu-tr isi" style="--i:${Math.min(i, 24)}"><span class="dim">${i + 1}</span><b>${E(m.nama)}</b><span class="dim">${E(m.kp)}</span>
@@ -277,22 +280,44 @@ function vIsi() {
   <div class="erp-card mu-info"><span><span class="erp-lbl">BIL. MURID</span><b class="mu-big">${ms.length} orang</b></span><span><span class="erp-lbl">STATUS</span>${statusPill}</span><span class="mu-info-t"><b>${E(sub ? sub.nama : "")}</b> · ${E(I.kelas)} · ${E(u ? u.nama + " " + u.tahun : "")}</span></div>
   ${sub && sub.kira === false ? `<div class="mu-note">${E(sub.kod)} direkod sahaja — TIDAK dikira dalam GPI, jumlah markah dan kedudukan.</div>` : ""}
   ${sub && sub.wajib ? `<div class="mu-note">${E(sub.kod)} ialah mata pelajaran WAJIB LULUS — gred G menyebabkan keputusan akhir murid GAGAL.</div>` : ""}
-  ${!buka ? `<div class="mu-warn">Ujian ini belum dibuka untuk pengisian markah.</div>` : ""}${kunci ? `<div class="mu-warn">Markah telah dihantar dan dikunci. Hanya Pentadbir boleh membukanya semula.</div>` : ""}
+  ${!buka ? `<div class="mu-warn">Ujian ini belum dibuka untuk pengisian markah.</div>` : ""}${kunci ? `<div class="mu-warn">Markah telah dihantar dan dikunci. Hanya Pentadbir atau guru yang dibenarkan boleh membukanya semula.</div>` : ""}
   <div class="mu-two">
     <div class="erp-card mu-tbl">
       <div class="mu-tr isi h"><span>BIL</span><span>NAMA MURID</span><span>NO. KP</span><span>MARKAH</span><span>GRED</span></div>
       ${rows || `<div class="erp-hint" style="padding:14px">Tiada murid dalam kelas ini.</div>`}
       <div class="erp-right mu-act">
+        <button class="erp-btn" data-act="isi-cetak" type="button" ${ms.length ? "" : "disabled"}>Cetak senarai markah</button>
         <button class="erp-btn" data-act="isi-paste" type="button" ${kunci || !buka ? "disabled" : ""}>Tampal daripada Excel</button>
         <button class="erp-btn" data-act="isi-draf" type="button" ${kunci || !buka ? "disabled" : ""}>Simpan draf</button>
         <button class="erp-btn solid" data-act="isi-hantar" type="button" ${kunci || !buka ? "disabled" : ""}>Hantar markah</button>
-        ${S.adm && rec && rec.status === "Dihantar" ? `<button class="erp-btn warn" data-act="isi-buka" type="button">Buka semula</button>` : ""}
+        ${bolehBuka() && rec && rec.status === "Dihantar" ? `<button class="erp-btn warn" data-act="isi-buka" type="button">Buka semula</button>` : ""}
       </div>
       <div class="erp-hint" style="padding:6px 14px 0">Kosongkan markah bagi murid yang tidak mengambil subjek ini. Tulis TH bagi murid tidak hadir. Tekan Enter untuk ke murid seterusnya; tampal terus daripada Excel ke dalam kotak markah pertama.</div>
     </div>
     <div class="mu-side"><div id="isi-sum">${isiSum(st)}</div>
       <div class="erp-card mu-hint">Gred dikira automatik mengikut skala ${C.isAtas(o.ting, S.tet) ? "Menengah Atas / SPM" : "Menengah Rendah"} dalam Tetapan.</div></div>
   </div></div>`;
+}
+/* Cetak senarai markah (bahagian pengisian markah sahaja: jadual murid + markah + gred) */
+function isiCetak() {
+  const I = S.isi, o = isiOpts(), u = ujianBy(I.uj), sub = subjBy(I.subjek, o.ting), ms = muridKelas(I.kelas), rec = (S.marks[I.uj] || {})[up(I.kelas) + "|" + up(I.subjek)];
+  if (!ms.length) { toast("Tiada murid untuk dicetak."); return; }
+  let diisi = 0, th = 0, jum = 0, gagal = 0;
+  const rows = ms.map((m, i) => {
+    const raw = S.draft[m.key], r = C.rawVal(raw); let mk = "", gr = "", cls = "";
+    if (r.t === "th") { mk = "TH"; gr = "TH"; th++; diisi++; }
+    else if (r.t === "num") { const g = C.gredOf(r.v, S.tet, o.ting); mk = String(raw).trim(); gr = g.g; diisi++; jum += r.v; if (C.isGagal(g, S.tet, o.ting)) { cls = "bad"; gagal++; } }
+    return `<tr><td>${i + 1}</td><td class="l">${E(m.nama)}</td><td>${E(m.kp)}</td><td class="${cls}">${E(mk)}</td><td class="${cls}">${E(gr)}</td></tr>`;
+  }).join("");
+  const nNum = diisi - th, purata = nNum ? (jum / nNum).toFixed(1) : "–", tarikh = new Date().toLocaleDateString("ms-MY", { day: "numeric", month: "long", year: "numeric" });
+  const css = '@page{size:A4 portrait;margin:12mm}body{margin:0;padding:6px;background:#fff;font-family:Arial,Helvetica,sans-serif;color:#000}h2{margin:0 0 2px;font-size:15px;text-align:center}h3{margin:0 0 8px;font-size:12.5px;text-align:center;font-weight:600}.meta{display:flex;justify-content:space-between;gap:12px;font-size:11px;margin:0 0 8px}table{border-collapse:collapse;width:100%;font-size:11px}th,td{border:1px solid #444;padding:4px 6px;text-align:center}td.l{text-align:left}th{background:#e8eefc;-webkit-print-color-adjust:exact;print-color-adjust:exact}thead{display:table-header-group}tr{page-break-inside:avoid}.bad{color:#b91c1c;font-weight:700}.sum{font-size:11px;margin-top:8px}.sig{display:flex;justify-content:space-between;margin-top:34px;font-size:11px}.sig div{width:44%;border-top:1px solid #000;padding-top:4px;text-align:center}.note{font-size:9.5px;color:#444;margin-top:6px}';
+  const body = `<h2>${E(MU_SCHOOL)}</h2><h3>SENARAI MARKAH — ${E(u ? u.nama + " " + u.tahun : "")}</h3>
+    <div class="meta"><span><b>Mata pelajaran:</b> ${E(sub ? sub.kod + " — " + sub.nama : I.subjek)}</span><span><b>Kelas:</b> ${E(I.kelas)}</span><span><b>Bil. murid:</b> ${ms.length}</span></div>
+    <table><thead><tr><th style="width:36px">BIL</th><th>NAMA MURID</th><th style="width:110px">NO. KP</th><th style="width:70px">MARKAH</th><th style="width:60px">GRED</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="sum">Diisi: <b>${diisi} / ${ms.length}</b> · Tidak hadir (TH): <b>${th}</b> · Purata: <b>${purata}</b> · Gagal: <b>${gagal}</b>${rec ? " · Status: <b>" + E(rec.status) + "</b>" : " · Status: <b>Belum disimpan</b>"}</div>
+    <div class="sig"><div>Guru Mata Pelajaran<br>(${E(S.user.nama)})</div><div>Disemak oleh</div></div>
+    <div class="note">Dicetak pada ${E(tarikh)} · TH = tidak hadir · Murid tanpa markah dianggap tidak mengambil subjek ini.</div>`;
+  cetakDoc(body, css, "Senarai Markah " + I.kelas + " " + (sub ? sub.kod : ""));
 }
 function isiSum(st) {
   const mx = Math.max(1, ...st.gc);
@@ -312,7 +337,7 @@ async function isiSimpan(hantar) {
   if (bad.length) { toast("Markah tidak sah (guna 0–100 atau TH): " + bad[0].nama, true); return; }
   const kosong = ms.filter((m) => !String(S.draft[m.key] || "").trim()).length;
   if (hantar) {
-    const msg = (kosong ? kosong + " murid belum diisi (dianggap tidak mengambil subjek ini). " : "") + "Selepas dihantar, markah dikunci dan hanya Pentadbir boleh membukanya semula. Hantar sekarang?";
+    const msg = (kosong ? kosong + " murid belum diisi (dianggap tidak mengambil subjek ini). " : "") + "Selepas dihantar, markah dikunci dan hanya Pentadbir / guru yang dibenarkan boleh membukanya semula. Hantar sekarang?";
     if (!(await ask(msg))) return;
   }
   const marks = {}; ms.forEach((m) => { const v = String(S.draft[m.key] || "").trim(); if (v) marks[m.key] = v; });
@@ -556,9 +581,10 @@ function vTetapan() {
     return `<div class="mu-trw kl"><b>${E(k)}</b><span class="dim">${E(auto || "–")}</span>${pilih}<b>${muridKelas(k).length}</b></div>`;
   }).join("");
   const akL = (T.akses && T.akses.keputusan) || [], akOpts = stf.slice(); akL.forEach((n) => { if (akOpts.indexOf(n) === -1) akOpts.push(n); });
-  const akHtml = akOpts.map((n) => `<label class="mu-ak"><input type="checkbox" data-tc="ak" data-n="${A(n)}" ${akL.indexOf(n) !== -1 ? "checked" : ""}><span>${E(n)}</span></label>`).join("");
+  const akT = (T.akses && T.akses.tetapan) || [], akB = (T.akses && T.akses.buka) || []; akT.concat(akB).forEach((n) => { if (akOpts.indexOf(n) === -1) akOpts.push(n); });
+  const akHtml = akOpts.length ? `<div class="mu-akt3"><div class="mu-akt3r h"><span>GURU</span><span>Keputusan</span><span>Tetapan</span><span>Buka semula</span></div>${akOpts.map((n) => `<div class="mu-akt3r"><span>${E(n)}</span>${[["ak", akL], ["at", akT], ["ab", akB]].map((x) => `<label><input type="checkbox" data-tc="${x[0]}" data-n="${A(n)}" ${x[1].indexOf(n) !== -1 ? "checked" : ""} aria-label="${E(n)}"></label>`).join("")}</div>`).join("")}</div>` : "";
   const P = T.peraturan, nUj = T.ujian.length, nSj = T.subjek.length;
-  return `<div class="erp-card"><h3>Tetapan</h3><div class="erp-hint">Pentadbir dan Admin App sahaja. Klik tajuk untuk membuka / menyembunyikan setiap bahagian. Perubahan terpakai selepas <b>Simpan tetapan</b>.${S.tetOk ? "" : " (Belum ada tetapan tersimpan — memaparkan lalai.)"}</div></div>
+  return `<div class="erp-card"><h3>Tetapan</h3><div class="erp-hint">Pentadbir, Admin App dan guru yang dipilih sahaja. Klik tajuk untuk membuka / menyembunyikan setiap bahagian. Perubahan terpakai selepas <b>Simpan tetapan</b>.${S.tetOk ? "" : " (Belum ada tetapan tersimpan — memaparkan lalai.)"}</div></div>
   ${secHtml("uj", "Ujian / Peperiksaan", nUj + " ujian", `<div class="erp-right" style="margin-bottom:8px"><button class="erp-btn sm solid" data-act="td-add" data-k="uj" type="button">+ Tambah ujian</button></div>
       <div class="mu-trw uj h"><span>NAMA UJIAN</span><span>TAHUN</span><span>TINGKATAN</span><span>MULA ISI</span><span>AKHIR ISI</span><span>DIBUKA</span><span></span></div>${uj}
       <div class="erp-hint">“Dibuka” = guru boleh mengisi markah. Ujian yang ditutup hanya boleh diisi oleh Pentadbir.</div>`)}
@@ -575,7 +601,7 @@ function vTetapan() {
       <div class="erp-hint">Nilai ambang ialah andaian — sahkan dengan peraturan sekolah. Selain ambang GPI, murid yang gagal mana-mana mata pelajaran WAJIB LULUS juga GAGAL. Tingkatan 4 menggunakan skala dan pengiraan SPM. Jika tingkatan permulaan skala atas diubah, semak semula senarai mata pelajaran.</div>`)}
   ${secHtml("kl", "Kelas dan Guru Kelas", kelasList.length + " kelas", `<div class="mu-trw kl h"><span>KELAS</span><span>AUTO (DATA MURID)</span><span>GURU KELAS</span><span>MURID</span></div>${kls || `<div class="erp-hint">Data murid belum dimuatkan.</div>`}
       <div class="erp-hint">${adminApp ? "Guru kelas diambil secara automatik daripada Data Murid. Admin App boleh memilih guru lain jika ada perubahan; pilihan ini mengatasi nilai auto. Pilih “(Auto)” untuk kembali kepada Data Murid." : "Guru kelas diambil daripada Data Murid. Hanya Admin App boleh menetapkan guru kelas secara manual."}</div>`)}
-  ${secHtml("ak", "Akses Keputusan Kelas & Tingkatan", akL.length + " guru dibenarkan", `<div class="erp-hint" style="margin-top:0">Tandakan guru yang boleh melihat tab <b>Keputusan Kelas</b> dan <b>Keputusan Tingkatan</b>. Guru yang tidak ditandakan tidak akan melihat kedua-dua tab ini. Pentadbir dan Admin App sentiasa boleh melihatnya.</div>
+  ${secHtml("ak", "Akses Keputusan, Tetapan & Buka Semula", (new Set(akL.concat(akT, akB))).size + " guru dipilih", `<div class="erp-hint" style="margin-top:0">Tandakan guru yang boleh melihat tab <b>Keputusan Kelas</b> dan <b>Keputusan Tingkatan</b>. Guru yang tidak ditandakan tidak akan melihat kedua-dua tab ini. Pentadbir dan Admin App sentiasa boleh melihatnya.<br><b>Tetapan</b> = guru boleh membuka tab Tetapan ini dan mengubahnya. <b>Buka semula</b> = guru boleh membuka semula bahagian Isi Markah yang telah dihantar supaya boleh diedit.</div>
       <div class="mu-aks">${akHtml || `<div class="erp-hint">Senarai guru belum dimuatkan.</div>`}</div>`)}
   <div class="erp-right"><button class="erp-btn" data-act="td-reset" type="button">Batal</button><button class="erp-btn solid orange" data-act="td-save" type="button">Simpan tetapan</button></div>`;
 }
@@ -588,7 +614,7 @@ function tdSave() {
   out.subjek.forEach((s) => { s.kod = up(s.kod); s.nama = up(s.nama || s.kod); s.alias = String(s.alias || "").trim(); s.wajib = !!s.wajib; });
   out.subjek = out.subjek.filter((s) => s.kod);
   const kodSet = new Set(); for (const s of out.subjek) { const k = s.lvl + "|" + s.kod; if (kodSet.has(k)) return { err: "Kod subjek berganda dalam " + (s.lvl === "atas" ? "Menengah Atas" : "Menengah Rendah") + ": " + s.kod }; kodSet.add(k); }
-  out.akses = { keputusan: ((T.akses && T.akses.keputusan) || []).filter(Boolean) };
+  out.akses = { keputusan: ((T.akses && T.akses.keputusan) || []).filter(Boolean), tetapan: ((T.akses && T.akses.tetapan) || []).filter(Boolean), buka: ((T.akses && T.akses.buka) || []).filter(Boolean) };
   out.guruKelas = {}; Object.keys(T.guruKelas || {}).forEach((k) => { if (T.guruKelas[k]) out.guruKelas[k] = T.guruKelas[k]; });
   ["rendah", "atas"].forEach((k) => { out.gred[k].forEach((g) => { g.dari = num(g.dari, 0); g.mata = num(g.mata, 0); }); out.gred[k].sort((a, b) => b.dari - a.dari); });
   out.peraturan = { tktAtas: Math.round(num(T.peraturan.tktAtas, 4)), ambangRendah: num(T.peraturan.ambangRendah, 5), ambangAtas: num(T.peraturan.ambangAtas, 8) };
@@ -615,6 +641,7 @@ async function onClick(e) {
   if (a === "ut-semua") { S.home.all = !S.home.all; S._keepScroll = true; render(); return; }
     if (a === "ut-isi") { S.isi = { uj: S.ujianId, kelas: el.dataset.k, subjek: el.dataset.s, anim: true }; S.draftKey = ""; S.dirty = false; S.tab = "isi"; render(); window.scrollTo(0, 0); return; }
   if (a === "ut-csv") return utamaCsv();
+  if (a === "isi-cetak") return isiCetak();
   if (a === "isi-draf") return isiSimpan(false);
   if (a === "isi-hantar") return isiSimpan(true);
   if (a === "isi-buka") { if (!(await ask("Buka semula markah ini untuk diedit oleh guru?"))) return; try { await post({ action: "bukaSemula", ujian: S.isi.uj, kelas: S.isi.kelas, subjek: S.isi.subjek }); const r = S.marks[S.isi.uj][up(S.isi.kelas) + "|" + up(S.isi.subjek)]; if (r) r.status = "Draf"; bust(); toast("Dibuka semula."); render(); } catch (err) { toast(err.message, true); } return; }
@@ -680,7 +707,8 @@ function tdField(t) {
   else if (f === "gk") { T.guruKelas = T.guruKelas || {}; if (t.value) T.guruKelas[t.dataset.k] = t.value; else delete T.guruKelas[t.dataset.k]; }
 }
 function tdCheck(t) {
-  if (t.dataset.tc === "ak") { const T = S.td; T.akses = T.akses || { keputusan: [] }; const n = t.dataset.n, set = new Set(T.akses.keputusan || []); t.checked ? set.add(n) : set.delete(n); T.akses.keputusan = [...set].sort(); S.tdDirty = true; const h = t.closest(".mu-sec").querySelector(".mu-sec-i"); if (h) h.textContent = set.size + " guru dibenarkan"; return; }
+  const AK = { ak: "keputusan", at: "tetapan", ab: "buka" };
+  if (AK[t.dataset.tc]) { const T = S.td; T.akses = T.akses || {}; const kk = AK[t.dataset.tc], n = t.dataset.n, set = new Set(T.akses[kk] || []); t.checked ? set.add(n) : set.delete(n); T.akses[kk] = [...set].sort(); S.tdDirty = true; const h = t.closest(".mu-sec").querySelector(".mu-sec-i"); if (h) h.textContent = new Set([].concat(T.akses.keputusan || [], T.akses.tetapan || [], T.akses.buka || [])).size + " guru dipilih"; return; }
   const T = S.td, i = +t.dataset.i, f = t.dataset.tc, on = t.checked; S.tdDirty = true;
   const tg = (arr, v) => { const s = new Set(arr || []); on ? s.add(v) : s.delete(v); return [...s].sort(); };
   if (f === "uj.buka") T.ujian[i].buka = on; else if (f === "uj.tkt") T.ujian[i].tkt = tg(T.ujian[i].tkt, +t.dataset.t);
