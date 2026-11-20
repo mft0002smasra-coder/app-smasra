@@ -481,3 +481,39 @@ button.prq-row { text-align: left; font: inherit; color: inherit; cursor: pointe
 .prq-row .ch { display: flex; gap: 6px; flex-wrap: wrap; } .prq-row .ch i { font-style: normal; font: 600 11px "Poppins", sans-serif; padding: 2px 10px; border-radius: 999px; } .ch i.g { background: #dcfce7; color: #14532d; } .ch i.a { background: #fef3c7; color: #78350f; } .ch i.r { background: #fee2e2; color: #7f1d1d; }
 .erl-sel input.erp-in { flex: 1; }
 .erl > .erp-btn.sm[data-act="pr-back"] { align-self: flex-start; width: auto; padding: 0 16px; }
+
+/* ===== Tema gradien biru & ungu lembut (guru + penyemak) ===== */
+body.erp-tema { --grad: linear-gradient(120deg, #2f6fe6 0%, #5b5be0 52%, #8b6cf0 100%); --bgrad: linear-gradient(165deg, #eaf1ff 0%, #f3eeff 100%); --on-grad: #fff;
+  --bg: #eef1ff; --soft: #f1f3ff; --line: #d9defa; --dash: #bcc6f2; --field-bd: #a5b0e6; --opt-on: #eef0ff; --bar: #e3e7fb; --b: #4a5fe0; --g: #7a5ce0;
+  --belum-bg: #eaeefe; --belum-t: #3f46c9; --disabled: #cfd5f0; }
+body.erp-tema[data-erp="gelap"] { --grad: linear-gradient(120deg, #2a4bbd 0%, #4a44c4 52%, #6a52c8 100%); --bgrad: linear-gradient(165deg, #0e1430 0%, #1a1238 100%); --on-grad: #fff;
+  --bg: #0f1430; --card: #1a2040; --soft: #1e2548; --line: #2f3a6b; --dash: #4a579a; --field: #121734; --field-bd: #4a579a; --opt-on: #252e5c; --bar: #2a3466; --b: #8aa2ff; --g: #b39bff;
+  --belum-bg: #232c63; --belum-t: #a9b8ff; }
+body.erp-tema { background: var(--bgrad) fixed, var(--bg) !important; }
+body.erp-tema .erp-head { background: var(--grad); color: var(--on-grad); box-shadow: 0 6px 18px rgba(91, 91, 224, .28); }
+body.erp-tema .erp-head .out { color: var(--on-grad); background: rgba(255, 255, 255, .2); }
+body.erp-tema .erp-tab.on, body.erp-tema .erp-tab.on.g, body.erp-tema .erp-tabs-h button.cur, body.erp-tema .erp-tabs-h button.cur.d { background: var(--grad); border-color: transparent; color: var(--on-grad); }
+body.erp-tema .erp-btn.solid, body.erp-tema .erp-chip.on, body.erp-tema .erp-slothead, body.erp-tema .erp-semakhead { background: var(--grad); border-color: transparent; color: var(--on-grad); }
+body.erp-tema .erp-btn.w { color: var(--on-grad); }
+body.erp-tema .erp-btn.wsolid { background: #fff; border-color: #fff; color: #5b46d6; }
+body.erp-tema .erp-card { box-shadow: 0 4px 14px rgba(91, 91, 224, .08); border-color: var(--line); }
+body.erp-tema .erp-day { box-shadow: 0 3px 10px rgba(91, 91, 224, .06); }
+
+/* Senarai penyemak (Admin App) + lencana belum disemak */
+body.erp-tema .erp-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 8px; border-radius: 12px; background: #e11d48; color: #fff; font-size: 13px; font-weight: 700; line-height: 1; letter-spacing: 0; text-transform: none; }
+body.erp-tema .erp-badge.ok { background: var(--siap-bg); color: var(--siap-t); height: auto; padding: 4px 10px; }
+body.erp-tema .erp-pgrp-w { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: 0 4px 14px rgba(91, 91, 224, .08); }
+body.erp-tema .erp-pgrp-w.none { border-style: dashed; border-color: var(--dash); }
+body.erp-tema .erp-pgrp { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; min-height: 56px; }
+body.erp-tema .erp-pgrp[aria-expanded="true"] { background: linear-gradient(90deg, rgba(74, 95, 224, .10), rgba(139, 108, 240, .12)); }
+body.erp-tema .erp-pgrp:focus-visible { outline: 2px solid var(--b); outline-offset: -2px; }
+body.erp-tema .erp-pgrp .av { width: 40px; height: 40px; border-radius: 50%; background: var(--grad); color: var(--on-grad); font-weight: 700; display: flex; align-items: center; justify-content: center; flex: none; }
+body.erp-tema .erp-pgrp .nm { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+body.erp-tema .erp-pgrp .nm b { font-size: 16px; }
+body.erp-tema .erp-pgrp .nm small { font-size: 12.5px; color: var(--dim); }
+body.erp-tema .erp-pgrp .arr { font-size: 20px; color: var(--b); transition: transform .18s; flex: none; }
+body.erp-tema .erp-pgrp .arr.up { transform: rotate(180deg); }
+body.erp-tema .erp-pgrp-b { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-top: 1px solid var(--line); }
+body.erp-tema .erp-pgrp-b .erp-day { box-shadow: none; }
+@media (prefers-reduced-motion: reduce) { body.erp-tema .erp-pgrp .arr { transition: none; } }
+body.erp-tema .erp-ind { background: var(--grad); }

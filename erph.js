@@ -36,7 +36,7 @@ let S = {
   cal: { rows: [], ok: false }, cuti: [],
   hd: { loaded: false, busy: false, staff: [], rows: [], tahun: 0, minggu: 0, guru: "", at: "" },
   tet: { loaded: false, rows: [], staff: [], pnyList: [], asg: {}, q: "", cal: { tahun: 0, rows: [], dirty: false } },
-  rev: { list: [], sel: null, days: {}, slots: {}, hari: 1, filter: "tunggu", loaded: false },
+  rev: { list: [], sel: null, days: {}, slots: {}, hari: 1, filter: "tunggu", loaded: false, open: {} },
 };
 
 /* ================= Pembantu umum ================= */
@@ -1386,6 +1386,7 @@ async function loadReviewList() {
   // muat semula pemetaan penyemak + senarai staf supaya tetapan terkini (dan padanan ikut emel) digunakan
   const [rows, pny, st] = await Promise.all([erpGvizSafe("eRPH_Minggu", q), erpGvizSafe("eRPH_Penyemak"), erpGvizSafe("DatabaseSTAFF", "", SPREADSHEET_ID)]);
   if (pny.length || !S.pnyMap.length) S.pnyMap = pny.map((r) => ({ guru: norm(r[0]), pny: norm(r[1]) })).filter((x) => x.guru && x.pny);
+  S.pnyNama = {}; pny.forEach((r) => { const n = String(r[1] == null ? "" : r[1]).trim(); if (n) S.pnyNama[norm(n)] = n; }); // nama penyemak seperti ditulis (untuk paparan)
   S._staffByEmail = {};
   st.forEach((r) => { const nm = String(r[1] || "").trim(); [r[4], r[5]].forEach((e) => { e = String(e || "").toLowerCase().trim(); if (e && nm) S._staffByEmail[e] = nm; }); });
   S.rev.list = rows.map((r) => rowObj(r, ERP_MCOL)).filter((o) => myEmails().indexOf(String(o.emel).toLowerCase().trim()) === -1 && canSee(o))
@@ -1403,19 +1404,47 @@ async function openReview(emel, minggu) {
   const first = [1, 2, 3, 4, 5].find((x) => days[x] && days[x].semakan !== "Disemak" && days[x].status !== "Cuti") || 1;
   S.rev.sel = { emel, minggu: +minggu, wk, days, slots, hari: first, ulasan: "", slotIdx: 0 };
 }
+/* "Belum disemak" = Menunggu (Dihantar) + Dipulang; hanya status Disemak dikira selesai. */
+const revBelum = (x) => x.status !== "Disemak";
+const revBaris = (x, idx) => {
+  const cls = { Dihantar: "s-belum", Disemak: "s-siap", Dipulang: "s-pulang" }[x.status] || "s-draf";
+  const st = x.status === "Dihantar" ? "Menunggu" : x.status;
+  return `<div class="erp-day" data-act="rev-open" data-i="${idx}" style="cursor:pointer"><div class="k ${cls}" style="font-size:13px">M${wkNo(+x.minggu)}</div><div class="m"><b>${E(x.nama)}</b><span>${E(wkLbl(+x.minggu))} · ${E(dmy(x.awal))} – ${E(dmy(x.akhir))}${x.tarikhHantar ? " · dihantar " + E(x.tarikhHantar.slice(0, 10).split("-").reverse().join("/")) : ""}</span></div>${pill(cls, st)}</div>`;
+};
+/** Penyemak yang ditetapkan untuk seorang guru (kunci ternormal) atau "" jika belum ditetapkan. */
+function revPnyKey(o) {
+  const em = String(o.emel || "").toLowerCase().trim(), gNama = normN((S._staffByEmail && S._staffByEmail[em]) || o.nama), gAlt = normN(o.nama);
+  const m = S.pnyMap.find((x) => { const g = normN(x.guru); return g === gNama || g === gAlt; });
+  return m ? m.pny : "";
+}
+/** Kumpul senarai RPH ikut penyemak (Admin App): jumlah belum disemak paling banyak di atas; dalam kumpulan, minggu terkini dahulu. */
+function revGroups() {
+  const G = {}, ensure = (k) => G[k] || (G[k] = { key: k, nama: k ? (S.pnyNama && S.pnyNama[k]) || k : "Belum ada penyemak ditetapkan", items: [], gurus: new Set() });
+  S.pnyMap.forEach((x) => { ensure(x.pny).gurus.add(x.guru); });
+  S.rev.list.forEach((x) => { const g = ensure(revPnyKey(x)); g.items.push(x); g.gurus.add(normN(x.nama)); });
+  return Object.keys(G).map((k) => { const g = G[k]; g.items.sort((a, b) => (+b.minggu - +a.minggu) || (String(b.tarikhHantar || "") < String(a.tarikhHantar || "") ? -1 : 1)); g.belum = g.items.filter(revBelum).length; return g; })
+    .sort((a, b) => (a.key === "" ? 1 : 0) - (b.key === "" ? 1 : 0) || b.belum - a.belum || a.nama.localeCompare(b.nama, "ms"));
+}
+function vSemakAdmin(chips) {
+  const r = S.rev, f = r.filter, gs = revGroups();
+  const body = gs.map((g) => {
+    const open = !!r.open[g.key], show = g.items.filter((x) => f === "semua" || revBelum(x));
+    const badge = g.belum ? `<span class="erp-badge" title="${g.belum} belum disemak" aria-label="${g.belum} belum disemak">${g.belum}</span>` : (g.items.length ? `<span class="erp-badge ok">Semua selesai</span>` : "");
+    const ini = g.key ? E(g.nama.split(/\s+/).filter((w) => /^[A-Za-z]/.test(w)).slice(0, 2).map((w) => w[0]).join("").toUpperCase()) : "?";
+    return `<div class="erp-pgrp-w${g.key ? "" : " none"}"><button class="erp-pgrp" type="button" data-act="rev-grp" data-k="${A(g.key)}" aria-expanded="${open}"><span class="av">${ini}</span><span class="nm"><b>${E(g.nama)}</b><small>${g.gurus.size} guru${g.key ? " di bawah penyemakan" : " · boleh disemak oleh mana-mana penyemak"}</small></span>${badge}<span class="arr${open ? " up" : ""}" aria-hidden="true">▾</span></button>${open ? `<div class="erp-pgrp-b">${show.map((x) => revBaris(x, r.list.indexOf(x))).join("") || `<div class="erp-empty" style="padding:14px">Tiada RPH untuk dipaparkan.</div>`}</div>` : ""}</div>`;
+  }).join("");
+  return `<div class="erp-card"><h3>Penyemak dan RPH guru</h3>${chips}</div>${body || `<div class="erp-empty">Tiada data semakan.</div>`}`;
+}
 function vSemak() {
   const r = S.rev;
   if (!r.loaded) return `<div class="erp-loading">Memuatkan senarai semakan…</div>`;
   if (r.sel) return vSemakPanel();
   const f = r.filter;
-  const list = r.list.filter((x) => f === "semua" || x.status === "Dihantar");
-  const chips = `<div class="erp-chips"><button class="erp-chip ${f === "tunggu" ? "on" : ""}" data-act="rev-filter" data-f="tunggu" type="button">Menunggu semakan</button><button class="erp-chip ${f === "semua" ? "on" : ""}" data-act="rev-filter" data-f="semua" type="button">Semua</button><button class="erp-btn sm" style="margin-left:auto" data-act="rev-muat" type="button">↻ Muat semula</button></div>`;
-  const items = list.map((x, i) => {
-    const cls = { Dihantar: "s-belum", Disemak: "s-siap", Dipulang: "s-pulang" }[x.status] || "s-draf";
-    const st = x.status === "Dihantar" ? "Menunggu" : x.status;
-    return `<div class="erp-day" data-act="rev-open" data-i="${r.list.indexOf(x)}" style="cursor:pointer"><div class="k ${cls}" style="font-size:13px">M${wkNo(+x.minggu)}</div><div class="m"><b>${E(x.nama)}</b><span>${E(wkLbl(+x.minggu))} · ${E(dmy(x.awal))} – ${E(dmy(x.akhir))}${x.tarikhHantar ? " · dihantar " + E(x.tarikhHantar.slice(0, 10).split("-").reverse().join("/")) : ""}</span></div>${pill(cls, st)}</div>`;
-  }).join("");
-  const listHtml = `<div class="erp-card"><h3>Semakan RPH</h3>${chips}</div>${items || `<div class="erp-empty">Tiada RPH yang menunggu semakan.</div>`}`;
+  const chips = `<div class="erp-chips"><button class="erp-chip ${f === "tunggu" ? "on" : ""}" data-act="rev-filter" data-f="tunggu" type="button">Belum disemak</button><button class="erp-chip ${f === "semua" ? "on" : ""}" data-act="rev-filter" data-f="semua" type="button">Semua</button><button class="erp-btn sm" style="margin-left:auto" data-act="rev-muat" type="button">↻ Muat semula</button></div>`;
+  if (isAdminApp(S.user)) { const a = vSemakAdmin(chips); return isPC() ? `<div class="erp-rcols"><div class="erp-rside">${revStatsHtml()}</div><div class="erp-rmain">${a}</div></div>` : a; }
+  const list = r.list.filter((x) => f === "semua" || revBelum(x)), nBelum = r.list.filter(revBelum).length;
+  const items = list.map((x) => revBaris(x, r.list.indexOf(x))).join("");
+  const listHtml = `<div class="erp-card"><h3 style="display:flex;align-items:center;gap:8px">Semakan RPH${nBelum ? `<span class="erp-badge" aria-label="${nBelum} belum disemak">${nBelum}</span>` : ""}</h3>${chips}</div>${items || `<div class="erp-empty">Tiada RPH yang belum disemak.</div>`}`;
   return isPC() ? `<div class="erp-rcols"><div class="erp-rside">${revStatsHtml()}</div><div class="erp-rmain">${listHtml}</div></div>` : listHtml;
 }
 function vSemakPanel() {
@@ -1556,6 +1585,7 @@ async function onClick(e) {
   if (a === "hantar") return hantarMinggu();
   if (a === "muat") { toast("Memuatkan semula…", false, true); await _saveQ; await erpLoadMine(); render(); return; }
   // ---- semakan
+  if (a === "rev-grp") { const k = b.dataset.k; S.rev.open[k] = !S.rev.open[k]; return render(); }
   if (a === "rev-filter") { S.rev.filter = b.dataset.f; return render(); }
   if (a === "rev-muat") { S.rev.loaded = false; render(); await loadReviewList(); return render(); }
   if (a === "rev-open") { const x = S.rev.list[+b.dataset.i]; toast("Memuatkan…"); await openReview(x.emel, x.minggu); return render(); }
