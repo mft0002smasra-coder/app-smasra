@@ -23,7 +23,7 @@
       ["PA", "PENDIDIKAN AKHLAK", "Elektif", [4, 5]], ["PERN", "PERNIAGAAN", "Elektif", [4, 5]], ["LAM", "LUGHAH ARABIAH MU’ASIRAH", "Agama"], ["USUL", "USULUDDIN", "Agama"],
       ["SYA", "SYARIAH", "Agama"], ["BAL", "BAHASA ARAB LANJUTAN", "Elektif", [4, 5]], ["MUI", "MUTAALA’AH ISLAMIAH", "Agama", [4, 5]],
       ["PJK", "PENDIDIKAN JASMANI DAN KESIHATAN", "Teras", [1, 2, 3, 4, 5], false], ["PSV", "PENDIDIKAN SENI VISUAL", "Teras", [1, 2, 3, 4, 5], false],
-    ].map((s) => ({ kod: s[0], nama: s[1], kat: s[2], tkt: s[3] || [1, 2, 3, 4, 5], aktif: true, kira: s[4] !== false, analisis: true, wajib: false, alias: "" })),
+    ].map((s) => ({ kod: s[0], nama: s[1], kat: s[2], tkt: s[3] || [1, 2, 3, 4, 5], aktif: true, kira: s[4] !== false, analisis: true, wajib: false, alias: "", kls: [] })),
     gred: { rendah: mkSkala(SK_RENDAH), atas: mkSkala(SK_ATAS) },
     peraturan: { tktAtas: 4, ambangRendah: 5, ambangAtas: 8 },
     guruKelas: {},
@@ -75,7 +75,9 @@
   const ambang = (tet, ting) => (isAtas(ting, tet) ? tet.peraturan.ambangAtas : tet.peraturan.ambangRendah);
 
   /** Subjek aktif bagi satu tingkatan, ikut susunan tetapan. */
-  const subjekTkt = (tet, ting) => tet.subjek.filter((s) => s.aktif !== false && s.lvl === lvlOf(ting, tet) && (s.tkt || []).indexOf(ting) !== -1);
+  /** Subjek yang diambil oleh tingkatan; jika kelas diberi, subjek "kelas khas" (kls) hanya untuk kelas yang sepadan (cth "AR RAZI" sepadan "4 AR RAZI"). */
+  const kelasSepadan = (s, kelas) => { const k = s.kls || []; return !kelas || !k.length || k.some((x) => nk(x) && nk(kelas).indexOf(nk(x)) !== -1); };
+  const subjekTkt = (tet, ting, kelas) => tet.subjek.filter((s) => s.aktif !== false && s.lvl === lvlOf(ting, tet) && (s.tkt || []).indexOf(ting) !== -1 && kelasSepadan(s, kelas));
   /** Tetapan lama (satu senarai) dipecahkan kepada Menengah Rendah / Atas mengikut tingkatan. */
   function migrate(list, tktAtas) {
     const out = [];
@@ -102,7 +104,7 @@
 
   /** Kira satu murid. marks[kelas|KOD] = {marks:{kunci:nilai}}. */
   function kiraMurid(m, kelas, tet, marks, ting) {
-    const subj = subjekTkt(tet, ting), key = muKey(m);
+    const subj = subjekTkt(tet, ting, kelas), key = muKey(m);
     const rows = subj.map((s) => {
       const rec = marks[up(kelas) + "|" + up(s.kod)];
       const r = rawVal(rec && rec.marks ? rec.marks[key] : "");
@@ -142,11 +144,44 @@
     return { kod, hadir: hadir.length, th, gc, ya, tidak: gagal, gpmp };
   }
 
+  /** Pakej mata pelajaran (Profil SMASRA 2026): [kod, nama, kategori, alias, kelas khas, kira GPI] */
+  const PAKEJ = {
+    rendah: { tkt: [1, 2, 3], list: [
+      ["BM", "BAHASA MELAYU", "Teras"], ["BI", "BAHASA INGGERIS", "Teras"], ["MATH", "MATEMATIK", "Teras", "MT, MM"], ["SAINS", "SAINS", "Teras", "SN"], ["SEJ", "SEJARAH", "Teras", "SJ"],
+      ["SYA", "SYARIAH", "Agama", "AL SYARIAH"], ["USUL", "USULUDDIN", "Agama", "USUL AL DIN"], ["LAM", "LUGHAH ARABIAH MU’ASIRAH", "Agama", "AL LUGHAH AL A’RABIAH AL MUA’SIRAH"],
+      ["PSV", "PENDIDIKAN SENI VISUAL", "Teras", "", [], false], ["GEO", "GEOGRAFI", "Teras"], ["RBT", "REKA BENTUK DAN TEKNOLOGI", "Teras", "REKA BENTUK TEKNOLOGI"], ["ASK", "ASAS SAINS KOMPUTER", "Teras"],
+      ["PJK", "PENDIDIKAN JASMANI DAN KESIHATAN", "Teras", "PENDIDIKAN JASMANI DAN KESIHATAN", [], false],
+    ] },
+    atas: { tkt: [4, 5], list: [
+      ["BM", "BAHASA MELAYU", "Teras"], ["BI", "BAHASA INGGERIS", "Teras"], ["MATH", "MATEMATIK", "Teras", "MT, MM"], ["SAINS", "SAINS", "Teras", "SN"], ["SEJ", "SEJARAH", "Teras", "SJ"],
+      ["SYA", "SYARIAH", "Agama", "AL SYARIAH"], ["USUL", "USULUDDIN", "Agama", "USUL AL DIN"], ["LAM", "LUGHAH ARABIAH MU’ASIRAH", "Agama", "AL LUGHAH AL A’RABIAH AL MUA’SIRAH"],
+      ["PJK", "PENDIDIKAN JASMANI DAN KESIHATAN", "Teras", "", [], false],
+      ["MAI", "MANHAJ AL ULUM AL ISLAMIYAH", "Agama", "MANHAJ", ["AR RAZI"]], ["AAB", "AL ADAB WA AL BALAGHAH", "Agama", "AL ADAB", ["AR RAZI"]],
+      ["PAK", "PRINSIP PERAKAUNAN", "Elektif", "PRINSIP AKAUN", ["IBNU RUSHD"]], ["PERN", "PERNIAGAAN", "Elektif", "PRN", ["AL FARABI"]],
+    ] },
+  };
+  /** Terapkan pakej pada senarai subjek: subjek sedia ada dikemas kini (tingkatan, kelas khas, aktif); yang belum ada ditambah; yang tiada dalam pakej dinyahaktifkan (tidak dipadam). */
+  function terapPakej(subjek) {
+    const out = clone(subjek), st = { tambah: 0, kemas: 0, nyahaktif: 0 }, pakai = new Set();
+    ["rendah", "atas"].forEach((lv) => {
+      const P = PAKEJ[lv], pool = out.filter((s) => s.lvl === lv);
+      P.list.forEach(([kod, nama, kat, alias, kls, kira]) => {
+        let f = pool.find((s) => nk(s.kod) === nk(kod)) || cariSubjek(nama, pool);
+        const kk = kls || [];
+        if (f) { f.tkt = P.tkt.slice(); f.kls = kk.slice(); f.aktif = true; if (!f.alias && alias) f.alias = alias; st.kemas++; }
+        else { f = { kod, nama, kat, lvl: lv, tkt: P.tkt.slice(), kls: kk.slice(), aktif: true, kira: kira !== false, analisis: true, wajib: false, alias: alias || "" }; out.push(f); pool.push(f); st.tambah++; }
+        pakai.add(f);
+      });
+      pool.forEach((s) => { if (!pakai.has(s) && s.aktif !== false) { s.aktif = false; st.nyahaktif++; } });
+    });
+    return { subjek: out, st };
+  }
+
   /** Cantum tetapan simpanan dengan lalai (medan hilang diisi). */
   function cantum(saved) {
     const t = clone(DEF), s = saved || {};
     if (Array.isArray(s.ujian) && s.ujian.length) t.ujian = s.ujian;
-    if (Array.isArray(s.subjek) && s.subjek.length) t.subjek = s.subjek.map((x) => Object.assign({ aktif: true, kira: true, analisis: true, wajib: false, alias: "", kat: "Teras", tkt: [1, 2, 3, 4, 5] }, x));
+    if (Array.isArray(s.subjek) && s.subjek.length) t.subjek = s.subjek.map((x) => Object.assign({ aktif: true, kira: true, analisis: true, wajib: false, alias: "", kat: "Teras", tkt: [1, 2, 3, 4, 5], kls: [] }, x));
     if (s.gred && Array.isArray(s.gred.rendah) && s.gred.rendah.length) t.gred.rendah = s.gred.rendah;
     if (s.gred && Array.isArray(s.gred.atas) && s.gred.atas.length) t.gred.atas = s.gred.atas;
     if (s.peraturan) t.peraturan = Object.assign(t.peraturan, s.peraturan);
@@ -156,6 +191,6 @@
     return t;
   }
 
-  const API = { lvlOf, migrate, DEF, KAMUS, nk, up, clone, cariSubjek, namaPenuh, tingOf, isAtas, skala, gredOf, isGagal, ambang, subjekTkt, muKey, rawVal, kiraMurid, kedudukan, analisisSubjek, cantum };
+  const API = { lvlOf, migrate, DEF, KAMUS, nk, up, clone, cariSubjek, namaPenuh, tingOf, isAtas, skala, gredOf, isGagal, ambang, subjekTkt, kelasSepadan, PAKEJ, terapPakej, muKey, rawVal, kiraMurid, kedudukan, analisisSubjek, cantum };
   if (typeof module !== "undefined" && module.exports) module.exports = API; else root.MUC = API;
 })(typeof window !== "undefined" ? window : globalThis);

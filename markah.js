@@ -229,7 +229,7 @@ function isiOpts() {
   const kelas = allKelas();
   if (I.kelas && kelas.indexOf(I.kelas) === -1) I.kelas = "";
   const ting = I.kelas ? C.tingOf(I.kelas) : 0;
-  const subj = !I.kelas ? [] : C.subjekTkt(S.tet, ting);
+  const subj = !I.kelas ? [] : C.subjekTkt(S.tet, ting, I.kelas);
   if (I.subjek && !subj.some((s) => s.kod === I.subjek)) I.subjek = "";
   const uj = ujianUntukTkt(ting).filter((u) => S.adm || u.buka);
   if (I.uj && !uj.some((u) => u.id === I.uj)) I.uj = "";
@@ -358,16 +358,16 @@ function isiPaste(text, startKey) {
 }
 
 /* ================= Jadual keputusan (kelas / tingkatan) ================= */
-function subjCols(ting) { return C.subjekTkt(S.tet, ting); }
+function subjCols(ting, kelas) { return C.subjekTkt(S.tet, ting, kelas); }
 function tblHtml(opts) {
   // opts: {ting, groups:[{nama, list}], tkt:boolean}
-  const subj = subjCols(opts.ting), sk = C.skala(S.tet, opts.ting);
+  const subj = subjCols(opts.ting, opts.kelas), sk = C.skala(S.tet, opts.ting);
   const cols = ["34px", "210px", "118px"].concat(subj.map(() => "40px 36px"), sk.map(() => "30px"), ["50px", "84px", "46px"], opts.tkt ? ["46px"] : []).join(" ");
   const H = (t, extra) => `<span ${extra || ""}>${E(t)}</span>`;
   const head1 = `<div class="mu-g h" style="grid-template-columns:${cols}">${H("BIL")}${H("NAMA MURID")}${H("NO. KP")}${subj.map((s) => `<span class="sp2 ${s.kira === false ? "nk" : ""}" title="${A(s.nama)}">${E(s.kod)}${s.kira === false ? "*" : ""}</span>`).join("")}<span class="spk" style="grid-column:span ${sk.length}">KEP.</span>${H("GPI")}${H("KEPUTUSAN")}${H(opts.tkt ? "KDDK KLS" : "KDDK")}${opts.tkt ? H("KDDK TKT") : ""}</div>
     <div class="mu-g h2" style="grid-template-columns:${cols}"><span></span><span></span><span></span>${subj.map(() => "<span>M</span><span>G</span>").join("")}${sk.map((x) => `<span>${E(x.g)}</span>`).join("")}<span></span><span></span><span></span>${opts.tkt ? "<span></span>" : ""}</div>`;
   const body = opts.groups.map((g) => (opts.tkt ? `<div class="mu-band">${E(g.nama)} · ${g.list.length} murid</div>` : "") + g.list.map((x, i) => {
-    const c = x.c, cells = c.rows.map((r) => r.st === "num" ? `<span class="${r.gagal ? "bad" : ""}">${r.m}</span><b class="${r.gagal ? "bad" : ""}">${E(r.g)}</b>` : `<span class="dim">${r.st === "th" ? "TH" : "–"}</span><span></span>`).join("");
+    const c = x.c, cells = subj.map((s) => c.rows.find((q) => q.kod === s.kod) || { st: "none" }).map((r) => r.st === "num" ? `<span class="${r.gagal ? "bad" : ""}">${r.m}</span><b class="${r.gagal ? "bad" : ""}">${E(r.g)}</b>` : `<span class="dim">${r.st === "th" ? "TH" : "–"}</span><span></span>`).join("");
     return `<div class="mu-g" style="grid-template-columns:${cols}"><span class="dim">${i + 1}</span><span class="l"><b>${E(x.m.nama)}</b></span><span class="dim">${E(x.m.kp ? x.m.kp.replace(/(\d{4})\d{4}(\d{4})/, "$1••••$2") : "")}</span>${cells}${c.gc.map((n) => `<span class="${n ? "" : "dim"}">${n}</span>`).join("")}<span><b>${f2(c.gpi)}</b></span><span class="${c.lulus === null ? "dim" : c.lulus ? "ok" : "bad"}" ${c.gagalWajib.length ? `title="Gagal mata pelajaran wajib: ${A(c.gagalWajib.join(", "))}"` : ""}><b>${c.lulus === null ? "–" : c.lulus ? "LULUS" : "GAGAL"}</b>${c.gagalWajib.length ? "†" : ""}</span><span>${x.rk || "–"}</span>${opts.tkt ? `<span>${x.rt || "–"}</span>` : ""}</div>`;
   }).join("")).join("");
   return `<div class="mu-wide"><div class="mu-grid" style="min-width:${34 + 210 + 118 + subj.length * 76 + sk.length * 30 + 180 + (opts.tkt ? 46 : 0)}px">${head1}${body}</div></div>`;
@@ -379,7 +379,7 @@ function kadHtml(list) {
 }
 function statusStrip(uid, kelas, ting) {
   const marks = S.marks[uid] || {};
-  return `<div class="mu-strip">${subjCols(ting).map((s) => { const r = marks[up(kelas) + "|" + up(s.kod)]; return `<span class="erp-pill ${r ? (r.status === "Dihantar" ? "s-siap" : "s-draf") : "s-belum"}" title="${A(s.nama)}">${E(s.kod)} ${r ? (r.status === "Dihantar" ? "✓" : "draf") : "belum"}</span>`; }).join("")}</div>`;
+  return `<div class="mu-strip">${subjCols(ting, kelas).map((s) => { const r = marks[up(kelas) + "|" + up(s.kod)]; return `<span class="erp-pill ${r ? (r.status === "Dihantar" ? "s-siap" : "s-draf") : "s-belum"}" title="${A(s.nama)}">${E(s.kod)} ${r ? (r.status === "Dihantar" ? "✓" : "draf") : "belum"}</span>`; }).join("")}</div>`;
 }
 function ujianSel(act, ting) {
   const uj = ujianUntukTkt(ting); if (uj.length && !uj.some((u) => u.id === S.ujianId)) S.ujianId = (uj.find((u) => u.buka) || uj[0]).id; if (!uj.length) S.ujianId = "";
@@ -398,7 +398,7 @@ function vKelas() {
   if (!S.ujianId) return warnMurid() + top;
   if (needLoad(S.ujianId)) return warnMurid() + top + loadingBox;
   const k = kiraKelas(S.ujianId, S.kelas);
-  return `${warnMurid()}${top}${kadHtml(k.list)}${statusStrip(S.ujianId, S.kelas, ting)}<div class="erp-card mu-tbl">${tblHtml({ ting, groups: [{ nama: S.kelas, list: k.list }] })}
+  return `${warnMurid()}${top}${kadHtml(k.list)}${statusStrip(S.ujianId, S.kelas, ting)}<div class="erp-card mu-tbl">${tblHtml({ ting, kelas: S.kelas, groups: [{ nama: S.kelas, list: k.list }] })}
     <div class="erp-hint" style="padding:8px 14px">M = markah, G = gred. Gred G (gagal) ditanda merah. KEP. = bilangan gred murid. KDDK = kedudukan dalam kelas ikut GPI (terendah = terbaik). † = GAGAL kerana gagal mata pelajaran wajib. * = subjek direkod sahaja, tidak dikira dalam GPI, jumlah dan kedudukan.</div></div>`;
 }
 function tktList() { return [...new Set(allKelas().map((k) => C.tingOf(k)))].filter(Boolean).sort(); }
@@ -412,7 +412,7 @@ function vTkt() {
   if (!S.ujianId) return top; if (needLoad(S.ujianId)) return top + loadingBox;
   const t = kiraTkt(S.ujianId, S.tkt), gi = t.kelas.indexOf(S.tktKelas), g = t.groups[gi];
   const chips = `<div class="erp-card mu-bar"><span class="erp-lbl" style="margin:0">KELAS</span><div class="erp-chips">${t.kelas.map((k) => `<button class="erp-chip ${k === S.tktKelas ? "on" : ""}" data-act="tkt-kelas" data-k="${A(k)}" type="button">${E(k)}</button>`).join("")}</div></div>`;
-  return `${warnMurid()}${top}${kadHtml(t.all)}${chips}<div class="erp-card mu-tbl">${g ? tblHtml({ ting: S.tkt, tkt: true, groups: [{ nama: t.kelas[gi], list: g.list }] }) : ""}
+  return `${warnMurid()}${top}${kadHtml(t.all)}${chips}<div class="erp-card mu-tbl">${g ? tblHtml({ ting: S.tkt, kelas: t.kelas[gi], tkt: true, groups: [{ nama: t.kelas[gi], list: g.list }] }) : ""}
     <div class="erp-hint" style="padding:8px 14px">Kad di atas = seluruh tingkatan. Jadual dipaparkan satu kelas pada satu masa (guna Cetak / Excel untuk semua kelas). KDDK KLS = kedudukan dalam kelas; KDDK TKT = kedudukan dalam tingkatan (GPI terendah = terbaik, jumlah markah sebagai penentu).</div></div>`;
 }
 
@@ -457,9 +457,9 @@ function vAnalisis() {
 
 /* ================= Slip Keputusan ================= */
 function slipHtml(x, kls, u, ulasan, ting, last) {
-  const c = x.c, sk = C.skala(S.tet, ting), subjAll = subjCols(ting);
+  const c = x.c, sk = C.skala(S.tet, ting), subjAll = subjCols(ting, x.m.kelas);
   const baris = c.rows.map((r, j) => {
-    const sj = subjAll[j], nm = sj.nama || sj.kod;
+    const sj = subjAll.find((s) => s.kod === r.kod) || subjAll[j] || {}, nm = sj.nama || sj.kod || r.kod;
     const m = r.st === "num" ? r.m : r.st === "th" ? "TH" : "+", g = r.st === "num" ? r.g : "-", red = r.st === "num" && r.gagal;
     return `<div class="sr"><span>${j + 1}</span><span>${E(nm)}</span><b style="${red ? "color:#b91c1c" : ""}">${m}</b><b style="${red ? "color:#b91c1c" : ""}">${E(g)}</b></div>`;
   }).join("");
@@ -531,10 +531,10 @@ function csvDown(name, rows) {
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })); a.download = name + ".csv"; document.body.appendChild(a); a.click(); a.remove();
 }
 function keputusanRows(ting, groups, tkt) {
-  const subj = subjCols(ting), sk = C.skala(S.tet, ting);
+  const subj = subjCols(ting, groups.length === 1 ? groups[0].nama : ""), sk = C.skala(S.tet, ting);
   const h = ["Bil", "Nama", "No. KP"].concat(...subj.map((s) => [s.kod + (s.kira === false ? "*" : "") + " M", s.kod + " G"]), sk.map((x) => x.g), ["GPI", "Keputusan", tkt ? "KDDK Kelas" : "KDDK"], tkt ? ["KDDK Tkt"] : []);
   const rows = [h];
-  groups.forEach((g) => g.list.forEach((x, i) => rows.push([i + 1, x.m.nama, x.m.kp].concat(...x.c.rows.map((r) => (r.st === "num" ? [r.m, r.g] : [r.st === "th" ? "TH" : "", ""])), x.c.gc, [x.c.gpi === null ? "" : x.c.gpi.toFixed(2), x.c.lulus === null ? "" : x.c.lulus ? "LULUS" : "GAGAL", x.rk || ""], tkt ? [x.rt || ""] : []))));
+  groups.forEach((g) => g.list.forEach((x, i) => rows.push([i + 1, x.m.nama, x.m.kp].concat(...subj.map((s) => x.c.rows.find((q) => q.kod === s.kod) || { st: "none" }).map((r) => (r.st === "num" ? [r.m, r.g] : [r.st === "th" ? "TH" : "", ""])), x.c.gc, [x.c.gpi === null ? "" : x.c.gpi.toFixed(2), x.c.lulus === null ? "" : x.c.lulus ? "LULUS" : "GAGAL", x.rk || ""], tkt ? [x.rt || ""] : []))));
   return { h, rows, subj, sk };
 }
 function keputusanPrint(ting, groups, tkt, judul) {
@@ -563,12 +563,12 @@ function secHtml(k, title, info, inner) {
 }
 function sjRows(l) {
   const T = S.td, tk = lvTkts(l);
-  return T.subjek.map((s, i) => [s, i]).filter((x) => x[0].lvl === l).map(([s, i]) => `<div class="mu-trw sj"><input class="erp-in kod" data-tf="sj.kod" data-i="${i}" value="${A(s.kod)}" aria-label="Kod"><input class="erp-in" data-tf="sj.nama" data-i="${i}" value="${A(s.nama)}" aria-label="Nama penuh"><input class="erp-in" data-tf="sj.alias" data-i="${i}" value="${A(s.alias)}" placeholder="singkatan lain (BM, B.M)" aria-label="Singkatan lain"><select class="erp-sel" data-tf="sj.kat" data-i="${i}">${["Teras", "Elektif", "Agama"].map((k) => opt(k, k, s.kat)).join("")}</select><span class="t5">${chk5(s.tkt, "sj.tkt", i, tk)}</span><span>${sw("sj.aktif", i, s.aktif !== false)}</span><span>${sw("sj.kira", i, s.kira !== false)}</span><span>${sw("sj.analisis", i, s.analisis !== false)}</span><span>${sw("sj.wajib", i, !!s.wajib)}</span><span class="mv"><button class="erp-btn sm" data-act="td-up" data-i="${i}" type="button" aria-label="Naik">↑</button><button class="erp-btn sm" data-act="td-dn" data-i="${i}" type="button" aria-label="Turun">↓</button><button class="erp-btn sm warn" data-act="td-del" data-k="sj" data-i="${i}" type="button">Padam</button></span></div>`).join("");
+  return T.subjek.map((s, i) => [s, i]).filter((x) => x[0].lvl === l).map(([s, i]) => `<div class="mu-trw sj"><input class="erp-in kod" data-tf="sj.kod" data-i="${i}" value="${A(s.kod)}" aria-label="Kod"><input class="erp-in" data-tf="sj.nama" data-i="${i}" value="${A(s.nama)}" aria-label="Nama penuh"><input class="erp-in" data-tf="sj.alias" data-i="${i}" value="${A(s.alias)}" placeholder="singkatan lain (BM, B.M)" aria-label="Singkatan lain"><select class="erp-sel" data-tf="sj.kat" data-i="${i}">${["Teras", "Elektif", "Agama"].map((k) => opt(k, k, s.kat)).join("")}</select><span class="t5">${chk5(s.tkt, "sj.tkt", i, tk)}</span><input class="erp-in" data-tf="sj.kls" data-i="${i}" value="${A((s.kls || []).join(', '))}" placeholder="semua kelas" aria-label="Kelas khas"><span>${sw("sj.aktif", i, s.aktif !== false)}</span><span>${sw("sj.kira", i, s.kira !== false)}</span><span>${sw("sj.analisis", i, s.analisis !== false)}</span><span>${sw("sj.wajib", i, !!s.wajib)}</span><span class="mv"><button class="erp-btn sm" data-act="td-up" data-i="${i}" type="button" aria-label="Naik">↑</button><button class="erp-btn sm" data-act="td-dn" data-i="${i}" type="button" aria-label="Turun">↓</button><button class="erp-btn sm warn" data-act="td-del" data-k="sj" data-i="${i}" type="button">Padam</button></span></div>`).join("");
 }
 function sjBlock(l, nama) {
   const n = S.td.subjek.filter((s) => s.lvl === l).length;
   return `<div class="mu-lv"><div class="erp-between"><h4>${nama} <small>(Tingkatan ${lvTkts(l).join(", ")})</small></h4><button class="erp-btn sm solid" data-act="td-add" data-k="sj" data-l="${l}" type="button">+ Tambah mata pelajaran</button></div>
-    <div class="mu-trw sj h"><span>KOD</span><span>NAMA PENUH (SLIP)</span><span>SINGKATAN LAIN</span><span>KATEGORI</span><span>TINGKATAN</span><span>AKTIF</span><span>KIRA GPI</span><span>ANALISIS</span><span>WAJIB LULUS</span><span></span></div>${n ? sjRows(l) : `<div class="erp-hint">Tiada mata pelajaran.</div>`}</div>`;
+    <div class="mu-trw sj h"><span>KOD</span><span>NAMA PENUH (SLIP)</span><span>SINGKATAN LAIN</span><span>KATEGORI</span><span>TINGKATAN</span><span>KELAS KHAS</span><span>AKTIF</span><span>KIRA GPI</span><span>ANALISIS</span><span>WAJIB LULUS</span><span></span></div>${n ? sjRows(l) : `<div class="erp-hint">Tiada mata pelajaran.</div>`}</div>`;
 }
 function vTetapan() {
   tdInit(); const T = S.td, det = detectList(), adminApp = isAdminApp(S.user);
@@ -588,7 +588,7 @@ function vTetapan() {
   ${secHtml("uj", "Ujian / Peperiksaan", nUj + " ujian", `<div class="erp-right" style="margin-bottom:8px"><button class="erp-btn sm solid" data-act="td-add" data-k="uj" type="button">+ Tambah ujian</button></div>
       <div class="mu-trw uj h"><span>NAMA UJIAN</span><span>TAHUN</span><span>TINGKATAN</span><span>MULA ISI</span><span>AKHIR ISI</span><span>DIBUKA</span><span></span></div>${uj}
       <div class="erp-hint">“Dibuka” = guru boleh mengisi markah. Ujian yang ditutup hanya boleh diisi oleh Pentadbir.</div>`)}
-  ${secHtml("sj", "Mata Pelajaran", nSj + " mata pelajaran (Rendah + Atas)", `${sjBlock("rendah", "Menengah Rendah")}${sjBlock("atas", "Menengah Atas &amp; Tingkatan 5 (SPM)")}
+  ${secHtml("sj", "Mata Pelajaran", nSj + " mata pelajaran (Rendah + Atas)", `<div class="mu-det"><div class="erp-between"><div><b>Pakej mata pelajaran (Profil SMASRA 2026)</b><div class="erp-hint">Tingkatan 1–3: BM, BI, Matematik, Sains, Sejarah, Al Syariah, Usul Al Din, LAM, PSV, Geografi, RBT, ASK, PJK. Tingkatan 4–5: subjek teras + Manhaj Al Ulum Al Islamiyah dan Al Adab Wa Al Balaghah (Ar Razi), Prinsip Perakaunan (Ibnu Rushd), Perniagaan (Al Farabi), PJK.</div></div><button class="erp-btn sm solid" style="white-space:nowrap;flex:none;margin-left:10px" data-act="td-pakej" type="button">Guna pakej ini</button></div></div>${sjBlock("rendah", "Menengah Rendah")}${sjBlock("atas", "Menengah Atas &amp; Tingkatan 5 (SPM)")}
       <div class="erp-hint">Nama penuh digunakan pada slip; kod pendek pada jadual. Singkatan dalam Jadual Guru dipadankan melalui kod, nama penuh atau “singkatan lain”. <b>KIRA GPI</b> dimatikan = direkod sahaja (cth PJK, PSV): tidak masuk GPI, jumlah markah, kedudukan dan GPS. <b>ANALISIS</b> = dipaparkan dalam Analisis Mata Pelajaran. <b>WAJIB LULUS</b> = jika murid mendapat gred gagal (G) dalam mana-mana mata pelajaran wajib, keputusan akhir ialah GAGAL. Susunan baris = susunan lajur.</div>
       <div class="mu-det"><div class="erp-between"><b>Imbas singkatan daripada Jadual Guru</b><span class="erp-hint">${det.length ? det.length + " subjek belum dipadankan" : "Semua subjek dalam Jadual Guru telah dipadankan"}</span></div>
         ${det.map((d, i) => `<div class="mu-trw dt"><b>${E(d.t)}</b><span class="dim">${d.nama ? "→ " + E(d.nama) : "(nama penuh tidak dikenali)"}</span><span class="mv"><button class="erp-btn sm solid" data-act="td-det" data-i="${i}" data-l="rendah" type="button">+ Rendah</button><button class="erp-btn sm solid" data-act="td-det" data-i="${i}" data-l="atas" type="button">+ Atas</button></span></div>`).join("")}</div>`)}
@@ -611,7 +611,7 @@ function tdSave() {
   const out = C.clone(T);
   out.ujian.forEach((u) => { u.id = u.id || "UJ" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); u.tahun = Math.round(num(u.tahun, new Date().getFullYear())); u.nama = String(u.nama || "").trim(); });
   out.ujian = out.ujian.filter((u) => u.nama);
-  out.subjek.forEach((s) => { s.kod = up(s.kod); s.nama = up(s.nama || s.kod); s.alias = String(s.alias || "").trim(); s.wajib = !!s.wajib; });
+  out.subjek.forEach((s) => { s.kls = (s.kls || []).map((x) => up(x)).filter(Boolean); s.kod = up(s.kod); s.nama = up(s.nama || s.kod); s.alias = String(s.alias || "").trim(); s.wajib = !!s.wajib; });
   out.subjek = out.subjek.filter((s) => s.kod);
   const kodSet = new Set(); for (const s of out.subjek) { const k = s.lvl + "|" + s.kod; if (kodSet.has(k)) return { err: "Kod subjek berganda dalam " + (s.lvl === "atas" ? "Menengah Atas" : "Menengah Rendah") + ": " + s.kod }; kodSet.add(k); }
   out.akses = { keputusan: ((T.akses && T.akses.keputusan) || []).filter(Boolean), tetapan: ((T.akses && T.akses.tetapan) || []).filter(Boolean), buka: ((T.akses && T.akses.buka) || []).filter(Boolean) };
@@ -669,6 +669,11 @@ async function tdAct(a, el) {
     const l = T.subjek[i].lvl; let j = i + (a === "td-up" ? -1 : 1); while (j >= 0 && j < T.subjek.length && T.subjek[j].lvl !== l) j += a === "td-up" ? -1 : 1;
     if (j >= 0 && j < T.subjek.length) { [T.subjek[j], T.subjek[i]] = [T.subjek[i], T.subjek[j]]; S.tdDirty = true; S._keepScroll = true; render(); } return;
   }
+  if (a === "td-pakej") {
+    const r = C.terapPakej(T.subjek);
+    if (!(await ask(`Guna pakej mata pelajaran Profil SMASRA 2026? ${r.st.tambah} subjek ditambah, ${r.st.kemas} dikemas kini (tingkatan dan kelas khas), ${r.st.nyahaktif} subjek lain dinyahaktifkan (tidak dipadam). Markah yang telah disimpan tidak terjejas. Teruskan?`))) return;
+    T.subjek = r.subjek; S.tdDirty = true; S._keepScroll = true; render(); toast("Pakej dikenakan. Tekan Simpan tetapan untuk menyimpan."); return;
+  }
   if (a === "td-det") { const d = detectList()[i]; if (!d) return; const kod = d.t.length <= 8 ? up(d.t).replace(/\s+/g, "") : up(d.t).split(" ").map((w) => w[0]).join(""); T.subjek.push({ kod, nama: d.nama || up(d.t), kat: "Teras", lvl: el.dataset.l, tkt: lvTkts(el.dataset.l), aktif: true, kira: true, analisis: true, wajib: false, alias: d.t.length <= 8 && d.nama ? "" : d.t }); S.tdDirty = true; S._keepScroll = true; render(); return; }
   if (a === "td-reset") { S.td = null; S.tdDirty = false; S._keepScroll = true; render(); return; }
   if (a === "td-save") {
@@ -701,7 +706,7 @@ function tdField(t) {
   const T = S.td, i = +t.dataset.i, f = t.dataset.tf; S.tdDirty = true;
   if (f === "uj.nama") T.ujian[i].nama = t.value; else if (f === "uj.tahun") T.ujian[i].tahun = t.value; else if (f === "uj.mula") T.ujian[i].mula = t.value; else if (f === "uj.akhir") T.ujian[i].akhir = t.value;
   else if (f === "sj.kod") { T.subjek[i].kod = t.value; if (!String(T.subjek[i].nama || "").trim() && C.namaPenuh(t.value)) { T.subjek[i].nama = C.namaPenuh(t.value); S._keepScroll = true; render(); } }
-  else if (f === "sj.nama") T.subjek[i].nama = t.value; else if (f === "sj.alias") T.subjek[i].alias = t.value; else if (f === "sj.kat") T.subjek[i].kat = t.value;
+  else if (f === "sj.nama") T.subjek[i].nama = t.value; else if (f === "sj.alias") T.subjek[i].alias = t.value; else if (f === "sj.kat") T.subjek[i].kat = t.value; else if (f === "sj.kls") T.subjek[i].kls = t.value.split(/[,;]/).map((x) => up(x)).filter(Boolean);
   else if (f.indexOf("gr.") === 0) { const [, k, c] = f.split("."); T.gred[k][i][c] = t.value; }
   else if (f.indexOf("pr.") === 0) T.peraturan[f.slice(3)] = t.value;
   else if (f === "gk") { T.guruKelas = T.guruKelas || {}; if (t.value) T.guruKelas[t.dataset.k] = t.value; else delete T.guruKelas[t.dataset.k]; }
@@ -788,7 +793,7 @@ function utamaData(uid, tf) {
   kelas.forEach((k) => subjCols(C.tingOf(k)).forEach((s) => { if (kods.indexOf(s.kod) === -1) kods.push(s.kod); nama[s.kod] = s.nama; }));
   const tot = { H: 0, D: 0, B: 0 }, tk = {}, todo = [];
   const rows = kelas.map((k) => {
-    const ting = C.tingOf(k), have = subjCols(ting).map((s) => s.kod); let h = 0, n = 0;
+    const ting = C.tingOf(k), have = subjCols(ting, k).map((s) => s.kod); let h = 0, n = 0;
     const cells = kods.map((kod) => {
       if (have.indexOf(kod) === -1) return { kod, st: "N" };
       const r = marks[up(k) + "|" + up(kod)], st = r ? (r.status === "Dihantar" ? "H" : "D") : "B";

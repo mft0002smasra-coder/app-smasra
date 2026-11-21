@@ -76,7 +76,7 @@
 .mu-trw { display: grid; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .mu-trw.h { font: 600 11px "Poppins", sans-serif; color: var(--dim); letter-spacing: .04em; }
 .mu-trw.uj { grid-template-columns: minmax(150px, 2fr) 70px minmax(150px, 1.3fr) 130px 130px 60px 70px; }
-.mu-trw.sj { grid-template-columns: 78px minmax(150px, 2fr) minmax(100px, 1fr) 100px minmax(150px, 1.3fr) 48px 56px 64px 130px; }
+.mu-trw.sj { grid-template-columns: 78px minmax(150px, 2fr) minmax(100px, 1fr) 100px minmax(150px, 1.3fr) minmax(100px, 1fr) 48px 56px 64px 130px; }
 .mu-trw.gr { grid-template-columns: 50px 1fr 1fr; } .mu-trw.kl { grid-template-columns: 1fr 1.4fr 60px; } .mu-trw.dt { grid-template-columns: 1fr 2fr 80px; }
 .mu-trw .erp-in, .mu-trw .erp-sel { height: 38px; font-size: 13px; padding: 0 8px; border-radius: 10px; }
 .mu-trw .kod { font-weight: 700; text-transform: uppercase; }
@@ -116,11 +116,11 @@ body.erp-body[data-erp="gelap"] .mu-agrid, body.erp-body[data-erp="gelap"] .mu-g
 .mu-sec.open .mu-sec-in { padding: 0 20px 18px; visibility: visible; transition-delay: 0s; }
 .mu-two.tet { display: block; }
 .mu-lv { margin: 6px 0 18px; } .mu-lv h4 { margin: 0; font: 700 15px "Poppins", sans-serif; } .mu-lv h4 small { color: var(--dim); font-weight: 600; }
-.mu-trw.sj { grid-template-columns: 78px minmax(150px, 2fr) minmax(100px, 1fr) 100px minmax(120px, 1.1fr) 48px 56px 64px 64px 130px; }
+.mu-trw.sj { grid-template-columns: 78px minmax(150px, 2fr) minmax(100px, 1fr) 100px minmax(120px, 1.1fr) minmax(100px, 1fr) 48px 56px 64px 64px 130px; }
 .mu-trw.kl { grid-template-columns: 1fr 1.4fr 1.6fr 60px; }
 .mu-trw.dt { grid-template-columns: 1fr 2fr 150px; }
 .mu-sec .mu-two2 { margin: 8px 0; }
-.mu-trw.sj { grid-template-columns: 70px minmax(140px, 2fr) minmax(90px, 1fr) 96px minmax(110px, 1fr) 44px 52px 62px 62px 142px; }
+.mu-trw.sj { grid-template-columns: 70px minmax(140px, 2fr) minmax(90px, 1fr) 96px minmax(110px, 1fr) minmax(100px, 1fr) 44px 52px 62px 62px 142px; }
 .mu-trw .mv .erp-btn.sm { padding-left: 10px; padding-right: 10px; }
 
 /* mod ringan: tiada blur pada kad/jadual (hanya kepala & tab kekal kaca) */
