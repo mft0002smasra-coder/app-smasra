@@ -381,7 +381,7 @@ function head() {
     : `<div class="hl"><span class="t">e-RPH</span><span class="t sch">SM ARAB (JAIM) AL-ASYRAF</span></div><div class="n">${E(S.user.nama)}</div>`;
   return `<div class="erp-head">${inner}${tools}</div>
     ${(() => { const T = []; const on = (t) => (S.tab === t ? "on" : ""), btn = (t, l, g) => `<button class="erp-tab ${g ? "g " : ""}${on(t)}" data-act="tab" data-t="${t}" type="button">${l}</button>`;
-      if (S.isPny) T.push(btn("hantar", "Penghantaran", 1));
+      T.push(btn("hantar", S.isPny ? "Penghantaran" : "Utama", 1));
       T.push(btn("saya", "RPH Saya"), btn("prestasi", "Prestasi", 1));
       if (S.isPny) T.push(btn("semak", "Semakan", 1));
       if (S.isPny && isAdminApp(S.user)) T.push(btn("tetapan", "Tetapan", 1));
@@ -1204,10 +1204,10 @@ function hdCompute() {
 /* ================= Landing (tab Penghantaran) ================= */
 const LD_PAN = [["Wujudkan minggu", "Di tab RPH Saya, tekan Wujudkan RPH. Isnin hingga Jumaat dicipta ikut Jadual Guru anda."], ["Semak setiap hari", "Buka setiap hari, isi tema, tajuk, standard, objektif, aktiviti dan refleksi."], ["Hantar RPH", "Bila semua hari siap, tekan Hantar RPH minggu. Penyemak yang ditetapkan akan menerima RPH anda."], ["Cetak atau PDF", "Gunakan Cetak / PDF pada hari atau minggu untuk simpanan salinan."]];
 function ldTile(v, l, c) { return `<div class="erl-tile erl-g"><b style="color:var(--${c})">${v}</b><span>${E(l)}</span></div>`; }
-function vLanding(all) {
-  const D = S.hd, N = all.length || 1, cnt = (st) => all.filter((r) => r.st === st).length;
+function vLanding(all, guru) {
+  const D = S.hd, me = myEmails(), N = all.length || 1, cnt = (st) => all.filter((r) => r.st === st).length;
   const sent = all.filter((r) => r.st !== "Belum Hantar").length, rate = Math.round(sent * 100 / N);
-  const act = D.rows.filter((o) => HD_SENT.indexOf(o.status) !== -1).map((o) => ({ o, t: String((o.status === "Dihantar" ? o.tarikhHantar : (o.tarikhSemak || o.tarikhHantar)) || "") }))
+  const act = D.rows.filter((o) => HD_SENT.indexOf(o.status) !== -1 && (!guru || me.indexOf(String(o.emel || "").toLowerCase().trim()) !== -1)).map((o) => ({ o, t: String((o.status === "Dihantar" ? o.tarikhHantar : (o.tarikhSemak || o.tarikhHantar)) || "") }))
     .sort((a, b) => (a.t < b.t ? 1 : -1)).slice(0, 4).map((x) => {
       const o = x.o, w = wkLbl(+o.minggu), d = x.t ? dmy(x.t.slice(0, 10)) : "";
       const txt = o.status === "Dihantar" ? `${E(o.nama)} menghantar RPH ${E(w)}` : o.status === "Disemak" ? `RPH ${E(w)} ${E(o.nama)} telah disemak` : `RPH ${E(w)} ${E(o.nama)} dipulangkan`;
@@ -1217,7 +1217,7 @@ function vLanding(all) {
     .map((c) => `<button type="button" class="erl-card erl-g" data-act="${c[0]}"><small style="color:var(--t-${c[4]})">${c[1]}</small><b>${c[2]}</b><span>${c[3]}</span></button>`).join("");
   return `<div class="erl">
     <div class="erl-hero"><div class="erl-hl"><span class="erl-pill erl-g">Platform RPH digital sekolah</span><h2>RPH yang <em>teratur</em>, mudah disemak dan <em class="b">dipercayai.</em></h2><p>Guru menyediakan, penyemak mengesahkan dan pentadbir memantau, semuanya dalam satu paparan yang jelas.</p>
-      <div class="erl-cta"><button type="button" class="erp-btn solid" data-act="ld-mula">Mula Wujudkan RPH</button><button type="button" class="erp-btn" data-act="ld-data">Lihat Penghantaran</button></div></div>
+      <div class="erl-cta"><button type="button" class="erp-btn solid" data-act="ld-mula">Mula Wujudkan RPH</button>${guru ? "" : `<button type="button" class="erp-btn" data-act="ld-data">Lihat Penghantaran</button>`}</div></div>
       <div class="erl-sum erl-g"><div class="erl-k">RINGKASAN PENGHANTARAN</div><div class="erl-w">${E(wkLbl(D.minggu))} · ${E(weekRangeTxt(D.minggu))}</div>
         <div class="erl-rate"><b>${rate}%</b><span>kadar hantar (${sent} / ${all.length} guru)</span></div><div class="erl-bar"><i style="width:${rate}%"></i></div>
         <div class="erl-tiles">${ldTile(cnt("Disemak"), "Selesai", "t-gr")}${ldTile(cnt("Dihantar"), "Dalam Proses", "t-am")}${ldTile(cnt("Dipulang"), "Belum Siap", "t-ro")}${ldTile(cnt("Belum Hantar"), "Belum Hantar", "t-vi")}</div></div></div>
@@ -1259,6 +1259,7 @@ function vHantar() {
   const D = S.hd;
   if (!D.loaded) return `<div class="erd"><div class="erd-load">${D.busy ? "Memuatkan data penghantaran…" : "Tiada data."}</div></div>`;
   if (!D.minggu) hdInit();
+  if (!S.isPny) return vLanding(hdCompute(), true); // guru: landing sahaja (aktiviti = RPH sendiri)
   const all = hdCompute(), N = all.length, sent = all.filter((r) => r.st !== "Belum Hantar").length, rev = all.filter((r) => r.st === "Disemak").length;
   const list = D.guru ? all.filter((r) => r.nama === D.guru) : all;
   const yrs = hdYears(), ws = hdWeeks(D.tahun);
@@ -1630,7 +1631,7 @@ async function erpInit(user) {
     await erpLoadMine();
     S.minggu = currentWeekNo();
     S.view = isPC() ? "dash" : "senarai"; S._pc = isPC();
-    if (S.isPny) { S.tab = "hantar"; hdInit(); render(); hdLoad(); return; } // landing = tab Penghantaran
+    S.tab = "hantar"; hdInit(); render(); hdLoad(); return; // landing = tab Penghantaran (pentadbir) / Utama (guru)
     render();
   } catch (err) {
     root.innerHTML = `<div class="erp-empty">Ralat memuatkan e-RPH: ${E(err.message || err)}<br>Semak Sheet dikongsi “Anyone with the link – Viewer”.</div>`;
