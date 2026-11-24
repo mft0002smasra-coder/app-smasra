@@ -471,6 +471,15 @@ function revStatsHtml() {
     <h3 style="margin-top:6px">Semakan mengikut minggu</h3>${bars}</div>`;
 }
 
+/** Kad RPH Draf: guru sudah wujudkan RPH tetapi belum hantar (hanya paparan, belum boleh disemak). */
+function revDrafHtml() {
+  const L = (S.rev.draf || []), bil = L.length;
+  const rows = L.slice(0, 40).map((x) => `<div class="erp-dfr"><b>${E(x.nama)}</b><span>${E(wkLbl(+x.minggu))} · ${E(dmy(x.awal))} – ${E(dmy(x.akhir))}</span>${pill("s-draf", "Draf")}</div>`).join("");
+  return `<div class="erp-card erp-draf"><h3 style="display:flex;align-items:center;gap:8px">RPH berstatus Draf${bil ? `<span class="erp-badge" aria-label="${bil} draf">${bil}</span>` : ""}</h3>
+    <div class="erp-hint" style="margin-bottom:8px">Guru telah mewujudkan RPH tetapi belum menghantar. Boleh disemak selepas dihantar.</div>
+    ${rows || `<div class="erp-hint">Tiada RPH draf.</div>`}${bil > 40 ? `<div class="erp-hint">Memaparkan 40 terkini daripada ${bil}.</div>` : ""}</div>`;
+}
+
 /* ================= Senarai minggu ================= */
 function weekOptions() {
   const cur = currentWeekNo(), L = ERP_WK.list, i = L.findIndex((w) => w.id === cur);
@@ -1385,13 +1394,16 @@ function canSee(o) {
 async function loadReviewList() {
   const q = "select * where G = 'Dihantar' or G = 'Disemak' or G = 'Dipulang'";
   // muat semula pemetaan penyemak + senarai staf supaya tetapan terkini (dan padanan ikut emel) digunakan
-  const [rows, pny, st] = await Promise.all([erpGvizSafe("eRPH_Minggu", q), erpGvizSafe("eRPH_Penyemak"), erpGvizSafe("DatabaseSTAFF", "", SPREADSHEET_ID)]);
+  const [rows, pny, st, rowsDraf] = await Promise.all([erpGvizSafe("eRPH_Minggu", q), erpGvizSafe("eRPH_Penyemak"), erpGvizSafe("DatabaseSTAFF", "", SPREADSHEET_ID), erpGvizSafe("eRPH_Minggu", "select * where G = 'Draf'")]);
   if (pny.length || !S.pnyMap.length) S.pnyMap = pny.map((r) => ({ guru: norm(r[0]), pny: norm(r[1]) })).filter((x) => x.guru && x.pny);
   S.pnyNama = {}; pny.forEach((r) => { const n = String(r[1] == null ? "" : r[1]).trim(); if (n) S.pnyNama[norm(n)] = n; }); // nama penyemak seperti ditulis (untuk paparan)
   S._staffByEmail = {};
   st.forEach((r) => { const nm = String(r[1] || "").trim(); [r[4], r[5]].forEach((e) => { e = String(e || "").toLowerCase().trim(); if (e && nm) S._staffByEmail[e] = nm; }); });
   S.rev.list = rows.map((r) => rowObj(r, ERP_MCOL)).filter((o) => myEmails().indexOf(String(o.emel).toLowerCase().trim()) === -1 && canSee(o))
     .sort((a, b) => (a.tarikhHantar < b.tarikhHantar ? 1 : -1));
+  // RPH berstatus Draf (guru telah wujudkan tetapi belum hantar) bagi guru di bawah penyemak ini
+  S.rev.draf = rowsDraf.map((r) => rowObj(r, ERP_MCOL)).filter((o) => myEmails().indexOf(String(o.emel).toLowerCase().trim()) === -1 && canSee(o))
+    .sort((a, b) => (+b.minggu - +a.minggu) || String(a.nama).localeCompare(String(b.nama), "ms"));
   S.rev.loaded = true;
 }
 async function openReview(emel, minggu) {
@@ -1442,11 +1454,11 @@ function vSemak() {
   if (r.sel) return vSemakPanel();
   const f = r.filter;
   const chips = `<div class="erp-chips"><button class="erp-chip ${f === "tunggu" ? "on" : ""}" data-act="rev-filter" data-f="tunggu" type="button">Belum disemak</button><button class="erp-chip ${f === "semua" ? "on" : ""}" data-act="rev-filter" data-f="semua" type="button">Semua</button><button class="erp-btn sm" style="margin-left:auto" data-act="rev-muat" type="button">↻ Muat semula</button></div>`;
-  if (isAdminApp(S.user)) { const a = vSemakAdmin(chips); return isPC() ? `<div class="erp-rcols"><div class="erp-rside">${revStatsHtml()}</div><div class="erp-rmain">${a}</div></div>` : a; }
+  if (isAdminApp(S.user)) { const a = vSemakAdmin(chips); return isPC() ? `<div class="erp-rcols"><div class="erp-rside">${revStatsHtml()}${revDrafHtml()}</div><div class="erp-rmain">${a}</div></div>` : a + revDrafHtml(); }
   const list = r.list.filter((x) => f === "semua" || revBelum(x)), nBelum = r.list.filter(revBelum).length;
   const items = list.map((x) => revBaris(x, r.list.indexOf(x))).join("");
   const listHtml = `<div class="erp-card"><h3 style="display:flex;align-items:center;gap:8px">Semakan RPH${nBelum ? `<span class="erp-badge" aria-label="${nBelum} belum disemak">${nBelum}</span>` : ""}</h3>${chips}</div>${items || `<div class="erp-empty">Tiada RPH yang belum disemak.</div>`}`;
-  return isPC() ? `<div class="erp-rcols"><div class="erp-rside">${revStatsHtml()}</div><div class="erp-rmain">${listHtml}</div></div>` : listHtml;
+  return isPC() ? `<div class="erp-rcols"><div class="erp-rside">${revStatsHtml()}${revDrafHtml()}</div><div class="erp-rmain">${listHtml}</div></div>` : listHtml + revDrafHtml();
 }
 function vSemakPanel() {
   const v = S.rev.sel, h = v.hari, d = v.days[h];
