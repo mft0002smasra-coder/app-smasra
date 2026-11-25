@@ -524,3 +524,41 @@ body.erp-tema .erp-ind { background: var(--grad); }
 .erp-draf .erp-dfr b { flex: 1 1 140px; min-width: 0; }
 .erp-draf .erp-dfr span:not(.erp-pill) { font-size: 12.5px; opacity: .75; }
 .erp-draf { max-height: 420px; overflow: auto; }
+
+/* ===== Telefon: tab menu menjadi sidebar kiri yang kekal ada ===== */
+.erp-ti { display: none; }
+@media (max-width: 760px) {
+  #erp-root { display: grid; grid-template-columns: 78px minmax(0, 1fr); align-items: start; align-content: start; }
+  #erp-root > .erp-head { grid-column: 1 / -1; }
+  #erp-root > .erp-main { grid-column: 2; grid-row: 2; min-width: 0; }
+  body.erp-body .erp-tabs { grid-column: 1; grid-row: 2; position: sticky; top: 0; align-self: start; flex-direction: column; gap: 4px !important; margin: 8px 0 0 6px; padding: 6px 4px !important; border-radius: 18px; max-height: calc(100vh - 16px); overflow-y: auto; }
+  body.erp-body .erp-tabs .erp-ind { display: none; }
+  body.erp-body .erp-tabs .erp-tab { height: auto; min-height: 58px; flex: none; width: 100%; border-radius: 14px; padding: 8px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 10px; line-height: 1.1; }
+  body.erp-body .erp-tabs .erp-tab .erp-ti { display: block; }
+  body.erp-body .erp-tabs .erp-tab .erp-tl { display: block; max-width: 100%; overflow-wrap: normal; text-align: center; font-size: 9.5px; font-weight: 600; letter-spacing: -.2px; }
+  body.erp-body .erp-tabs .erp-tab:hover { transform: none; }
+  body.erp-body .erp-tabs .erp-tab.on, body.erp-body .erp-tabs .erp-tab.on.g { background: var(--grad) !important; color: #fff !important; box-shadow: 0 4px 12px rgba(79,70,229,.35) !important; }
+  body.erp-body .erp-main { padding-left: 10px; padding-right: 10px; }
+}
+
+/* Sidebar ringkas (auto-sembunyi label) + saiz teks/butang untuk telefon */
+@media (max-width: 760px) {
+  #erp-root { transition: grid-template-columns .25s ease; }
+  #erp-root.rail-mini { grid-template-columns: 54px minmax(0, 1fr); }
+  #erp-root.rail-mini .erp-tabs .erp-tab { min-height: 48px; }
+  #erp-root.rail-mini .erp-tabs .erp-tab .erp-tl { display: none; }
+  body.erp-body .erp-tabs { margin-left: 4px; }
+  .erp-in, .erp-sel, .erp-ta { font-size: 16px; }
+  .erp-lbl { font-size: 14px; }
+  .erp-hint, .erp-day .m span { font-size: 13.5px; }
+  .erp-pill { font-size: 12.5px; }
+  .erp-btn { min-height: 48px; }
+  .erp-btn.sm { min-height: 40px; }
+  .erp-chip { min-height: 42px; }
+  .erp-card { padding: 12px; }
+  .erp-card h3 { font-size: 14px; }
+  .erp-day { padding: 12px; gap: 10px; }
+  .erp-chk { min-height: 40px; }
+  body.erp-body .erp-main { gap: 12px; }
+}
+@media (max-width: 760px) and (prefers-reduced-motion: reduce) { #erp-root { transition: none; } }
