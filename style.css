@@ -3135,3 +3135,19 @@ html[data-cerah="1"] .nt-modal-msg{ color:#111; }
 
 .gg-cat{ color:#b45309;font-weight:600; }
 .jg-relief-cat{ color:#b45309;font-weight:600; }
+
+/* ---------- Telefon: navigasi menjadi sidebar kiri yang kekal kelihatan ---------- */
+@media (max-width:699px){
+  :root{ --rail-w:58px; }
+  .bottom-nav-wrap{ top:var(--rail-top,92px);bottom:0;left:0;right:auto;width:var(--rail-w);display:block;z-index:29;padding-bottom:env(safe-area-inset-bottom,0px);background:var(--panel-b);border-right:1px solid var(--line); }
+  .bottom-nav{ width:var(--rail-w);max-width:none;height:100%;display:flex;flex-direction:column;justify-content:flex-start;gap:4px;padding:10px 0;border-top:0;background:transparent;overflow-y:auto; }
+  .bn-item{ flex:0 0 auto;min-height:54px;width:100%;position:relative; }
+  .bn-item.active::before{ content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--cyan); }
+  .bn-label{ font-size:9.5px; }
+  .bn-placeholder{ display:none; }
+  body.has-rail #app-content, #app-content{ padding-left:var(--rail-w); }
+  #app-content .site-header-wrap{ left:0;right:0; }
+  .wrap{ padding-bottom:28px; }
+  .fab, .chat-fab{ bottom:20px; }
+  .nt-send-bar{ bottom:12px;left:calc(50% + var(--rail-w) / 2); }
+}
