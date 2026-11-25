@@ -419,6 +419,12 @@ function tabInd() {
   S._ind = { x, w };
 }
 window.addEventListener("resize", () => { S._ind = null; tabInd(); });
+/** Telefon: sidebar menjadi ringkas (ikon sahaja) bila skrol ke bawah, penuh semula bila skrol ke atas / di atas halaman. */
+(() => { let last = window.scrollY, tick = false;
+  window.addEventListener("scroll", () => { if (tick) return; tick = true; requestAnimationFrame(() => {
+    tick = false; const y = window.scrollY, root = document.getElementById("erp-root"); if (!root) return;
+    if (y < 60 || y < last - 6) root.classList.remove("rail-mini"); else if (y > last + 6) root.classList.add("rail-mini");
+    last = y; }); }, { passive: true }); })();
 const pill = (cls, t) => `<span class="erp-pill ${cls}">${E(t)}</span>`;
 function dayPill(n, h) {
   const r = S.mine.hari[n + "|" + h], wk = S.mine.minggu[n];
