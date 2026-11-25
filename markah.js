@@ -368,7 +368,7 @@ function tblHtml(opts) {
     <div class="mu-g h2" style="grid-template-columns:${cols}"><span></span><span></span><span></span>${subj.map(() => "<span>M</span><span>G</span>").join("")}${sk.map((x) => `<span>${E(x.g)}</span>`).join("")}<span></span><span></span><span></span>${opts.tkt ? "<span></span>" : ""}</div>`;
   const body = opts.groups.map((g) => (opts.tkt ? `<div class="mu-band">${E(g.nama)} · ${g.list.length} murid</div>` : "") + g.list.map((x, i) => {
     const c = x.c, cells = subj.map((s) => c.rows.find((q) => q.kod === s.kod) || { st: "none" }).map((r) => r.st === "num" ? `<span class="${r.gagal ? "bad" : ""}">${r.m}</span><b class="${r.gagal ? "bad" : ""}">${E(r.g)}</b>` : `<span class="dim">${r.st === "th" ? "TH" : "–"}</span><span></span>`).join("");
-    return `<div class="mu-g" style="grid-template-columns:${cols}"><span class="dim">${i + 1}</span><span class="l"><b>${E(x.m.nama)}</b></span><span class="dim">${E(x.m.kp ? x.m.kp.replace(/(\d{4})\d{4}(\d{4})/, "$1••••$2") : "")}</span>${cells}${c.gc.map((n) => `<span class="${n ? "" : "dim"}">${n}</span>`).join("")}<span><b>${f2(c.gpi)}</b></span><span class="${c.lulus === null ? "dim" : c.lulus ? "ok" : "bad"}" ${c.gagalWajib.length ? `title="Gagal mata pelajaran wajib: ${A(c.gagalWajib.join(", "))}"` : ""}><b>${c.lulus === null ? "–" : c.lulus ? "LULUS" : "GAGAL"}</b>${c.gagalWajib.length ? "†" : ""}</span><span>${x.rk || "–"}</span>${opts.tkt ? `<span>${x.rt || "–"}</span>` : ""}</div>`;
+    return `<div class="mu-g" style="grid-template-columns:${cols}"><span class="dim">${i + 1}</span><span class="l"><b>${E(x.m.nama)}</b></span><span class="dim">${E(x.m.kp ? x.m.kp.replace(/(\d{4})\d{4}(\d{4})/, "$1••••$2") : "")}</span>${cells}${c.gc.map((n) => `<span class="${n ? "" : "dim"}">${n}</span>`).join("")}<span><b>${f2(c.gpi)}</b></span><span class="${c.lulus === null ? "dim" : c.lulus ? "ok" : "bad"}" ${c.gagalWajib.length ? `title="Gagal mata pelajaran wajib: ${A(c.gagalWajib.join(", "))}"` : ""}><b>${c.lulus === null ? "–" : c.lulus ? "LULUS" : "GAGAL"}</b></span><span>${x.rk || "–"}</span>${opts.tkt ? `<span>${x.rt || "–"}</span>` : ""}</div>`;
   }).join("")).join("");
   return `<div class="mu-wide"><div class="mu-grid" style="min-width:${34 + 210 + 118 + subj.length * 76 + sk.length * 30 + 180 + (opts.tkt ? 46 : 0)}px">${head1}${body}</div></div>`;
 }
@@ -399,7 +399,7 @@ function vKelas() {
   if (needLoad(S.ujianId)) return warnMurid() + top + loadingBox;
   const k = kiraKelas(S.ujianId, S.kelas);
   return `${warnMurid()}${top}${kadHtml(k.list)}${statusStrip(S.ujianId, S.kelas, ting)}<div class="erp-card mu-tbl">${tblHtml({ ting, kelas: S.kelas, groups: [{ nama: S.kelas, list: k.list }] })}
-    <div class="erp-hint" style="padding:8px 14px">M = markah, G = gred. Gred G (gagal) ditanda merah. KEP. = bilangan gred murid. KDDK = kedudukan dalam kelas ikut GPI (terendah = terbaik). † = GAGAL kerana gagal mata pelajaran wajib. * = subjek direkod sahaja, tidak dikira dalam GPI, jumlah dan kedudukan.</div></div>`;
+    <div class="erp-hint" style="padding:8px 14px">M = markah, G = gred. Gred G (gagal) ditanda merah. KEP. = bilangan gred murid. KDDK = kedudukan dalam kelas ikut GPI (terendah = terbaik). * = subjek direkod sahaja, tidak dikira dalam GPI, jumlah dan kedudukan.</div></div>`;
 }
 function tktList() { return [...new Set(allKelas().map((k) => C.tingOf(k)))].filter(Boolean).sort(); }
 function vTkt() {
