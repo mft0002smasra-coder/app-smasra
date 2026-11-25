@@ -372,6 +372,13 @@ function erpTemaApply(t) {
 function erpTemaToggle() { erpTemaApply(erpTemaGet() === "gelap" ? "cerah" : "gelap"); render(); }
 
 /* ================= Render: kerangka ================= */
+const TAB_IC = {
+  hantar: '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/>',
+  saya: '<path d="M7 3h8l4 4v14H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/>',
+  prestasi: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  semak: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>',
+  tetapan: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'
+};
 function head() {
   const g = erpTemaGet() === "gelap";
   const bor = S.tab === "saya" && S.view === "borang" && S.cur && !isPC();
@@ -380,7 +387,7 @@ function head() {
     ? `<div class="hl bor"><span class="t">e-RPH</span><span class="wk"><span>${wkLbl(S.cur.minggu)}</span><span>${E(dmyHari(S.cur.tarikh, S.cur.hariNo))}</span></span></div>`
     : `<div class="hl"><span class="t">e-RPH</span><span class="t sch">SM ARAB (JAIM) AL-ASYRAF</span></div><div class="n">${E(S.user.nama)}</div>`;
   return `<div class="erp-head">${inner}${tools}</div>
-    ${(() => { const T = []; const on = (t) => (S.tab === t ? "on" : ""), btn = (t, l, g) => `<button class="erp-tab ${g ? "g " : ""}${on(t)}" data-act="tab" data-t="${t}" type="button">${l}</button>`;
+    ${(() => { const T = []; const on = (t) => (S.tab === t ? "on" : ""), btn = (t, l, g) => `<button class="erp-tab ${g ? "g " : ""}${on(t)}" data-act="tab" data-t="${t}" type="button" aria-label="${l}"><svg class="erp-ti" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TAB_IC[t] || ""}</svg><span class="erp-tl">${l}</span></button>`;
       T.push(btn("hantar", S.isPny ? "Penghantaran" : "Utama", 1));
       T.push(btn("saya", "RPH Saya"), btn("prestasi", "Prestasi", 1));
       if (S.isPny) T.push(btn("semak", "Semakan", 1));
