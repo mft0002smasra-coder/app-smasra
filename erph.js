@@ -379,7 +379,9 @@ const TAB_IC = {
   semak: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>',
   tetapan: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'
 };
-const ERP_APP = window.ERP_APP === "app"; // halaman e-RPH di dalam APP SMASRA: header app + bar bawah = tab e-RPH
+const ERP_APP = window.ERP_APP === "app";
+// Matikan pull-to-refresh pelayar dalam e-RPH (elak muat semula tidak sengaja semasa mengisi borang)
+try { document.documentElement.style.overscrollBehaviorY = "none"; if (document.body) document.body.style.overscrollBehaviorY = "none"; else document.addEventListener("DOMContentLoaded", () => { document.body.style.overscrollBehaviorY = "none"; }); } catch (e) {} // halaman e-RPH di dalam APP SMASRA: header app + bar bawah = tab e-RPH
 const SVGI = (p) => `<svg class="icon" viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 /** Bar bawah APP: Home + tab e-RPH (Utama/Penghantaran, RPH Saya, Prestasi; penyemak: Semakan; admin: Tetapan). */
 /** Ukur tinggi sebenar header app dan bar bawah supaya kandungan e-RPH muat ngam-ngam di antaranya. */

@@ -714,3 +714,6 @@ body.erp-app .erp-lbl { color: var(--ap-mu) !important; }
 body.erp-app .erp-pickbox { font-size: 14px; display: flex; align-items: center; gap: 6px; }
 body.erp-app .erp-pickbox .pv { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 body.erp-app .erp-pickbox .pv.ph { color: #8A8FB3; }
+
+/* Matikan pull-to-refresh pelayar (tarik ke bawah untuk muat semula) dalam e-RPH */
+html:has(body.erp-body), body.erp-body { overscroll-behavior-y: none; }
