@@ -573,7 +573,7 @@ body.erp-app {
   --disabled: rgba(127,144,171,.22); --disabled-t: var(--text-dim);
 }
 body.erp-app #erp-root { display: block; }
-body.erp-app #app-content { padding-top: 92px; padding-bottom: 8px; }
+body.erp-app #app-content { padding: 92px 0 8px !important; }
 body.erp-app .wrap { padding-bottom: 96px; }
 body.erp-app .erp-main { padding: 12px 14px 0; gap: 12px; }
 body.erp-app .erp-card, body.erp-app .erp-day { background: var(--panel-a); border-color: var(--line); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
