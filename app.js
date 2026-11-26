@@ -301,6 +301,7 @@ const MENU_STRUCTURE = [
       { href: "tempahan-bilik.html", icon: "door", label: "Tempahan Bilik Khas" },
       { href: "jadual-guru.html", icon: "clipboard", label: "Jadual Guru" },
       { href: "jadual-guru-ganti.html", icon: "clipboard", label: "Jadual Guru Ganti" },
+      { href: "erph.html", icon: "clipboard", label: "e-RPH" },
       { href: "erph-analisis.html", icon: "chart", label: "Analisis e-RPH" },
       { href: "pengisian-markah.html", icon: "clipboard", label: "Pengisian Markah" },
     ],

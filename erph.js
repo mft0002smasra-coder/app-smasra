@@ -379,7 +379,24 @@ const TAB_IC = {
   semak: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>',
   tetapan: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'
 };
+const ERP_APP = window.ERP_APP === "app"; // halaman e-RPH di dalam APP SMASRA: header app + bar bawah = tab e-RPH
+const SVGI = (p) => `<svg class="icon" viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+/** Bar bawah APP: Home + tab e-RPH (Utama/Penghantaran, RPH Saya, Prestasi; penyemak: Semakan; admin: Tetapan). */
+function appNav() {
+  const nav = document.getElementById("erp-bnav"); if (!nav) return;
+  const it = (t, l) => `<button type="button" class="bn-item${S.tab === t ? " active" : ""}" data-act="tab" data-t="${t}" aria-label="${l}"${S.tab === t ? ' aria-current="page"' : ""}>${SVGI(TAB_IC[t])}<span class="bn-label">${l}</span></button>`;
+  const T = [`<a class="bn-item" href="index.html" aria-label="Home"><span data-icon="home"></span><span class="bn-label">Home</span></a>`,
+    it("hantar", S.isPny ? "Hantar" : "Utama"), it("saya", "RPH Saya"), it("prestasi", "Prestasi")];
+  if (S.isPny) T.push(it("semak", "Semakan"));
+  if (S.isPny && isAdminApp(S.user)) T.push(it("tetapan", "Tetapan"));
+  nav.style.setProperty("--n", T.length); nav.innerHTML = T.join("");
+  if (typeof renderIcons === "function") renderIcons();
+}
 function head() {
+  if (ERP_APP) {
+    const bor = S.tab === "saya" && S.view === "borang" && S.cur && !isPC();
+    return bor ? `<div class="erp-appbar"><b>${wkLbl(S.cur.minggu)}</b><span>${E(dmyHari(S.cur.tarikh, S.cur.hariNo))}</span></div>` : "";
+  }
   const g = erpTemaGet() === "gelap";
   const bor = S.tab === "saya" && S.view === "borang" && S.cur && !isPC();
   const tools = `<div class="erp-head-tools"><button class="out" data-act="tema" type="button">${g ? "☀ Cerah" : "☾ Gelap"}</button><button class="out" data-act="logout" type="button">Log keluar</button></div>`;
@@ -407,7 +424,7 @@ function render() {
   root.innerHTML = head() + `<div class="erp-main">${body}</div>`;
   if (S._keepScroll) window.scrollTo(0, y);
   S._keepScroll = false;
-  S._dd = null; ddFitAll(); tabInd();
+  S._dd = null; ddFitAll(); if (ERP_APP) appNav(); else tabInd();
 }
 /** Penunjuk cecair yang menggelongsor ke tab aktif. */
 function tabInd() {
@@ -1634,6 +1651,7 @@ async function erpInit(user) {
   document.documentElement.classList.add("erp-html");
   const root = document.getElementById("erp-root");
   root.addEventListener("click", onClick);
+  const bn = document.getElementById("erp-bnav"); if (bn) bn.addEventListener("click", (e) => { if (e.target.closest("[data-act]")) onClick(e); });
   root.addEventListener("input", onInput);
   root.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.classList && e.target.classList.contains("erp-pickbox")) { e.preventDefault(); e.target.click(); } });
   root.addEventListener("change", onChange);

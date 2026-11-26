@@ -562,3 +562,31 @@ body.erp-tema .erp-ind { background: var(--grad); }
   body.erp-body .erp-main { gap: 12px; }
 }
 @media (max-width: 760px) and (prefers-reduced-motion: reduce) { #erp-root { transition: none; } }
+
+/* ===== e-RPH di dalam APP SMASRA (erph.html): ikut tema app (warna cyan gelap), header app + bar bawah = tab e-RPH ===== */
+body.erp-app {
+  --bg: var(--void); --card: var(--panel-b); --dim: var(--text-dim); --field: var(--void-2); --field-bd: var(--line-strong);
+  --soft: rgba(255,255,255,.04); --bar: rgba(0,229,255,.14); --dash: var(--line);
+  --b: var(--cyan); --g: var(--mint); --on-acc: #031018; --opt-on: rgba(0,229,255,.16);
+  --siap-bg: rgba(25,227,161,.16); --siap-t: var(--mint); --draf-bg: rgba(255,184,77,.16); --draf-t: var(--amber);
+  --belum-bg: rgba(0,229,255,.12); --belum-t: var(--cyan); --pulang-bg: rgba(255,85,119,.16); --pulang-t: var(--pink);
+  --disabled: rgba(127,144,171,.22); --disabled-t: var(--text-dim);
+}
+body.erp-app #erp-root { display: block; }
+body.erp-app #app-content { padding-top: 92px; padding-bottom: 8px; }
+body.erp-app .wrap { padding-bottom: 96px; }
+body.erp-app .erp-main { padding: 12px 14px 0; gap: 12px; }
+body.erp-app .erp-card, body.erp-app .erp-day { background: var(--panel-a); border-color: var(--line); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+body.erp-app .erp-in, body.erp-app .erp-sel, body.erp-app .erp-ta { background: var(--field); color: var(--text); }
+body.erp-app .erp-btn { background: transparent; border-color: var(--cyan); color: var(--cyan); }
+body.erp-app .erp-btn.solid { background: var(--cyan); color: #031018; }
+body.erp-app .erp-btn:disabled { background: var(--disabled); border-color: transparent; color: var(--disabled-t); }
+body.erp-app .erp-slothead, body.erp-app .erp-semakhead { background: linear-gradient(90deg, rgba(0,229,255,.28), rgba(0,229,255,.1)); color: var(--text); }
+body.erp-app .erp-appbar { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; margin: 0 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-a); font-size: 14px; }
+body.erp-app .erp-appbar span { color: var(--text-dim); }
+body.erp-app .erp-loading, body.erp-app .erp-empty { color: var(--text-dim); }
+body.erp-app .erp-bnav { grid-template-columns: repeat(var(--n, 5), 1fr); }
+body.erp-app .erp-bnav .bn-item { min-width: 0; font: inherit; }
+body.erp-app .erp-bnav .bn-label { font-size: 10px; white-space: nowrap; }
+body.erp-app .erp-modal-sheet { background: var(--void-2); color: var(--text); border: 1px solid var(--line); }
+@media (min-width: 761px) { body.erp-app .wrap { max-width: 980px; margin: 0 auto; } }
