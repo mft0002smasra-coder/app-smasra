@@ -565,8 +565,11 @@ body.erp-tema .erp-ind { background: var(--grad); }
 
 /* ===== e-RPH di dalam APP SMASRA (erph.html): tema biru-ungu e-RPH kekal; header app digradienkan; bar bawah = Home + tab e-RPH ===== */
 body.erp-app #erp-root { display: block; }
-body.erp-app #app-content { padding: 92px 0 8px !important; }
-body.erp-app .wrap { padding-bottom: 92px; max-width: var(--app-max); margin: 0 auto; }
+/* Ngam-ngam antara header app dan bar bawah: tinggi sebenar diukur oleh erph.js (--erp-hdr-h, --erp-nav-h) */
+body.erp-app #app-content { padding: var(--erp-hdr-h, 92px) 0 0 !important; }
+body.erp-app .wrap.erp-wrap { max-width: var(--app-max) !important; margin: 0 auto !important; min-height: 0 !important;
+  padding: 0 0 calc(var(--erp-nav-h, 64px) + 14px) !important; }
+body.erp-app .bottom-nav-wrap { padding-bottom: env(safe-area-inset-bottom, 0px); }
 body.erp-app .erp-main { padding: var(--gap) var(--gap) 0; gap: var(--gap); }
 body.erp-app .site-header-wrap { background: var(--grad); box-shadow: 0 6px 18px rgba(91, 91, 224, .3); border-bottom: 0; }
 body.erp-app .site-header-wrap *, body.erp-app .site-header-wrap .header-school-sub, body.erp-app .site-header-wrap .header-greet { color: var(--on-grad); }
