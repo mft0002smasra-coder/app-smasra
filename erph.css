@@ -566,8 +566,8 @@ body.erp-tema .erp-ind { background: var(--grad); }
 /* ===== e-RPH di dalam APP SMASRA (erph.html): tema biru-ungu e-RPH kekal; header app digradienkan; bar bawah = Home + tab e-RPH ===== */
 body.erp-app #erp-root { display: block; }
 body.erp-app #app-content { padding: 92px 0 8px !important; }
-body.erp-app .wrap { padding-bottom: 92px; max-width: 760px; margin: 0 auto; }
-body.erp-app .erp-main { padding: 12px 12px 0; gap: 12px; }
+body.erp-app .wrap { padding-bottom: 92px; max-width: var(--app-max); margin: 0 auto; }
+body.erp-app .erp-main { padding: var(--gap) var(--gap) 0; gap: var(--gap); }
 body.erp-app .site-header-wrap { background: var(--grad); box-shadow: 0 6px 18px rgba(91, 91, 224, .3); border-bottom: 0; }
 body.erp-app .site-header-wrap *, body.erp-app .site-header-wrap .header-school-sub, body.erp-app .site-header-wrap .header-greet { color: var(--on-grad); }
 body.erp-app .site-header-wrap .hamburger-btn { border-color: rgba(255,255,255,.5); background: rgba(255,255,255,.16); }
@@ -579,17 +579,19 @@ body.erp-app .erp-bnav .bn-item { min-width: 0; font: inherit; color: var(--dim)
 body.erp-app .erp-bnav .bn-item.active { color: var(--b); }
 body.erp-app .erp-bnav .bn-item.active .icon { filter: drop-shadow(0 0 6px rgba(91, 91, 224, .45)); }
 body.erp-app .erp-bnav .bn-label { font-size: 10px; font-weight: 700; white-space: nowrap; }
-@media (max-width: 760px) {
-  body.erp-app { font-size: 16px; }
-  body.erp-app .erp-card { padding: 14px; border-radius: 18px; }
-  body.erp-app .erp-card h3 { font-size: 14px; letter-spacing: .5px; }
-  body.erp-app .erp-in, body.erp-app .erp-sel, body.erp-app .erp-ta { font-size: 16px; min-height: 46px; }
-  body.erp-app .erp-btn { min-height: 48px; font-size: 16px; border-radius: 14px; }
-  body.erp-app .erp-btn.sm { min-height: 40px; font-size: 14px; }
-  body.erp-app .erp-lbl { font-size: 14px; }
-  body.erp-app .erp-hint { font-size: 14px; line-height: 1.45; }
-  body.erp-app .erp-pill { font-size: 12.5px; padding: 3px 10px; }
-  body.erp-app .erp-day { padding: 12px 14px; border-radius: 16px; }
-  body.erp-app .erp-day .h { font-size: 18px; }
-  body.erp-app .erp-chip { min-height: 42px; }
-}
+/* Saiz & fon mengikut app SMASRA: Rajdhani 16px, tajuk Orbitron, label 12.5px huruf besar, kad jejari 8-10px, input/butang 13px 14px */
+body.erp-app .erp-scope, body.erp-app .erp-scope .erp-in, body.erp-app .erp-scope .erp-sel, body.erp-app .erp-scope .erp-ta, body.erp-app .erp-btn, body.erp-app .erp-chip, body.erp-app .erp-pill, body.erp-app .erp-day .m b, body.erp-app .erp-slothead { font-family: var(--font-body), "Source Sans 3", sans-serif; }
+body.erp-app .erp-card h3, body.erp-app .erp-appbar b { font-family: var(--font-display), sans-serif; }
+body.erp-app .erp-card { padding: 16px; border-radius: var(--radius); }
+body.erp-app .erp-card h3 { font-size: 13px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; line-height: 1.3; }
+body.erp-app .erp-lbl { font-size: 12.5px; letter-spacing: 1px; text-transform: uppercase; font-weight: 600; margin-bottom: 6px; }
+body.erp-app .erp-in, body.erp-app .erp-sel, body.erp-app .erp-ta { font-size: 16px; padding: 13px 14px; min-height: 48px; height: auto; border-radius: 10px; }
+body.erp-app .erp-ta { line-height: 1.4; }
+body.erp-app .erp-btn { min-height: 48px; height: auto; padding: 13px 14px; border-radius: 10px; font-size: 16px; font-weight: 700; letter-spacing: 1px; }
+body.erp-app .erp-btn.sm { min-height: 40px; padding: 8px 12px; font-size: 14px; letter-spacing: .5px; }
+body.erp-app .erp-hint { font-size: 13px; line-height: 1.5; }
+body.erp-app .erp-pill { font-size: 12px; padding: 3px 10px; letter-spacing: .5px; }
+body.erp-app .erp-chip { min-height: 40px; font-size: 14px; border-radius: 10px; }
+body.erp-app .erp-day { padding: 12px 14px; border-radius: var(--radius); }
+body.erp-app .erp-day .m b { font-size: 16px; }
+body.erp-app .erp-appbar { border-radius: var(--radius); font-size: 14px; margin: 0 var(--gap); }
