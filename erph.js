@@ -425,7 +425,14 @@ function render() {
   const root = document.getElementById("erp-root"); if (!root) return;
   root.classList.toggle("erp-semak", S.tab === "semak" || S.tab === "tetapan" || S.tab === "hantar" || S.tab === "prestasi");
   let body = "";
-  if (S.tab === "semak") body = vSemak();
+  if (ERP_APP) { // APP SMASRA: susun baru
+    if (S.tab === "semak") body = apSemak();
+    else if (S.tab === "tetapan") body = vTetapan();
+    else if (S.tab === "hantar") body = S.isPny ? apHantar() : apUtama();
+    else if (S.tab === "prestasi") body = prIsAdmin(S.user) ? vPrestasi() : apPrestasi();
+    else body = S.view === "borang" ? vBorang() : apSenarai();
+  }
+  else if (S.tab === "semak") body = vSemak();
   else if (S.tab === "tetapan") body = vTetapan();
   else if (S.tab === "hantar") body = vHantar();
   else if (S.tab === "prestasi") body = vPrestasi();
@@ -518,6 +525,180 @@ function revDrafHtml() {
   return `<div class="erp-card erp-draf"><h3 style="display:flex;align-items:center;gap:8px">RPH berstatus Draf${bil ? `<span class="erp-badge" aria-label="${bil} draf">${bil}</span>` : ""}</h3>
     <div class="erp-hint" style="margin-bottom:8px">Guru telah mewujudkan RPH tetapi belum menghantar. Boleh disemak selepas dihantar.</div>
     ${rows || `<div class="erp-hint">Tiada RPH draf.</div>`}${bil > 40 ? `<div class="erp-hint">Memaparkan 40 terkini daripada ${bil}.</div>` : ""}</div>`;
+}
+
+/* ================= APP SMASRA: susun baru (canvas "Susun Baru e-RPH App SMASRA") ================= */
+const AP_IC = {
+  kal: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+  pan: '<path d="M4 5h6a2 2 0 012 2v12a2 2 0 00-2-2H4zM20 5h-6a2 2 0 00-2 2v12a2 2 0 012-2h6z"/>',
+  jad: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M4 14h16M10 4v16"/>',
+  rpt: '<path d="M7 3h8l4 4v14H7z"/><path d="M14 3v5h5M10 13h6M10 17h4"/>',
+  kiri: '<path d="M15 6l-6 6 6 6"/>', kanan: '<path d="M9 6l6 6-6 6"/>', bawah: '<path d="M6 9l6 6 6-6"/>', atas: '<path d="M6 15l6-6 6 6"/>',
+  salin: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/>',
+  baru: '<path d="M7 3h8l4 4v14H7z"/><path d="M14 3v5h5M13 12v6M10 15h6"/>', tambah: '<path d="M12 5v14M5 12h14"/>',
+  muat: '<path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/>', pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>'
+};
+const apI = (k, s) => `<svg class="ap-i" width="${s || 18}" height="${s || 18}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${AP_IC[k]}</svg>`;
+/** Pil status gaya app: ok (siap/disemak), draf, belum, pulang, cuti. */
+const apPill = (k, t) => `<span class="ap-pill ${k}">${E(t)}</span>`;
+const AP_ST = { Disemak: "ok", Siap: "ok", Dihantar: "belum", Draf: "draf", Dipulang: "pulang", Cuti: "cuti", Belum: "belum", "Belum Hantar": "cuti" };
+const apInit = (n) => E(String(n || "").split(/\s+/).filter((w) => /^[A-Za-z]/.test(w) && !/^(bin|binti|bt|b|a\/l|a\/p)$/i.test(w)).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?");
+const apAda = (n) => !!S.mine.minggu[n] || [1, 2, 3, 4, 5].some((h) => S.mine.hari[n + "|" + h]);
+function apSiap(n) { let s = 0; for (let h = 1; h <= 5; h++) { const st = dayStatus(n, h); if (st === "Siap" || st === "Cuti") s++; } return s; }
+
+/** Utama (guru): kad minggu semasa, pintasan, kadar hantar sekolah, aktiviti terkini. */
+function apUtama() {
+  const cur = currentWeekNo(), ada = apAda(cur), siap = apSiap(cur), info = erpWeekInfo(cur);
+  const next = [1, 2, 3, 4, 5].find((h) => { const st = dayStatus(cur, h); return st !== "Siap" && st !== "Cuti"; });
+  const cta = !ada ? `<button type="button" class="ap-btn pri" data-act="buka-minggu" data-n="${cur}">${apI("tambah", 16)}Wujudkan RPH ${E(wkLbl(cur))}</button>`
+    : next ? `<button type="button" class="ap-btn pri" data-act="ap-sambung" data-n="${cur}" data-h="${next}">Sambung RPH ${ERP_HARI[next - 1]}${apI("kanan", 16)}</button>`
+    : `<button type="button" class="ap-btn pri" data-act="ap-ke-saya" data-n="${cur}">Buka RPH ${E(wkLbl(cur))}${apI("kanan", 16)}</button>`;
+  const D = S.hd;
+  let sekolah = `<div class="ap-muted">Memuatkan kadar hantar…</div>`;
+  if (D.loaded) {
+    const all = hdCompute(), N = all.length, sent = all.filter((r) => r.st !== "Belum Hantar").length, rate = N ? Math.round(sent * 100 / N) : 0;
+    sekolah = `<div class="ap-ring" style="--p:${rate}"><span>${rate}%</span></div><div class="ap-col"><b>Kadar hantar sekolah</b><span class="ap-muted">${sent} daripada ${N} guru sudah hantar ${E(wkLbl(D.minggu))}</span></div>`;
+  }
+  const me = myEmails();
+  const act = (D.rows || []).filter((o) => HD_SENT.indexOf(o.status) !== -1 && me.indexOf(String(o.emel || "").toLowerCase().trim()) !== -1)
+    .map((o) => ({ o, t: String((o.status === "Dihantar" ? o.tarikhHantar : (o.tarikhSemak || o.tarikhHantar)) || "") }))
+    .sort((a, b) => (a.t < b.t ? 1 : -1)).slice(0, 3).map(({ o, t }) => {
+      const w = wkLbl(+o.minggu), d = t ? dmy(t.slice(0, 10)) : "";
+      const ttl = o.status === "Dihantar" ? `${w} dihantar` : o.status === "Disemak" ? `${w} disemak` : `${w} dipulangkan`;
+      const sub = o.status === "Disemak" && o.penyemak ? `${o.penyemak} · ${d}` : d;
+      return `<div class="ap-row"><i class="ap-dot ${AP_ST[o.status]}"></i><div class="ap-col"><b>${E(ttl)}</b><span class="ap-muted">${E(sub)}</span></div>${apPill(AP_ST[o.status], o.status === "Dipulang" ? "Dipulang" : o.status)}</div>`;
+    }).join("") || `<div class="ap-row"><span class="ap-muted">Belum ada aktiviti.</span></div>`;
+  const pin = [["ld-kal", "kal", "Kalendar", "b"], ["ld-pan", "pan", "Panduan", "v"], ["ld-jad", "jad", "Jadual", "s"], ["ld-rpt", "rpt", "RPT", "g"]]
+    .map((x) => `<button type="button" class="ap-tile" data-act="${x[0]}"><span class="ap-tic ${x[3]}">${apI(x[1])}</span>${x[2]}</button>`).join("");
+  return `<div class="ap">
+    <section class="ap-card ap-pad ap-stack">
+      <div class="ap-between"><div class="ap-col"><span class="ap-eyebrow">${E(wkLbl(cur))} · SEMASA</span><span class="ap-h2">${E(weekRangeTxt(cur))}</span></div>${ada ? apPill(AP_ST[info.st] || "draf", info.st) : apPill("cuti", "Belum wujud")}</div>
+      ${ada ? `<div class="ap-col" style="gap:6px"><div class="ap-between ap-sm"><span class="ap-muted">Kemajuan minggu ini</span><b>${siap} / 5 hari siap</b></div><div class="ap-bar"><i style="width:${siap * 20}%"></i></div></div>` : `<span class="ap-muted ap-sm">RPH minggu ini belum diwujudkan.</span>`}
+      <div>${cta}</div>
+    </section>
+    <section class="ap-stack" style="gap:8px"><h2 class="ap-eyebrow">PINTASAN</h2><div class="ap-tiles">${pin}</div></section>
+    <section class="ap-card ap-pad ap-flex">${sekolah}</section>
+    <section class="ap-stack" style="gap:8px"><h2 class="ap-eyebrow">AKTIVITI TERKINI</h2><div class="ap-card">${act}</div></section>
+  </div>`;
+}
+
+/** RPH Saya: tukar minggu, kemajuan, senarai H1–H5, hantar dan salin. */
+function apSenarai() {
+  const n = S.minggu, cur = currentWeekNo(), wk = S.mine.minggu[n], ada = apAda(n), siap = apSiap(n);
+  const ws = weekOptions(), i = ws.indexOf(n);
+  const opts = ws.map((w) => `<option value="${w}" ${w === n ? "selected" : ""}>${wkLbl(w)} · ${weekRangeTxt(w)}${w === cur ? " (semasa)" : ""}</option>`).join("");
+  const sw = `<div class="ap-flex" style="gap:8px">
+    <button type="button" class="ap-ibtn" data-act="ap-wk" data-n="${i < ws.length - 1 ? ws[i + 1] : ""}" aria-label="Minggu sebelum" ${i < ws.length - 1 ? "" : "disabled"}>${apI("kiri")}</button>
+    <label class="ap-selwrap"><span class="ap-sr">Pilih minggu</span><select class="ap-sel" data-act-change="minggu">${opts}</select>${apI("bawah", 14)}</label>
+    <button type="button" class="ap-ibtn" data-act="ap-wk" data-n="${i > 0 ? ws[i - 1] : ""}" aria-label="Minggu seterusnya" ${i > 0 ? "" : "disabled"}>${apI("kanan")}</button></div>`;
+  if (!ada) {
+    const ct = [1, 2, 3, 4, 5].map((h) => ({ h, c: cutiOf(dayIso(n, h)) })).filter((x) => x.c);
+    return `<div class="ap">${sw}
+      <section class="ap-card ap-empty"><span class="ap-eicon">${apI("baru", 26)}</span><b class="ap-h3">RPH minggu ini belum wujud</b>
+        <span class="ap-muted ap-sm">Cipta RPH untuk ${E(wkLbl(n))} dahulu. Isnin hingga Jumaat dicipta ikut Jadual Guru anda${ct.length ? "; cuti ditanda automatik (" + E(ct.map((x) => ERP_HARI[x.h - 1]).join(", ")) + ")" : ""}.</span>
+        <button type="button" class="ap-btn pri lg" data-act="wujud-minggu">${apI("tambah", 16)}Cipta RPH minggu ini</button></section>
+      <div class="ap-foot"><button type="button" class="ap-btn line" data-act="salin-minggu">${apI("salin", 16)}Salin daripada minggu lepas</button></div></div>`;
+  }
+  const seg = [1, 2, 3, 4, 5].map((h) => { const st = dayStatus(n, h); return `<i class="${st === "Siap" ? "ok" : st === "Cuti" ? "cuti" : st === "Draf" ? "draf" : ""}"></i>`; }).join("");
+  const rows = [1, 2, 3, 4, 5].map((h) => {
+    const p = dayPill(n, h), k = n + "|" + h, r = S.mine.hari[k], nk = (S.mine.slot[k] || []).length, ct = cutiOf(dayIso(n, h));
+    const kel = [...new Set((S.mine.slot[k] || []).map((s) => s.kelas).filter(Boolean))].slice(0, 2).join(", ");
+    const info = r ? (r.status === "Cuti" ? "Cuti" + (ct ? ": " + ct.nama : "") : nk + " slot" + (kel ? " · " + kel : "")) : ct ? "Cuti: " + ct.nama : "Belum ditulis";
+    const k2 = { "s-siap": "ok", "s-draf": "draf", "s-pulang": "pulang", "s-belum": p.t === "Cuti" ? "cuti" : "belum" }[p.cls] || "belum";
+    return `<button type="button" class="ap-row ap-tap${k2 === "draf" ? " hl" : ""}" data-act="open-day" data-h="${h}"><span class="ap-hb ${k2}">H${h}</span><span class="ap-col"><b>${ERP_HARI[h - 1]} <span class="ap-muted" style="font-weight:400">· ${dm(dayIso(n, h))}</span></b><span class="ap-muted ap-xs">${E(info)}</span></span>${apPill(k2, p.t)}${apI("kanan", 16)}</button>`;
+  }).join("");
+  const pulang = [1, 2, 3, 4, 5].map((h) => S.mine.hari[n + "|" + h]).filter((r) => r && r.semakan === "Dipulang");
+  const pBox = pulang.length ? `<section class="ap-card ap-pad ap-warn"><b>Dipulangkan untuk pembetulan</b>${pulang.map((r) => `<span class="ap-sm"><b>H${r.hariNo} ${ERP_HARI[r.hariNo - 1]}</b>: ${E(r.ulasan || "(tiada ulasan)")}</span>`).join("")}</section>` : "";
+  const can = siap === 5, sent = wk && (wk.status === "Dihantar" || wk.status === "Disemak");
+  const hb = sent ? `<div class="ap-note">${apPill(AP_ST[wk.status], wk.status)} ${wk.tarikhHantar ? "Dihantar " + E(dmy(wk.tarikhHantar.slice(0, 10))) : ""}</div>` : "";
+  return `<div class="ap">${sw}
+    <section class="ap-card ap-pad ap-stack" style="gap:8px"><div class="ap-between"><b>Kemajuan</b><span class="ap-muted ap-sm"><b style="color:var(--ap-tx)">${siap}</b> / 5 hari siap</span></div><div class="ap-seg">${seg}</div></section>
+    ${pBox}<section class="ap-card">${rows}</section>
+    <div class="ap-foot">${hb}
+      <button type="button" class="ap-btn ${can ? "pri" : "off"} lg" data-act="hantar" ${can ? "" : "disabled"}>${can ? (sent ? "Hantar semula " : "Hantar untuk semakan · ") + E(wkLbl(n)) : "Hantar untuk semakan · " + siap + "/5 hari siap"}</button>
+      <div class="ap-flex" style="gap:8px"><button type="button" class="ap-btn line" style="flex:1" data-act="salin-minggu">${apI("salin", 16)}Salin daripada minggu lepas</button><button type="button" class="ap-ibtn" data-act="muat" aria-label="Muat semula">${apI("muat")}</button></div></div>
+  </div>`;
+}
+
+/** Penghantaran (penyemak/admin): kadar hantar minggu dipilih + senarai belum hantar. */
+function apHantar() {
+  const D = S.hd;
+  if (!D.loaded) return `<div class="ap"><div class="ap-card ap-pad ap-muted">${D.busy ? "Memuatkan data penghantaran…" : "Tiada data."}</div></div>`;
+  if (!D.minggu) hdInit();
+  const all = hdCompute(), N = all.length || 1, c = (s) => all.filter((r) => r.st === s).length;
+  const sem = c("Disemak"), tg = c("Dihantar"), pl = c("Dipulang"), bl = c("Belum Hantar"), sent = all.length - bl, rate = Math.round(sent * 100 / N);
+  const ws = hdWeeks(D.tahun);
+  const belum = all.filter((r) => r.st === "Belum Hantar"), show = D.apSemua ? belum : belum.slice(0, 6);
+  const rows = show.map((r) => `<div class="ap-row"><span class="ap-av">${apInit(r.nama)}</span><span class="ap-col"><b>${E(r.nama)}</b><span class="ap-muted ap-xs">Penyemak: ${E((S.pnyNama && S.pnyNama[r.pny]) || r.pny)}</span></span>${apPill("cuti", "Belum")}</div>`).join("") || `<div class="ap-row"><span class="ap-muted">Semua guru sudah hantar.</span></div>`;
+  const pc = (v) => (v * 100 / N).toFixed(1) + "%";
+  return `<div class="ap">
+    <div class="ap-between" style="gap:10px"><h1 class="ap-h1">Penghantaran</h1>
+      <label class="ap-selwrap sm"><span class="ap-sr">Pilih minggu</span><select class="ap-sel" data-act-change="hd-minggu">${ws.map((w) => `<option value="${w}" ${w === D.minggu ? "selected" : ""}>${E(wkLbl(w))} · ${E(weekRangeTxt(w))}</option>`).join("")}</select>${apI("bawah", 14)}</label></div>
+    <section class="ap-card ap-pad ap-stack">
+      <div class="ap-between" style="align-items:flex-end"><div class="ap-col"><span class="ap-muted ap-xs">Kadar hantar</span><span class="ap-big">${rate}%</span></div><span class="ap-muted ap-sm"><b style="color:var(--ap-tx)">${sent}</b> daripada ${all.length} guru</span></div>
+      <div class="ap-bar st"><i style="width:${pc(sem)};background:var(--ap-pri)"></i><i style="width:${pc(tg)};background:#F59E0B"></i><i style="width:${pc(pl)};background:#BE123C"></i></div>
+      <div class="ap-g3"><div class="ap-col"><b class="ap-num">${sem}</b><span class="ap-muted ap-xs">Disemak</span></div><div class="ap-col"><b class="ap-num">${tg}</b><span class="ap-muted ap-xs">Menunggu semak</span></div><div class="ap-col"><b class="ap-num" style="color:#BE123C">${bl}</b><span class="ap-muted ap-xs">Belum hantar</span></div></div>
+    </section>
+    <section class="ap-stack" style="gap:8px"><div class="ap-between"><h2 class="ap-eyebrow">BELUM HANTAR (${belum.length})</h2>${belum.length > 6 ? `<button type="button" class="ap-link" data-act="ap-hd-semua">${D.apSemua ? "Tunjuk sedikit" : "Lihat semua"}</button>` : ""}</div><div class="ap-card">${rows}</div></section>
+    <div class="ap-flex" style="gap:8px"><button type="button" class="ap-btn line" style="flex:1" data-act="ap-hd-data">${D.apData ? "Tutup paparan terperinci" : "Paparan data terperinci"}</button><button type="button" class="ap-ibtn" data-act="hd-muat" aria-label="Muat semula">${apI("muat")}</button></div>
+    ${D.apData ? apHdData(all) : ""}
+  </div>`;
+}
+/** Jadual penuh lama (paparan data terperinci) tanpa bahagian landing. */
+function apHdData(all) { const full = vHantar(), lead = vLanding(all); return full.indexOf(lead) === 0 ? full.slice(lead.length) : ""; }
+
+/** Prestasi (guru): penapis, tiga statistik, carta 8 minggu, rekod mingguan. */
+function apPrestasi() {
+  const P = S.pr; if (!P.tahun) P.tahun = wkYear(currentWeekNo());
+  const yrs = [...new Set([...(ERP_WK.years || []), wkYear(currentWeekNo())])].sort((a, b) => b - a), weeks = prWeeks();
+  const p = prPersons()[0], a = prStat(p, weeks);
+  const filt = `<div class="ap-flex" style="gap:6px"><label class="ap-selwrap chip"><span class="ap-sr">Tahun</span><select class="ap-sel" data-act-change="pr-tahun">${yrs.map((y) => `<option value="${y}" ${y === P.tahun ? "selected" : ""}>${y}</option>`).join("")}</select>${apI("bawah", 12)}</label>
+    <label class="ap-selwrap chip on"><span class="ap-sr">Bulan</span><select class="ap-sel" data-act-change="pr-bulan"><option value="">Semua bulan</option>${PR_BULAN.map((m, i) => `<option value="${i}" ${P.bulan !== "" && +P.bulan === i ? "selected" : ""}>${m}</option>`).join("")}</select>${apI("bawah", 12)}</label></div>`;
+  const stOf = (w) => { const o = p.weeks[w]; return o ? (HD_SENT.indexOf(o.status) !== -1 ? o.status : "Draf") : "Belum"; };
+  const last = weeks.slice(-8), H = { Disemak: 100, Dihantar: 100, Dipulang: 100, Draf: 55, Belum: 22 }, C = { Disemak: "var(--ap-pri)", Dihantar: "var(--ap-pri)", Dipulang: "#BE123C", Draf: "#F59E0B", Belum: "#C7CBF5" };
+  const chart = last.length ? `<section class="ap-card ap-pad ap-stack" style="gap:10px"><b>Penghantaran ${last.length} minggu terakhir</b>
+    <div class="ap-chart" style="--n:${last.length}">${last.map((w) => `<i style="height:${H[stOf(w)]}%;background:${C[stOf(w)]}" title="${E(wkLbl(w))}: ${E(stOf(w))}"></i>`).join("")}</div>
+    <div class="ap-chart lb" style="--n:${last.length}">${last.map((w) => `<span>M${wkNo(w)}</span>`).join("")}</div></section>` : "";
+  const list = [...weeks].reverse().slice(0, 12).map((w) => {
+    const o = p.weeks[w], st = stOf(w), siap = apSiap(w);
+    const sub = o && HD_SENT.indexOf(o.status) !== -1 ? "Dihantar " + (o.tarikhHantar ? dmy(String(o.tarikhHantar).slice(0, 10)) : "") + (o.status === "Disemak" && o.tarikhSemak ? " · disemak " + dmy(String(o.tarikhSemak).slice(0, 10)) : "") : st === "Draf" ? siap + "/5 hari siap" : "Belum diwujudkan";
+    return `<div class="ap-row"><span class="ap-col"><b>${E(wkLbl(w))}</b><span class="ap-muted ap-xs">${E(weekRangeTxt(w))} · ${E(sub)}</span></span>${apPill(AP_ST[st] || "cuti", st)}</div>`;
+  }).join("");
+  return `<div class="ap"><div class="ap-between"><h1 class="ap-h1">Prestasi saya</h1>${filt}</div>
+    ${weeks.length ? `<section class="ap-g3">
+      <div class="ap-card ap-stat"><span class="ap-muted ap-xs">Kadar hantar</span><b class="ap-big sm" style="color:var(--ap-pri)">${a.pH}%</b><span class="ap-muted ap-xs">${a.h} / ${a.n} minggu</span></div>
+      <div class="ap-card ap-stat"><span class="ap-muted ap-xs">Disemak</span><b class="ap-big sm" style="color:#15803D">${a.pS}%</b><span class="ap-muted ap-xs">${a.d} / ${a.h} dihantar</span></div>
+      <div class="ap-card ap-stat"><span class="ap-muted ap-xs">Dipulang</span><b class="ap-big sm" style="color:#BE123C">${a.bs}</b><span class="ap-muted ap-xs">minggu</span></div></section>
+    ${chart}<section class="ap-card">${list}</section>` : `<div class="ap-card ap-pad ap-muted">Tiada minggu bagi pilihan ini.</div>`}</div>`;
+}
+
+/** Semakan: ringkasan, tapis, kumpulan penyemak (admin) atau senarai, dan RPH Draf (boleh buka/tutup). */
+function apRevRow(x, idx) {
+  const k = { Dihantar: "belum", Disemak: "ok", Dipulang: "pulang" }[x.status] || "draf", d = x.tarikhHantar ? String(x.tarikhHantar).slice(0, 10).split("-").reverse().join("/") : "";
+  return `<button type="button" class="ap-row ap-tap" data-act="rev-open" data-i="${idx}"><span class="ap-wk ${k}">M${wkNo(+x.minggu)}</span><span class="ap-col"><b>${E(x.nama)}</b><span class="ap-muted ap-xs">${x.status === "Disemak" ? "Disemak" : x.status === "Dipulang" ? "Dipulangkan" : "Dihantar"}${d ? " " + E(d) : ""}</span></span>${x.status === "Disemak" ? apPill("ok", "Disemak") : `<span class="ap-link">Semak</span>`}</button>`;
+}
+function apSemak() {
+  const r = S.rev;
+  if (!r.loaded) return `<div class="ap"><div class="ap-card ap-pad ap-muted">Memuatkan senarai semakan…</div></div>`;
+  if (r.sel) return vSemakPanel();
+  const L = r.list, f = r.filter, nB = L.filter((x) => x.status === "Dihantar").length, nS = L.filter((x) => x.status === "Disemak").length, nP = L.filter((x) => x.status === "Dipulang").length;
+  const sum = `<section class="ap-card ap-g3 ap-sum"><div><b style="color:#E11D48">${nB}</b><span>Belum disemak</span></div><div><b style="color:#15803D">${nS}</b><span>Disemak</span></div><div><b style="color:#B45309">${nP}</b><span>Dipulang</span></div></section>`;
+  const tabs = `<div class="ap-flex" style="gap:8px"><div class="ap-segtab" role="tablist" aria-label="Tapis"><button type="button" role="tab" aria-selected="${f === "tunggu"}" data-act="rev-filter" data-f="tunggu">Belum disemak</button><button type="button" role="tab" aria-selected="${f === "semua"}" data-act="rev-filter" data-f="semua">Semua</button></div><button type="button" class="ap-ibtn" data-act="rev-muat" aria-label="Muat semula">${apI("muat")}</button></div>`;
+  let body;
+  if (isAdminApp(S.user)) {
+    body = revGroups().map((g) => {
+      const open = !!r.open[g.key], show = g.items.filter((x) => f === "semua" || revBelum(x));
+      const badge = g.belum ? `<span class="ap-badge" aria-label="${g.belum} belum disemak">${g.belum}</span>` : g.items.length ? apPill("ok", "Selesai") : "";
+      return `<section class="ap-card${open ? " open" : ""}${g.key ? "" : " dash"}"><button type="button" class="ap-row ap-tap ap-ghead" data-act="rev-grp" data-k="${A(g.key)}" aria-expanded="${open}"><span class="ap-av g">${g.key ? apInit(g.nama) : "?"}</span><span class="ap-col"><b>${E(g.nama)}</b><span class="ap-muted ap-xs">${g.gurus.size} guru${g.key ? " di bawah semakan" : " · mana-mana penyemak"}</span></span>${badge}${apI(open ? "atas" : "bawah", 16)}</button>${open ? show.map((x) => apRevRow(x, L.indexOf(x))).join("") || `<div class="ap-row"><span class="ap-muted ap-sm">Tiada RPH untuk dipaparkan.</span></div>` : ""}</section>`;
+    }).join("") || `<div class="ap-card ap-pad ap-muted">Tiada data semakan.</div>`;
+  } else {
+    const list = L.filter((x) => f === "semua" || revBelum(x));
+    body = `<section class="ap-card">${list.map((x) => apRevRow(x, L.indexOf(x))).join("") || `<div class="ap-row"><span class="ap-muted ap-sm">Tiada RPH yang belum disemak.</span></div>`}</section>`;
+  }
+  const D = r.draf || [], dOpen = !!r.drafOpen;
+  const draf = `<section class="ap-card dash${dOpen ? " open" : ""}"><button type="button" class="ap-row ap-tap ap-ghead" data-act="ap-draf" aria-expanded="${dOpen}"><span class="ap-tic d">${apI("pen", 16)}</span><span class="ap-col"><b>RPH berstatus Draf</b><span class="ap-muted ap-xs">Belum dihantar oleh guru</span></span>${apPill("draf", String(D.length))}${apI(dOpen ? "atas" : "bawah", 16)}</button>
+    ${dOpen ? D.slice(0, 40).map((x) => `<div class="ap-row"><span class="ap-col"><b>${E(x.nama)}</b><span class="ap-muted ap-xs">${E(wkLbl(+x.minggu))} · ${E(dmy(x.awal))} – ${E(dmy(x.akhir))}</span></span>${apPill("draf", "Draf")}</div>`).join("") || `<div class="ap-row"><span class="ap-muted ap-sm">Tiada RPH draf.</span></div>` : ""}</section>`;
+  return `<div class="ap"><h1 class="ap-h1">Semakan</h1>${sum}${tabs}${body}${draf}</div>`;
 }
 
 /* ================= Senarai minggu ================= */
@@ -1599,6 +1780,12 @@ async function onClick(e) {
     return;
   }
   if (a === "wujud-minggu") return wujudMinggu(S.minggu);
+  if (a === "ap-wk") { if (!b.dataset.n) return; S.minggu = +b.dataset.n; return render(); }
+  if (a === "ap-sambung") { S.tab = "saya"; S.minggu = +b.dataset.n; return openDay(+b.dataset.h); }
+  if (a === "ap-ke-saya") { S.tab = "saya"; S.view = "senarai"; S.minggu = +b.dataset.n; render(); window.scrollTo(0, 0); return; }
+  if (a === "ap-hd-semua") { S.hd.apSemua = !S.hd.apSemua; return render(); }
+  if (a === "ap-hd-data") { S.hd.apData = !S.hd.apData; return render(); }
+  if (a === "ap-draf") { S.rev.drafOpen = !S.rev.drafOpen; return render(); }
   if (a.indexOf("cal-") === 0) return calAct(a, b);
   if (a === "pr-open") { S.pr.sel = b.dataset.k; render(); window.scrollTo(0, 0); return; }
   if (a === "pr-back") { S.pr.sel = null; return render(); }
