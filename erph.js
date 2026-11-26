@@ -382,6 +382,16 @@ const TAB_IC = {
 const ERP_APP = window.ERP_APP === "app"; // halaman e-RPH di dalam APP SMASRA: header app + bar bawah = tab e-RPH
 const SVGI = (p) => `<svg class="icon" viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 /** Bar bawah APP: Home + tab e-RPH (Utama/Penghantaran, RPH Saya, Prestasi; penyemak: Semakan; admin: Tetapan). */
+/** Ukur tinggi sebenar header app dan bar bawah supaya kandungan e-RPH muat ngam-ngam di antaranya. */
+function appFit() {
+  const r = document.documentElement, h = document.querySelector(".site-header-wrap"), n = document.querySelector(".bottom-nav-wrap");
+  if (h) r.style.setProperty("--erp-hdr-h", Math.ceil(h.getBoundingClientRect().height) + "px");
+  if (n) r.style.setProperty("--erp-nav-h", Math.ceil(n.getBoundingClientRect().height) + "px");
+}
+if (window.ERP_APP === "app") {
+  window.addEventListener("resize", appFit); window.addEventListener("load", appFit);
+  if (window.ResizeObserver) document.addEventListener("DOMContentLoaded", () => { const ro = new ResizeObserver(appFit); [".site-header-wrap", ".bottom-nav-wrap"].forEach((s) => { const e = document.querySelector(s); if (e) ro.observe(e); }); appFit(); });
+}
 function appNav() {
   const nav = document.getElementById("erp-bnav"); if (!nav) return;
   const it = (t, l) => `<button type="button" class="bn-item${S.tab === t ? " active" : ""}" data-act="tab" data-t="${t}" aria-label="${l}"${S.tab === t ? ' aria-current="page"' : ""}>${SVGI(TAB_IC[t])}<span class="bn-label">${l}</span></button>`;
@@ -389,7 +399,7 @@ function appNav() {
     it("hantar", S.isPny ? "Hantar" : "Utama"), it("saya", "RPH Saya"), it("prestasi", "Prestasi")];
   if (S.isPny) T.push(it("semak", "Semakan"));
   if (S.isPny && isAdminApp(S.user)) T.push(it("tetapan", "Tetapan"));
-  nav.style.setProperty("--n", T.length); nav.innerHTML = T.join("");
+  nav.style.setProperty("--n", T.length); nav.innerHTML = T.join(""); appFit();
   if (typeof renderIcons === "function") renderIcons();
 }
 function head() {
